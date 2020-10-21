@@ -29,16 +29,17 @@ int watering = -1;
 
 void setup() {
     Serial.begin(115200);
-
     for (int i = 0; i < NUM_VALVES; i++) {
         pinMode(buttons[i], INPUT);
     }
 
+    // Start the watering cycle
     watering = 0;
     valves[0].on();
 }
 
 void loop() {
+    // Check if any valves need to be stopped and check all buttons
     for (int i = 0; i < NUM_VALVES; i++) {
         valves[i].offAfterTime(WATER_TIME);
         readButton(i);
@@ -52,6 +53,7 @@ void loop() {
         valves[0].on();
     }
 
+    // Manage the watering cycle by starting next plant or ending cycle
     if (watering >= NUM_VALVES) {
         watering = -1;
     } else if (watering > -1 && valves[watering].state == LOW) {
@@ -62,9 +64,13 @@ void loop() {
     }
 }
 
-// using a button will interrupt the watering cycle if it is already in progress,
-// turning off all valves and setting "watering" to -1, then it starts watering the
-// specified plant
+/*
+  readButton takes an ID that represents the array index for the valve and button arrays
+  and checks if the button is pressed. If the button is pressed, the following is done:
+    - stop watering all plants
+    - reset `watering` variable to disable cycle
+    - turn on the valve corresponding to this button
+*/
 void readButton(int valveID) {
     if (digitalRead(buttons[valveID]) == HIGH) {
         stopAllWatering();
@@ -73,6 +79,9 @@ void readButton(int valveID) {
     }
 }
 
+/*
+  stopAllWatering will simply loop through all the vavles to turn them off 
+*/
 void stopAllWatering() {
     for (int i = 0; i < NUM_VALVES; i++) {
         valves[i].off();
