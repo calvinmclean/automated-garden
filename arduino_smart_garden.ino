@@ -4,6 +4,8 @@
 #define D1 5
 #define D2 4
 #define D3 0
+#define D4 2
+#define D5 14
 #define D6 12
 #define D7 13
 #define D8 15
@@ -21,13 +23,19 @@ Valve valves[NUM_VALVES] = {
     Valve(2, D2, D3)
 };
 
-// button variables
+/* button variables */
 unsigned long lastDebounceTime = 0;
 int buttons[NUM_VALVES] = {D6, D7, D8};
 int buttonStates[NUM_VALVES] = {LOW, LOW, LOW};
 int lastButtonStates[NUM_VALVES] = {LOW, LOW, LOW};
 
-// watering cycle variables
+/* stop button variables */
+int stopButtonPin = D5;
+unsigned long lastStopDebounceTime = 0;
+int stopButtonState = LOW;
+int lastStopButtonState;
+
+/* watering cycle variables */
 unsigned long previousMillis = 0;
 int watering = -1;
 
@@ -48,6 +56,7 @@ void loop() {
         valves[i].offAfterTime(WATER_TIME);
         readButton(i);
     }
+    readStopButton();
 
     // Every 24 hours, start watering plant 1
     unsigned long currentMillis = millis();
@@ -102,6 +111,37 @@ void readButton(int valveID) {
         }
     }
     lastButtonStates[valveID] = reading;
+}
+
+/*
+  readStopButton is similar to the readButton function, but had to be separated because this
+  button does not correspond to a Valve and could not be included in the array of buttons.
+*/
+void readStopButton() {
+    int reading = digitalRead(stopButtonPin);
+    // If the switch changed, due to noise or pressing, reset debounce timer
+    if (reading != lastStopButtonState) {
+        lastStopDebounceTime = millis();
+    }
+
+    // Current reading has been the same longer than our delay, so now we can do something
+    if ((millis() - lastStopDebounceTime) > DEBOUNCE_DELAY) {
+        // If the button state has changed
+        if (reading != stopButtonState) {
+             stopButtonState = reading;
+
+            // If our button state is HIGH, do some things
+            if (stopButtonState == HIGH) {
+                if (reading == HIGH) {
+                    Serial.print("stop button pressed");
+
+                    stopAllWatering();
+                    watering = -1;
+                }
+            }
+        }
+    }
+    lastStopButtonState = reading;
 }
 
 /*
