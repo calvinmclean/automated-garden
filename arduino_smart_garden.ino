@@ -1,14 +1,11 @@
 #include "valve.h"
 
-#define D0 16
-#define D1 5
-#define D2 4
-#define D3 0
-#define D4 2
-#define D5 14
-#define D6 12
-#define D7 13
-#define D8 15
+/* Setup pins. They are different for ESP32 and ESP8266 */
+#if defined(ESP8266)
+#include "esp8266_pins.h"
+#elif defined(ESP32)
+#include "esp32_pins.h"
+#endif
 
 #define NUM_VALVES 3
 
@@ -18,19 +15,19 @@
 #define DEBOUNCE_DELAY 50
 
 Valve valves[NUM_VALVES] = {
-    Valve(0, D0, D3),
-    Valve(1, D1, D3),
-    Valve(2, D2, D3)
+    Valve(0, VALVE_1_PIN, PUMP_PIN),
+    Valve(1, VALVE_2_PIN, PUMP_PIN),
+    Valve(2, VALVE_3_PIN, PUMP_PIN)
 };
 
 /* button variables */
 unsigned long lastDebounceTime = 0;
-int buttons[NUM_VALVES] = {D6, D7, D8};
+int buttons[NUM_VALVES] = {BUTTON_1_PIN, BUTTON_2_PIN, BUTTON_3_PIN};
 int buttonStates[NUM_VALVES] = {LOW, LOW, LOW};
 int lastButtonStates[NUM_VALVES] = {LOW, LOW, LOW};
 
 /* stop button variables */
-int stopButtonPin = D5;
+int stopButtonPin = STOP_BUTTON_PIN;
 unsigned long lastStopDebounceTime = 0;
 int stopButtonState = LOW;
 int lastStopButtonState;
