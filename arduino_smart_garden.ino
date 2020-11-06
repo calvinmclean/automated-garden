@@ -1,4 +1,6 @@
 #include "valve.h"
+#include "wifi.h"
+#include "config.h"
 
 /* Setup pins. They are different for ESP32 and ESP8266 */
 #if defined(ESP8266)
@@ -7,12 +9,24 @@
 #include "esp32_pins.h"
 #endif
 
+#include <ArduinoJson.h>
+#include <PubSubClient.h>
+
+#define capacity JSON_OBJECT_SIZE(3) + 40
+
 #define NUM_VALVES 3
 
 #define WATER_TIME 15000
 #define INTERVAL 86400000 // 24 hours
 
 #define DEBOUNCE_DELAY 50
+
+typedef struct WateringEvent {
+    int valve_id;
+    long watering_time;
+};
+
+PubSubClient client(wifiClient);
 
 Valve valves[NUM_VALVES] = {
     Valve(0, VALVE_1_PIN, PUMP_PIN),
@@ -45,9 +59,20 @@ void setup() {
     // Start the watering cycle
     watering = 0;
     valves[0].on();
+
+    // Connect to WiFi and MQTT
+    setup_wifi();
+    client.setServer(MQTT_ADDRESS, MQTT_PORT);
+    client.setCallback(callback);
 }
 
 void loop() {
+    // MQTT stuff
+    if (!client.connected()) {
+        reconnect();
+    }
+    client.loop();
+
     // Check if any valves need to be stopped and check all buttons
     for (int i = 0; i < NUM_VALVES; i++) {
         valves[i].offAfterTime(WATER_TIME);
@@ -147,5 +172,48 @@ void readStopButton() {
 void stopAllWatering() {
     for (int i = 0; i < NUM_VALVES; i++) {
         valves[i].off();
+    }
+}
+
+void reconnect() {
+    // Loop until we're reconnected
+    while (!client.connected()) {
+        Serial.print("Attempting MQTT connection...");
+        // Attempt to connect
+        if (client.connect("Garden")) {
+            Serial.println("connected");
+            // Subscribe
+            client.subscribe("garden/water");
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(client.state());
+            Serial.println(" try again in 5 seconds");
+            // Wait 5 seconds before retrying
+            delay(5000);
+        }
+    }
+}
+
+void callback(char* topic, byte* message, unsigned int length) {
+    Serial.print("Message arrived on topic: ");
+    Serial.print(topic);
+    Serial.print(". Message: ");
+    Serial.println((char*)message);
+
+    StaticJsonDocument<capacity> doc;
+    DeserializationError err = deserializeJson(doc, message);
+    if (err) {
+        Serial.print(F("deserialize failed "));
+        Serial.println(err.c_str());
+    }
+
+    if (String(topic) == "garden/water") {
+        WateringEvent we = {
+            doc["valve_id"],
+            doc["water_time"]
+        };
+
+        Serial.println(we.valve_id);
+        Serial.println(we.watering_time);
     }
 }

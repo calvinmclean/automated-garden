@@ -1,0 +1,10 @@
+#ifndef config_h
+#define config_h
+
+#define SSID "your-wifi-network-name"
+#define PASSWORD "your-wifi-network-password"
+
+#define MQTT_ADDRESS "192.168.0.4"
+#define MQTT_PORT 1883
+
+#endif
