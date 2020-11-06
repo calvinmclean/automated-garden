@@ -3,11 +3,14 @@
 
 #include "Arduino.h"
 
+#define DEFAULT_WATER_TIME 15000
+
 class Valve {
     private:
         int pin;
         int pump;
         unsigned long startMillis;
+        unsigned long wateringTime;
 
     public:
         int id;
@@ -15,8 +18,9 @@ class Valve {
 public:
     Valve(int i, int p, int pump_pin);
     void on();
+    void on(unsigned long time);
     void off();
-    void offAfterTime(unsigned long time);
+    void offAfterTime();
 };
 
 #endif

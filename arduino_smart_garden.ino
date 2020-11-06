@@ -1,32 +1,31 @@
+#include <ArduinoJson.h>
+#include <PubSubClient.h>
+
+/* include other files for this program */
 #include "valve.h"
 #include "wifi.h"
 #include "config.h"
 
-/* Setup pins. They are different for ESP32 and ESP8266 */
+/* setup different pins for ESP32 or ESP8266 */
 #if defined(ESP8266)
 #include "esp8266_pins.h"
 #elif defined(ESP32)
 #include "esp32_pins.h"
 #endif
 
-#include <ArduinoJson.h>
-#include <PubSubClient.h>
-
-#define capacity JSON_OBJECT_SIZE(3) + 40
+#define CAPACITY JSON_OBJECT_SIZE(3) + 40
 
 #define NUM_VALVES 3
 
-#define WATER_TIME 15000
 #define INTERVAL 86400000 // 24 hours
 
 #define DEBOUNCE_DELAY 50
+#define MQTT_RETRY_DELAY 5000
 
 typedef struct WateringEvent {
     int valve_id;
     long watering_time;
 };
-
-PubSubClient client(wifiClient);
 
 Valve valves[NUM_VALVES] = {
     Valve(0, VALVE_1_PIN, PUMP_PIN),
@@ -50,6 +49,10 @@ int lastStopButtonState;
 unsigned long previousMillis = 0;
 int watering = -1;
 
+/* MQTT variables */
+unsigned long lastConnectAttempt = 0;
+PubSubClient client(wifiClient);
+
 void setup() {
     Serial.begin(115200);
     for (int i = 0; i < NUM_VALVES; i++) {
@@ -68,14 +71,17 @@ void setup() {
 
 void loop() {
     // MQTT stuff
-    if (!client.connected()) {
+    if (!client.connected() && millis() - lastConnectAttempt >= MQTT_RETRY_DELAY) {
+        lastConnectAttempt = millis();
         reconnect();
     }
-    client.loop();
+    if (client.connected()) {
+        client.loop();
+    }
 
     // Check if any valves need to be stopped and check all buttons
     for (int i = 0; i < NUM_VALVES; i++) {
-        valves[i].offAfterTime(WATER_TIME);
+        valves[i].offAfterTime();
         readButton(i);
     }
     readStopButton();
@@ -95,6 +101,18 @@ void loop() {
         watering++;
         if (watering < NUM_VALVES) {
             valves[watering].on();
+        }
+    }
+}
+
+void waterPlant(int id, long time) {
+    if (id < NUM_VALVES && id >= 0) {
+        stopAllWatering();
+        watering = -1;
+        if (time > 0) {
+            valves[id].on(time);
+        } else {
+            valves[id].on();
         }
     }
 }
@@ -124,10 +142,7 @@ void readButton(int valveID) {
                 if (reading == HIGH) {
                     Serial.print("button pressed: ");
                     Serial.println(valveID);
-
-                    stopAllWatering();
-                    watering = -1;
-                    valves[valveID].on();
+                    waterPlant(valveID, -1);
                 }
             }
         }
@@ -176,21 +191,14 @@ void stopAllWatering() {
 }
 
 void reconnect() {
-    // Loop until we're reconnected
-    while (!client.connected()) {
-        Serial.print("Attempting MQTT connection...");
-        // Attempt to connect
-        if (client.connect("Garden")) {
-            Serial.println("connected");
-            // Subscribe
-            client.subscribe("garden/water");
-        } else {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
-            // Wait 5 seconds before retrying
-            delay(5000);
-        }
+    Serial.print("Attempting MQTT connection...");
+    if (client.connect("Garden")) {
+        Serial.println("connected");
+        client.subscribe("garden/water");
+    } else {
+        Serial.print("failed, rc=");
+        Serial.print(client.state());
+        Serial.println(" try again in 5 seconds");
     }
 }
 
@@ -200,7 +208,7 @@ void callback(char* topic, byte* message, unsigned int length) {
     Serial.print(". Message: ");
     Serial.println((char*)message);
 
-    StaticJsonDocument<capacity> doc;
+    StaticJsonDocument<CAPACITY> doc;
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
         Serial.print(F("deserialize failed "));
@@ -213,7 +221,6 @@ void callback(char* topic, byte* message, unsigned int length) {
             doc["water_time"]
         };
 
-        Serial.println(we.valve_id);
-        Serial.println(we.watering_time);
+        waterPlant(we.valve_id, we.watering_time);
     }
 }

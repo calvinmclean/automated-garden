@@ -7,6 +7,7 @@ Valve::Valve(int i, int p, int pump_pin) {
     pinMode(pin, OUTPUT);
     pinMode(pump, OUTPUT);
     off();
+    wateringTime = DEFAULT_WATER_TIME;
 }
 
 void Valve::on() {
@@ -18,6 +19,11 @@ void Valve::on() {
     startMillis = millis();
 }
 
+void Valve::on(unsigned long time) {
+    on();
+    wateringTime = time;
+}
+
 void Valve::off() {
     Serial.print("turning off valve ");
     Serial.println(id);
@@ -25,13 +31,14 @@ void Valve::off() {
     digitalWrite(pin, state);
     digitalWrite(pump, state);
     startMillis = 0;
+    wateringTime = DEFAULT_WATER_TIME;
 }
 
-// If the valve has been open for the specified time, close it
-void Valve::offAfterTime(unsigned long time) {
+// If the valve has been open for the specified amount of time, close it
+void Valve::offAfterTime() {
     if (
         state == HIGH &&
-        millis() - startMillis >= time
+        millis() - startMillis >= wateringTime
     ) {
         Serial.print("turning off valve ");
         Serial.print(id);
