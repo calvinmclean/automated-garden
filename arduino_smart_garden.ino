@@ -54,6 +54,7 @@ unsigned long lastConnectAttempt = 0;
 PubSubClient client(wifiClient);
 
 void setup() {
+    // Prepare pins and serial output
     Serial.begin(115200);
     for (int i = 0; i < NUM_VALVES; i++) {
         pinMode(buttons[i], INPUT);
@@ -66,15 +67,13 @@ void setup() {
     // Connect to WiFi and MQTT
     setup_wifi();
     client.setServer(MQTT_ADDRESS, MQTT_PORT);
-    client.setCallback(callback);
+    client.setCallback(processIncomingMessage);
 }
 
 void loop() {
-    // MQTT stuff
-    if (!client.connected() && millis() - lastConnectAttempt >= MQTT_RETRY_DELAY) {
-        lastConnectAttempt = millis();
-        reconnect();
-    }
+    // Connect to MQTT server if not connected already
+    mqttConnect();
+    // Run MQTT loop to process incoming messages if connected
     if (client.connected()) {
         client.loop();
     }
@@ -105,15 +104,23 @@ void loop() {
     }
 }
 
+/*
+  waterPlant is used for watering a single plant outside of the watering cycle by:
+    - turning off all valves
+    - resetting cycle tracker
+    - watering the specified plant for the specified amount of time
+*/
 void waterPlant(int id, long time) {
-    if (id < NUM_VALVES && id >= 0) {
-        stopAllWatering();
-        watering = -1;
-        if (time > 0) {
-            valves[id].on(time);
-        } else {
-            valves[id].on();
-        }
+    // Exit if valveID is out of bounds
+    if (id >= NUM_VALVES || id < 0) {
+        return;
+    }
+    stopAllWatering();
+    watering = -1;
+    if (time > 0) {
+        valves[id].on(time);
+    } else {
+        valves[id].on();
     }
 }
 
@@ -125,6 +132,10 @@ void waterPlant(int id, long time) {
     - turn on the valve corresponding to this button
 */
 void readButton(int valveID) {
+    // Exit if valveID is out of bounds
+    if (valveID >= NUM_VALVES || valveID < 0) {
+        return;
+    }
     int reading = digitalRead(buttons[valveID]);
     // If the switch changed, due to noise or pressing, reset debounce timer
     if (reading != lastButtonStates[valveID]) {
@@ -190,19 +201,31 @@ void stopAllWatering() {
     }
 }
 
-void reconnect() {
-    Serial.print("Attempting MQTT connection...");
-    if (client.connect("Garden")) {
-        Serial.println("connected");
-        client.subscribe("garden/water");
-    } else {
-        Serial.print("failed, rc=");
-        Serial.print(client.state());
-        Serial.println(" try again in 5 seconds");
+/*
+  mqttConnect is used to connect to the MQTT server if not already connected. It uses
+  millis to only retry the connection every MQTT_RETRY_DELAY seconds without blocking
+*/
+void mqttConnect() {
+    if (!client.connected() && millis() - lastConnectAttempt >= MQTT_RETRY_DELAY) {
+        lastConnectAttempt = millis();
+        Serial.print("Attempting MQTT connection...");
+        if (client.connect("Garden")) {
+            Serial.println("connected");
+            client.subscribe("garden/water");
+        } else {
+            Serial.print("failed, rc=");
+            Serial.print(client.state());
+            Serial.println(" try again in 5 seconds");
+        }
     }
 }
 
-void callback(char* topic, byte* message, unsigned int length) {
+/*
+  processIncomingMessage is a callback function for the MQTT client that will react
+  to incoming messages. Currently, the topics are:
+    - "garden/water": accepts a WateringEvent JSON to water a plant for specified time
+*/
+void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     Serial.print("Message arrived on topic: ");
     Serial.print(topic);
     Serial.print(". Message: ");
