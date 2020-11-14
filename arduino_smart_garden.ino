@@ -40,7 +40,6 @@ int buttonStates[NUM_VALVES] = {LOW, LOW, LOW};
 int lastButtonStates[NUM_VALVES] = {LOW, LOW, LOW};
 
 /* stop button variables */
-int stopButtonPin = STOP_BUTTON_PIN;
 unsigned long lastStopDebounceTime = 0;
 int stopButtonState = LOW;
 int lastStopButtonState;
@@ -166,7 +165,7 @@ void readButton(int valveID) {
   button does not correspond to a Valve and could not be included in the array of buttons.
 */
 void readStopButton() {
-    int reading = digitalRead(stopButtonPin);
+    int reading = digitalRead(STOP_BUTTON_PIN);
     // If the switch changed, due to noise or pressing, reset debounce timer
     if (reading != lastStopButtonState) {
         lastStopDebounceTime = millis();
@@ -245,5 +244,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         };
 
         waterPlant(we.valve_id, we.watering_time);
+    } else if (String(topic) == "garden/off") {
+        stopAllWatering();
     }
 }
