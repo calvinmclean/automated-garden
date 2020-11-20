@@ -36,10 +36,7 @@ void Valve::off() {
 
 // If the valve has been open for the specified amount of time, close it
 void Valve::offAfterTime() {
-    if (
-        state == HIGH &&
-        millis() - startMillis >= wateringTime
-    ) {
+    if (state == HIGH && millis() - startMillis >= wateringTime) {
         Serial.print("turning off valve ");
         Serial.print(id);
         Serial.println(" because watering time elapsed");

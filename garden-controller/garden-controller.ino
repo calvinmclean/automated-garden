@@ -35,9 +35,9 @@ Valve valves[NUM_VALVES] = {
 
 /* button variables */
 unsigned long lastDebounceTime = 0;
-int buttons[NUM_VALVES] = {BUTTON_1_PIN, BUTTON_2_PIN, BUTTON_3_PIN};
-int buttonStates[NUM_VALVES] = {LOW, LOW, LOW};
-int lastButtonStates[NUM_VALVES] = {LOW, LOW, LOW};
+int buttons[NUM_VALVES] = { BUTTON_1_PIN, BUTTON_2_PIN, BUTTON_3_PIN };
+int buttonStates[NUM_VALVES] = { LOW, LOW, LOW };
+int lastButtonStates[NUM_VALVES] = { LOW, LOW, LOW };
 
 /* stop button variables */
 unsigned long lastStopDebounceTime = 0;
@@ -145,7 +145,7 @@ void readButton(int valveID) {
     if ((millis() - lastDebounceTime) > DEBOUNCE_DELAY) {
         // If the button state has changed
         if (reading != buttonStates[valveID]) {
-             buttonStates[valveID] = reading;
+            buttonStates[valveID] = reading;
 
             // If our button state is HIGH, do some things
             if (buttonStates[valveID] == HIGH) {
@@ -175,7 +175,7 @@ void readStopButton() {
     if ((millis() - lastStopDebounceTime) > DEBOUNCE_DELAY) {
         // If the button state has changed
         if (reading != stopButtonState) {
-             stopButtonState = reading;
+            stopButtonState = reading;
 
             // If our button state is HIGH, do some things
             if (stopButtonState == HIGH) {
@@ -192,7 +192,7 @@ void readStopButton() {
 }
 
 /*
-  stopAllWatering will simply loop through all the vavles to turn them off 
+  stopAllWatering will simply loop through all the vavles to turn them off
 */
 void stopAllWatering() {
     for (int i = 0; i < NUM_VALVES; i++) {
