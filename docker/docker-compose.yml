@@ -1,0 +1,45 @@
+version: "3.8"
+services:
+  grafana:
+    image: "grafana/grafana:latest"
+    ports:
+      - "3000:3000"
+    volumes:
+      - "grafana:/var/lib/grafana"
+      - "./grafana/datasources:/etc/grafana/provisioning/datasources"
+    env_file:
+      - env_file
+
+  influxdb:
+    image: "quay.io/influxdb/influxdb:v2.0.2"
+    ports:
+      - "8086:8086"
+    volumes:
+      - "influxdb:/var/lib/influxd"
+
+  influxdb_setup:
+    image: "quay.io/influxdb/influxdb:v2.0.2"
+    volumes:
+      - "./influxdb:/entrypoint"
+    command: "/entrypoint/entrypoint.sh"
+    depends_on:
+      - influxdb
+    env_file:
+      - env_file
+
+  telegraf:
+    image: "telegraf"
+    volumes:
+      - "./telegraf:/etc/telegraf"
+    env_file:
+      - env_file
+
+  mqtt:
+    image: "eclipse-mosquitto:latest"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+
+volumes:
+  influxdb:
+  grafana:

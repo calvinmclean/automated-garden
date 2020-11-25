@@ -1,0 +1,16 @@
+# General
+ADMIN_USER="admin"
+ADMIN_PSWD="adminadmin"
+
+# InfluxDB
+INFLUXDB_TOKEN="my-secret-token"
+INFLUXDB_ORG="garden"
+INFLUXDB_BUCKET="water"
+
+# Telegraf
+MQTT_WATER_TOPIC="garden/data/water"
+
+# Grafana
+GF_SECURITY_ADMIN_USER="${ADMIN_USER}"
+GF_SECURITY_ADMIN_PASSWORD="${ADMIN_PSWD}"
+GF_PATHS_PROVISIONING="/etc/grafana/provisioning"
