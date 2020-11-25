@@ -10,17 +10,16 @@ private:
     int pin;
     int pump;
     unsigned long startMillis;
-    unsigned long wateringTime;
 
 public:
     int id;
     int state;
+    unsigned long wateringTime;
 public:
     Valve(int i, int p, int pump_pin);
-    void on();
     void on(unsigned long time);
-    void off();
-    void offAfterTime();
+    unsigned long off();
+    unsigned long offAfterTime();
 };
 
 #endif

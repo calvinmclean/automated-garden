@@ -10,36 +10,42 @@ Valve::Valve(int i, int p, int pump_pin) {
     wateringTime = DEFAULT_WATER_TIME;
 }
 
-void Valve::on() {
-    Serial.print("turning on valve ");
-    Serial.println(id);
+void Valve::on(unsigned long time) {
+    if (time > 0) {
+        wateringTime = time;
+    }
+    Serial.printf("turning on valve %d for %lu ms\n", id, time);
     state = HIGH;
     digitalWrite(pin, state);
     digitalWrite(pump, state);
     startMillis = millis();
 }
 
-void Valve::on(unsigned long time) {
-    on();
-    wateringTime = time;
-}
-
-void Valve::off() {
-    Serial.print("turning off valve ");
-    Serial.println(id);
+unsigned long Valve::off() {
+    // Quickly exit if the valve isn't even watering
+    if (state == LOW) { // TODO: "|| startMillis == 0"?
+        return 0;
+    }
+    unsigned long result = 0;
+    Serial.printf("turning off valve %d\n", id);
     state = LOW;
     digitalWrite(pin, state);
     digitalWrite(pump, state);
+    result = millis() - startMillis;
     startMillis = 0;
     wateringTime = DEFAULT_WATER_TIME;
+    return result;
 }
 
-// If the valve has been open for the specified amount of time, close it
-void Valve::offAfterTime() {
-    if (state == HIGH && millis() - startMillis >= wateringTime) {
-        Serial.print("turning off valve ");
-        Serial.print(id);
-        Serial.println(" because watering time elapsed");
-        off();
+/*
+  offAfterTime will stop watering if the valve has been open for the specified
+  amount of time. It returns the time that was used to water the plant in order
+  to publish and save the value
+*/
+unsigned long Valve::offAfterTime() {
+    if (state == LOW || millis() - startMillis < wateringTime) {
+        return 0;
     }
+    Serial.printf("watering time (%lu ms) elapsed for valve %d\n", wateringTime, id);
+    return off();
 }

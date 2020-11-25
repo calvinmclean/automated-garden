@@ -51,6 +51,8 @@ int watering = -1;
 /* MQTT variables */
 unsigned long lastConnectAttempt = 0;
 PubSubClient client(wifiClient);
+String waterCommandTopic = "garden/command/water";
+String stopCommandTopic = "garden/command/stop";
 
 void setup() {
     // Prepare pins and serial output
@@ -59,14 +61,14 @@ void setup() {
         pinMode(buttons[i], INPUT);
     }
 
-    // Start the watering cycle
-    watering = 0;
-    valves[0].on();
-
     // Connect to WiFi and MQTT
     setup_wifi();
     client.setServer(MQTT_ADDRESS, MQTT_PORT);
     client.setCallback(processIncomingMessage);
+
+    // Start the watering cycle
+    watering = 0;
+    waterPlant(0);
 }
 
 void loop() {
@@ -79,7 +81,10 @@ void loop() {
 
     // Check if any valves need to be stopped and check all buttons
     for (int i = 0; i < NUM_VALVES; i++) {
-        valves[i].offAfterTime();
+        unsigned long t = valves[i].offAfterTime();
+        if (t > 0) {
+            publishWaterEvent(i, t);
+        }
         readButton(i);
     }
     readStopButton();
@@ -89,45 +94,43 @@ void loop() {
     if (currentMillis - previousMillis >= INTERVAL) {
         previousMillis = currentMillis;
         watering = 0;
-        valves[0].on();
+        waterPlant(0);
     }
 
     // Manage the watering cycle by starting next plant or ending cycle
     if (watering >= NUM_VALVES) {
-        watering = -1;
+        stopAllWatering();
     } else if (watering > -1 && valves[watering].state == LOW) {
         watering++;
         if (watering < NUM_VALVES) {
-            valves[watering].on();
+            waterPlant(watering);
         }
     }
 }
 
 /*
-  waterPlant is used for watering a single plant outside of the watering cycle by:
-    - turning off all valves
-    - resetting cycle tracker
-    - watering the specified plant for the specified amount of time
+  waterPlant is used for watering a single plant. Even though this is a super basic
+  function, it will make the rest of the code more clear
 */
 void waterPlant(int id, long time) {
     // Exit if valveID is out of bounds
     if (id >= NUM_VALVES || id < 0) {
+        Serial.printf("valve ID %d is out of range, aborting request\n", id);
         return;
     }
-    stopAllWatering();
-    watering = -1;
-    if (time > 0) {
-        valves[id].on(time);
-    } else {
-        valves[id].on();
-    }
+    valves[id].on(time);
+}
+
+// Simple helper to use the above function with fewer args
+void waterPlant(int id) {
+    waterPlant(id, 0);
 }
 
 /*
   readButton takes an ID that represents the array index for the valve and button arrays
   and checks if the button is pressed. If the button is pressed, the following is done:
     - stop watering all plants
-    - reset `watering` variable to disable cycle
+    - disable watering cycle
     - turn on the valve corresponding to this button
 */
 void readButton(int valveID) {
@@ -147,12 +150,12 @@ void readButton(int valveID) {
         if (reading != buttonStates[valveID]) {
             buttonStates[valveID] = reading;
 
-            // If our button state is HIGH, do some things
+            // If our button state is HIGH, stop watering others and water this plant
             if (buttonStates[valveID] == HIGH) {
                 if (reading == HIGH) {
-                    Serial.print("button pressed: ");
-                    Serial.println(valveID);
-                    waterPlant(valveID, -1);
+                    Serial.printf("button pressed: %d\n", valveID);
+                    stopAllWatering();
+                    waterPlant(valveID, 0);
                 }
             }
         }
@@ -180,10 +183,8 @@ void readStopButton() {
             // If our button state is HIGH, do some things
             if (stopButtonState == HIGH) {
                 if (reading == HIGH) {
-                    Serial.print("stop button pressed");
-
+                    Serial.println("stop button pressed");
                     stopAllWatering();
-                    watering = -1;
                 }
             }
         }
@@ -192,11 +193,17 @@ void readStopButton() {
 }
 
 /*
-  stopAllWatering will simply loop through all the vavles to turn them off
+  stopAllWatering will stop watering all plants and disable the cycle
 */
 void stopAllWatering() {
+    watering = -1;
     for (int i = 0; i < NUM_VALVES; i++) {
-        valves[i].off();
+        unsigned long t = valves[i].off();
+        // TODO: consider running this on a separate core when using ESP32 in case
+        //       the publishing is slow/blocking
+        if (t > 0) {
+            publishWaterEvent(i, t);
+        }
     }
 }
 
@@ -207,14 +214,13 @@ void stopAllWatering() {
 void mqttConnect() {
     if (!client.connected() && millis() - lastConnectAttempt >= MQTT_RETRY_DELAY) {
         lastConnectAttempt = millis();
-        Serial.print("Attempting MQTT connection...");
+        Serial.print("attempting MQTT connection...");
         if (client.connect("Garden")) {
             Serial.println("connected");
-            client.subscribe("garden/water");
+            client.subscribe(waterCommandTopic);
+            client.subscribe(stopCommandTopic);
         } else {
-            Serial.print("failed, rc=");
-            Serial.print(client.state());
-            Serial.println(" try again in 5 seconds");
+            Serial.printf("failed, rc=%zu\n", client.state());
         }
     }
 }
@@ -222,29 +228,41 @@ void mqttConnect() {
 /*
   processIncomingMessage is a callback function for the MQTT client that will react
   to incoming messages. Currently, the topics are:
-    - "garden/water": accepts a WateringEvent JSON to water a plant for specified time
+    - waterCommandTopic: accepts a WateringEvent JSON to water a plant for specified time
+    - stopCommandTopic: ignores message and stops all watering
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
-    Serial.print("Message arrived on topic: ");
-    Serial.print(topic);
-    Serial.print(". Message: ");
-    Serial.println((char*)message);
+    Serial.printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
 
     StaticJsonDocument<CAPACITY> doc;
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
-        Serial.print(F("deserialize failed "));
-        Serial.println(err.c_str());
+        Serial.printf("deserialize failed: %s\n", err.c_str());
     }
 
-    if (String(topic) == "garden/water") {
+    if (String(topic) == waterCommandTopic) {
         WateringEvent we = {
             doc["valve_id"],
             doc["water_time"]
         };
-
+        Serial.printf("received command to water plant %d for %lu\n", we.valve_id, we.watering_time);
+        stopAllWatering();
         waterPlant(we.valve_id, we.watering_time);
-    } else if (String(topic) == "garden/off") {
+    } else if (String(topic) == stopCommandTopic) {
+        Serial.println("received command to stop watering");
         stopAllWatering();
     }
+}
+
+/*
+  publishWaterEvent will send an InfluxDB line protocol to MQTT to insert a data
+  point into the database. This is meant to be used after turning a valve off, rather
+  than turning it on since we don't know if it would be ended early
+*/
+void publishWaterEvent(int id, unsigned long time) {
+    // Now publish event on MQTT topic
+    char message[50];
+    sprintf(message, "water,plant=%d millis=%lu", id, time);
+    Serial.printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", "garden/data/water", message);
+    client.publish("garden/data/water", message);
 }
