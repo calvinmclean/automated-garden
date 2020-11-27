@@ -6,14 +6,8 @@
 #include "wifi.h"
 #include "config.h"
 
-/* setup different pins for ESP32 or ESP8266 */
-#if defined(ESP8266)
-#include "esp8266_pins.h"
-#elif defined(ESP32)
-#include "esp32_pins.h"
-#endif
-
-#define CAPACITY JSON_OBJECT_SIZE(3) + 40
+#define JSON_CAPACITY JSON_OBJECT_SIZE(3) + 40
+#define QUEUE_SIZE 10
 
 #define NUM_VALVES 3
 
@@ -24,7 +18,7 @@
 
 typedef struct WateringEvent {
     int valve_id;
-    long watering_time;
+    unsigned long watering_time;
 };
 
 Valve valves[NUM_VALVES] = {
@@ -51,12 +45,17 @@ int watering = -1;
 /* MQTT variables */
 unsigned long lastConnectAttempt = 0;
 PubSubClient client(wifiClient);
-String waterCommandTopic = "garden/command/water";
-String stopCommandTopic = "garden/command/stop";
+const char* waterCommandTopic = "garden/command/water";
+const char* stopCommandTopic = "garden/command/stop";
+const char* waterDataTopic = "garden/data/water";
+
+/* */
+QueueHandle_t queue;
 
 void setup() {
     // Prepare pins and serial output
     Serial.begin(115200);
+    Serial.printf("running setup on core %d\n", xPortGetCoreID());
     for (int i = 0; i < NUM_VALVES; i++) {
         pinMode(buttons[i], INPUT);
     }
@@ -65,6 +64,14 @@ void setup() {
     setup_wifi();
     client.setServer(MQTT_ADDRESS, MQTT_PORT);
     client.setCallback(processIncomingMessage);
+
+    // Setup queue and start PublisherTask in second core
+    queue = xQueueCreate(QUEUE_SIZE, sizeof(WateringEvent));
+    if (queue == NULL) {
+        Serial.println("error creating the queue");
+    }
+    // TODO: Figure out accurate stackSize instead of 10000
+    xTaskCreatePinnedToCore(publisherTask, "PublisherTask", 10000, NULL, 1, NULL, 0);
 
     // Start the watering cycle
     watering = 0;
@@ -199,8 +206,6 @@ void stopAllWatering() {
     watering = -1;
     for (int i = 0; i < NUM_VALVES; i++) {
         unsigned long t = valves[i].off();
-        // TODO: consider running this on a separate core when using ESP32 in case
-        //       the publishing is slow/blocking
         if (t > 0) {
             publishWaterEvent(i, t);
         }
@@ -234,13 +239,13 @@ void mqttConnect() {
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     Serial.printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
 
-    StaticJsonDocument<CAPACITY> doc;
+    StaticJsonDocument<JSON_CAPACITY> doc;
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
         Serial.printf("deserialize failed: %s\n", err.c_str());
     }
 
-    if (String(topic) == waterCommandTopic) {
+    if (strcmp(topic, waterCommandTopic) == 0) {
         WateringEvent we = {
             doc["valve_id"],
             doc["water_time"]
@@ -248,21 +253,34 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         Serial.printf("received command to water plant %d for %lu\n", we.valve_id, we.watering_time);
         stopAllWatering();
         waterPlant(we.valve_id, we.watering_time);
-    } else if (String(topic) == stopCommandTopic) {
+    } else if (strcmp(topic, stopCommandTopic) == 0) {
         Serial.println("received command to stop watering");
         stopAllWatering();
     }
 }
 
 /*
-  publishWaterEvent will send an InfluxDB line protocol to MQTT to insert a data
-  point into the database. This is meant to be used after turning a valve off, rather
-  than turning it on since we don't know if it would be ended early
+  publishWaterEvent will put a WateringEvent on the queue to be picked up by the PublisherTask
+  on the second core which will record the watering event in InfluxDB via MQTT and Telegraf
 */
 void publishWaterEvent(int id, unsigned long time) {
-    // Now publish event on MQTT topic
-    char message[50];
-    sprintf(message, "water,plant=%d millis=%lu", id, time);
-    Serial.printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", "garden/data/water", message);
-    client.publish("garden/data/water", message);
+    WateringEvent we = { id, time };
+    xQueueSend(queue, &we, portMAX_DELAY);
+}
+
+/*
+  publisherTask runs a continuous loop where it will read from a queue and publish WateringEvents
+  as an InfluxDB line protocol message to MQTT
+*/
+void publisherTask(void* parameters) {
+    Serial.printf("starting PublisherTask on core %d\n", xPortGetCoreID());
+    WateringEvent we;
+    while (true) {
+        if (xQueueReceive(queue, &we, portMAX_DELAY)) {
+            char message[50];
+            sprintf(message, "water,plant=%d millis=%lu", we.valve_id, we.watering_time);
+            Serial.printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
+            client.publish(waterDataTopic, message);
+        }
+    }
 }

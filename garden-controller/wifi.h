@@ -1,11 +1,7 @@
 #ifndef wifi_h
 #define wifi_h
 
-#if defined(ESP8266)
-#include <ESP8266WiFi.h>
-#elif defined(ESP32)
 #include <WiFi.h>
-#endif
 
 // Configure network name and password in this file
 #include "config.h"
