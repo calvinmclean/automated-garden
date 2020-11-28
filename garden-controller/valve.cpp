@@ -4,6 +4,7 @@ Valve::Valve(int i, int p, int pump_pin) {
     id = i;
     pin = p;
     pump = pump_pin;
+    skipNext = false;
     pinMode(pin, OUTPUT);
     pinMode(pump, OUTPUT);
     off();
@@ -11,6 +12,11 @@ Valve::Valve(int i, int p, int pump_pin) {
 }
 
 void Valve::on(unsigned long time) {
+    if (skipNext) {
+        Serial.printf("skipping watering for valve %d\n", id);
+        skipNext = false;
+        return;
+    }
     if (time > 0) {
         wateringTime = time;
     }
@@ -48,4 +54,8 @@ unsigned long Valve::offAfterTime() {
     }
     Serial.printf("watering time (%lu ms) elapsed for valve %d\n", wateringTime, id);
     return off();
+}
+
+void Valve::setSkipNext() {
+    skipNext = true;
 }

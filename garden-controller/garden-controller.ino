@@ -47,6 +47,7 @@ unsigned long lastConnectAttempt = 0;
 PubSubClient client(wifiClient);
 const char* waterCommandTopic = "garden/command/water";
 const char* stopCommandTopic = "garden/command/stop";
+const char* skipCommandTopic = "garden/command/skip";
 const char* waterDataTopic = "garden/data/water";
 
 /* */
@@ -224,6 +225,7 @@ void mqttConnect() {
             Serial.println("connected");
             client.subscribe(waterCommandTopic);
             client.subscribe(stopCommandTopic);
+            client.subscribe(skipCommandTopic);
         } else {
             Serial.printf("failed, rc=%zu\n", client.state());
         }
@@ -245,17 +247,21 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         Serial.printf("deserialize failed: %s\n", err.c_str());
     }
 
+    WateringEvent we = {
+        doc["valve_id"],
+        doc["water_time"]
+    };
+
     if (strcmp(topic, waterCommandTopic) == 0) {
-        WateringEvent we = {
-            doc["valve_id"],
-            doc["water_time"]
-        };
         Serial.printf("received command to water plant %d for %lu\n", we.valve_id, we.watering_time);
         stopAllWatering();
         waterPlant(we.valve_id, we.watering_time);
     } else if (strcmp(topic, stopCommandTopic) == 0) {
         Serial.println("received command to stop watering");
         stopAllWatering();
+    } else if (strcmp(topic, skipCommandTopic) == 0) {
+        Serial.printf("received command to skip next watering for plant %d\n", we.valve_id);
+        valves[we.valve_id].setSkipNext();
     }
 }
 

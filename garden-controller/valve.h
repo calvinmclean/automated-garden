@@ -10,6 +10,7 @@ private:
     int pin;
     int pump;
     unsigned long startMillis;
+    bool skipNext;
 
 public:
     int id;
@@ -20,6 +21,7 @@ public:
     void on(unsigned long time);
     unsigned long off();
     unsigned long offAfterTime();
+    void setSkipNext();
 };
 
 #endif
