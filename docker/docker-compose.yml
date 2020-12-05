@@ -20,7 +20,7 @@ services:
   influxdb_setup:
     image: "quay.io/influxdb/influxdb:v2.0.2"
     volumes:
-      - "./influxdb:/entrypoint"
+      - "./influxdb_setup:/entrypoint"
     command: "/entrypoint/entrypoint.sh"
     depends_on:
       - influxdb
