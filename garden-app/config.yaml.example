@@ -1,5 +1,6 @@
 web_server:
   port: 80
+  plants_filename: "plants.yaml"
 mqtt:
   address: "localhost"
   port: 1883

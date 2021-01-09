@@ -9,8 +9,7 @@ import (
 
 var (
 	// Used for flags.
-	cfgFile     string
-	userLicense string
+	configFilename string
 
 	rootCommand = &cobra.Command{
 		Use:   "garden-app",
@@ -27,7 +26,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCommand.PersistentFlags().StringVar(&cfgFile, "config", "", "path to config file")
+	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "", "path to config file")
 
 	rootCommand.AddCommand(
 		serverCommand,
@@ -35,9 +34,8 @@ func init() {
 }
 
 func initConfig() {
-	if cfgFile != "" {
-		// Use config file from the flag.
-		viper.SetConfigFile(cfgFile)
+	if configFilename != "" {
+		viper.SetConfigFile(configFilename)
 	}
 
 	viper.AutomaticEnv()

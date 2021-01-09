@@ -7,20 +7,20 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 )
 
-// SkipAction ...
+// SkipAction is an action for skipping the next watering event for a Plant
+// TODO: currently "count" doesn't do anything and only next watering will be skipped
 type SkipAction struct {
-	// TODO: currently "count" doesn't do anything and only next watering will be skipped
 	Count int `json:"count"`
 }
 
-// SkipMessage ...
+// SkipMessage is the message being sent over MQTT to the embedded garden controller
 type SkipMessage struct {
 	PlantID  string `json:"id"`
 	ValvePin int    `json:"valve_pin"`
 }
 
-// Execute ...
-func (action *SkipAction) Execute(p api.Plant) error {
+// Execute sends the message over MQTT to the embedded garden controller
+func (action *SkipAction) Execute(p *api.Plant) error {
 	fmt.Printf("Skipping next %d waterings for plant %s\n", action.Count, p.ID)
 
 	msg, err := json.Marshal(SkipMessage{

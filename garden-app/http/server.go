@@ -1,7 +1,6 @@
 package http
 
 import (
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -9,33 +8,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api/actions"
+	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
 	"github.com/sirupsen/logrus"
 )
 
-// AggregateActionRequest ...
-type AggregateActionRequest struct {
-	*actions.AggregateAction
-}
+var (
+	plants map[string]*api.Plant
+	logger *logrus.Logger
+)
 
-// Bind ...
-func (a *AggregateActionRequest) Bind(r *http.Request) error {
-	// a.AggregateAction is nil if no AggregateAction fields are sent in the request. Return an
-	// error to avoid a nil pointer dereference.
-	if a.AggregateAction == nil {
-		return errors.New("missing required action fields")
-	}
-
-	return nil
-}
-
-var logger *logrus.Logger
-
-// Run ...
-func Run(port int) {
+// Run sets up and runs the webserver. This is the main entrypoint to our webserver application
+// and is called by the "server" command
+func Run(port int, plantsFilename string) {
 	logger = logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
@@ -57,27 +44,16 @@ func Run(port int) {
 	// Static handler for HTML pages
 	r.Get("/*", staticHandler)
 
-	// // RESTy routes for API actions
-	r.Route("/plant/{plantID}", func(r chi.Router) {
-		r.Post("/", plantAction)
-	})
+	// RESTy routes for Plant API actions
+	r.Route("/plant", plantRouter)
+
+	// Read Plant information from a YAML file
+	plants = api.ReadPlants(plantsFilename)
 
 	http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 }
 
-func plantAction(w http.ResponseWriter, r *http.Request) {
-	plant := temporaryPlantsMap[chi.URLParam(r, "plantID")]
-
-	data := &AggregateActionRequest{}
-	if err := render.Bind(r, data); err != nil {
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
-	logger.Infof("Recieved request to perform action on Plant %s\n", plant.ID)
-	data.Execute(plant)
-}
-
+// staticHandler routes to the `./static` directory for serving static HTML and JavaScript
 func staticHandler(w http.ResponseWriter, r *http.Request) {
 	workDir, _ := os.Getwd()
 	filesDir := http.Dir(filepath.Join(workDir, "static"))
