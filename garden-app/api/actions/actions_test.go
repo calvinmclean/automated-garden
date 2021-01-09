@@ -9,7 +9,7 @@ import (
 
 var plant = api.Plant{
 	Name:           "Cherry Tomato",
-	ID:             "D89406D6-884D-48D3-98A8-7A282CD210EB",
+	ID:             "9m4e2mr0ui3e8a215n4g",
 	WateringAmount: 15000,
 	Interval:       "24h",
 	StartDate:      "2021-01-15",

@@ -27,7 +27,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig)
 
-	rootCommand.PersistentFlags().StringVar(&cfgFile, "config", "", "config file")
+	rootCommand.PersistentFlags().StringVar(&cfgFile, "config", "", "path to config file")
 
 	rootCommand.AddCommand(
 		serverCommand,

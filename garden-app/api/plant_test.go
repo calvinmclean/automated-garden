@@ -8,7 +8,7 @@ import (
 func TestUnmarshalJSON(t *testing.T) {
 	plantBytes := []byte(`{
 		"name": "Cherry Tomato",
-		"id": "D89406D6-884D-48D3-98A8-7A282CD210EB",
+		"id": "9m4e2mr0ui3e8a215n4g",
 		"watering_amount": 15000,
 		"interval": "24h",
 		"start_date": "2021-01-15",
@@ -24,7 +24,7 @@ func TestUnmarshalJSON(t *testing.T) {
 
 	expected := Plant{
 		Name:           "Cherry Tomato",
-		ID:             "D89406D6-884D-48D3-98A8-7A282CD210EB",
+		ID:             "9m4e2mr0ui3e8a215n4g",
 		WateringAmount: 15000,
 		Interval:       "24h",
 		StartDate:      "2021-01-15",

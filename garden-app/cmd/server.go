@@ -22,7 +22,7 @@ var (
 )
 
 func init() {
-	serverCommand.Flags().Int("port", 80, "Port to run Application server on")
+	serverCommand.Flags().Int("port", 80, "port to run Application server on")
 	viper.BindPFlag("web_server.port", serverCommand.Flags().Lookup("port"))
 }
 
