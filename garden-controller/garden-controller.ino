@@ -7,7 +7,7 @@
 #include "wifi.h"
 #include "config.h"
 
-#define JSON_CAPACITY JSON_OBJECT_SIZE(3) + 40
+#define JSON_CAPACITY 128
 #define QUEUE_SIZE 10
 
 #define INTERVAL 86400000 // 24 hours
@@ -19,8 +19,9 @@
 #define MQTT_CLIENT_NAME "Garden"
 
 typedef struct WateringEvent {
-    int valve_id;
-    unsigned long watering_time;
+    int plant_position;
+    unsigned long duration;
+    const char* id;
 };
 
 /* plant/valve variables */
@@ -117,7 +118,7 @@ void waterIntervalTask(void* parameters) {
         if (currentMillis - previousMillis >= INTERVAL) {
             previousMillis = currentMillis;
             for (int i = 0; i < NUM_PLANTS; i++) {
-                waterPlant(i, DEFAULT_WATER_TIME);
+                waterPlant(i, DEFAULT_WATER_TIME, "N/A");
             }
         }
         vTaskDelay(INTERVAL / portTICK_PERIOD_MS);
@@ -140,23 +141,23 @@ void waterPlantTask(void* parameters) {
             // watering to be skipped if I run xTaskNotify when not waiting
             ulTaskNotifyTake(NULL, 0);
 
-            if (we.watering_time == 0) {
-                we.watering_time = DEFAULT_WATER_TIME;
+            if (we.duration == 0) {
+                we.duration = DEFAULT_WATER_TIME;
             }
 
             // Only water if this valve isn't setup to be skipped
-            if (!skipValve[we.valve_id]) {
+            if (!skipValve[we.plant_position]) {
                 unsigned long start = millis();
-                plantOn(we.valve_id);
+                plantOn(we.plant_position);
                 // Delay for specified watering time with option to interrupt
-                xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.watering_time / portTICK_PERIOD_MS);
+                xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
                 unsigned long stop = millis();
-                plantOff(we.valve_id);
-                we.watering_time = stop - start;
+                plantOff(we.plant_position);
+                we.duration = stop - start;
                 xQueueSend(publisherQueue, &we, portMAX_DELAY);
             } else {
-                printf("skipping watering for valve %d\n", we.valve_id);
-                skipValve[we.valve_id] = false;
+                printf("skipping watering for valve %d\n", we.plant_position);
+                skipValve[we.plant_position] = false;
             }
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
@@ -206,7 +207,7 @@ void publisherTask(void* parameters) {
     while (true) {
         if (xQueueReceive(publisherQueue, &we, portMAX_DELAY)) {
             char message[50];
-            sprintf(message, "water,plant=%d millis=%lu", we.valve_id, we.watering_time);
+            sprintf(message, "water,plant=%d millis=%lu", we.plant_position, we.duration);
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
                 client.publish(waterDataTopic, message);
@@ -316,7 +317,7 @@ void readButton(int valveID) {
             if (buttonStates[valveID] == HIGH) {
                 if (reading == HIGH) {
                     printf("button pressed: %d\n", valveID);
-                    waterPlant(valveID, DEFAULT_WATER_TIME);
+                    waterPlant(valveID, DEFAULT_WATER_TIME, "N/A");
                 }
             }
         }
@@ -366,20 +367,21 @@ void readStopButton() {
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
 
-    StaticJsonDocument<JSON_CAPACITY> doc;
+    DynamicJsonDocument doc(128);
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
         printf("deserialize failed: %s\n", err.c_str());
     }
 
     WateringEvent we = {
-        doc["valve_id"],
-        doc["water_time"]
+        doc["plant_position"],
+        doc["duration"],
+        doc["id"]
     };
 
     if (strcmp(topic, waterCommandTopic) == 0) {
-        printf("received command to water plant %d for %lu\n", we.valve_id, we.watering_time);
-        waterPlant(we.valve_id, we.watering_time);
+        printf("received command to water plant %d (%s) for %lu\n", we.plant_position, we.id, we.duration);
+        waterPlant(we.plant_position, we.duration, we.id);
     } else if (strcmp(topic, stopCommandTopic) == 0) {
         printf("received command to stop watering\n");
         stopWatering();
@@ -387,8 +389,8 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         printf("received command to stop ALL watering\n");
         stopAllWatering();
     } else if (strcmp(topic, skipCommandTopic) == 0) {
-        printf("received command to skip next watering for plant %d\n", we.valve_id);
-        skipValve[we.valve_id] = true;
+        printf("received command to skip next watering for plant %d (%s)\n", we.plant_position, we.id);
+        skipValve[we.plant_position] = true;
     }
 }
 
@@ -396,13 +398,13 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
   waterPlant pushes a WateringEvent to the queue in order to water a single
   plant. First it will make sure the ID is not out of bounds
 */
-void waterPlant(int id, long time) {
+void waterPlant(int plant_position, unsigned long duration, const char* id) {
     // Exit if valveID is out of bounds
-    if (id >= NUM_PLANTS || id < 0) {
-        printf("valve ID %d is out of range, aborting request\n", id);
+    if (plant_position >= NUM_PLANTS || plant_position < 0) {
+        printf("plant_position %d is out of range, aborting request\n", plant_position);
         return;
     }
-    printf("pushing WateringEvent to queue: id=%d, time=%lu\n", id, time);
-    WateringEvent we = { id, time };
+    printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", id, plant_position, duration);
+    WateringEvent we = { plant_position, duration, id };
     xQueueSend(wateringQueue, &we, portMAX_DELAY);
 }
