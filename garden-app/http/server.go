@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	plants map[string]*api.Plant
-	logger *logrus.Logger
+	storageClient storage.Client
+	logger        *logrus.Logger
 )
 
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
@@ -48,7 +48,12 @@ func Run(port int, plantsFilename string) {
 	r.Route("/plant", plantRouter)
 
 	// Read Plant information from a YAML file
-	plants = api.ReadPlants(plantsFilename)
+	var err error
+	storageClient, err = storage.NewYAMLClient(plantsFilename)
+	if err != nil {
+		logger.Error("Unable to initialize storage client: ", err)
+		os.Exit(1)
+	}
 
 	http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 }

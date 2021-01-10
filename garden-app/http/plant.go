@@ -14,14 +14,10 @@ import (
 // AllPlantsResponse is a simple struct being used to render and return a list of all Plants
 type AllPlantsResponse struct {
 	Plants []*api.Plant `json:"plants"`
-	plants map[string]*api.Plant
 }
 
 // Render will take the map of Plants and convert it to a list for a more RESTy response
 func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	for _, p := range pr.plants {
-		pr.Plants = append(pr.Plants, p)
-	}
 	return nil
 }
 
@@ -46,8 +42,8 @@ func plantContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		plantID := chi.URLParam(r, "plantID")
 
-		plant, ok := plants[plantID]
-		if !ok {
+		plant := storageClient.GetPlant(plantID)
+		if plant == nil {
 			render.Render(w, r, ErrNotFoundResponse)
 			return
 		}
@@ -83,7 +79,7 @@ func getPlant(w http.ResponseWriter, r *http.Request) {
 
 // getAllPlants will return a list of all Plants
 func getAllPlants(w http.ResponseWriter, r *http.Request) {
-	if err := render.Render(w, r, &AllPlantsResponse{plants: plants}); err != nil {
+	if err := render.Render(w, r, &AllPlantsResponse{storageClient.GetPlants()}); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -99,8 +95,12 @@ func createPlant(w http.ResponseWriter, r *http.Request) {
 	// Assign new unique ID to plant
 	plant.ID = xid.New().String()
 
-	// Add to my map
-	plants[plant.ID] = plant
+	// Save the Plant
+	if err := storageClient.SavePlant(plant); err != nil {
+		logger.Error("Error saving plant: ", err)
+		render.Render(w, r, ServerError(err))
+		return
+	}
 
 	render.Status(r, http.StatusCreated)
 	render.Render(w, r, plant)

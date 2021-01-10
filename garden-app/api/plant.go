@@ -2,11 +2,7 @@ package api
 
 import (
 	"errors"
-	"fmt"
-	"io/ioutil"
 	"net/http"
-
-	"gopkg.in/yaml.v2"
 )
 
 // Plant is the representation of the most important resource for this application, a Plant.
@@ -37,18 +33,4 @@ func (p *Plant) Bind(r *http.Request) error {
 	}
 
 	return nil
-}
-
-// ReadPlants will read a map of Plants from a YAML file
-func ReadPlants(filename string) map[string]*Plant {
-	data, err := ioutil.ReadFile(filename)
-	if err != nil {
-		fmt.Print(err)
-	}
-	var plants map[string]*Plant
-	err = yaml.Unmarshal(data, &plants)
-	if err != nil {
-		fmt.Println("error:", err)
-	}
-	return plants
 }
