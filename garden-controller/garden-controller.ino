@@ -4,14 +4,11 @@
 #include "driver/gpio.h"
 
 /* include other files for this program */
-#include "valve.h"
 #include "wifi.h"
 #include "config.h"
 
 #define JSON_CAPACITY JSON_OBJECT_SIZE(3) + 40
 #define QUEUE_SIZE 10
-
-#define NUM_VALVES 3
 
 #define INTERVAL 86400000 // 24 hours
 #define DEFAULT_WATER_TIME 15000
@@ -26,18 +23,14 @@ typedef struct WateringEvent {
     unsigned long watering_time;
 };
 
-Valve valves[NUM_VALVES] = {
-    Valve(0, VALVE_1_PIN, PUMP_PIN),
-    Valve(1, VALVE_2_PIN, PUMP_PIN),
-    Valve(2, VALVE_3_PIN, PUMP_PIN)
-};
-bool skipValve[NUM_VALVES] = { false, false, false };
+/* plant/valve variables */
+gpio_num_t plants[NUM_PLANTS][3] = PLANTS;
+bool skipValve[NUM_PLANTS] = { false, false, false };
 
 /* button variables */
 unsigned long lastDebounceTime = 0;
-gpio_num_t buttons[NUM_VALVES] = { BUTTON_1_PIN, BUTTON_2_PIN, BUTTON_3_PIN };
-int buttonStates[NUM_VALVES] = { LOW, LOW, LOW };
-int lastButtonStates[NUM_VALVES] = { LOW, LOW, LOW };
+int buttonStates[NUM_PLANTS] = { LOW, LOW, LOW };
+int lastButtonStates[NUM_PLANTS] = { LOW, LOW, LOW };
 
 /* stop button variables */
 unsigned long lastStopDebounceTime = 0;
@@ -69,9 +62,18 @@ TaskHandle_t readButtonsTaskHandle;
 
 void setup() {
     // Prepare pins
-    for (int i = 0; i < NUM_VALVES; i++) {
-        gpio_reset_pin(buttons[i]);
-        gpio_set_direction(buttons[i], GPIO_MODE_INPUT);
+    for (int i = 0; i < NUM_PLANTS; i++) {
+        // Setup button pins
+        gpio_reset_pin(plants[i][2]);
+        gpio_set_direction(plants[i][2], GPIO_MODE_INPUT);
+
+        // Setup valve pins
+        gpio_reset_pin(plants[i][1]);
+        gpio_set_direction(plants[i][1], GPIO_MODE_OUTPUT);
+
+        // Setup pump pins
+        gpio_reset_pin(plants[i][0]);
+        gpio_set_direction(plants[i][0], GPIO_MODE_OUTPUT);
     }
 
     // Connect to WiFi and MQTT
@@ -114,7 +116,7 @@ void waterIntervalTask(void* parameters) {
         unsigned long currentMillis = millis();
         if (currentMillis - previousMillis >= INTERVAL) {
             previousMillis = currentMillis;
-            for (int i = 0; i < NUM_VALVES; i++) {
+            for (int i = 0; i < NUM_PLANTS; i++) {
                 waterPlant(i, DEFAULT_WATER_TIME);
             }
         }
@@ -145,11 +147,11 @@ void waterPlantTask(void* parameters) {
             // Only water if this valve isn't setup to be skipped
             if (!skipValve[we.valve_id]) {
                 unsigned long start = millis();
-                valves[we.valve_id].on();
+                plantOn(we.valve_id);
                 // Delay for specified watering time with option to interrupt
                 xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.watering_time / portTICK_PERIOD_MS);
                 unsigned long stop = millis();
-                valves[we.valve_id].off();
+                plantOff(we.valve_id);
                 we.watering_time = stop - start;
                 xQueueSend(publisherQueue, &we, portMAX_DELAY);
             } else {
@@ -163,12 +165,30 @@ void waterPlantTask(void* parameters) {
 }
 
 /*
+  plantOn will turn on the correct valve and pump for a specific plant
+*/
+void plantOn(int id) {
+    printf("turning on plant %d\n", id);
+    gpio_set_level(plants[id][0], 1);
+    gpio_set_level(plants[id][1], 1);
+}
+
+/*
+  plantOff will turn off the correct valve and pump for a specific plant
+*/
+void plantOff(int id) {
+    printf("turning off plant %d\n", id);
+    gpio_set_level(plants[id][0], 0);
+    gpio_set_level(plants[id][1], 0);
+}
+
+/*
   readButtonsTask will check if any buttons are being pressed
 */
 void readButtonsTask(void* parameters) {
     while (true) {
         // Check if any valves need to be stopped and check all buttons
-        for (int i = 0; i < NUM_VALVES; i++) {
+        for (int i = 0; i < NUM_PLANTS; i++) {
             readButton(i);
         }
         readStopButton();
@@ -277,10 +297,10 @@ void stopAllWatering() {
 */
 void readButton(int valveID) {
     // Exit if valveID is out of bounds
-    if (valveID >= NUM_VALVES || valveID < 0) {
+    if (valveID >= NUM_PLANTS || valveID < 0) {
         return;
     }
-    int reading = gpio_get_level(buttons[valveID]);
+    int reading = gpio_get_level(plants[valveID][2]);
     // If the switch changed, due to noise or pressing, reset debounce timer
     if (reading != lastButtonStates[valveID]) {
         lastDebounceTime = millis();
@@ -378,7 +398,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
 */
 void waterPlant(int id, long time) {
     // Exit if valveID is out of bounds
-    if (id >= NUM_VALVES || id < 0) {
+    if (id >= NUM_PLANTS || id < 0) {
         printf("valve ID %d is out of range, aborting request\n", id);
         return;
     }

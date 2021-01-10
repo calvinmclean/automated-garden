@@ -10,11 +10,10 @@ func TestUnmarshalJSON(t *testing.T) {
 		"name": "Cherry Tomato",
 		"id": "9m4e2mr0ui3e8a215n4g",
 		"watering_amount": 15000,
+		"plant_position": 0,
 		"interval": "24h",
 		"start_date": "2021-01-15",
-		"end_date": null,
-		"valve_pin": 3,
-		"pump_pin": 5
+		"end_date": null
 	}`)
 	var actual Plant
 	err := json.Unmarshal(plantBytes, &actual)
@@ -26,10 +25,9 @@ func TestUnmarshalJSON(t *testing.T) {
 		Name:           "Cherry Tomato",
 		ID:             "9m4e2mr0ui3e8a215n4g",
 		WateringAmount: 15000,
+		PlantPosition:  0,
 		Interval:       "24h",
 		StartDate:      "2021-01-15",
-		ValvePin:       3,
-		PumpPin:        5,
 	}
 
 	tests := []struct {
@@ -39,12 +37,11 @@ func TestUnmarshalJSON(t *testing.T) {
 	}{
 		{"Name", expected.Name, actual.Name},
 		{"ID", expected.ID, actual.ID},
+		{"PlantPosition", expected.PlantPosition, actual.PlantPosition},
 		{"WateringAmount", expected.WateringAmount, actual.WateringAmount},
 		{"Interval", expected.Interval, actual.Interval},
 		{"StartDate", expected.StartDate, actual.StartDate},
 		{"EndDate", expected.EndDate, actual.EndDate},
-		{"ValvePin", expected.ValvePin, actual.ValvePin},
-		{"PumpPin", expected.PumpPin, actual.PumpPin},
 	}
 
 	for _, tt := range tests {

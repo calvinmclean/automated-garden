@@ -14,10 +14,9 @@ type WaterAction struct {
 
 // WaterMessage is the message being sent over MQTT to the embedded garden controller
 type WaterMessage struct {
-	Duration int    `json:"duration"`
-	PlantID  string `json:"id"`
-	ValvePin int    `json:"valve_pin"`
-	PumpPin  int    `json:"pump_pin"`
+	Duration      int    `json:"duration"`
+	PlantID       string `json:"id"`
+	PlantPosition int    `json:"plant_position"`
 }
 
 // Execute sends the message over MQTT to the embedded garden controller
@@ -25,10 +24,9 @@ func (action *WaterAction) Execute(p *api.Plant) error {
 	fmt.Printf("Watering plant %s for %dms\n", p.ID, action.Duration)
 
 	msg, err := json.Marshal(WaterMessage{
-		Duration: action.Duration,
-		PlantID:  p.ID,
-		ValvePin: p.ValvePin,
-		PumpPin:  p.PumpPin,
+		Duration:      action.Duration,
+		PlantID:       p.ID,
+		PlantPosition: p.PlantPosition,
 	})
 	if err != nil {
 		panic(err)

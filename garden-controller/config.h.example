@@ -7,14 +7,15 @@
 #define MQTT_ADDRESS "192.168.0.4"
 #define MQTT_PORT 1883
 
-#define VALVE_1_PIN 16
-#define VALVE_2_PIN 17
-#define VALVE_3_PIN 5
-#define PUMP_PIN 18
+#define DEFAULT_WATER_TIME 15000
+#define NUM_PLANTS 3
+#define PUMP_PIN GPIO_NUM_18
+// List of plant pins in this format: {PUMP_PIN, VALVE_PIN, BUTTON_PIN}
+#define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19 }
+#define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21 }
+#define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22 }
+#define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
 
-#define BUTTON_1_PIN 19
-#define BUTTON_2_PIN 21
-#define BUTTON_3_PIN 22
-#define STOP_BUTTON_PIN 23
+#define STOP_BUTTON_PIN GPIO_NUM_23
 
 #endif

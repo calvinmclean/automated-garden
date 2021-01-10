@@ -15,8 +15,8 @@ type SkipAction struct {
 
 // SkipMessage is the message being sent over MQTT to the embedded garden controller
 type SkipMessage struct {
-	PlantID  string `json:"id"`
-	ValvePin int    `json:"valve_pin"`
+	PlantID       string `json:"id"`
+	PlantPosition int    `json:"plant_position"`
 }
 
 // Execute sends the message over MQTT to the embedded garden controller
@@ -24,8 +24,8 @@ func (action *SkipAction) Execute(p *api.Plant) error {
 	fmt.Printf("Skipping next %d waterings for plant %s\n", action.Count, p.ID)
 
 	msg, err := json.Marshal(SkipMessage{
-		PlantID:  p.ID,
-		ValvePin: p.ValvePin,
+		PlantID:       p.ID,
+		PlantPosition: p.PlantPosition,
 	})
 	if err != nil {
 		panic(err)

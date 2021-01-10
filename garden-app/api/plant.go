@@ -10,18 +10,17 @@ import (
 )
 
 // Plant is the representation of the most important resource for this application, a Plant.
-// This includes some general information like name and unique ID, plus some other information
-// for the watering interval, amount of time to water for, and actual GPIO pins associated with
-// the Plant's valve and pump, plus a start and end date to show when the Plant was in the system
+// This includes some general information like name and unique ID, a start and end date to show when
+// the Plant was in the system, plus some information for watering like the duration to water for, how
+// often to water, and the PlantPosition field will tell the microcontroller which plant to water
 type Plant struct {
 	Name           string `json:"name" yaml:"name"`
 	ID             string `json:"id" yaml:"id"`
 	WateringAmount int    `json:"watering_amount" yaml:"watering_amount"`
+	PlantPosition  int    `json:"plant_position" yaml:"plant_position"`
 	Interval       string `json:"interval" yaml:"interval"`
 	StartDate      string `json:"start_date" yaml:"start_date"`
 	EndDate        string `json:"end_date" yaml:"end_date"`
-	ValvePin       int    `json:"valve_pin" yaml:"valve_pin"`
-	PumpPin        int    `json:"pump_pin" yaml:"pump_pin"`
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
