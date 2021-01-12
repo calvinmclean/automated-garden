@@ -2,6 +2,7 @@ package storage
 
 import (
 	"io/ioutil"
+	"os"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"gopkg.in/yaml.v3"
@@ -16,6 +17,14 @@ type YAMLClient struct {
 // NewYAMLClient will read the plants from the file and store them in a map
 func NewYAMLClient(filename string) (*YAMLClient, error) {
 	client := &YAMLClient{filename: filename}
+
+	// If file does not exist, that is fine and we will just have an empty map
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		return client, nil
+	}
+
+	// If file exists, continue by reading its contents to the map
 	data, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return client, err

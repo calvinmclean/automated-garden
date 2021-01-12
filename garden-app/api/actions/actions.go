@@ -38,13 +38,19 @@ func (action *AggregateAction) Bind(r *http.Request) error {
 // to perform multiple actions with one request
 func (action *AggregateAction) Execute(p *api.Plant) error {
 	if action.Stop != nil {
-		action.Stop.Execute(p)
+		if err := action.Stop.Execute(p); err != nil {
+			return err
+		}
 	}
 	if action.Water != nil {
-		action.Water.Execute(p)
+		if err := action.Water.Execute(p); err != nil {
+			return err
+		}
 	}
 	if action.Skip != nil {
-		action.Skip.Execute(p)
+		if err := action.Skip.Execute(p); err != nil {
+			return err
+		}
 	}
 	return nil
 }

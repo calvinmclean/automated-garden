@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
 )
 
 // StopAction is an action for stopping watering of a Plant and optionally clearing
@@ -20,6 +21,12 @@ func (action *StopAction) Execute(p *api.Plant) error {
 	topic := "garden/command/stop"
 	if action.All {
 		topic = "garden/command/stop_all"
+	}
+
+	mqttClient := mqtt.NewMQTTClient()
+	defer mqttClient.Disconnect(0)
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+		return token.Error()
 	}
 	token := mqttClient.Publish(topic, 0, false, "no message")
 	token.Wait()

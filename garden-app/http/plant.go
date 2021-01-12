@@ -66,7 +66,9 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Recieved request to perform action on Plant %s\n", plant.ID)
-	data.Execute(plant)
+	if err := data.Execute(plant); err != nil {
+		render.Render(w, r, ServerError(err))
+	}
 }
 
 // getPlant simply returns the Plant requested by the provided ID

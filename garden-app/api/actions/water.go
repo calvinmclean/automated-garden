@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
 )
 
 // WaterAction is an action for watering a Plant for the specified amount of time
@@ -32,6 +33,11 @@ func (action *WaterAction) Execute(p *api.Plant) error {
 		panic(err)
 	}
 
+	mqttClient := mqtt.NewMQTTClient()
+	defer mqttClient.Disconnect(0)
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+		return token.Error()
+	}
 	token := mqttClient.Publish("garden/command/water", 0, false, msg)
 	token.Wait()
 	return token.Error()

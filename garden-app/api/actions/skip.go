@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
 )
 
 // SkipAction is an action for skipping the next watering event for a Plant
@@ -31,6 +32,11 @@ func (action *SkipAction) Execute(p *api.Plant) error {
 		panic(err)
 	}
 
+	mqttClient := mqtt.NewMQTTClient()
+	defer mqttClient.Disconnect(0)
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+		return token.Error()
+	}
 	token := mqttClient.Publish("garden/command/skip", 0, false, msg)
 	token.Wait()
 	return token.Error()
