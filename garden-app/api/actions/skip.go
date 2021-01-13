@@ -32,12 +32,16 @@ func (action *SkipAction) Execute(p *api.Plant) error {
 		panic(err)
 	}
 
-	mqttClient := mqtt.NewMQTTClient()
+	mqttClient, err := mqtt.NewMQTTClient()
+	if err != nil {
+		panic(err)
+	}
+
 	defer mqttClient.Disconnect(0)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	token := mqttClient.Publish("garden/command/skip", 0, false, msg)
+	token := mqttClient.Publish(mqttClient.SkipTopic, 0, false, msg)
 	token.Wait()
 	return token.Error()
 }

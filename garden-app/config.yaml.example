@@ -7,3 +7,4 @@ mqtt:
   watering_topic: "garden/command/water"
   skip_topic: "garden/command/skip"
   stop_topic: "garden/command/stop"
+  stop_all_topic: "garden/command/stop_all"

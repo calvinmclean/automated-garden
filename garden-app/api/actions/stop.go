@@ -18,12 +18,17 @@ type StopAction struct {
 // Execute sends the message over MQTT to the embedded garden controller
 func (action *StopAction) Execute(p *api.Plant) error {
 	fmt.Printf("Stopping watering plant (all=%t)\n", action.All)
-	topic := "garden/command/stop"
-	if action.All {
-		topic = "garden/command/stop_all"
+
+	mqttClient, err := mqtt.NewMQTTClient()
+	if err != nil {
+		panic(err)
 	}
 
-	mqttClient := mqtt.NewMQTTClient()
+	topic := mqttClient.StopTopic
+	if action.All {
+		topic = mqttClient.StopAllTopic
+	}
+
 	defer mqttClient.Disconnect(0)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
