@@ -43,10 +43,13 @@ func (c *YAMLClient) GetPlant(id xid.ID) (*api.Plant, error) {
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *YAMLClient) GetPlants() []*api.Plant {
+func (c *YAMLClient) GetPlants(getEndDated bool) []*api.Plant {
 	result := []*api.Plant{}
 	for _, p := range c.plants {
-		result = append(result, p)
+		// Only return end-dated plants if specifically asked for
+		if getEndDated || (!getEndDated && p.EndDate == nil) {
+			result = append(result, p)
+		}
 	}
 	return result
 }

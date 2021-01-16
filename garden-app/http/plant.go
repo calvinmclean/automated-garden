@@ -130,7 +130,9 @@ func endDatePlant(w http.ResponseWriter, r *http.Request) {
 
 // getAllPlants will return a list of all Plants
 func getAllPlants(w http.ResponseWriter, r *http.Request) {
-	if err := render.Render(w, r, &AllPlantsResponse{storageClient.GetPlants()}); err != nil {
+	getEndDated := r.URL.Query().Get("end_dated") == "true"
+	plants := storageClient.GetPlants(getEndDated)
+	if err := render.Render(w, r, &AllPlantsResponse{plants}); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
