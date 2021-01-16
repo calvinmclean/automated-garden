@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"github.com/calvinmclean/automated-garden/garden-app/api/actions"
@@ -32,6 +33,8 @@ func plantRouter(r chi.Router) {
 
 		r.Post("/", plantAction)
 		r.Get("/", getPlant)
+		r.Put("/", updatePlant)
+		r.Delete("/", endDatePlant)
 	})
 }
 
@@ -88,6 +91,43 @@ func getPlant(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// updatePlant will change any specified fields of the Plant and save it
+func updatePlant(w http.ResponseWriter, r *http.Request) {
+	plant := r.Context().Value("plant").(*api.Plant)
+
+	// Read the request body into existing plant to overwrite fields
+	if err := render.Bind(r, plant); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	// Save the Plant
+	if err := storageClient.SavePlant(plant); err != nil {
+		render.Render(w, r, ServerError(err))
+		return
+	}
+
+	if err := render.Render(w, r, plant); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+// endDatePlant will mark the Plant's end date as now and save it
+func endDatePlant(w http.ResponseWriter, r *http.Request) {
+	plant := r.Context().Value("plant").(*api.Plant)
+
+	// Set end date of Plant and save
+	now := time.Now()
+	plant.EndDate = &now
+	if err := storageClient.SavePlant(plant); err != nil {
+		render.Render(w, r, ServerError(err))
+	}
+
+	if err := render.Render(w, r, plant); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
 // getAllPlants will return a list of all Plants
 func getAllPlants(w http.ResponseWriter, r *http.Request) {
 	if err := render.Render(w, r, &AllPlantsResponse{storageClient.GetPlants()}); err != nil {
@@ -114,5 +154,7 @@ func createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	render.Render(w, r, plant)
+	if err := render.Render(w, r, plant); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
 }

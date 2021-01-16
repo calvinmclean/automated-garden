@@ -63,10 +63,3 @@ func (c *YAMLClient) SavePlant(plant *api.Plant) error {
 
 	return ioutil.WriteFile(c.filename, content, 0755)
 }
-
-// EndDatePlant is in place of Delete method and will just mark the end date and
-// and save it
-// TODO: implement this
-func (c *YAMLClient) EndDatePlant(plant *api.Plant) error {
-	return nil
-}

@@ -10,5 +10,4 @@ type Client interface {
 	GetPlant(xid.ID) (*api.Plant, error)
 	GetPlants() []*api.Plant
 	SavePlant(*api.Plant) error
-	EndDatePlant(*api.Plant) error
 }
