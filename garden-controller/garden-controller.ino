@@ -367,16 +367,16 @@ void readStopButton() {
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
 
-    DynamicJsonDocument doc(128);
+    StaticJsonDocument<JSON_CAPACITY> doc;
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
         printf("deserialize failed: %s\n", err.c_str());
     }
 
     WateringEvent we = {
-        doc["plant_position"],
-        doc["duration"],
-        doc["id"]
+        doc["plant_position"] | -1,
+        doc["duration"] | 0,
+        doc["id"] | "N/A"
     };
 
     if (strcmp(topic, waterCommandTopic) == 0) {
@@ -390,7 +390,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         stopAllWatering();
     } else if (strcmp(topic, skipCommandTopic) == 0) {
         printf("received command to skip next watering for plant %d (%s)\n", we.plant_position, we.id);
-        skipValve[we.plant_position] = true;
+        skipPlant(we.plant_position);
     }
 }
 
@@ -407,4 +407,17 @@ void waterPlant(int plant_position, unsigned long duration, const char* id) {
     printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", id, plant_position, duration);
     WateringEvent we = { plant_position, duration, id };
     xQueueSend(wateringQueue, &we, portMAX_DELAY);
+}
+
+/*
+  skipPlant simply sets the value in the skip array after making sure the plant
+  position is valid
+*/
+void skipPlant(int plant_position) {
+    // Exit if valveID is out of bounds
+    if (plant_position >= NUM_PLANTS || plant_position < 0) {
+        printf("plant_position %d is out of range, aborting request\n", plant_position);
+        return;
+    }
+    skipValve[plant_position] = true;
 }
