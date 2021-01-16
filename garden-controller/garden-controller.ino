@@ -94,7 +94,7 @@ void setup() {
 
     // Start all tasks (currently using equal priorities)
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
-    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 2048, NULL, 1, &mqttLoopTaskHandle);
+    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(publisherTask, "PublisherTask", 2048, NULL, 1, &publisherTaskHandle);
     xTaskCreate(waterPlantTask, "WaterPlantTask", 2048, NULL, 1, &waterPlantTaskHandle);
     xTaskCreate(waterIntervalTask, "WaterIntervalTask", 2048, NULL, 1, &waterIntervalTaskHandle);
