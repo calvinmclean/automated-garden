@@ -3,17 +3,24 @@ package actions
 import (
 	"encoding/json"
 	"testing"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/rs/xid"
 )
 
 var plant = api.Plant{
 	Name:           "Cherry Tomato",
-	ID:             "9m4e2mr0ui3e8a215n4g",
 	WateringAmount: 15000,
 	PlantPosition:  0,
 	Interval:       "24h",
-	StartDate:      "2021-01-15",
+}
+
+func init() {
+	id, _ := xid.FromString("9m4e2mr0ui3e8a215n4g")
+	startDate, _ := time.Parse(time.RFC3339, "2020-01-15T00:00:00-07:00")
+	plant.StartDate = &startDate
+	plant.ID = id
 }
 
 func TestUnmarshalWaterEvent(t *testing.T) {

@@ -5,13 +5,14 @@ import (
 	"os"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/rs/xid"
 	"gopkg.in/yaml.v3"
 )
 
 // YAMLClient implements the Client interface to use a YAML file as a storage mechanism
 type YAMLClient struct {
 	filename string
-	plants   map[string]*api.Plant
+	plants   map[xid.ID]*api.Plant
 }
 
 // NewYAMLClient will read the plants from the file and store them in a map
@@ -37,8 +38,8 @@ func NewYAMLClient(filename string) (*YAMLClient, error) {
 }
 
 // GetPlant just returns the request Plant from the map
-func (c *YAMLClient) GetPlant(id string) *api.Plant {
-	return c.plants[id]
+func (c *YAMLClient) GetPlant(id xid.ID) (*api.Plant, error) {
+	return c.plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice

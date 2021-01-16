@@ -40,9 +40,18 @@ func plantRouter(r chi.Router) {
 // we stop here and return a 404.
 func plantContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		plantID := chi.URLParam(r, "plantID")
+		// Convert ID string to xid
+		id, err := xid.FromString(chi.URLParam(r, "plantID"))
+		if err != nil {
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
 
-		plant := storageClient.GetPlant(plantID)
+		plant, err := storageClient.GetPlant(id)
+		if err != nil {
+			render.Render(w, r, ServerError(err))
+			return
+		}
 		if plant == nil {
 			render.Render(w, r, ErrNotFoundResponse)
 			return
@@ -95,7 +104,7 @@ func createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Assign new unique ID to plant
-	plant.ID = xid.New().String()
+	plant.ID = xid.New()
 
 	// Save the Plant
 	if err := storageClient.SavePlant(plant); err != nil {

@@ -3,6 +3,9 @@ package api
 import (
 	"encoding/json"
 	"testing"
+	"time"
+
+	"github.com/rs/xid"
 )
 
 func TestUnmarshalJSON(t *testing.T) {
@@ -12,7 +15,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		"watering_amount": 15000,
 		"plant_position": 0,
 		"interval": "24h",
-		"start_date": "2021-01-15",
+		"start_date": "2020-01-15T00:00:00-07:00",
 		"end_date": null
 	}`)
 	var actual Plant
@@ -21,13 +24,16 @@ func TestUnmarshalJSON(t *testing.T) {
 		t.Errorf("Unexpected error when Unmarshaling JSON: %s", err.Error())
 	}
 
+	id, _ := xid.FromString("9m4e2mr0ui3e8a215n4g")
+	startDate, _ := time.Parse(time.RFC3339, "2020-01-15T00:00:00-07:00")
+
 	expected := Plant{
 		Name:           "Cherry Tomato",
-		ID:             "9m4e2mr0ui3e8a215n4g",
+		ID:             id,
 		WateringAmount: 15000,
 		PlantPosition:  0,
 		Interval:       "24h",
-		StartDate:      "2021-01-15",
+		StartDate:      &startDate,
 	}
 
 	tests := []struct {
@@ -40,7 +46,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		{"PlantPosition", expected.PlantPosition, actual.PlantPosition},
 		{"WateringAmount", expected.WateringAmount, actual.WateringAmount},
 		{"Interval", expected.Interval, actual.Interval},
-		{"StartDate", expected.StartDate, actual.StartDate},
+		{"StartDate", expected.StartDate.String(), actual.StartDate.String()},
 		{"EndDate", expected.EndDate, actual.EndDate},
 	}
 

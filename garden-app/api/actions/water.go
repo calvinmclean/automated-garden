@@ -6,6 +6,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
+	"github.com/rs/xid"
 )
 
 // WaterAction is an action for watering a Plant for the specified amount of time
@@ -16,7 +17,7 @@ type WaterAction struct {
 // WaterMessage is the message being sent over MQTT to the embedded garden controller
 type WaterMessage struct {
 	Duration      int    `json:"duration"`
-	PlantID       string `json:"id"`
+	PlantID       xid.ID `json:"id"`
 	PlantPosition int    `json:"plant_position"`
 }
 

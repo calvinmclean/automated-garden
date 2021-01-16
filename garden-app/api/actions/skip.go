@@ -6,6 +6,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
+	"github.com/rs/xid"
 )
 
 // SkipAction is an action for skipping the next watering event for a Plant
@@ -16,7 +17,7 @@ type SkipAction struct {
 
 // SkipMessage is the message being sent over MQTT to the embedded garden controller
 type SkipMessage struct {
-	PlantID       string `json:"id"`
+	PlantID       xid.ID `json:"id"`
 	PlantPosition int    `json:"plant_position"`
 }
 
