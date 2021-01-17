@@ -12,12 +12,14 @@ import (
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
 	"github.com/go-chi/render"
+	"github.com/go-co-op/gocron"
 	"github.com/sirupsen/logrus"
 )
 
 var (
 	storageClient storage.Client
 	logger        *logrus.Logger
+	scheduler     *gocron.Scheduler
 )
 
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
@@ -54,6 +56,9 @@ func Run(port int, plantsFilename string) {
 		logger.Error("Unable to initialize storage client: ", err)
 		os.Exit(1)
 	}
+
+	// Initialize Scheduler and schedule watering for each existing Plant
+	initializeScheduler()
 
 	http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 }

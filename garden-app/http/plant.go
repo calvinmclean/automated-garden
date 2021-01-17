@@ -121,6 +121,14 @@ func endDatePlant(w http.ResponseWriter, r *http.Request) {
 	plant.EndDate = &now
 	if err := storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, ServerError(err))
+		return
+	}
+
+	// Remove scheduled watering Job
+	if err := removeWateringSchedule(plant); err != nil {
+		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
+		render.Render(w, r, ServerError(err))
+		return
 	}
 
 	if err := render.Render(w, r, plant); err != nil {
@@ -145,8 +153,17 @@ func createPlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Assign new unique ID to plant
+	// Assign new unique ID and StartDate to plant
 	plant.ID = xid.New()
+	if plant.StartDate == nil {
+		now := time.Now()
+		plant.StartDate = &now
+	}
+
+	// Start watering schedule
+	if err := addWateringSchedule(plant); err != nil {
+		logger.Errorf("Unable to add watering Job for Plant %s: %v", plant.ID.String(), err)
+	}
 
 	// Save the Plant
 	if err := storageClient.SavePlant(plant); err != nil {
