@@ -1,0 +1,14 @@
+version: "3.8"
+services:
+  garden-app:
+    image: "calvinmclean/garden-app:latest"
+    build: "."
+    ports:
+      - "80:80"
+    volumes:
+      - "./config.yaml:/app/config.yaml"
+      - "./plants.yaml:/app/plants.yaml"
+    command:
+      - "server"
+      - "--config"
+      - "/app/config.yaml"
