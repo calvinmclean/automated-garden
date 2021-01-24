@@ -18,4 +18,9 @@
 
 #define STOP_BUTTON_PIN GPIO_NUM_23
 
+#define ENABLE_WATERING_INTERVAL
+#ifdef ENABLE_WATERING_INTERVAL
+#define INTERVAL 86400000 // 24 hours
+#endif
+
 #endif

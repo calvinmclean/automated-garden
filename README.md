@@ -24,7 +24,7 @@ The microcontroller is able to send and receive messages using MQTT, a popular p
 Capabilities:
   - Control pump and valves for multiple plants
   - Queue up watering events to water multiple plants one after the other
-  - Water all plants every 24 hours
+  - Water all plants every 24 hours (optional)
   - Respond to buttons to water individual plants and cancel watering
   - Listen on MQTT for watering a plant for specified amount of time, signal that the next watering event for a plant should be skipped (to avoid overwatering), cancel current watering, and clear current watering queue
   - Publish on MQTT for logging watering events in InfluxDB for visualization with Grafana

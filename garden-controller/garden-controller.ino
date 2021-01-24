@@ -10,7 +10,6 @@
 #define JSON_CAPACITY 128
 #define QUEUE_SIZE 10
 
-#define INTERVAL 86400000 // 24 hours
 #define DEFAULT_WATER_TIME 15000
 
 #define DEBOUNCE_DELAY 50
@@ -39,8 +38,11 @@ int stopButtonState = LOW;
 int lastStopButtonState;
 
 /* watering cycle variables */
+#ifdef ENABLE_WATERING_INTERVAL
 unsigned long previousMillis = -INTERVAL;
 int watering = -1;
+TaskHandle_t waterIntervalTaskHandle;
+#endif
 
 /* MQTT variables */
 unsigned long lastConnectAttempt = 0;
@@ -58,7 +60,6 @@ TaskHandle_t mqttConnectTaskHandle;
 TaskHandle_t mqttLoopTaskHandle;
 TaskHandle_t publisherTaskHandle;
 TaskHandle_t waterPlantTaskHandle;
-TaskHandle_t waterIntervalTaskHandle;
 TaskHandle_t readButtonsTaskHandle;
 
 void setup() {
@@ -97,8 +98,11 @@ void setup() {
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(publisherTask, "PublisherTask", 2048, NULL, 1, &publisherTaskHandle);
     xTaskCreate(waterPlantTask, "WaterPlantTask", 2048, NULL, 1, &waterPlantTaskHandle);
-    xTaskCreate(waterIntervalTask, "WaterIntervalTask", 2048, NULL, 1, &waterIntervalTaskHandle);
     xTaskCreate(readButtonsTask, "ReadButtonsTask", 2048, NULL, 1, &readButtonsTaskHandle);
+
+#ifdef ENABLE_WATERING_INTERVAL
+    xTaskCreate(waterIntervalTask, "WaterIntervalTask", 2048, NULL, 1, &waterIntervalTaskHandle);
+#endif
 
     // I tested the stack sizes above by enabling this task which will print
     // the number of words remaining when that task's stack reached its highest
@@ -107,6 +111,7 @@ void setup() {
 
 void loop() {}
 
+#ifdef ENABLE_WATERING_INTERVAL
 /*
   waterIntervalTask will queue up each plant to be watered fro the configured
   default time. Then it will wait during the configured interval and then loop
@@ -125,6 +130,7 @@ void waterIntervalTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
+#endif
 
 /*
   waterPlantTask will wait for WateringEvents on a queue and will then open the
@@ -267,8 +273,10 @@ void getStackSizesTask(void* parameters) {
         printf("mqttLoopTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(mqttLoopTaskHandle));
         printf("publisherTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(publisherTaskHandle));
         printf("waterPlantTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(waterPlantTaskHandle));
-        printf("waterIntervalTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(waterIntervalTaskHandle));
         printf("readButtonsTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(readButtonsTaskHandle));
+#ifdef ENABLE_WATERING_INTERVAL
+        printf("waterIntervalTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(waterIntervalTaskHandle));
+#endif
         vTaskDelay(10000 / portTICK_PERIOD_MS);
     }
 }
