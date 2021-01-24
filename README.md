@@ -1,6 +1,8 @@
 # Automated Garden
 
-**This project is still under heavy development.** However, the `garden-controller` portion works great and I am in the process of implementing a web service that will take over some of the functionality and add a lot more.
+[![Go Report Card](https://goreportcard.com/badge/github.com/calvinmclean/automated-garden)](https://goreportcard.com/report/github.com/calvinmclean/automated-garden)
+
+This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with the garden.
 
 ![Garden](../assets/garden.jpeg?raw=true)
 
@@ -8,7 +10,7 @@
 ## Components
 
 ### Garden App
-This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. This part is currently under development, but aims to implement the following features:
+This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements the following features:
   - CRUD operations for Plants using RESTy API
   - Actions to water plants, skip next N waterings, and stop watering
   - Water plants automatically on a cron-based schedule

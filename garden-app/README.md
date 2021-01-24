@@ -2,8 +2,6 @@
 
 This is a Go application with a CLI and web backend for working with the garden controller.
 
-**Currently WIP and not used in "production"**
-
 
 ## Getting Started
 WIP
