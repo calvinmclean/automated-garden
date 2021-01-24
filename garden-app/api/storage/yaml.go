@@ -3,6 +3,7 @@ package storage
 import (
 	"io/ioutil"
 	"os"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"github.com/rs/xid"
@@ -34,6 +35,16 @@ func NewYAMLClient(filename string) (*YAMLClient, error) {
 	if err != nil {
 		return client, err
 	}
+
+	// Create start dates for Plants if it is empty
+	for _, plant := range client.plants {
+		if plant.StartDate == nil {
+			now := time.Now().Add(1 * time.Minute)
+			plant.StartDate = &now
+			client.SavePlant(plant)
+		}
+	}
+
 	return client, err
 }
 

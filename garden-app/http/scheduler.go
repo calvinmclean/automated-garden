@@ -24,15 +24,25 @@ func initializeScheduler() {
 func addWateringSchedule(p *api.Plant) error {
 	logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
+	// Read Plant's Interval string into a Duration
 	duration, err := time.ParseDuration(p.Interval)
 	if err != nil {
 		return err
 	}
+
+	// Increment Plant's StartDate until it is in the future
+	// TODO: Currently, goCron is not working with a StartDate in the past and will start the
+	//       interval at the current time
+	startDate := *p.StartDate
+	for startDate.Before(time.Now()) {
+		startDate = startDate.Add(24 * time.Hour)
+	}
+
 	action := &actions.WaterAction{Duration: p.WateringAmount}
 	_, err = scheduler.
 		Every(uint64(duration.Minutes())).
-		StartAt(*p.StartDate).
 		Minutes().
+		StartAt(startDate).
 		SetTag([]string{p.ID.String()}).
 		Do(action.Execute, p)
 	return err
