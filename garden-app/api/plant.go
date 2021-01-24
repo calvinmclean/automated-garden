@@ -20,6 +20,7 @@ type Plant struct {
 	Interval       string     `json:"interval" yaml:"interval,omitempty"`
 	StartDate      *time.Time `json:"start_date" yaml:"start_date,omitempty"`
 	EndDate        *time.Time `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	SkipCount      int        `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing

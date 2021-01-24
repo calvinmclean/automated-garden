@@ -25,7 +25,6 @@ typedef struct WateringEvent {
 
 /* plant/valve variables */
 gpio_num_t plants[NUM_PLANTS][3] = PLANTS;
-bool skipValve[NUM_PLANTS] = { false, false, false };
 
 /* button variables */
 unsigned long lastDebounceTime = 0;
@@ -50,7 +49,6 @@ PubSubClient client(wifiClient);
 const char* waterCommandTopic = "garden/command/water";
 const char* stopCommandTopic = "garden/command/stop";
 const char* stopAllCommandTopic = "garden/command/stop_all";
-const char* skipCommandTopic = "garden/command/skip";
 const char* waterDataTopic = "garden/data/water";
 
 /* FreeRTOS Queue and Task handlers */
@@ -151,20 +149,14 @@ void waterPlantTask(void* parameters) {
                 we.duration = DEFAULT_WATER_TIME;
             }
 
-            // Only water if this valve isn't setup to be skipped
-            if (!skipValve[we.plant_position]) {
-                unsigned long start = millis();
-                plantOn(we.plant_position);
-                // Delay for specified watering time with option to interrupt
-                xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
-                unsigned long stop = millis();
-                plantOff(we.plant_position);
-                we.duration = stop - start;
-                xQueueSend(publisherQueue, &we, portMAX_DELAY);
-            } else {
-                printf("skipping watering for valve %d\n", we.plant_position);
-                skipValve[we.plant_position] = false;
-            }
+            unsigned long start = millis();
+            plantOn(we.plant_position);
+            // Delay for specified watering time with option to interrupt
+            xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
+            unsigned long stop = millis();
+            plantOff(we.plant_position);
+            we.duration = stop - start;
+            xQueueSend(publisherQueue, &we, portMAX_DELAY);
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
@@ -239,7 +231,6 @@ void mqttConnectTask(void* parameters) {
                 client.subscribe(waterCommandTopic);
                 client.subscribe(stopCommandTopic);
                 client.subscribe(stopAllCommandTopic);
-                client.subscribe(skipCommandTopic);
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }
@@ -370,7 +361,6 @@ void readStopButton() {
     - stopCommandTopic: ignores message and stops the currently-watering plant
     - stopAllCommandTopic: ignores message, stops the currently-watering plant,
                            and clears the wateringQueue
-    - skipCommandTopic:
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
@@ -396,9 +386,6 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     } else if (strcmp(topic, stopAllCommandTopic) == 0) {
         printf("received command to stop ALL watering\n");
         stopAllWatering();
-    } else if (strcmp(topic, skipCommandTopic) == 0) {
-        printf("received command to skip next watering for plant %d (%s)\n", we.plant_position, we.id);
-        skipPlant(we.plant_position);
     }
 }
 
@@ -415,17 +402,4 @@ void waterPlant(int plant_position, unsigned long duration, const char* id) {
     printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", id, plant_position, duration);
     WateringEvent we = { plant_position, duration, id };
     xQueueSend(wateringQueue, &we, portMAX_DELAY);
-}
-
-/*
-  skipPlant simply sets the value in the skip array after making sure the plant
-  position is valid
-*/
-void skipPlant(int plant_position) {
-    // Exit if valveID is out of bounds
-    if (plant_position >= NUM_PLANTS || plant_position < 0) {
-        printf("plant_position %d is out of range, aborting request\n", plant_position);
-        return;
-    }
-    skipValve[plant_position] = true;
 }

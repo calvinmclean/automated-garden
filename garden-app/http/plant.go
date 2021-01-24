@@ -80,6 +80,15 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 	logger.Infof("Recieved request to perform action on Plant %s\n", plant.ID)
 	if err := data.Execute(plant); err != nil {
 		render.Render(w, r, ServerError(err))
+		return
+	}
+
+	// Save the Plant in case anything was changed
+	// TODO: consider giving the action the ability to use the storage client
+	if err := storageClient.SavePlant(plant); err != nil {
+		logger.Error("Error saving plant: ", err)
+		render.Render(w, r, ServerError(err))
+		return
 	}
 }
 

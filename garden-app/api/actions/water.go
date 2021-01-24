@@ -23,6 +23,11 @@ type WaterMessage struct {
 
 // Execute sends the message over MQTT to the embedded garden controller
 func (action *WaterAction) Execute(p *api.Plant) error {
+	if p.SkipCount > 0 {
+		fmt.Printf("Plant %s is configured to skip watering\n", p.ID)
+		p.SkipCount--
+		return nil
+	}
 	fmt.Printf("Watering plant %s for %dms\n", p.ID, action.Duration)
 
 	msg, err := json.Marshal(WaterMessage{

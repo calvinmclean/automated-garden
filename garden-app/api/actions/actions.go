@@ -17,7 +17,6 @@ type ActionExecutor interface {
 // or more action can be performed from a single request
 type AggregateAction struct {
 	Water *WaterAction `json:"water"`
-	Skip  *SkipAction  `json:"skip"`
 	Stop  *StopAction  `json:"stop"`
 }
 
@@ -26,7 +25,7 @@ type AggregateAction struct {
 func (action *AggregateAction) Bind(r *http.Request) error {
 	// a.AggregateAction is nil if no AggregateAction fields are sent in the request. Return an
 	// error to avoid a nil pointer dereference.
-	if action == nil || (action.Water == nil && action.Skip == nil && action.Stop == nil) {
+	if action == nil || (action.Water == nil && action.Stop == nil) {
 		return errors.New("missing required action fields")
 	}
 
@@ -44,11 +43,6 @@ func (action *AggregateAction) Execute(p *api.Plant) error {
 	}
 	if action.Water != nil {
 		if err := action.Water.Execute(p); err != nil {
-			return err
-		}
-	}
-	if action.Skip != nil {
-		if err := action.Skip.Execute(p); err != nil {
 			return err
 		}
 	}
