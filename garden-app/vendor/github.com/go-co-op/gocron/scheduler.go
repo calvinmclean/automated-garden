@@ -19,8 +19,7 @@ type Scheduler struct {
 	location      *time.Location
 
 	runningMutex sync.RWMutex
-	running      bool          // represents if the scheduler is running at the moment or not
-	stopChan     chan struct{} // signal to stop scheduling
+	running      bool // represents if the scheduler is running at the moment or not
 
 	time timeWrapper // wrapper around time.Time
 }
@@ -31,28 +30,21 @@ func NewScheduler(loc *time.Location) *Scheduler {
 		jobs:     make([]*Job, 0),
 		location: loc,
 		running:  false,
-		stopChan: make(chan struct{}, 1),
 		time:     &trueTime{},
 	}
 }
 
 // StartBlocking starts all jobs and blocks the current thread
 func (s *Scheduler) StartBlocking() {
-	<-s.StartAsync()
+	s.StartAsync()
+	<-make(chan bool)
 }
 
 // StartAsync starts all jobs without blocking the current thread
-func (s *Scheduler) StartAsync() chan struct{} {
-	if s.IsRunning() {
-		return s.stopChan
+func (s *Scheduler) StartAsync() {
+	if !s.IsRunning() {
+		s.start()
 	}
-	s.start()
-	go func() {
-		<-s.stopChan
-		s.setRunning(false)
-		return
-	}()
-	return s.stopChan
 }
 
 //start starts the scheduler, scheduling and running jobs
@@ -63,16 +55,6 @@ func (s *Scheduler) start() {
 
 func (s *Scheduler) runJobs(jobs []*Job) {
 	for _, j := range jobs {
-		if j.getStartsImmediately() {
-			s.run(j)
-			j.setStartsImmediately(false)
-		}
-		if !j.shouldRun() {
-			if j.getRemoveAfterLastRun() {
-				s.RemoveByReference(j)
-			}
-			continue
-		}
 		s.scheduleNextRun(j)
 	}
 }
@@ -140,8 +122,24 @@ func (s *Scheduler) scheduleNextRun(job *Job) {
 	now := s.now()
 	lastRun := job.LastRun()
 
+	if job.getStartsImmediately() {
+		s.run(job)
+		job.setStartsImmediately(false)
+	}
+
 	if job.neverRan() {
+		// Increment startAtTime until it is in the future
+		for job.startAtTime.Before(now) && !job.startAtTime.IsZero() {
+			job.startAtTime = job.startAtTime.Add(s.durationToNextRun(job.startAtTime, job))
+		}
 		lastRun = now
+	}
+
+	if !job.shouldRun() {
+		if job.getRemoveAfterLastRun() {
+			s.RemoveByReference(job)
+		}
+		return
 	}
 
 	durationToNextRun := s.durationToNextRun(lastRun, job)
@@ -176,13 +174,6 @@ func (s *Scheduler) durationToNextRun(lastRun time.Time, job *Job) time.Duration
 	return duration
 }
 
-func (s *Scheduler) getJobLastRun(job *Job) time.Time {
-	if job.neverRan() {
-		return s.now()
-	}
-	return job.LastRun()
-}
-
 func (s *Scheduler) calculateMonths(job *Job, lastRun time.Time) time.Duration {
 	lastRunRoundedMidnight := s.roundToMidnight(lastRun)
 
@@ -199,7 +190,7 @@ func (s *Scheduler) calculateMonths(job *Job, lastRun time.Time) time.Duration {
 				nextRun = nextRun.AddDate(0, int(job.interval), daysDifference)
 			}
 		}
-		return s.until(lastRunRoundedMidnight, nextRun)
+		return s.until(lastRun, nextRun)
 	}
 	nextRun := lastRunRoundedMidnight.Add(job.getAtTime()).AddDate(0, int(job.interval), 0)
 	return s.until(lastRunRoundedMidnight, nextRun)
@@ -305,6 +296,9 @@ func (s *Scheduler) NextRun() (*Job, time.Time) {
 // Every schedules a new periodic Job with interval
 func (s *Scheduler) Every(interval uint64) *Scheduler {
 	job := NewJob(interval)
+	if interval == 0 {
+		job.err = ErrInvalidInterval
+	}
 	s.setJobs(append(s.Jobs(), job))
 	return s
 }
@@ -350,6 +344,8 @@ func (s *Scheduler) removeByCondition(shouldRemove func(*Job) bool) {
 	for _, job := range s.Jobs() {
 		if !shouldRemove(job) {
 			retainedJobs = append(retainedJobs, job)
+		} else {
+			job.stopTimer()
 		}
 	}
 	s.setJobs(retainedJobs)
@@ -362,6 +358,7 @@ func (s *Scheduler) RemoveJobByTag(tag string) error {
 		return err
 	}
 	// Remove job if jobindex is valid
+	s.jobs[jobindex].stopTimer()
 	s.setJobs(removeAtIndex(s.jobs, jobindex))
 	return nil
 }
@@ -382,6 +379,21 @@ func removeAtIndex(jobs []*Job, i int) []*Job {
 	}
 	jobs = append(jobs[:i], jobs[i+1:]...)
 	return jobs
+}
+
+// LimitRunsTo limits the number of executions of this job to n. However,
+// the job will still remain in the scheduler
+func (s *Scheduler) LimitRunsTo(i int) *Scheduler {
+	job := s.getCurrentJob()
+	job.LimitRunsTo(i)
+	return s
+}
+
+// RemoveAfterLastRun sets the job to be removed after it's last run (when limited)
+func (s *Scheduler) RemoveAfterLastRun() *Scheduler {
+	job := s.getCurrentJob()
+	job.RemoveAfterLastRun()
+	return s
 }
 
 // Scheduled checks if specific Job j was already added
@@ -408,7 +420,6 @@ func (s *Scheduler) Stop() {
 
 func (s *Scheduler) stop() {
 	s.setRunning(false)
-	s.stopChan <- struct{}{}
 }
 
 // Do specifies the jobFunc that should be called every time the Job runs
@@ -462,23 +473,13 @@ func (s *Scheduler) SetTag(t []string) *Scheduler {
 	return s
 }
 
-// StartAt schedules the next run of the Job
+// StartAt schedules the next run of the Job. If this time is in the past, the configured interval will be used
+// to calculate the next future time
 func (s *Scheduler) StartAt(t time.Time) *Scheduler {
 	job := s.getCurrentJob()
 	job.setStartAtTime(t)
 	job.startsImmediately = false
 	return s
-}
-
-// shouldRun returns true if the Job should be run now
-func (s *Scheduler) shouldRun(j *Job) bool {
-
-	// option remove the job's in the scheduler after its last execution
-	if j.getRemoveAfterLastRun() && (j.getMaxRuns()-j.RunCount()) == 1 {
-		s.RemoveByReference(j)
-	}
-
-	return j.shouldRun() && s.now().Unix() >= j.NextRun().Unix()
 }
 
 // setUnit sets the unit type

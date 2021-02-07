@@ -30,19 +30,12 @@ func addWateringSchedule(p *api.Plant) error {
 		return err
 	}
 
-	// Increment Plant's StartDate until it is in the future
-	// TODO: Currently, goCron is not working with a StartDate in the past and will start the
-	//       interval at the current time
-	startDate := *p.StartDate
-	for startDate.Before(time.Now()) {
-		startDate = startDate.Add(24 * time.Hour)
-	}
-
+	// Schedule the WaterAction execution
 	action := &actions.WaterAction{Duration: p.WateringAmount}
 	_, err = scheduler.
 		Every(uint64(duration.Minutes())).
 		Minutes().
-		StartAt(startDate).
+		StartAt(*p.StartDate).
 		SetTag([]string{p.ID.String()}).
 		Do(action.Execute, p)
 	return err
@@ -50,15 +43,6 @@ func addWateringSchedule(p *api.Plant) error {
 
 // removeWateringSchedule is used to remove the Plant's scheduled watering Job
 // from the scheduler.
-// TODO: Fix this
-//       Currently, the RemoveJobByTag will not remove a scheduled Job. It will
-//       remove it from the list of Jobs but it continues to execute. Instead, I
-//       am reinitializing the Scheduler after end-dating the Plant
 func removeWateringSchedule(p *api.Plant) error {
-	// return scheduler.RemoveJobByTag(p.ID.String()); err != nil {
-
-	// Stop and restart the scheduler
-	scheduler.Stop()
-	initializeScheduler()
-	return nil
+	return scheduler.RemoveJobByTag(p.ID.String())
 }

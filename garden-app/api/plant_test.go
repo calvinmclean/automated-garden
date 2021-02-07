@@ -43,11 +43,12 @@ func TestUnmarshalJSON(t *testing.T) {
 	}{
 		{"Name", expected.Name, actual.Name},
 		{"ID", expected.ID, actual.ID},
-		{"PlantPosition", expected.PlantPosition, actual.PlantPosition},
 		{"WateringAmount", expected.WateringAmount, actual.WateringAmount},
+		{"PlantPosition", expected.PlantPosition, actual.PlantPosition},
 		{"Interval", expected.Interval, actual.Interval},
 		{"StartDate", expected.StartDate.String(), actual.StartDate.String()},
 		{"EndDate", expected.EndDate, actual.EndDate},
+		{"SkipCount", expected.SkipCount, actual.SkipCount},
 	}
 
 	for _, tt := range tests {

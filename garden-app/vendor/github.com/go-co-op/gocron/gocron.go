@@ -11,9 +11,7 @@
 package gocron
 
 import (
-	"crypto/sha256"
 	"errors"
-	"fmt"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -25,10 +23,10 @@ var (
 	ErrTimeFormat            = errors.New("time format error")
 	ErrParamsNotAdapted      = errors.New("the number of params is not adapted")
 	ErrNotAFunction          = errors.New("only functions can be schedule into the job queue")
-	ErrPeriodNotSpecified    = errors.New("unspecified job period")
 	ErrNotScheduledWeekday   = errors.New("job not scheduled weekly on a weekday")
 	ErrJobNotFoundWithTag    = errors.New("no jobs found with given tag")
 	ErrUnsupportedTimeFormat = errors.New("the given time format is not supported")
+	ErrInvalidInterval       = errors.New(".Every() interval must be greater than 0")
 )
 
 // regex patterns for supported time formats
@@ -40,7 +38,8 @@ var (
 type timeUnit int
 
 const (
-	seconds timeUnit = iota + 1
+	// default unit is seconds
+	seconds timeUnit = iota
 	minutes
 	hours
 	days
@@ -62,12 +61,6 @@ func callJobFuncWithParams(jobFunc interface{}, params []interface{}) ([]reflect
 
 func getFunctionName(fn interface{}) string {
 	return runtime.FuncForPC(reflect.ValueOf(fn).Pointer()).Name()
-}
-
-func getFunctionKey(funcName string) string {
-	h := sha256.New()
-	h.Write([]byte(funcName))
-	return fmt.Sprintf("%x", h.Sum(nil))
 }
 
 func parseTime(t string) (hour, min, sec int, err error) {

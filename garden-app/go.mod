@@ -7,7 +7,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/go-chi/chi v1.5.1
 	github.com/go-chi/render v1.0.1
-	github.com/go-co-op/gocron v0.5.1
+	github.com/go-co-op/gocron v0.5.2-0.20210205035639-0fc078eb5eec
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
