@@ -54,6 +54,8 @@ github.com/go-co-op/gocron v0.5.1 h1:Cni1V7mt184+HnYTDYe6MH7siofCvf94PrGyIDI1v1U
 github.com/go-co-op/gocron v0.5.1/go.mod h1:6Btk4lVj3bnFAgbVfr76W8impTyhYrEi1pV5Pt4Tp/M=
 github.com/go-co-op/gocron v0.5.2-0.20210205035639-0fc078eb5eec h1:10UO/UNVqkYY+/qHi5kCXpr/WevweBJsSwe/pAV7uhw=
 github.com/go-co-op/gocron v0.5.2-0.20210205035639-0fc078eb5eec/go.mod h1:DNmvslISFAZA62MJC1cCDUIoDTTNxFby/2b+tgErosg=
+github.com/go-co-op/gocron v0.6.0 h1:MZlp5ctODCsO4tL3wBUR1urWqMi9vQuBVETayorL28Q=
+github.com/go-co-op/gocron v0.6.0/go.mod h1:DNmvslISFAZA62MJC1cCDUIoDTTNxFby/2b+tgErosg=
 github.com/go-gl/glfw v0.0.0-20190409004039-e6da0acd62b1/go.mod h1:vR7hzQXu2zJy9AVAgeJqvqgH9Q5CA+iKCZ2gyEVpxRU=
 github.com/go-kit/kit v0.8.0/go.mod h1:xBxKIO96dXMWWy0MnWVtmwkA9/13aqxPnvrjFYMA2as=
 github.com/go-logfmt/logfmt v0.3.0/go.mod h1:Qt1PoO58o5twSAckw1HlFXLmHsOX5/0LbT9GBnD5lWE=
