@@ -15,6 +15,6 @@ The base of this project is a [Cobra](https://github.com/spf13/cobra) CLI applic
 Currently, this consists of 3 base packages:
 - `api`: contains models and other core code necessary for the application's functionality
 - `cmd`: contains Cobra commands for working with the other packages
-- `http`: contains most of the `go-chi` parts of the application for implementing the HTTP API
+- `server`: contains most of the `go-chi` parts of the application for implementing the HTTP API
 
 This approach allows me to focus on the application's core functionality separate from how the user will interact with it through the CLI or HTTP API.

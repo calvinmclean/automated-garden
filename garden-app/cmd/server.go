@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/calvinmclean/automated-garden/garden-app/http"
+	"github.com/calvinmclean/automated-garden/garden-app/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -26,11 +26,11 @@ func init() {
 	viper.BindPFlag("web_server.plants_filename", serverCommand.Flags().Lookup("plants"))
 }
 
-// Run will execute the Run function provided by the `http` package for running the webserver
+// Run will execute the Run function provided by the `server` package for running the webserver
 func Run(cmd *cobra.Command, args []string) {
 	port := viper.GetInt("web_server.port")
 	plantsFilename := viper.GetString("web_server.plants_filename")
 
 	cmd.Printf("Starting garden-app webserver on port %d...\n", port)
-	http.Run(port, plantsFilename)
+	server.Run(port, plantsFilename)
 }
