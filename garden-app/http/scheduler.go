@@ -45,3 +45,11 @@ func addWateringSchedule(p *api.Plant) error {
 func removeWateringSchedule(p *api.Plant) error {
 	return scheduler.RemoveByTag(p.ID.String())
 }
+
+// resetWateringSchedule will simply remove the existing Job and create a new one
+func resetWateringSchedule(p *api.Plant) error {
+	if err := removeWateringSchedule(p); err != nil {
+		return err
+	}
+	return addWateringSchedule(p)
+}

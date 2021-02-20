@@ -110,6 +110,12 @@ func updatePlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Update the watering schedule for the Plant
+	if err := resetWateringSchedule(plant); err != nil {
+		render.Render(w, r, ServerError(err))
+		return
+	}
+
 	// Save the Plant
 	if err := storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, ServerError(err))
