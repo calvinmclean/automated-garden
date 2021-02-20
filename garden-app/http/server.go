@@ -47,7 +47,7 @@ func Run(port int, plantsFilename string) {
 	r.Get("/*", staticHandler)
 
 	// RESTy routes for Plant API actions
-	r.Route("/plant", plantRouter)
+	r.Route("/plants", plantRouter)
 
 	// Read Plant information from a YAML file
 	var err error
