@@ -33,10 +33,9 @@ func addWateringSchedule(p *api.Plant) error {
 	// Schedule the WaterAction execution
 	action := &actions.WaterAction{Duration: p.WateringAmount}
 	_, err = scheduler.
-		Every(uint64(duration.Minutes())).
-		Minutes().
+		Every(duration).
 		StartAt(*p.StartDate).
-		SetTag([]string{p.ID.String()}).
+		Tag(p.ID.String()).
 		Do(action.Execute, p)
 	return err
 }
@@ -44,5 +43,5 @@ func addWateringSchedule(p *api.Plant) error {
 // removeWateringSchedule is used to remove the Plant's scheduled watering Job
 // from the scheduler.
 func removeWateringSchedule(p *api.Plant) error {
-	return scheduler.RemoveJobByTag(p.ID.String())
+	return scheduler.RemoveByTag(p.ID.String())
 }

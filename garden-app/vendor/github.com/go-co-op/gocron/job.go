@@ -6,12 +6,11 @@ import (
 	"time"
 )
 
-type jobInterval uint64
-
 // Job struct stores the information necessary to run a Job
 type Job struct {
 	sync.RWMutex
-	interval          jobInterval              // pause interval * unit between runs
+	interval          int                      // pause interval * unit between runs
+	duration          time.Duration            // time duration between runs
 	unit              timeUnit                 // time units, ,e.g. 'minutes', 'hours'...
 	startsImmediately bool                     // if the Job should run upon scheduler start
 	jobFunc           string                   // the Job jobFunc to run, func[jobFunc]
@@ -37,9 +36,9 @@ type runConfig struct {
 }
 
 // NewJob creates a new Job with the provided interval
-func NewJob(interval uint64) *Job {
+func NewJob(interval int) *Job {
 	return &Job{
-		interval:          jobInterval(interval),
+		interval:          interval,
 		lastRun:           time.Time{},
 		nextRun:           time.Time{},
 		funcs:             make(map[string]interface{}),
@@ -116,11 +115,10 @@ func (j *Job) Err() error {
 
 // Tag allows you to add arbitrary labels to a Job that do not
 // impact the functionality of the Job
-func (j *Job) Tag(t string, others ...string) {
+func (j *Job) Tag(tags ...string) {
 	j.Lock()
 	defer j.Unlock()
-	j.tags = append(j.tags, t)
-	j.tags = append(j.tags, others...)
+	j.tags = append(j.tags, tags...)
 }
 
 // Untag removes a tag from a Job
@@ -241,6 +239,8 @@ func (j *Job) RunCount() int {
 }
 
 func (j *Job) stopTimer() {
+	j.Lock()
+	defer j.Unlock()
 	if j.timer != nil {
 		j.timer.Stop()
 	}
