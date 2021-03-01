@@ -1,8 +1,10 @@
 package api
 
 import (
+	"bytes"
 	"errors"
 	"net/http"
+	"text/template"
 	"time"
 
 	"github.com/rs/xid"
@@ -15,6 +17,7 @@ import (
 type Plant struct {
 	Name           string     `json:"name" yaml:"name,omitempty"`
 	ID             xid.ID     `json:"id" yaml:"id,omitempty"`
+	Garden         string     `json:"garden" yaml:"garden,omitempty"`
 	WateringAmount int        `json:"watering_amount" yaml:"watering_amount,omitempty"`
 	PlantPosition  int        `json:"plant_position" yaml:"plant_position"`
 	Interval       string     `json:"interval" yaml:"interval,omitempty"`
@@ -37,4 +40,12 @@ func (p *Plant) Bind(r *http.Request) error {
 	}
 
 	return nil
+}
+
+// Topic is used to populate and return a MQTT Topic string from a template string input
+func (p *Plant) Topic(topic string) (string, error) {
+	t := template.Must(template.New("topic").Parse(topic))
+	var result bytes.Buffer
+	err := t.Execute(&result, p)
+	return result.String(), err
 }

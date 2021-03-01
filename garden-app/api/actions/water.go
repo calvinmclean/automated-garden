@@ -44,11 +44,16 @@ func (action *WaterAction) Execute(p *api.Plant) error {
 		panic(err)
 	}
 
+	topic, err := p.Topic(mqttClient.WateringTopic)
+	if err != nil {
+		panic(err)
+	}
+
 	defer mqttClient.Disconnect(0)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
 		return token.Error()
 	}
-	token := mqttClient.Publish(mqttClient.WateringTopic, 0, false, msg)
+	token := mqttClient.Publish(topic, 0, false, msg)
 	token.Wait()
 	return token.Error()
 }

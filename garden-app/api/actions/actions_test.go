@@ -11,6 +11,7 @@ import (
 
 var plant = api.Plant{
 	Name:           "Cherry Tomato",
+	Garden:         "garden",
 	WateringAmount: 15000,
 	PlantPosition:  0,
 	Interval:       "24h",

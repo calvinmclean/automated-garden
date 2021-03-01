@@ -10,12 +10,7 @@
 #define JSON_CAPACITY 128
 #define QUEUE_SIZE 10
 
-#define DEFAULT_WATER_TIME 15000
-
 #define DEBOUNCE_DELAY 50
-
-#define MQTT_RETRY_DELAY 5000
-#define MQTT_CLIENT_NAME "Garden"
 
 typedef struct WateringEvent {
     int plant_position;
@@ -46,10 +41,10 @@ TaskHandle_t waterIntervalTaskHandle;
 /* MQTT variables */
 unsigned long lastConnectAttempt = 0;
 PubSubClient client(wifiClient);
-const char* waterCommandTopic = "garden/command/water";
-const char* stopCommandTopic = "garden/command/stop";
-const char* stopAllCommandTopic = "garden/command/stop_all";
-const char* waterDataTopic = "garden/data/water";
+const char* waterCommandTopic = MQTT_WATER_TOPIC;
+const char* stopCommandTopic = MQTT_STOP_TOPIC;
+const char* stopAllCommandTopic = MQTT_STOP_ALL_TOPIC;
+const char* waterDataTopic = MQTT_WATER_DATA_TOPIC;
 
 /* FreeRTOS Queue and Task handlers */
 QueueHandle_t publisherQueue;

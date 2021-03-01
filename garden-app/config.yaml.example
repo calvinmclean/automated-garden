@@ -2,9 +2,10 @@ web_server:
   port: 80
   plants_filename: "plants.yaml"
 mqtt:
-  address: "localhost"
+  broker: "localhost"
   port: 1883
-  watering_topic: "garden/command/water"
-  skip_topic: "garden/command/skip"
-  stop_topic: "garden/command/stop"
-  stop_all_topic: "garden/command/stop_all"
+  client_id: "garden-app"
+  watering_topic: "{{.Garden}}/command/water"
+  skip_topic: "{{.Garden}}/command/skip"
+  stop_topic: "{{.Garden}}/command/stop"
+  stop_all_topic: "{{.Garden}}/command/stop_all"

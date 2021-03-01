@@ -24,9 +24,13 @@ func (action *StopAction) Execute(p *api.Plant) error {
 		panic(err)
 	}
 
-	topic := mqttClient.StopTopic
+	templateString := mqttClient.StopTopic
 	if action.All {
-		topic = mqttClient.StopAllTopic
+		templateString = mqttClient.StopAllTopic
+	}
+	topic, err := p.Topic(templateString)
+	if err != nil {
+		panic(err)
 	}
 
 	defer mqttClient.Disconnect(0)

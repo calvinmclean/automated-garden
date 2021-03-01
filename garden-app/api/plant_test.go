@@ -8,6 +8,19 @@ import (
 	"github.com/rs/xid"
 )
 
+func TestTopic(t *testing.T) {
+	plant := &Plant{Garden: "garden"}
+	topic := "{{.Garden}}/topic"
+	expected := "garden/topic"
+	result, err := plant.Topic(topic)
+	if err != nil {
+		t.Errorf("Unexpected error when getting template result: %s", err.Error())
+	}
+	if result != expected {
+		t.Errorf("Unexpected topic result: expected=%s, actual=%s", expected, result)
+	}
+}
+
 func TestUnmarshalJSON(t *testing.T) {
 	plantBytes := []byte(`{
 		"name": "Cherry Tomato",

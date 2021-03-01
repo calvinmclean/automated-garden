@@ -31,7 +31,7 @@ func plantRouter(r chi.Router) {
 	r.Route("/{plantID}", func(r chi.Router) {
 		r.Use(plantContextMiddleware)
 
-		r.Post("/", plantAction)
+		r.Post("/action", plantAction)
 		r.Get("/", getPlant)
 		r.Put("/", updatePlant)
 		r.Delete("/", endDatePlant)
@@ -83,13 +83,8 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Save the Plant in case anything was changed
-	// TODO: consider giving the action the ability to use the storage client
-	if err := storageClient.SavePlant(plant); err != nil {
-		logger.Error("Error saving plant: ", err)
-		render.Render(w, r, ServerError(err))
-		return
-	}
+	render.Status(r, http.StatusAccepted)
+	render.DefaultResponder(w, r, nil)
 }
 
 // getPlant simply returns the Plant requested by the provided ID
