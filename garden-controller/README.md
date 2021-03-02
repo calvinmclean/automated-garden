@@ -9,8 +9,9 @@ This is an Arduino/FreeRTOS firmware application for controlling a home garden
 This is going to assume you have some familiarity with the ESP32 and Arduino IDE. 
 1. Start by getting the supporting services running from the [`docker`](../docker) directory
 2. Optionally run the Go application from [`garden-app`](../garden-app) directory
-3. Copy `config.h.example` to `config.h` and make any necessary changes to fit your setup
-4. Compile and upload to your ESP32 using Arduino IDE
+3. Make any necessary changes to `config.h` to fit your setup
+4. Copy `wifi_config.h.example` to `wifi_config.h` and configure your network access information
+5. Compile and upload to your ESP32 using Arduino IDE
 
 
 ## Design Choices

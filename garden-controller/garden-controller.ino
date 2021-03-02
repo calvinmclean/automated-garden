@@ -10,8 +10,6 @@
 #define JSON_CAPACITY 128
 #define QUEUE_SIZE 10
 
-#define DEBOUNCE_DELAY 50
-
 typedef struct WateringEvent {
     int plant_position;
     unsigned long duration;
@@ -21,20 +19,23 @@ typedef struct WateringEvent {
 /* plant/valve variables */
 gpio_num_t plants[NUM_PLANTS][3] = PLANTS;
 
+#ifdef ENABLE_BUTTONS
 /* button variables */
 unsigned long lastDebounceTime = 0;
-int buttonStates[NUM_PLANTS] = { LOW, LOW, LOW };
-int lastButtonStates[NUM_PLANTS] = { LOW, LOW, LOW };
+int buttonStates[NUM_PLANTS];
+int lastButtonStates[NUM_PLANTS];
 
 /* stop button variables */
 unsigned long lastStopDebounceTime = 0;
 int stopButtonState = LOW;
 int lastStopButtonState;
 
+TaskHandle_t readButtonsTaskHandle;
+#endif
+
 /* watering cycle variables */
 #ifdef ENABLE_WATERING_INTERVAL
 unsigned long previousMillis = -INTERVAL;
-int watering = -1;
 TaskHandle_t waterIntervalTaskHandle;
 #endif
 
@@ -53,14 +54,17 @@ TaskHandle_t mqttConnectTaskHandle;
 TaskHandle_t mqttLoopTaskHandle;
 TaskHandle_t publisherTaskHandle;
 TaskHandle_t waterPlantTaskHandle;
-TaskHandle_t readButtonsTaskHandle;
 
 void setup() {
     // Prepare pins
     for (int i = 0; i < NUM_PLANTS; i++) {
-        // Setup button pins
+#ifdef ENABLE_BUTTONS
+        // Setup button pins and state
         gpio_reset_pin(plants[i][2]);
         gpio_set_direction(plants[i][2], GPIO_MODE_INPUT);
+        buttonStates[i] = LOW;
+        lastButtonStates[i] = LOW;
+#endif
 
         // Setup valve pins
         gpio_reset_pin(plants[i][1]);
@@ -91,8 +95,9 @@ void setup() {
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(publisherTask, "PublisherTask", 2048, NULL, 1, &publisherTaskHandle);
     xTaskCreate(waterPlantTask, "WaterPlantTask", 2048, NULL, 1, &waterPlantTaskHandle);
+#ifdef ENABLE_BUTTONS
     xTaskCreate(readButtonsTask, "ReadButtonsTask", 2048, NULL, 1, &readButtonsTaskHandle);
-
+#endif
 #ifdef ENABLE_WATERING_INTERVAL
     xTaskCreate(waterIntervalTask, "WaterIntervalTask", 2048, NULL, 1, &waterIntervalTaskHandle);
 #endif
@@ -176,6 +181,7 @@ void plantOff(int id) {
     gpio_set_level(plants[id][1], 0);
 }
 
+#ifdef ENABLE_BUTTONS
 /*
   readButtonsTask will check if any buttons are being pressed
 */
@@ -190,6 +196,7 @@ void readButtonsTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
+#endif
 
 /*
   publisherTask reads from a queue and publish WateringEvents as an InfluxDB
@@ -259,7 +266,9 @@ void getStackSizesTask(void* parameters) {
         printf("mqttLoopTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(mqttLoopTaskHandle));
         printf("publisherTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(publisherTaskHandle));
         printf("waterPlantTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(waterPlantTaskHandle));
+#ifdef ENABLE_BUTTONS
         printf("readButtonsTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(readButtonsTaskHandle));
+#endif
 #ifdef ENABLE_WATERING_INTERVAL
         printf("waterIntervalTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(waterIntervalTaskHandle));
 #endif
@@ -283,6 +292,7 @@ void stopAllWatering() {
     xTaskNotify(waterPlantTaskHandle, 0, eNoAction);
 }
 
+#ifdef ENABLE_BUTTONS
 /*
   readButton takes an ID that represents the array index for the valve and button arrays
   and checks if the button is pressed. If the button is pressed, the following is done:
@@ -347,6 +357,7 @@ void readStopButton() {
     }
     lastStopButtonState = reading;
 }
+#endif
 
 /*
   processIncomingMessage is a callback function for the MQTT client that will

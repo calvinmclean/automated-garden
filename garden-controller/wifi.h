@@ -4,7 +4,7 @@
 #include <WiFi.h>
 
 // Configure network name and password in this file
-#include "config.h"
+#include "wifi_config.h"
 
 WiFiClient wifiClient;
 

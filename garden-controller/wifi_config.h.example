@@ -1,0 +1,7 @@
+#ifndef wifi_config_h
+#define wifi_config_h
+
+#define SSID "your-network-ssid"
+#define PASSWORD "your-network-password"
+
+#endif

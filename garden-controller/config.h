@@ -1,9 +1,6 @@
 #ifndef config_h
 #define config_h
 
-#define SSID "your-wifi-network-name"
-#define PASSWORD "your-wifi-network-password"
-
 #define GARDEN_NAME "garden"
 
 /**
@@ -48,7 +45,11 @@
 #define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22 }
 #define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
 
+#define ENABLE_BUTTONS
+#ifdef ENABLE_BUTTONS
+#define DEBOUNCE_DELAY 50
 #define STOP_BUTTON_PIN GPIO_NUM_23
+#endif
 
 // #define ENABLE_WATERING_INTERVAL
 #ifdef ENABLE_WATERING_INTERVAL
