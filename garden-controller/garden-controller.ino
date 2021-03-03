@@ -4,8 +4,8 @@
 #include "driver/gpio.h"
 
 /* include other files for this program */
-#include "wifi.h"
 #include "config.h"
+#include "mqtt.h"
 
 #define JSON_CAPACITY 128
 #define QUEUE_SIZE 10
@@ -33,26 +33,14 @@ int lastStopButtonState;
 TaskHandle_t readButtonsTaskHandle;
 #endif
 
-/* watering cycle variables */
 #ifdef ENABLE_WATERING_INTERVAL
+/* watering cycle variables */
 unsigned long previousMillis = -INTERVAL;
 TaskHandle_t waterIntervalTaskHandle;
 #endif
 
-/* MQTT variables */
-unsigned long lastConnectAttempt = 0;
-PubSubClient client(wifiClient);
-const char* waterCommandTopic = MQTT_WATER_TOPIC;
-const char* stopCommandTopic = MQTT_STOP_TOPIC;
-const char* stopAllCommandTopic = MQTT_STOP_ALL_TOPIC;
-const char* waterDataTopic = MQTT_WATER_DATA_TOPIC;
-
 /* FreeRTOS Queue and Task handlers */
-QueueHandle_t publisherQueue;
 QueueHandle_t wateringQueue;
-TaskHandle_t mqttConnectTaskHandle;
-TaskHandle_t mqttLoopTaskHandle;
-TaskHandle_t publisherTaskHandle;
 TaskHandle_t waterPlantTaskHandle;
 
 void setup() {
@@ -75,25 +63,18 @@ void setup() {
         gpio_set_direction(plants[i][0], GPIO_MODE_OUTPUT);
     }
 
-    // Connect to WiFi and MQTT
-    setup_wifi();
-    client.setServer(MQTT_ADDRESS, MQTT_PORT);
-    client.setCallback(processIncomingMessage);
+#ifdef ENABLE_WIFI
+    setupWifi();
+    setupMQTT();
+#endif
 
     // Initialize Queues
-    publisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WateringEvent));
-    if (publisherQueue == NULL) {
-        printf("error creating the publisherQueue\n");
-    }
     wateringQueue = xQueueCreate(QUEUE_SIZE, sizeof(WateringEvent));
     if (wateringQueue == NULL) {
         printf("error creating the wateringQueue\n");
     }
 
     // Start all tasks (currently using equal priorities)
-    xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
-    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
-    xTaskCreate(publisherTask, "PublisherTask", 2048, NULL, 1, &publisherTaskHandle);
     xTaskCreate(waterPlantTask, "WaterPlantTask", 2048, NULL, 1, &waterPlantTaskHandle);
 #ifdef ENABLE_BUTTONS
     xTaskCreate(readButtonsTask, "ReadButtonsTask", 2048, NULL, 1, &readButtonsTaskHandle);
@@ -101,10 +82,6 @@ void setup() {
 #ifdef ENABLE_WATERING_INTERVAL
     xTaskCreate(waterIntervalTask, "WaterIntervalTask", 2048, NULL, 1, &waterIntervalTaskHandle);
 #endif
-
-    // I tested the stack sizes above by enabling this task which will print
-    // the number of words remaining when that task's stack reached its highest
-    // xTaskCreate(getStackSizesTask, "getStackSizesTask", 4096, NULL, 1, NULL);
 }
 
 void loop() {}
@@ -156,7 +133,9 @@ void waterPlantTask(void* parameters) {
             unsigned long stop = millis();
             plantOff(we.plant_position);
             we.duration = stop - start;
+#ifdef ENABLE_WIFI
             xQueueSend(publisherQueue, &we, portMAX_DELAY);
+#endif
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
@@ -199,84 +178,6 @@ void readButtonsTask(void* parameters) {
 #endif
 
 /*
-  publisherTask reads from a queue and publish WateringEvents as an InfluxDB
-  line protocol message to MQTT
-*/
-void publisherTask(void* parameters) {
-    WateringEvent we;
-    while (true) {
-        if (xQueueReceive(publisherQueue, &we, portMAX_DELAY)) {
-            char message[50];
-            sprintf(message, "water,plant=%d millis=%lu", we.plant_position, we.duration);
-            if (client.connected()) {
-                printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
-                client.publish(waterDataTopic, message);
-            } else {
-                printf("unable to publish: not connected to MQTT broker\n");
-            }
-        }
-        vTaskDelay(5 / portTICK_PERIOD_MS);
-    }
-    vTaskDelete(NULL);
-}
-
-/*
-  mqttConnectTask will periodically attempt to reconnect to MQTT if needed
-*/
-void mqttConnectTask(void* parameters) {
-    while (true) {
-        // Connect to MQTT server if not connected already
-        if (!client.connected()) {
-            printf("attempting MQTT connection...");
-            if (client.connect(MQTT_CLIENT_NAME)) {
-                printf("connected\n");
-                client.subscribe(waterCommandTopic);
-                client.subscribe(stopCommandTopic);
-                client.subscribe(stopAllCommandTopic);
-            } else {
-                printf("failed, rc=%zu\n", client.state());
-            }
-        }
-        vTaskDelay(5000 / portTICK_PERIOD_MS);
-    }
-    vTaskDelete(NULL);
-}
-
-/*
-  mqttLoopTask will run the MQTT client loop to listen on subscribed topics
-*/
-void mqttLoopTask(void* parameters) {
-    while (true) {
-        // Run MQTT loop to process incoming messages if connected
-        if (client.connected()) {
-            client.loop();
-        }
-        vTaskDelay(5 / portTICK_PERIOD_MS);
-    }
-    vTaskDelete(NULL);
-}
-
-/*
-  getStackSizesTask is a tool used for debugging and testing that will give me
-  information about the remaining words in each task's stack at its highest
-*/
-void getStackSizesTask(void* parameters) {
-    while (true) {
-        printf("mqttConnectTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(mqttConnectTaskHandle));
-        printf("mqttLoopTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(mqttLoopTaskHandle));
-        printf("publisherTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(publisherTaskHandle));
-        printf("waterPlantTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(waterPlantTaskHandle));
-#ifdef ENABLE_BUTTONS
-        printf("readButtonsTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(readButtonsTaskHandle));
-#endif
-#ifdef ENABLE_WATERING_INTERVAL
-        printf("waterIntervalTask stack high water mark: %d\n", uxTaskGetStackHighWaterMark(waterIntervalTaskHandle));
-#endif
-        vTaskDelay(10000 / portTICK_PERIOD_MS);
-    }
-}
-
-/*
   stopWatering will interrupt the WaterPlantTask. If another plant is in the queue,
   it will begin watering
 */
@@ -294,11 +195,9 @@ void stopAllWatering() {
 
 #ifdef ENABLE_BUTTONS
 /*
-  readButton takes an ID that represents the array index for the valve and button arrays
-  and checks if the button is pressed. If the button is pressed, the following is done:
-    - stop watering all plants
-    - disable watering cycle
-    - turn on the valve corresponding to this button
+  readButton takes an ID that represents the array index for the valve and
+  button arrays and checks if the button is pressed. If the button is pressed,
+  a WateringEvent for that plant is added to the queue
 */
 void readButton(int valveID) {
     // Exit if valveID is out of bounds
@@ -317,7 +216,7 @@ void readButton(int valveID) {
         if (reading != buttonStates[valveID]) {
             buttonStates[valveID] = reading;
 
-            // If our button state is HIGH, stop watering others and water this plant
+            // If our button state is HIGH, water the plant
             if (buttonStates[valveID] == HIGH) {
                 if (reading == HIGH) {
                     printf("button pressed: %d\n", valveID);
@@ -358,42 +257,6 @@ void readStopButton() {
     lastStopButtonState = reading;
 }
 #endif
-
-/*
-  processIncomingMessage is a callback function for the MQTT client that will
-  react to incoming messages. Currently, the topics are:
-    - waterCommandTopic: accepts a WateringEvent JSON to water a plant for
-                         specified time
-    - stopCommandTopic: ignores message and stops the currently-watering plant
-    - stopAllCommandTopic: ignores message, stops the currently-watering plant,
-                           and clears the wateringQueue
-*/
-void processIncomingMessage(char* topic, byte* message, unsigned int length) {
-    printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
-
-    StaticJsonDocument<JSON_CAPACITY> doc;
-    DeserializationError err = deserializeJson(doc, message);
-    if (err) {
-        printf("deserialize failed: %s\n", err.c_str());
-    }
-
-    WateringEvent we = {
-        doc["plant_position"] | -1,
-        doc["duration"] | 0,
-        doc["id"] | "N/A"
-    };
-
-    if (strcmp(topic, waterCommandTopic) == 0) {
-        printf("received command to water plant %d (%s) for %lu\n", we.plant_position, we.id, we.duration);
-        waterPlant(we.plant_position, we.duration, we.id);
-    } else if (strcmp(topic, stopCommandTopic) == 0) {
-        printf("received command to stop watering\n");
-        stopWatering();
-    } else if (strcmp(topic, stopAllCommandTopic) == 0) {
-        printf("received command to stop ALL watering\n");
-        stopAllWatering();
-    }
-}
 
 /*
   waterPlant pushes a WateringEvent to the queue in order to water a single
