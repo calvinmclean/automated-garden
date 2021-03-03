@@ -1,6 +1,5 @@
 #ifndef mqtt_h
 #define mqtt_h
-#ifdef ENABLE_WIFI
 
 #include <WiFi.h>
 
@@ -23,5 +22,4 @@ TaskHandle_t mqttConnectTaskHandle;
 TaskHandle_t mqttLoopTaskHandle;
 TaskHandle_t publisherTaskHandle;
 
-#endif
 #endif
