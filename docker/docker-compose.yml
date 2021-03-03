@@ -35,7 +35,9 @@ services:
       - env_file
 
   mqtt:
-    image: "eclipse-mosquitto:latest"
+    image: "eclipse-mosquitto:2.0"
+    volumes:
+      - "./mosquitto:/mosquitto/config"
     ports:
       - "1883:1883"
       - "9001:9001"
