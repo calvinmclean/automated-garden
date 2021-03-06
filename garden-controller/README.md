@@ -16,6 +16,10 @@ This is going to assume you have some familiarity with the ESP32 and Arduino IDE
 
 ## Design Choices
 
+### Code Organization
+Since there's starting to be a lot of code in this project, and I made it pretty configurable, I wanted to improve the organization of everything by splitting it into multiple files. The code isn't really setup to be split into Arduino libraries, so I just split it into multiple `.ino` files. Arduino IDE will automatically combine all `.ino` files in alphabetical order, so I had to split some of the variables into header files so they could be included at the top.
+
+
 ### Arduino vs FreeRTOS
 This started out as an Arduino sketch, but I eventually wanted to make use of the dual-core capabilities of the ESP32 so I started learning about FreeRTOS. In the transition to making this a full FreeRTOS C++ project rather than an Arduino sketch, I chose to give up some of the niceties of Arduino such as `pinMode` and `digitalWrite`. However, I will probably leave this as an Arduino project since it is more approachable.
 
