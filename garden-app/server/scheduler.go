@@ -36,7 +36,16 @@ func addWateringSchedule(p *api.Plant) error {
 		Every(duration).
 		StartAt(*p.StartDate).
 		Tag(p.ID.String()).
-		Do(action.Execute, p)
+		Do(func() {
+			err = action.Execute(p)
+			if err != nil {
+				logger.Error("Error executing scheduled plant watering action: ", err)
+			}
+			err = storageClient.SavePlant(p)
+			if err != nil {
+				logger.Error("Error saving plant after watering: ", err)
+			}
+		})
 	return err
 }
 

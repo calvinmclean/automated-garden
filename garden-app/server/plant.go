@@ -83,6 +83,14 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Save the Plant in case anything was changed (watering a plant might change the skip_count field)
+	// TODO: consider giving the action the ability to use the storage client
+	if err := storageClient.SavePlant(plant); err != nil {
+		logger.Error("Error saving plant: ", err)
+		render.Render(w, r, ServerError(err))
+		return
+	}
+
 	render.Status(r, http.StatusAccepted)
 	render.DefaultResponder(w, r, nil)
 }
