@@ -1,5 +1,3 @@
-#include <ArduinoJson.h>
-#include <PubSubClient.h>
 #include <stdio.h>
 #include "driver/gpio.h"
 
@@ -11,9 +9,6 @@
 #ifdef ENABLE_BUTTONS
 #include "buttons.h"
 #endif
-
-#define JSON_CAPACITY 128
-#define QUEUE_SIZE 10
 
 typedef struct WateringEvent {
     int plant_position;

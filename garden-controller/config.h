@@ -3,6 +3,9 @@
 
 #define GARDEN_NAME "garden"
 
+// Size of FreeRTOS queues
+#define QUEUE_SIZE 10
+
 /**
  * Wifi and MQTT Configurations
  *   NOTE: Use "wifi_config.h" for Wifi SSID and password (ignored by git)
@@ -33,6 +36,9 @@
 #define MQTT_STOP_TOPIC GARDEN_NAME"/command/stop"
 #define MQTT_STOP_ALL_TOPIC GARDEN_NAME"/command/stop_all"
 #define MQTT_WATER_DATA_TOPIC GARDEN_NAME"/data/water"
+
+// Size of JSON object calculated using Arduino JSON Assistant
+#define JSON_CAPACITY 48
 #endif
 
 /**

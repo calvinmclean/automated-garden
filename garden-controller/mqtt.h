@@ -2,6 +2,8 @@
 #define mqtt_h
 
 #include <WiFi.h>
+#include <ArduinoJson.h>
+#include <PubSubClient.h>
 
 // Configure network name and password in this file
 #include "wifi_config.h"
