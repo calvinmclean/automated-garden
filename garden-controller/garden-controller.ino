@@ -9,6 +9,9 @@
 #ifdef ENABLE_BUTTONS
 #include "buttons.h"
 #endif
+#ifdef ENABLE_MOISTURE_SENSORS
+#include "moisture.h"
+#endif
 
 typedef struct WateringEvent {
     int plant_position;
@@ -17,7 +20,7 @@ typedef struct WateringEvent {
 };
 
 /* plant/valve variables */
-gpio_num_t plants[NUM_PLANTS][3] = PLANTS;
+gpio_num_t plants[NUM_PLANTS][4] = PLANTS;
 
 #ifdef ENABLE_WATERING_INTERVAL
 /* watering cycle variables */
@@ -44,6 +47,9 @@ void setup() {
 #ifdef ENABLE_WIFI
     setupWifi();
     setupMQTT();
+#ifdef ENABLE_MOISTURE_SENSORS
+    setupMoistureSensors();
+#endif
 #endif
 
 #ifdef ENABLE_BUTTONS

@@ -47,7 +47,7 @@
  * NUM_PLANTS
  *   Number of plants in the PLANTS list
  * PLANTS
- *   List of plant pins in this format: { {PUMP_PIN, VALVE_PIN, BUTTON_PIN} }
+ *   List of plant pins in this format: { {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN} }
  *   You can create multiple plants before creating the PLANTS list for improved readability (see example below)
  * DEFAULT_WATER_TIME
  *   Default time to water for if none is specified. This is used by button and interval watering
@@ -64,9 +64,9 @@
  */
 #define NUM_PLANTS 3
 #define PUMP_PIN GPIO_NUM_18
-#define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19 }
-#define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21 }
-#define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22 }
+#define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
+#define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
+#define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
 #define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
 #define DEFAULT_WATER_TIME 15000
 
@@ -74,6 +74,16 @@
 #ifdef ENABLE_BUTTONS
 #define DEBOUNCE_DELAY 50
 #define STOP_BUTTON_PIN GPIO_NUM_23
+#endif
+
+// Currently, moisture sensing requires Wifi and MQTT because the logic for
+// handling this data lives in the garden-app
+#define ENABLE_MOISTURE_SENSORS
+#ifdef ENABLE_MOISTURE_SENSORS AND ENABLE_WIFI
+#define MQTT_MOISTURE_DATA_TOPIC GARDEN_NAME"/data/moisture"
+#define MOISTURE_SENSOR_AIR_VALUE 3415
+#define MOISTURE_SENSOR_WATER_VALUE 1362
+#define MOISTURE_SENSOR_INTERVAL 5000
 #endif
 
 // #define ENABLE_WATERING_INTERVAL
