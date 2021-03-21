@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
-	"github.com/calvinmclean/automated-garden/garden-app/api/actions"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
@@ -71,7 +70,7 @@ func plantContextMiddleware(next http.Handler) http.Handler {
 func plantAction(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value("plant").(*api.Plant)
 
-	data := &actions.AggregateAction{}
+	data := &api.AggregateAction{}
 	if err := render.Bind(r, data); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

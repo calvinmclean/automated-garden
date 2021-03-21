@@ -1,20 +1,22 @@
-package actions
+package api
 
 import (
 	"encoding/json"
 	"testing"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"github.com/rs/xid"
 )
 
-var plant = api.Plant{
-	Name:           "Cherry Tomato",
-	Garden:         "garden",
-	WateringAmount: 15000,
-	PlantPosition:  0,
-	Interval:       "24h",
+var plant = Plant{
+	Name:          "Cherry Tomato",
+	Garden:        "garden",
+	PlantPosition: 0,
+	WateringStrategy: WateringStrategy{
+		Type:           "interval",
+		WateringAmount: 15000,
+		Interval:       "24h",
+	},
 }
 
 func init() {

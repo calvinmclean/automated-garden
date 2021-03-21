@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
-	"github.com/calvinmclean/automated-garden/garden-app/api/actions"
 	"github.com/go-co-op/gocron"
 )
 
@@ -25,13 +24,13 @@ func addWateringSchedule(p *api.Plant) error {
 	logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
 	// Read Plant's Interval string into a Duration
-	duration, err := time.ParseDuration(p.Interval)
+	duration, err := time.ParseDuration(p.WateringStrategy.Interval)
 	if err != nil {
 		return err
 	}
 
 	// Schedule the WaterAction execution
-	action := &actions.WaterAction{Duration: p.WateringAmount}
+	action := p.WateringAction()
 	_, err = scheduler.
 		Every(duration).
 		StartAt(*p.StartDate).
