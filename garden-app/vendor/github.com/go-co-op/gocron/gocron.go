@@ -8,6 +8,7 @@ package gocron
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -16,16 +17,28 @@ import (
 
 // Error declarations for gocron related errors
 var (
-	ErrTimeFormat            = errors.New("time format error")
-	ErrParamsNotAdapted      = errors.New("the number of params is not adapted")
-	ErrNotAFunction          = errors.New("only functions can be schedule into the job queue")
-	ErrNotScheduledWeekday   = errors.New("job not scheduled weekly on a weekday")
-	ErrJobNotFoundWithTag    = errors.New("no jobs found with given tag")
-	ErrUnsupportedTimeFormat = errors.New("the given time format is not supported")
-	ErrInvalidInterval       = errors.New(".Every() interval must be greater than 0")
-	ErrInvalidIntervalType   = errors.New(".Every() interval must be int, time.Duration, or string")
-	ErrInvalidSelection      = errors.New("an .Every() duration interval cannot be used with units (e.g. .Seconds())")
+	ErrNotAFunction                  = errors.New("only functions can be schedule into the job queue")
+	ErrNotScheduledWeekday           = errors.New("job not scheduled weekly on a weekday")
+	ErrJobNotFoundWithTag            = errors.New("no jobs found with given tag")
+	ErrUnsupportedTimeFormat         = errors.New("the given time format is not supported")
+	ErrInvalidInterval               = errors.New(".Every() interval must be greater than 0")
+	ErrInvalidIntervalType           = errors.New(".Every() interval must be int, time.Duration, or string")
+	ErrInvalidIntervalUnitsSelection = errors.New("an .Every() duration interval cannot be used with units (e.g. .Seconds())")
+
+	ErrAtTimeNotSupported  = errors.New("the At() method is not supported for this time unit")
+	ErrWeekdayNotSupported = errors.New("weekday is not supported for time unit")
+	ErrTagsUnique          = func(tag string) error { return fmt.Errorf("a non-unique tag was set on the job: %s", tag) }
 )
+
+func wrapOrError(toWrap error, err error) error {
+	var returnErr error
+	if toWrap != nil {
+		returnErr = fmt.Errorf("%s: %w", err, toWrap)
+	} else {
+		returnErr = err
+	}
+	return returnErr
+}
 
 // regex patterns for supported time formats
 var (
@@ -37,7 +50,8 @@ type timeUnit int
 
 const (
 	// default unit is seconds
-	seconds timeUnit = iota
+	milliseconds timeUnit = iota
+	seconds
 	minutes
 	hours
 	days
@@ -46,16 +60,16 @@ const (
 	duration
 )
 
-func callJobFuncWithParams(jobFunc interface{}, params []interface{}) ([]reflect.Value, error) {
+func callJobFuncWithParams(jobFunc interface{}, params []interface{}) {
 	f := reflect.ValueOf(jobFunc)
 	if len(params) != f.Type().NumIn() {
-		return nil, ErrParamsNotAdapted
+		return
 	}
 	in := make([]reflect.Value, len(params))
 	for k, param := range params {
 		in[k] = reflect.ValueOf(param)
 	}
-	return f.Call(in), nil
+	f.Call(in)
 }
 
 func getFunctionName(fn interface{}) string {

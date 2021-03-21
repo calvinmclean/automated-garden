@@ -1,78 +1,89 @@
 package gocron
 
 import (
+	"context"
 	"fmt"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/singleflight"
 )
 
 // Job struct stores the information necessary to run a Job
 type Job struct {
 	sync.RWMutex
-	interval          int                      // pause interval * unit between runs
-	duration          time.Duration            // time duration between runs
-	unit              timeUnit                 // time units, ,e.g. 'minutes', 'hours'...
-	startsImmediately bool                     // if the Job should run upon scheduler start
-	jobFunc           string                   // the Job jobFunc to run, func[jobFunc]
-	atTime            time.Duration            // optional time at which this Job runs when interval is day
-	startAtTime       time.Time                // optional time at which the Job starts
-	err               error                    // error related to Job
-	lastRun           time.Time                // datetime of last run
-	nextRun           time.Time                // datetime of next run
-	scheduledWeekday  *time.Weekday            // Specific day of the week to start on
-	dayOfTheMonth     int                      // Specific day of the month to run the job
-	funcs             map[string]interface{}   // Map for the function task store
-	fparams           map[string][]interface{} // Map for function and params of function
-	tags              []string                 // allow the user to tag Jobs with certain labels
-	runConfig         runConfig                // configuration for how many times to run the job
-	runCount          int                      // number of times the job ran
+	jobFunction
+	interval          int           // pause interval * unit between runs
+	duration          time.Duration // time duration between runs
+	unit              timeUnit      // time units, ,e.g. 'minutes', 'hours'...
+	startsImmediately bool          // if the Job should run upon scheduler start
+	atTime            time.Duration // optional time at which this Job runs when interval is day
+	startAtTime       time.Time     // optional time at which the Job starts
+	error             error         // error related to Job
+	lastRun           time.Time     // datetime of last run
+	nextRun           time.Time     // datetime of next run
+	scheduledWeekday  *time.Weekday // Specific day of the week to start on
+	dayOfTheMonth     int           // Specific day of the month to run the job
+	tags              []string      // allow the user to tag Jobs with certain labels
+	runCount          int           // number of times the job ran
 	timer             *time.Timer
 }
 
-type runConfig struct {
-	finiteRuns         bool
-	maxRuns            int
-	removeAfterLastRun bool
+type jobFunction struct {
+	functions map[string]interface{}   // Map for the function task store
+	params    map[string][]interface{} // Map for function and params of function
+	name      string                   // the Job name to run, func[jobFunc]
+	runConfig runConfig                // configuration for how many times to run the job
+	limiter   *singleflight.Group      // limits inflight runs of job to one
+	ctx       context.Context          // for cancellation
+	cancel    context.CancelFunc       // for cancellation
 }
+
+type runConfig struct {
+	finiteRuns bool
+	maxRuns    int
+	mode       mode
+}
+
+// mode is the Job's running mode
+type mode int8
+
+const (
+	// defaultMode disable any mode
+	defaultMode mode = iota
+
+	// singletonMode switch to single job mode
+	singletonMode
+)
 
 // NewJob creates a new Job with the provided interval
 func NewJob(interval int) *Job {
+	ctx, cancel := context.WithCancel(context.Background())
 	return &Job{
-		interval:          interval,
-		lastRun:           time.Time{},
-		nextRun:           time.Time{},
-		funcs:             make(map[string]interface{}),
-		fparams:           make(map[string][]interface{}),
+		interval: interval,
+		unit:     seconds,
+		lastRun:  time.Time{},
+		nextRun:  time.Time{},
+		jobFunction: jobFunction{
+			functions: make(map[string]interface{}),
+			params:    make(map[string][]interface{}),
+			ctx:       ctx,
+			cancel:    cancel,
+		},
 		tags:              []string{},
 		startsImmediately: true,
 	}
 }
 
-// Run the Job and immediately reschedule it
-func (j *Job) run() {
-	j.Lock()
-	defer j.Unlock()
-	j.runCount++
-	go func() {
-		_, _ = callJobFuncWithParams(j.funcs[j.jobFunc], j.fparams[j.jobFunc])
-	}()
-}
-
 func (j *Job) neverRan() bool {
-	j.RLock()
-	defer j.RUnlock()
 	return j.lastRun.IsZero()
 }
 
 func (j *Job) getStartsImmediately() bool {
-	j.RLock()
-	defer j.RUnlock()
 	return j.startsImmediately
 }
 
 func (j *Job) setStartsImmediately(b bool) {
-	j.Lock()
-	defer j.Unlock()
 	j.startsImmediately = b
 }
 
@@ -83,48 +94,36 @@ func (j *Job) setTimer(t *time.Timer) {
 }
 
 func (j *Job) getAtTime() time.Duration {
-	j.RLock()
-	defer j.RUnlock()
 	return j.atTime
 }
 
 func (j *Job) setAtTime(t time.Duration) {
-	j.Lock()
-	defer j.Unlock()
 	j.atTime = t
 }
 
 func (j *Job) getStartAtTime() time.Time {
-	j.RLock()
-	defer j.RUnlock()
 	return j.startAtTime
 }
 
 func (j *Job) setStartAtTime(t time.Time) {
-	j.Lock()
-	defer j.Unlock()
 	j.startAtTime = t
 }
 
-// Err returns an error if one occurred while creating the Job
-func (j *Job) Err() error {
-	j.RLock()
-	defer j.RUnlock()
-	return j.err
+// Error returns an error if one occurred while creating the Job.
+// If multiple errors occurred, they will be wrapped and can be
+// checked using the standard unwrap options.
+func (j *Job) Error() error {
+	return j.error
 }
 
 // Tag allows you to add arbitrary labels to a Job that do not
 // impact the functionality of the Job
 func (j *Job) Tag(tags ...string) {
-	j.Lock()
-	defer j.Unlock()
 	j.tags = append(j.tags, tags...)
 }
 
 // Untag removes a tag from a Job
 func (j *Job) Untag(t string) {
-	j.Lock()
-	defer j.Unlock()
 	var newTags []string
 	for _, tag := range j.tags {
 		if t != tag {
@@ -137,30 +136,22 @@ func (j *Job) Untag(t string) {
 
 // Tags returns the tags attached to the Job
 func (j *Job) Tags() []string {
-	j.RLock()
-	defer j.RUnlock()
 	return j.tags
 }
 
 // ScheduledTime returns the time of the Job's next scheduled run
 func (j *Job) ScheduledTime() time.Time {
-	j.RLock()
-	defer j.RUnlock()
 	return j.nextRun
 }
 
 // ScheduledAtTime returns the specific time of day the Job will run at
 func (j *Job) ScheduledAtTime() string {
-	j.RLock()
-	defer j.RUnlock()
 	return fmt.Sprintf("%d:%d", j.atTime/time.Hour, (j.atTime%time.Hour)/time.Minute)
 }
 
 // Weekday returns which day of the week the Job will run on and
 // will return an error if the Job is not scheduled weekly
 func (j *Job) Weekday() (time.Weekday, error) {
-	j.RLock()
-	defer j.RUnlock()
 	if j.scheduledWeekday == nil {
 		return time.Sunday, ErrNotScheduledWeekday
 	}
@@ -169,7 +160,7 @@ func (j *Job) Weekday() (time.Weekday, error) {
 
 // LimitRunsTo limits the number of executions of this job to n.
 // The job will remain in the scheduler.
-// Note: If a job is added to a running scheduler and this method is used
+// Note: If a job is added to a running scheduler and this method is then used
 // you may see the job run more than the set limit as job is scheduled immediately
 // by default upon being added to the scheduler. It is recommended to use the
 // LimitRunsTo() func on the scheduler chain when scheduling the job.
@@ -177,24 +168,22 @@ func (j *Job) Weekday() (time.Weekday, error) {
 func (j *Job) LimitRunsTo(n int) {
 	j.Lock()
 	defer j.Unlock()
-	j.runConfig = runConfig{
-		finiteRuns: true,
-		maxRuns:    n,
-	}
+	j.runConfig.finiteRuns = true
+	j.runConfig.maxRuns = n
 }
 
-// RemoveAfterLastRun sets the job to be removed after it's last run (when limited)
-func (j *Job) RemoveAfterLastRun() *Job {
+// SingletonMode prevents a new job from starting if the prior job has not yet
+// completed it's run
+// Note: If a job is added to a running scheduler and this method is then used
+// you may see the job run overrun itself as job is scheduled immediately
+// by default upon being added to the scheduler. It is recommended to use the
+// SingletonMode() func on the scheduler chain when scheduling the job.
+func (j *Job) SingletonMode() {
 	j.Lock()
 	defer j.Unlock()
-	j.runConfig.removeAfterLastRun = true
-	return j
-}
+	j.runConfig.mode = singletonMode
+	j.jobFunction.limiter = &singleflight.Group{}
 
-func (j *Job) getRemoveAfterLastRun() bool {
-	j.RLock()
-	defer j.RUnlock()
-	return j.runConfig.removeAfterLastRun
 }
 
 // shouldRun evaluates if this job should run again
@@ -207,14 +196,10 @@ func (j *Job) shouldRun() bool {
 
 // LastRun returns the time the job was run last
 func (j *Job) LastRun() time.Time {
-	j.RLock()
-	defer j.RUnlock()
 	return j.lastRun
 }
 
 func (j *Job) setLastRun(t time.Time) {
-	j.Lock()
-	defer j.Unlock()
 	j.lastRun = t
 }
 
@@ -233,8 +218,6 @@ func (j *Job) setNextRun(t time.Time) {
 
 // RunCount returns the number of time the job ran so far
 func (j *Job) RunCount() int {
-	j.RLock()
-	defer j.RUnlock()
 	return j.runCount
 }
 

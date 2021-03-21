@@ -7,7 +7,11 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"golang.org/x/sync/semaphore"
 )
+
+type limitMode int8
 
 // Scheduler struct stores a list of Jobs and the location of time Scheduler
 // Scheduler implements the sort.Interface{} for sorting Jobs, by the time of nextRun
@@ -17,21 +21,33 @@ type Scheduler struct {
 
 	locationMutex sync.RWMutex
 	location      *time.Location
+	runningMutex  sync.RWMutex
+	running       bool // represents if the scheduler is running at the moment or not
 
-	runningMutex sync.RWMutex
-	running      bool // represents if the scheduler is running at the moment or not
+	time     timeWrapper // wrapper around time.Time
+	executor *executor   // executes jobs passed via chan
 
-	time timeWrapper // wrapper around time.Time
+	tags map[string]struct{} // for storing tags when unique tags is set
 }
 
 // NewScheduler creates a new Scheduler
 func NewScheduler(loc *time.Location) *Scheduler {
+	executor := newExecutor()
+
 	return &Scheduler{
 		jobs:     make([]*Job, 0),
 		location: loc,
 		running:  false,
 		time:     &trueTime{},
+		executor: &executor,
 	}
+}
+
+// SetMaxConcurrentJobs limits how many jobs can be running at the same time.
+// This is useful when running resource intensive jobs and a precise start time is not critical.
+func (s *Scheduler) SetMaxConcurrentJobs(n int, mode limitMode) {
+	s.executor.maxRunningJobs = semaphore.NewWeighted(int64(n))
+	s.executor.limitMode = mode
 }
 
 // StartBlocking starts all jobs and blocks the current thread
@@ -49,13 +65,14 @@ func (s *Scheduler) StartAsync() {
 
 //start starts the scheduler, scheduling and running jobs
 func (s *Scheduler) start() {
+	go s.executor.start()
 	s.setRunning(true)
 	s.runJobs(s.Jobs())
 }
 
 func (s *Scheduler) runJobs(jobs []*Job) {
-	for _, j := range jobs {
-		s.scheduleNextRun(j)
+	for _, job := range jobs {
+		s.scheduleNextRun(job)
 	}
 }
 
@@ -94,10 +111,10 @@ func (s *Scheduler) Len() int {
 
 // Swap places each job into the other job's position given
 // the provided job indexes.
-func (s *Scheduler) Swap(i, j int) {
+func (s *Scheduler) Swap(i, job int) {
 	s.jobsMutex.Lock()
 	defer s.jobsMutex.Unlock()
-	s.jobs[i], s.jobs[j] = s.jobs[j], s.jobs[i]
+	s.jobs[i], s.jobs[job] = s.jobs[job], s.jobs[i]
 }
 
 // Less compares the next run of jobs based on their index.
@@ -143,9 +160,7 @@ func (s *Scheduler) scheduleNextRun(job *Job) {
 	}
 
 	if !job.shouldRun() {
-		if job.getRemoveAfterLastRun() {
-			s.RemoveByReference(job)
-		}
+		s.RemoveByReference(job)
 		return
 	}
 
@@ -165,7 +180,7 @@ func (s *Scheduler) durationToNextRun(lastRun time.Time, job *Job) time.Duration
 
 	var d time.Duration
 	switch job.unit {
-	case seconds, minutes, hours:
+	case milliseconds, seconds, minutes, hours:
 		d = s.calculateDuration(job)
 	case days:
 		d = s.calculateDays(job, lastRun)
@@ -186,7 +201,7 @@ func (s *Scheduler) durationToNextRun(lastRun time.Time, job *Job) time.Duration
 func (s *Scheduler) calculateMonths(job *Job, lastRun time.Time) time.Duration {
 	lastRunRoundedMidnight := s.roundToMidnight(lastRun)
 
-	if job.dayOfTheMonth > 0 { // calculate days to j.dayOfTheMonth
+	if job.dayOfTheMonth > 0 { // calculate days to job.dayOfTheMonth
 		jobDay := time.Date(lastRun.Year(), lastRun.Month(), job.dayOfTheMonth, 0, 0, 0, 0, s.Location()).Add(job.getAtTime())
 		daysDifference := int(math.Abs(lastRun.Sub(jobDay).Hours()) / 24)
 		nextRun := s.roundToMidnight(lastRun).Add(job.getAtTime())
@@ -265,6 +280,8 @@ func (s *Scheduler) calculateDuration(job *Job) time.Duration {
 
 	interval := job.interval
 	switch job.unit {
+	case milliseconds:
+		return time.Duration(interval) * time.Millisecond
 	case seconds:
 		return time.Duration(interval) * time.Second
 	case minutes:
@@ -311,7 +328,7 @@ func (s *Scheduler) Every(interval interface{}) *Scheduler {
 	case int:
 		job := NewJob(interval)
 		if interval <= 0 {
-			job.err = ErrInvalidInterval
+			job.error = wrapOrError(job.error, ErrInvalidInterval)
 		}
 		s.setJobs(append(s.Jobs(), job))
 	case time.Duration:
@@ -323,14 +340,14 @@ func (s *Scheduler) Every(interval interface{}) *Scheduler {
 		job := NewJob(0)
 		d, err := time.ParseDuration(interval)
 		if err != nil {
-			job.err = err
+			job.error = wrapOrError(job.error, err)
 		}
 		job.duration = d
 		job.unit = duration
 		s.setJobs(append(s.Jobs(), job))
 	default:
 		job := NewJob(0)
-		job.err = ErrInvalidIntervalType
+		job.error = wrapOrError(job.error, ErrInvalidIntervalType)
 		s.setJobs(append(s.Jobs(), job))
 	}
 	return s
@@ -341,8 +358,11 @@ func (s *Scheduler) run(job *Job) {
 		return
 	}
 
+	job.Lock()
+	defer job.Unlock()
 	job.setLastRun(s.now())
-	job.run()
+	job.runCount++
+	s.executor.jobFunctions <- job.jobFunction
 }
 
 // RunAll run all Jobs regardless if they are scheduled to run or not
@@ -358,25 +378,25 @@ func (s *Scheduler) RunAllWithDelay(d time.Duration) {
 	}
 }
 
-// Remove specific Job j by function
+// Remove specific Job job by function
 //
 // Removing a job stops that job's timer. However, if a job has already
 // been started by by the job's timer before being removed, there is no way to stop
 // it through gocron as https://pkg.go.dev/time#Timer.Stop explains.
 // The job function would need to have implemented a means of
 // stopping, e.g. using a context.WithCancel().
-func (s *Scheduler) Remove(j interface{}) {
+func (s *Scheduler) Remove(job interface{}) {
 	s.removeByCondition(func(someJob *Job) bool {
-		return someJob.jobFunc == getFunctionName(j)
+		return someJob.name == getFunctionName(job)
 	})
 }
 
-// RemoveByReference removes specific Job j by reference
-func (s *Scheduler) RemoveByReference(j *Job) {
+// RemoveByReference removes specific Job job by reference
+func (s *Scheduler) RemoveByReference(job *Job) {
 	s.removeByCondition(func(someJob *Job) bool {
-		j.RLock()
-		defer j.RUnlock()
-		return someJob == j
+		job.RLock()
+		defer job.RUnlock()
+		return someJob == job
 	})
 }
 
@@ -387,6 +407,7 @@ func (s *Scheduler) removeByCondition(shouldRemove func(*Job) bool) {
 			retainedJobs = append(retainedJobs, job)
 		} else {
 			job.stopTimer()
+			job.cancel()
 		}
 	}
 	s.setJobs(retainedJobs)
@@ -394,13 +415,14 @@ func (s *Scheduler) removeByCondition(shouldRemove func(*Job) bool) {
 
 // RemoveByTag will remove a job by a given tag.
 func (s *Scheduler) RemoveByTag(tag string) error {
-	jobindex, err := s.findJobsIndexByTag(tag)
+	index, err := s.findJobsIndexByTag(tag)
 	if err != nil {
 		return err
 	}
-	// Remove job if jobindex is valid
-	s.jobs[jobindex].stopTimer()
-	s.setJobs(removeAtIndex(s.jobs, jobindex))
+	// Remove job if job index is valid
+	s.jobs[index].stopTimer()
+	s.jobs[index].cancel()
+	s.setJobs(removeAtIndex(s.jobs, index))
 	return nil
 }
 
@@ -422,25 +444,28 @@ func removeAtIndex(jobs []*Job, i int) []*Job {
 	return jobs
 }
 
-// LimitRunsTo limits the number of executions of this job to n. However,
-// the job will still remain in the scheduler
+// LimitRunsTo limits the number of executions of this job to n.
+// Upon reaching the limit, the job is removed from the scheduler.
 func (s *Scheduler) LimitRunsTo(i int) *Scheduler {
 	job := s.getCurrentJob()
 	job.LimitRunsTo(i)
 	return s
 }
 
-// RemoveAfterLastRun sets the job to be removed after it's last run (when limited)
-func (s *Scheduler) RemoveAfterLastRun() *Scheduler {
+// SingletonMode prevents a new job from starting if the prior job has not yet
+// completed it's run
+func (s *Scheduler) SingletonMode() *Scheduler {
 	job := s.getCurrentJob()
-	job.RemoveAfterLastRun()
+	job.SingletonMode()
 	return s
 }
 
 // TaskPresent checks if specific job's function was added to the scheduler.
 func (s *Scheduler) TaskPresent(j interface{}) bool {
+	s.jobsMutex.RLock()
+	defer s.jobsMutex.RUnlock()
 	for _, job := range s.Jobs() {
-		if job.jobFunc == getFunctionName(j) {
+		if job.name == getFunctionName(j) {
 			return true
 		}
 	}
@@ -448,6 +473,8 @@ func (s *Scheduler) TaskPresent(j interface{}) bool {
 }
 
 func (s *Scheduler) jobPresent(j *Job) bool {
+	s.jobsMutex.RLock()
+	defer s.jobsMutex.RUnlock()
 	for _, job := range s.Jobs() {
 		if job == j {
 			return true
@@ -458,6 +485,9 @@ func (s *Scheduler) jobPresent(j *Job) bool {
 
 // Clear clear all Jobs from this scheduler
 func (s *Scheduler) Clear() {
+	for _, j := range s.Jobs() {
+		j.stopTimer()
+	}
 	s.setJobs(make([]*Job, 0))
 }
 
@@ -470,55 +500,85 @@ func (s *Scheduler) Stop() {
 
 func (s *Scheduler) stop() {
 	s.setRunning(false)
+	s.executor.stop <- struct{}{}
 }
 
 // Do specifies the jobFunc that should be called every time the Job runs
 func (s *Scheduler) Do(jobFun interface{}, params ...interface{}) (*Job, error) {
-	j := s.getCurrentJob()
-	if j.err != nil {
+	job := s.getCurrentJob()
+
+	if job.atTime != 0 && job.unit <= hours {
+		job.error = wrapOrError(job.error, ErrAtTimeNotSupported)
+	}
+
+	if job.scheduledWeekday != nil && job.unit != weeks {
+		job.error = wrapOrError(job.error, ErrWeekdayNotSupported)
+	}
+
+	if job.error != nil {
 		// delete the job from the scheduler as this job
 		// cannot be executed
-		s.RemoveByReference(j)
-		return nil, j.err
+		s.RemoveByReference(job)
+		return nil, job.error
 	}
 
 	typ := reflect.TypeOf(jobFun)
 	if typ.Kind() != reflect.Func {
 		// delete the job for the same reason as above
-		s.RemoveByReference(j)
+		s.RemoveByReference(job)
 		return nil, ErrNotAFunction
 	}
 
 	fname := getFunctionName(jobFun)
-	j.funcs[fname] = jobFun
-	j.fparams[fname] = params
-	j.jobFunc = fname
+	job.functions[fname] = jobFun
+	job.params[fname] = params
+	job.name = fname
 
 	// we should not schedule if not running since we cant foresee how long it will take for the scheduler to start
 	if s.IsRunning() {
-		s.scheduleNextRun(j)
+		s.scheduleNextRun(job)
 	}
 
-	return j, nil
+	return job, nil
 }
 
 // At schedules the Job at a specific time of day in the form "HH:MM:SS" or "HH:MM"
-func (s *Scheduler) At(t string) *Scheduler {
-	j := s.getCurrentJob()
-	hour, min, sec, err := parseTime(t)
-	if err != nil {
-		j.err = ErrTimeFormat
-		return s
+// or time.Time (note that only the hours, minutes, seconds and nanos are used).
+func (s *Scheduler) At(i interface{}) *Scheduler {
+	job := s.getCurrentJob()
+
+	switch t := i.(type) {
+	case string:
+		hour, min, sec, err := parseTime(t)
+		if err != nil {
+			job.error = wrapOrError(job.error, err)
+			return s
+		}
+		// save atTime start as duration from midnight
+		job.setAtTime(time.Duration(hour)*time.Hour + time.Duration(min)*time.Minute + time.Duration(sec)*time.Second)
+	case time.Time:
+		job.setAtTime(time.Duration(t.Hour())*time.Hour + time.Duration(t.Minute())*time.Minute + time.Duration(t.Second())*time.Second + time.Duration(t.Nanosecond())*time.Nanosecond)
+	default:
+		job.error = wrapOrError(job.error, ErrUnsupportedTimeFormat)
 	}
-	// save atTime start as duration from midnight
-	j.setAtTime(time.Duration(hour)*time.Hour + time.Duration(min)*time.Minute + time.Duration(sec)*time.Second)
-	j.startsImmediately = false
+	job.startsImmediately = false
 	return s
 }
 
 // Tag will add a tag when creating a job.
 func (s *Scheduler) Tag(t ...string) *Scheduler {
 	job := s.getCurrentJob()
+
+	if s.tags != nil {
+		for _, tag := range t {
+			if _, ok := s.tags[tag]; ok {
+				job.error = wrapOrError(job.error, ErrTagsUnique(tag))
+				return s
+			}
+			s.tags[tag] = struct{}{}
+		}
+	}
+
 	job.tags = t
 	return s
 }
@@ -536,9 +596,20 @@ func (s *Scheduler) StartAt(t time.Time) *Scheduler {
 func (s *Scheduler) setUnit(unit timeUnit) {
 	job := s.getCurrentJob()
 	if job.unit == duration {
-		job.err = ErrInvalidSelection
+		job.error = wrapOrError(job.error, ErrInvalidIntervalUnitsSelection)
 	}
 	job.unit = unit
+}
+
+// Second sets the unit with seconds
+func (s *Scheduler) Millisecond() *Scheduler {
+	return s.Milliseconds()
+}
+
+// Seconds sets the unit with seconds
+func (s *Scheduler) Milliseconds() *Scheduler {
+	s.setUnit(milliseconds)
+	return s
 }
 
 // Second sets the unit with seconds
@@ -667,4 +738,12 @@ func (s *Scheduler) getCurrentJob() *Job {
 
 func (s *Scheduler) now() time.Time {
 	return s.time.Now(s.Location())
+}
+
+// TagsUnique forces job tags to be unique across the scheduler
+// when adding tags with (s *Scheduler) Tag().
+// This does not enforce uniqueness on tags added via
+// (j *Job) Tag()
+func (s *Scheduler) TagsUnique() {
+	s.tags = make(map[string]struct{})
 }
