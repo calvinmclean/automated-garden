@@ -13,7 +13,6 @@ var plant = Plant{
 	Garden:        "garden",
 	PlantPosition: 0,
 	WateringStrategy: WateringStrategy{
-		Type:           "interval",
 		WateringAmount: 15000,
 		Interval:       "24h",
 	},

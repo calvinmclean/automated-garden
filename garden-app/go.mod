@@ -5,10 +5,11 @@ go 1.15
 require (
 	github.com/eclipse/paho.mqtt.golang v1.3.2
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-chi/chi v1.5.4
+	github.com/go-chi/chi v4.0.2+incompatible
 	github.com/go-chi/render v1.0.1
 	github.com/go-co-op/gocron v1.0.0
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
+	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/kr/text v0.2.0 // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect

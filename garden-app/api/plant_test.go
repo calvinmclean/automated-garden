@@ -24,7 +24,6 @@ func TestTopic(t *testing.T) {
 func TestWateringEvent(t *testing.T) {
 	plant := Plant{
 		WateringStrategy: WateringStrategy{
-			Type:           "interval",
 			WateringAmount: 15000,
 			Interval:       "24h",
 		},
@@ -42,7 +41,6 @@ func TestUnmarshalJSON(t *testing.T) {
 		"plant_position": 0,
 		"watering_strategy": {
 			"watering_amount": 15000,
-			"type": "interval",
 			"interval": "24h"
 		},
 		"start_date": "2020-01-15T00:00:00-07:00",
@@ -63,7 +61,6 @@ func TestUnmarshalJSON(t *testing.T) {
 		PlantPosition: 0,
 		StartDate:     &startDate,
 		WateringStrategy: WateringStrategy{
-			Type:           "interval",
 			WateringAmount: 15000,
 			Interval:       "24h",
 		},
@@ -82,7 +79,6 @@ func TestUnmarshalJSON(t *testing.T) {
 		{"SkipCount", expected.SkipCount, actual.SkipCount},
 		{"WateringAmount", expected.WateringStrategy.WateringAmount, actual.WateringStrategy.WateringAmount},
 		{"Interval", expected.WateringStrategy.Interval, actual.WateringStrategy.Interval},
-		{"Type", expected.WateringStrategy.Type, actual.WateringStrategy.Type},
 	}
 
 	for _, tt := range tests {

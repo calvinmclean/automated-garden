@@ -1,11 +1,13 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
+	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
 	"github.com/rs/xid"
 )
@@ -62,8 +64,6 @@ type StopAction struct {
 
 // Execute sends the message over MQTT to the embedded garden controller
 func (action *StopAction) Execute(p *Plant) error {
-	fmt.Printf("Stopping watering plant (all=%t)\n", action.All)
-
 	mqttClient, err := mqtt.NewMQTTClient()
 	if err != nil {
 		panic(err)
@@ -99,14 +99,31 @@ type WaterMessage struct {
 	PlantPosition int    `json:"plant_position"`
 }
 
-// Execute sends the message over MQTT to the embedded garden controller
+// Execute sends the message over MQTT to the embedded garden controller. Before doing this, it
+// will first check if watering is set to skip and if the moisture value is below the threshold
+// if configured
 func (action *WaterAction) Execute(p *Plant) error {
 	if p.SkipCount > 0 {
-		fmt.Printf("Plant %s is configured to skip watering\n", p.ID)
 		p.SkipCount--
-		return nil
+		return fmt.Errorf("plant %s is configured to skip watering", p.ID)
 	}
-	fmt.Printf("Watering plant %s for %dms\n", p.ID, action.Duration)
+	if p.WateringStrategy.MinimumMoisture > 0 {
+		client, err := influxdb.NewClient()
+		if err != nil {
+			return fmt.Errorf("unable to initialize influxdb client: %v", err)
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
+		defer cancel()
+		moisture, err := client.GetMoisture(ctx, p.PlantPosition, p.Garden)
+		if err != nil {
+			return fmt.Errorf("unable to query influxdb for moisture data: %v", err)
+		}
+
+		if moisture > float64(p.WateringStrategy.MinimumMoisture) {
+			return fmt.Errorf("moisture value %f%% is above threshold %d%%", moisture, p.WateringStrategy.MinimumMoisture)
+		}
+	}
 
 	msg, err := json.Marshal(WaterMessage{
 		Duration:      action.Duration,

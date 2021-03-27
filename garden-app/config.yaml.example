@@ -9,3 +9,8 @@ mqtt:
   skip_topic: "{{.Garden}}/command/skip"
   stop_topic: "{{.Garden}}/command/stop"
   stop_all_topic: "{{.Garden}}/command/stop_all"
+influxdb:
+  address: "http://localhost:8086"
+  token: "my-token"
+  org: "garden"
+  bucket: "water"
