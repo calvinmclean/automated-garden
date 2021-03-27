@@ -42,6 +42,19 @@ services:
       - "1883:1883"
       - "9001:9001"
 
+  # garden-app:
+  #   image: "calvinmclean/garden-app:latest"
+  #   build: "../garden-app"
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - "./config.yaml:/app/config.yaml"
+  #     - "./plants.yaml:/app/plants.yaml"
+  #   command:
+  #     - "server"
+  #     - "--config"
+  #     - "/app/config.yaml"
+
 volumes:
   influxdb:
   grafana:
