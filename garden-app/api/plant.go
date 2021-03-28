@@ -2,11 +2,14 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"text/template"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
 	"github.com/rs/xid"
 )
 
@@ -33,12 +36,6 @@ type WateringStrategy struct {
 	MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
 }
 
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (p *Plant) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
-
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
 func (p *Plant) Bind(r *http.Request) error {
@@ -60,4 +57,16 @@ func (p *Plant) Topic(topic string) (string, error) {
 // WateringAction creates the default/basic WateringAction for this Plant
 func (p *Plant) WateringAction() *WaterAction {
 	return &WaterAction{Duration: p.WateringStrategy.WateringAmount}
+}
+
+// GetMoisture will read the most recent moisture data from InfluxDB for this Plant
+func (p *Plant) GetMoisture() (float64, error) {
+	client, err := influxdb.NewClient()
+	if err != nil {
+		return 0, fmt.Errorf("unable to initialize influxdb client: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
+	defer cancel()
+	return client.GetMoisture(ctx, p.PlantPosition, p.Garden)
 }

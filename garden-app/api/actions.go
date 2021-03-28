@@ -1,13 +1,11 @@
 package api
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
 	"github.com/rs/xid"
 )
@@ -103,16 +101,9 @@ func (action *WaterAction) Execute(p *Plant) error {
 		return fmt.Errorf("plant %s is configured to skip watering", p.ID)
 	}
 	if p.WateringStrategy.MinimumMoisture > 0 {
-		client, err := influxdb.NewClient()
+		moisture, err := p.GetMoisture()
 		if err != nil {
-			return fmt.Errorf("unable to initialize influxdb client: %v", err)
-		}
-
-		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
-		defer cancel()
-		moisture, err := client.GetMoisture(ctx, p.PlantPosition, p.Garden)
-		if err != nil {
-			return fmt.Errorf("unable to query influxdb for moisture data: %v", err)
+			return fmt.Errorf("error getting Plant's moisture data: %v", err)
 		}
 
 		if moisture > float64(p.WateringStrategy.MinimumMoisture) {

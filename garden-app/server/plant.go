@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -13,13 +14,56 @@ import (
 
 // AllPlantsResponse is a simple struct being used to render and return a list of all Plants
 type AllPlantsResponse struct {
-	Plants []*api.Plant `json:"plants"`
+	Plants []*PlantResponse `json:"plants"`
+}
+
+// NewAllPlantsResponse will create an AllPlantsResponse from a list of Plants
+func NewAllPlantsResponse(plants []*api.Plant) *AllPlantsResponse {
+	plantResponses := []*PlantResponse{}
+	for _, p := range plants {
+		plantResponses = append(plantResponses, NewPlantResponse(p, 0))
+	}
+	return &AllPlantsResponse{plantResponses}
 }
 
 // Render will take the map of Plants and convert it to a list for a more RESTy response
 func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
+
+// PlantResponse is used to represent a Plant in the response body with the additional Moisture data
+// and hypermedia Links fields
+type PlantResponse struct {
+	*api.Plant
+	Moisture float64 `json:"moisture,omitempty"`
+	Links    []Link  `json:"links,omitempty"`
+}
+
+// NewPlantResponse creates a self-referencing PlantResponse
+func NewPlantResponse(plant *api.Plant, moisture float64, links ...Link) *PlantResponse {
+	return &PlantResponse{
+		plant,
+		moisture,
+		append(links, Link{
+			"self",
+			fmt.Sprintf("/plants/%s", plant.ID),
+		}),
+	}
+}
+
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response
+func (p *PlantResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+// Link is used for HATEOAS-style RESP hypermedia
+type Link struct {
+	Rel  string `json:"rel"`
+	HRef string `json:"href"`
+}
+
+var moistureCache = map[xid.ID]float64{}
 
 // plantRouter creates all of the routing that is prefixed by "/plant" for interacting
 // with Plant resources
@@ -97,8 +141,18 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 // getPlant simply returns the Plant requested by the provided ID
 func getPlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value("plant").(*api.Plant)
-	if err := render.Render(w, r, plant); err != nil {
+	moisture, cached := moistureCache[plant.ID]
+	plantResponse := NewPlantResponse(plant, moisture)
+	if err := render.Render(w, r, plantResponse); err != nil {
 		render.Render(w, r, ErrRender(err))
+	}
+
+	// If moisture was not already cached (and plant has moisture sensor), asynchronously get it and cache it
+	// Otherwise, clear cache
+	if !cached && plant.WateringStrategy.MinimumMoisture > 0 {
+		go getAndCacheMoisture(plant)
+	} else {
+		delete(moistureCache, plant.ID)
 	}
 }
 
@@ -124,7 +178,7 @@ func updatePlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, plant); err != nil {
+	if err := render.Render(w, r, NewPlantResponse(plant, 0)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -148,7 +202,7 @@ func endDatePlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, plant); err != nil {
+	if err := render.Render(w, r, NewPlantResponse(plant, 0)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -157,7 +211,7 @@ func endDatePlant(w http.ResponseWriter, r *http.Request) {
 func getAllPlants(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 	plants := storageClient.GetPlants(getEndDated)
-	if err := render.Render(w, r, &AllPlantsResponse{plants}); err != nil {
+	if err := render.Render(w, r, NewAllPlantsResponse(plants)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -190,7 +244,15 @@ func createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, plant); err != nil {
+	if err := render.Render(w, r, NewPlantResponse(plant, 0)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
+}
+
+func getAndCacheMoisture(plant *api.Plant) {
+	moisture, err := plant.GetMoisture()
+	if err != nil {
+		logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
+	}
+	moistureCache[plant.ID] = moisture
 }
