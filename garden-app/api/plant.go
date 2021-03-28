@@ -15,18 +15,22 @@ import (
 // the Plant was in the system, plus some information for watering like the duration to water for, how
 // often to water, and the PlantPosition field will tell the microcontroller which plant to water
 type Plant struct {
-	Name             string     `json:"name" yaml:"name,omitempty"`
-	ID               xid.ID     `json:"id" yaml:"id,omitempty"`
-	Garden           string     `json:"garden" yaml:"garden,omitempty"`
-	PlantPosition    int        `json:"plant_position" yaml:"plant_position"`
-	StartDate        *time.Time `json:"start_date" yaml:"start_date,omitempty"`
-	EndDate          *time.Time `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	SkipCount        int        `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
-	WateringStrategy struct {
-		WateringAmount  int    `json:"watering_amount" yaml:"watering_amount"`
-		Interval        string `json:"interval" yaml:"interval"`
-		MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
-	} `json:"watering_strategy,omitempty" yaml:"watering_strategy,omitempty"`
+	Name             string           `json:"name" yaml:"name,omitempty"`
+	ID               xid.ID           `json:"id" yaml:"id,omitempty"`
+	Garden           string           `json:"garden" yaml:"garden,omitempty"`
+	PlantPosition    int              `json:"plant_position" yaml:"plant_position"`
+	StartDate        *time.Time       `json:"start_date" yaml:"start_date,omitempty"`
+	EndDate          *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	SkipCount        int              `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
+	WateringStrategy WateringStrategy `json:"watering_strategy,omitempty" yaml:"watering_strategy,omitempty"`
+}
+
+// WateringStrategy allows the user to have more control over how the Plant is watered using an Interval
+// and optional MinimumMoisture which acts as the threshold the Plant's soil should be above
+type WateringStrategy struct {
+	WateringAmount  int    `json:"watering_amount" yaml:"watering_amount"`
+	Interval        string `json:"interval" yaml:"interval"`
+	MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
