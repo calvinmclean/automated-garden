@@ -22,6 +22,7 @@ const (
 |> mean()`
 )
 
+// moistureQueryData is used to fill out the moistureQueryTemplate
 type moistureQueryData struct {
 	Bucket        string
 	Start         time.Duration
@@ -29,6 +30,7 @@ type moistureQueryData struct {
 	GardenTopic   string
 }
 
+// String executes the moistureQueryTemplate with the moistureQueryData to create a string
 func (q moistureQueryData) String() (string, error) {
 	queryTemplate := template.Must(template.New("query").Parse(moistureQueryTemplate))
 	var queryBytes bytes.Buffer
@@ -39,30 +41,33 @@ func (q moistureQueryData) String() (string, error) {
 	return queryBytes.String(), nil
 }
 
-type Config struct {
-	Address string `mapstructure:"address"`
-	Token   string `mapstructure:"token"`
-	Org     string `mapstructure:"org"`
-	Bucket  string `mapstructure:"bucket"`
-}
-
+// Client wraps an InfluxDB2 Client and our custom config
 type Client struct {
 	influxdb2.Client
-	Config
+	config *struct {
+		Address string `mapstructure:"address"`
+		Token   string `mapstructure:"token"`
+		Org     string `mapstructure:"org"`
+		Bucket  string `mapstructure:"bucket"`
+	}
 }
 
+// NewClient creates an InfluxDB client from the viper config
 func NewClient() (*Client, error) {
-	var c Config
-	if err := viper.UnmarshalKey("influxdb", &c); err != nil {
-		return &Client{}, err
+	var client Client
+	if err := viper.UnmarshalKey("influxdb", &client.config); err != nil {
+		return &client, err
 	}
 
-	return &Client{influxdb2.NewClient(c.Address, c.Token), c}, nil
+	client.Client = influxdb2.NewClient(client.config.Address, client.config.Token)
+	return &client, nil
 }
 
+// GetMoisture returns the plant's average soil moisture in the last 15 minutes
 func (client *Client) GetMoisture(ctx context.Context, plantPosition int, gardenTopic string) (result float64, err error) {
+	// Prepare query
 	queryString, err := moistureQueryData{
-		Bucket:        client.Bucket,
+		Bucket:        client.config.Bucket,
 		Start:         time.Minute * 15,
 		PlantPosition: plantPosition,
 		GardenTopic:   gardenTopic,
@@ -71,21 +76,17 @@ func (client *Client) GetMoisture(ctx context.Context, plantPosition int, garden
 		return
 	}
 
-	queryAPI := client.QueryAPI(client.Org)
+	// Query InfluxDB
+	queryAPI := client.QueryAPI(client.config.Org)
 	queryResult, err := queryAPI.Query(ctx, queryString)
 	if err != nil {
 		return
 	}
-	// Iterate over query response
-	// for queryResult.Next() {
-	// 	// Access data
-	// 	fmt.Printf("value: %v\n", queryResult.Record().Value())
-	// 	result = queryResult.Record().Value().(float64)
-	// }
+
+	// Read and return the result
 	if queryResult.Next() {
 		result = queryResult.Record().Value().(float64)
 	}
-	// check for an error
 	err = queryResult.Err()
 	return
 }
