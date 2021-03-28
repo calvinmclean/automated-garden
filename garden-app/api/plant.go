@@ -53,6 +53,7 @@ func (p *Plant) Topic(topic string) (string, error) {
 	return result.String(), err
 }
 
+// WateringAction creates the default/basic WateringAction for this Plant
 func (p *Plant) WateringAction() *WaterAction {
 	return &WaterAction{Duration: p.WateringStrategy.WateringAmount}
 }
