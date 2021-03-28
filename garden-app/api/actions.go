@@ -68,6 +68,7 @@ func (action *StopAction) Execute(p *Plant) error {
 	if err != nil {
 		return fmt.Errorf("unable to create MQTT Client: %v", err)
 	}
+	defer mqttClient.Disconnect(0)
 
 	templateString := mqttClient.StopTopic
 	if action.All {
@@ -78,14 +79,7 @@ func (action *StopAction) Execute(p *Plant) error {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	defer mqttClient.Disconnect(0)
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
-	}
-	if token := mqttClient.Publish(topic, 0, false, "no message"); token.Wait() && token.Error() != nil {
-		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
-	}
-	return nil
+	return mqttClient.Publish(topic, []byte("no message"))
 }
 
 // WaterAction is an action for watering a Plant for the specified amount of time
@@ -139,18 +133,12 @@ func (action *WaterAction) Execute(p *Plant) error {
 	if err != nil {
 		return fmt.Errorf("unable to create MQTT Client: %v", err)
 	}
+	defer mqttClient.Disconnect(0)
 
 	topic, err := p.Topic(mqttClient.WateringTopic)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	defer mqttClient.Disconnect(0)
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
-	}
-	if token := mqttClient.Publish(topic, 0, false, msg); token.Wait() && token.Error() != nil {
-		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
-	}
-	return nil
+	return mqttClient.Publish(topic, msg)
 }

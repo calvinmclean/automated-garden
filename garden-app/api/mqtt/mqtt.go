@@ -38,3 +38,13 @@ func NewMQTTClient() (Client, error) {
 	opts.SetClientID(c.ClientID)
 	return Client{mqtt.NewClient(opts), c}, nil
 }
+
+func (client Client) Publish(topic string, message []byte) error {
+	if token := client.Client.Connect(); token.Wait() && token.Error() != nil {
+		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
+	}
+	if token := client.Client.Publish(topic, 0, false, message); token.Wait() && token.Error() != nil {
+		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
+	}
+	return nil
+}
