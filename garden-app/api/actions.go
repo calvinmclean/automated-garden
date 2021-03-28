@@ -96,10 +96,6 @@ type WaterMessage struct {
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
 func (action *WaterAction) Execute(p *Plant) error {
-	if p.SkipCount > 0 {
-		p.SkipCount--
-		return fmt.Errorf("plant %s is configured to skip watering", p.ID)
-	}
 	if p.WateringStrategy.MinimumMoisture > 0 {
 		moisture, err := p.GetMoisture()
 		if err != nil {
@@ -109,6 +105,10 @@ func (action *WaterAction) Execute(p *Plant) error {
 		if moisture > float64(p.WateringStrategy.MinimumMoisture) {
 			return fmt.Errorf("moisture value %f%% is above threshold %d%%", moisture, p.WateringStrategy.MinimumMoisture)
 		}
+	}
+	if p.SkipCount > 0 {
+		p.SkipCount--
+		return fmt.Errorf("plant %s is configured to skip watering", p.ID)
 	}
 
 	msg, err := json.Marshal(WaterMessage{
