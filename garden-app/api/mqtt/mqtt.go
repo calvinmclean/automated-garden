@@ -36,15 +36,5 @@ func NewMQTTClient() (Client, error) {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", c.Broker, c.Port))
 	opts.SetClientID(c.ClientID)
-	opts.OnConnect = connectHandler
-	opts.OnConnectionLost = connectLostHandler
 	return Client{mqtt.NewClient(opts), c}, nil
-}
-
-var connectHandler mqtt.OnConnectHandler = func(client mqtt.Client) {
-	fmt.Println("MQTT connected")
-}
-
-var connectLostHandler mqtt.ConnectionLostHandler = func(client mqtt.Client, err error) {
-	fmt.Printf("MQTT connection lost: %v", err)
 }
