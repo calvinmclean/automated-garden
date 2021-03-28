@@ -66,7 +66,7 @@ type StopAction struct {
 func (action *StopAction) Execute(p *Plant) error {
 	mqttClient, err := mqtt.NewMQTTClient()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unable to create MQTT Client: %v", err)
 	}
 
 	templateString := mqttClient.StopTopic
@@ -75,16 +75,17 @@ func (action *StopAction) Execute(p *Plant) error {
 	}
 	topic, err := p.Topic(templateString)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
 	defer mqttClient.Disconnect(0)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		return token.Error()
+		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
 	}
-	token := mqttClient.Publish(topic, 0, false, "no message")
-	token.Wait()
-	return token.Error()
+	if token := mqttClient.Publish(topic, 0, false, "no message"); token.Wait() && token.Error() != nil {
+		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
+	}
+	return nil
 }
 
 // WaterAction is an action for watering a Plant for the specified amount of time
@@ -131,24 +132,25 @@ func (action *WaterAction) Execute(p *Plant) error {
 		PlantPosition: p.PlantPosition,
 	})
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unable to marshal WaterMessage to JSON: %v", err)
 	}
 
 	mqttClient, err := mqtt.NewMQTTClient()
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unable to create MQTT Client: %v", err)
 	}
 
 	topic, err := p.Topic(mqttClient.WateringTopic)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
 	defer mqttClient.Disconnect(0)
 	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		return token.Error()
+		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
 	}
-	token := mqttClient.Publish(topic, 0, false, msg)
-	token.Wait()
-	return token.Error()
+	if token := mqttClient.Publish(topic, 0, false, msg); token.Wait() && token.Error() != nil {
+		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
+	}
+	return nil
 }
