@@ -76,7 +76,7 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Infof("Recieved request to perform action on Plant %s\n", plant.ID)
+	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
 	if err := data.Execute(plant); err != nil {
 		render.Render(w, r, ServerError(err))
 		return
