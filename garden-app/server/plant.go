@@ -78,7 +78,7 @@ func plantRouter(r chi.Router) {
 
 		r.Post("/action", plantAction)
 		r.Get("/", getPlant)
-		r.Put("/", updatePlant)
+		r.Patch("/", updatePlant)
 		r.Delete("/", endDatePlant)
 	})
 }
