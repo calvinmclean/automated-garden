@@ -35,8 +35,9 @@ func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) erro
 // and hypermedia Links fields
 type PlantResponse struct {
 	*api.Plant
-	Moisture float64 `json:"moisture,omitempty"`
-	Links    []Link  `json:"links,omitempty"`
+	Moisture         float64    `json:"moisture,omitempty"`
+	NextWateringTime *time.Time `json:"next_watering_time,omitempty"`
+	Links            []Link     `json:"links,omitempty"`
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
@@ -44,6 +45,7 @@ func NewPlantResponse(plant *api.Plant, moisture float64, links ...Link) *PlantR
 	return &PlantResponse{
 		plant,
 		moisture,
+		getNextWateringTime(plant),
 		append(links, Link{
 			"self",
 			fmt.Sprintf("/plants/%s", plant.ID),

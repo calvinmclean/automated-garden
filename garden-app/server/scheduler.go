@@ -61,3 +61,16 @@ func resetWateringSchedule(p *api.Plant) error {
 	}
 	return addWateringSchedule(p)
 }
+
+// getNextWateringTime determines the next scheduled watering time for a given Plant using tags
+func getNextWateringTime(p *api.Plant) *time.Time {
+	for _, job := range scheduler.Jobs() {
+		for _, tag := range job.Tags() {
+			if tag == p.ID.String() {
+				result := job.NextRun()
+				return &result
+			}
+		}
+	}
+	return nil
+}
