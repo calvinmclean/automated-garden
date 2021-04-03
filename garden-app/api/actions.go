@@ -2,9 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
 	"github.com/rs/xid"
@@ -21,18 +19,6 @@ type ActionExecutor interface {
 type AggregateAction struct {
 	Water *WaterAction `json:"water"`
 	Stop  *StopAction  `json:"stop"`
-}
-
-// Bind is used to make this struct compatible with our REST API implemented with go-chi.
-// It will verify that the request is valid
-func (action *AggregateAction) Bind(r *http.Request) error {
-	// a.AggregateAction is nil if no AggregateAction fields are sent in the request. Return an
-	// error to avoid a nil pointer dereference.
-	if action == nil || (action.Water == nil && action.Stop == nil) {
-		return errors.New("missing required action fields")
-	}
-
-	return nil
 }
 
 // Execute is responsible for performing the actual individual actions in this aggregate.

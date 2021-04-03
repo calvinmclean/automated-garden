@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -11,59 +10,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
 )
-
-// AllPlantsResponse is a simple struct being used to render and return a list of all Plants
-type AllPlantsResponse struct {
-	Plants []*PlantResponse `json:"plants"`
-}
-
-// NewAllPlantsResponse will create an AllPlantsResponse from a list of Plants
-func NewAllPlantsResponse(plants []*api.Plant) *AllPlantsResponse {
-	plantResponses := []*PlantResponse{}
-	for _, p := range plants {
-		plantResponses = append(plantResponses, NewPlantResponse(p, 0))
-	}
-	return &AllPlantsResponse{plantResponses}
-}
-
-// Render will take the map of Plants and convert it to a list for a more RESTy response
-func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
-
-// PlantResponse is used to represent a Plant in the response body with the additional Moisture data
-// and hypermedia Links fields
-type PlantResponse struct {
-	*api.Plant
-	Moisture         float64    `json:"moisture,omitempty"`
-	NextWateringTime *time.Time `json:"next_watering_time,omitempty"`
-	Links            []Link     `json:"links,omitempty"`
-}
-
-// NewPlantResponse creates a self-referencing PlantResponse
-func NewPlantResponse(plant *api.Plant, moisture float64, links ...Link) *PlantResponse {
-	return &PlantResponse{
-		plant,
-		moisture,
-		getNextWateringTime(plant),
-		append(links, Link{
-			"self",
-			fmt.Sprintf("/plants/%s", plant.ID),
-		}),
-	}
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (p *PlantResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
-
-// Link is used for HATEOAS-style RESP hypermedia
-type Link struct {
-	Rel  string `json:"rel"`
-	HRef string `json:"href"`
-}
 
 var moistureCache = map[xid.ID]float64{}
 
@@ -116,14 +62,14 @@ func plantContextMiddleware(next http.Handler) http.Handler {
 func plantAction(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value("plant").(*api.Plant)
 
-	data := &api.AggregateAction{}
-	if err := render.Bind(r, data); err != nil {
+	action := &AggregateActionRequest{}
+	if err := render.Bind(r, action); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
 
 	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
-	if err := data.Execute(plant); err != nil {
+	if err := action.Execute(plant); err != nil {
 		render.Render(w, r, ServerError(err))
 		return
 	}
@@ -160,13 +106,14 @@ func getPlant(w http.ResponseWriter, r *http.Request) {
 
 // updatePlant will change any specified fields of the Plant and save it
 func updatePlant(w http.ResponseWriter, r *http.Request) {
-	plant := r.Context().Value("plant").(*api.Plant)
+	request := &PlantRequest{r.Context().Value("plant").(*api.Plant)}
 
 	// Read the request body into existing plant to overwrite fields
-	if err := render.Bind(r, plant); err != nil {
+	if err := render.Bind(r, request); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+	plant := request.Plant
 
 	// Update the watering schedule for the Plant
 	if err := resetWateringSchedule(plant); err != nil {
@@ -220,11 +167,13 @@ func getAllPlants(w http.ResponseWriter, r *http.Request) {
 
 // createPlant will create a new Plant resource
 func createPlant(w http.ResponseWriter, r *http.Request) {
-	plant := &api.Plant{}
-	if err := render.Bind(r, plant); err != nil {
+	request := &PlantRequest{}
+	if err := render.Bind(r, request); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
+	plant := request.Plant
 
 	// Assign new unique ID and StartDate to plant
 	plant.ID = xid.New()

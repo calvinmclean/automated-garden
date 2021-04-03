@@ -3,9 +3,7 @@ package api
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
-	"net/http"
 	"text/template"
 	"time"
 
@@ -34,16 +32,6 @@ type WateringStrategy struct {
 	WateringAmount  int    `json:"watering_amount" yaml:"watering_amount"`
 	Interval        string `json:"interval" yaml:"interval"`
 	MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
-}
-
-// Bind is used to make this struct compatible with the go-chi webserver for reading incoming
-// JSON requests
-func (p *Plant) Bind(r *http.Request) error {
-	if p == nil {
-		return errors.New("missing required action fields")
-	}
-
-	return nil
 }
 
 // Topic is used to populate and return a MQTT Topic string from a template string input
