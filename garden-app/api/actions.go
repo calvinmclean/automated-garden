@@ -68,7 +68,8 @@ func (action *StopAction) Execute(p *Plant) error {
 
 // WaterAction is an action for watering a Plant for the specified amount of time
 type WaterAction struct {
-	Duration int `json:"duration"`
+	Duration       int  `json:"duration"`
+	IgnoreMoisture bool `json:"ignore_moisture"`
 }
 
 // WaterMessage is the message being sent over MQTT to the embedded garden controller
@@ -82,7 +83,7 @@ type WaterMessage struct {
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
 func (action *WaterAction) Execute(p *Plant) error {
-	if p.WateringStrategy.MinimumMoisture > 0 {
+	if p.WateringStrategy.MinimumMoisture > 0 && !action.IgnoreMoisture {
 		moisture, err := p.GetMoisture()
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)
