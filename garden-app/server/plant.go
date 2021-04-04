@@ -2,37 +2,69 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
-	"github.com/go-chi/chi"
+	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
 )
 
-var moistureCache = map[xid.ID]float64{}
+// PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
+// to function, including storage, scheduling, and caching
+type PlantsResource struct {
+	storageClient storage.Client
+	scheduler     *gocron.Scheduler
+	moistureCache map[xid.ID]float64
+}
 
-// plantRouter creates all of the routing that is prefixed by "/plant" for interacting
-// with Plant resources
-func plantRouter(r chi.Router) {
-	r.Post("/", createPlant)
-	r.Get("/", getAllPlants)
+// NewPlantsResource creates a new PlantsResource
+func NewPlantsResource(filename string) (pr PlantsResource, err error) {
+	pr = PlantsResource{moistureCache: map[xid.ID]float64{}}
 
+	pr.storageClient, err = storage.NewYAMLClient(filename)
+	if err != nil {
+		err = fmt.Errorf("unable to initialize storage client: %v", err)
+		return
+	}
+	pr.scheduler = gocron.NewScheduler(time.Local)
+
+	// Initialize watering Jobs for each Plant from the storage client
+	for _, p := range pr.storageClient.GetPlants(false) {
+		if err = pr.addWateringSchedule(p); err != nil {
+			err = fmt.Errorf("unable to add watering Job for Plant %s: %v", p.ID.String(), err)
+			return
+		}
+	}
+
+	pr.scheduler.StartAsync()
+	return
+}
+
+// routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
+func (pr PlantsResource) routes() chi.Router {
+	r := chi.NewRouter()
+	r.Post("/", pr.createPlant)
+	r.Get("/", pr.getAllPlants)
 	r.Route("/{plantID}", func(r chi.Router) {
-		r.Use(plantContextMiddleware)
+		r.Use(pr.plantContextMiddleware)
 
-		r.Post("/action", plantAction)
-		r.Get("/", getPlant)
-		r.Patch("/", updatePlant)
-		r.Delete("/", endDatePlant)
+		r.Post("/action", pr.plantAction)
+		r.Get("/", pr.getPlant)
+		r.Patch("/", pr.updatePlant)
+		r.Delete("/", pr.endDatePlant)
 	})
+	return r
 }
 
 // plantContextMiddleware middleware is used to load a Plant object from the URL
 // parameters passed through as the request. In case the Plant could not be found,
 // we stop here and return a 404.
-func plantContextMiddleware(next http.Handler) http.Handler {
+func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Convert ID string to xid
 		id, err := xid.FromString(chi.URLParam(r, "plantID"))
@@ -41,7 +73,7 @@ func plantContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		plant, err := storageClient.GetPlant(id)
+		plant, err := pr.storageClient.GetPlant(id)
 		if err != nil {
 			render.Render(w, r, ServerError(err))
 			return
@@ -59,7 +91,7 @@ func plantContextMiddleware(next http.Handler) http.Handler {
 // plantAction reads an AggregateAction request and uses it to execute one of the actions
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
-func plantAction(w http.ResponseWriter, r *http.Request) {
+func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value("plant").(*api.Plant)
 
 	action := &AggregateActionRequest{}
@@ -76,7 +108,7 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 
 	// Save the Plant in case anything was changed (watering a plant might change the skip_count field)
 	// TODO: consider giving the action the ability to use the storage client
-	if err := storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		logger.Error("Error saving plant: ", err)
 		render.Render(w, r, ServerError(err))
 		return
@@ -87,10 +119,10 @@ func plantAction(w http.ResponseWriter, r *http.Request) {
 }
 
 // getPlant simply returns the Plant requested by the provided ID
-func getPlant(w http.ResponseWriter, r *http.Request) {
+func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value("plant").(*api.Plant)
-	moisture, cached := moistureCache[plant.ID]
-	plantResponse := NewPlantResponse(plant, moisture)
+	moisture, cached := pr.moistureCache[plant.ID]
+	plantResponse := pr.NewPlantResponse(plant, moisture)
 	if err := render.Render(w, r, plantResponse); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
@@ -98,14 +130,14 @@ func getPlant(w http.ResponseWriter, r *http.Request) {
 	// If moisture was not already cached (and plant has moisture sensor), asynchronously get it and cache it
 	// Otherwise, clear cache
 	if !cached && plant.WateringStrategy.MinimumMoisture > 0 {
-		go getAndCacheMoisture(plant)
+		go pr.getAndCacheMoisture(plant)
 	} else {
-		delete(moistureCache, plant.ID)
+		delete(pr.moistureCache, plant.ID)
 	}
 }
 
 // updatePlant will change any specified fields of the Plant and save it
-func updatePlant(w http.ResponseWriter, r *http.Request) {
+func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	request := &PlantRequest{r.Context().Value("plant").(*api.Plant)}
 
 	// Read the request body into existing plant to overwrite fields
@@ -116,57 +148,57 @@ func updatePlant(w http.ResponseWriter, r *http.Request) {
 	plant := request.Plant
 
 	// Update the watering schedule for the Plant
-	if err := resetWateringSchedule(plant); err != nil {
+	if err := pr.resetWateringSchedule(plant); err != nil {
 		render.Render(w, r, ServerError(err))
 		return
 	}
 
 	// Save the Plant
-	if err := storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, ServerError(err))
 		return
 	}
 
-	if err := render.Render(w, r, NewPlantResponse(plant, 0)); err != nil {
+	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // endDatePlant will mark the Plant's end date as now and save it
-func endDatePlant(w http.ResponseWriter, r *http.Request) {
+func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value("plant").(*api.Plant)
 
 	// Set end date of Plant and save
 	now := time.Now()
 	plant.EndDate = &now
-	if err := storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, ServerError(err))
 		return
 	}
 
 	// Remove scheduled watering Job
-	if err := removeWateringSchedule(plant); err != nil {
+	if err := pr.removeWateringSchedule(plant); err != nil {
 		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
 		render.Render(w, r, ServerError(err))
 		return
 	}
 
-	if err := render.Render(w, r, NewPlantResponse(plant, 0)); err != nil {
+	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // getAllPlants will return a list of all Plants
-func getAllPlants(w http.ResponseWriter, r *http.Request) {
+func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
-	plants := storageClient.GetPlants(getEndDated)
-	if err := render.Render(w, r, NewAllPlantsResponse(plants)); err != nil {
+	plants := pr.storageClient.GetPlants(getEndDated)
+	if err := render.Render(w, r, pr.NewAllPlantsResponse(plants)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // createPlant will create a new Plant resource
-func createPlant(w http.ResponseWriter, r *http.Request) {
+func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	request := &PlantRequest{}
 	if err := render.Bind(r, request); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -183,27 +215,27 @@ func createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Start watering schedule
-	if err := addWateringSchedule(plant); err != nil {
+	if err := pr.addWateringSchedule(plant); err != nil {
 		logger.Errorf("Unable to add watering Job for Plant %s: %v", plant.ID.String(), err)
 	}
 
 	// Save the Plant
-	if err := storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		logger.Error("Error saving plant: ", err)
 		render.Render(w, r, ServerError(err))
 		return
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, NewPlantResponse(plant, 0)); err != nil {
+	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func getAndCacheMoisture(plant *api.Plant) {
+func (pr PlantsResource) getAndCacheMoisture(plant *api.Plant) {
 	moisture, err := plant.GetMoisture()
 	if err != nil {
 		logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
 	}
-	moistureCache[plant.ID] = moisture
+	pr.moistureCache[plant.ID] = moisture
 }

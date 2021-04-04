@@ -66,10 +66,10 @@ type AllPlantsResponse struct {
 }
 
 // NewAllPlantsResponse will create an AllPlantsResponse from a list of Plants
-func NewAllPlantsResponse(plants []*api.Plant) *AllPlantsResponse {
+func (pr PlantsResource) NewAllPlantsResponse(plants []*api.Plant) *AllPlantsResponse {
 	plantResponses := []*PlantResponse{}
 	for _, p := range plants {
-		plantResponses = append(plantResponses, NewPlantResponse(p, 0))
+		plantResponses = append(plantResponses, pr.NewPlantResponse(p, 0))
 	}
 	return &AllPlantsResponse{plantResponses}
 }
@@ -89,11 +89,11 @@ type PlantResponse struct {
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
-func NewPlantResponse(plant *api.Plant, moisture float64, links ...Link) *PlantResponse {
+func (pr PlantsResource) NewPlantResponse(plant *api.Plant, moisture float64, links ...Link) *PlantResponse {
 	return &PlantResponse{
 		plant,
 		moisture,
-		getNextWateringTime(plant),
+		pr.getNextWateringTime(plant),
 		append(links, Link{
 			"self",
 			fmt.Sprintf("/plants/%s", plant.ID),

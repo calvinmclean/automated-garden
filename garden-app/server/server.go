@@ -8,19 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
-	"github.com/go-chi/chi"
-	"github.com/go-chi/chi/middleware"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
-	"github.com/go-co-op/gocron"
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	storageClient storage.Client
-	logger        *logrus.Logger
-	scheduler     *gocron.Scheduler
-)
+var logger *logrus.Logger
 
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
 // and is called by the "server" command
@@ -47,18 +41,13 @@ func Run(port int, plantsFilename string) {
 	r.Get("/*", staticHandler)
 
 	// RESTy routes for Plant API actions
-	r.Route("/plants", plantRouter)
-
-	// Read Plant information from a YAML file
-	var err error
-	storageClient, err = storage.NewYAMLClient(plantsFilename)
+	// The PlantsResource will initialize the Scheduler and Storage Client
+	plantsResource, err := NewPlantsResource(plantsFilename)
 	if err != nil {
-		logger.Error("Unable to initialize storage client: ", err)
+		logger.Error("Error initializing '/plants' endpoint: ", err)
 		os.Exit(1)
 	}
-
-	// Initialize Scheduler and schedule watering for each existing Plant
-	initializeScheduler()
+	r.Mount("/plants", plantsResource.routes())
 
 	http.ListenAndServe(fmt.Sprintf(":%d", port), r)
 }
