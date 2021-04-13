@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"time"
@@ -12,22 +13,27 @@ import (
 
 // YAMLClient implements the Client interface to use a YAML file as a storage mechanism
 type YAMLClient struct {
-	filename string
+	// filename string
 	plants   map[xid.ID]*api.Plant
+	filename string
+	Config   Config
 }
 
 // NewYAMLClient will read the plants from the file and store them in a map
-func NewYAMLClient(filename string) (*YAMLClient, error) {
-	client := &YAMLClient{filename: filename}
+func NewYAMLClient(config Config) (*YAMLClient, error) {
+	if _, ok := config.Options["filename"]; !ok {
+		return nil, fmt.Errorf("missing config key 'filename'")
+	}
+	client := &YAMLClient{filename: config.Options["filename"], Config: config}
 
 	// If file does not exist, that is fine and we will just have an empty map
-	_, err := os.Stat(filename)
+	_, err := os.Stat(client.Config.Options["filename"])
 	if os.IsNotExist(err) {
 		return client, nil
 	}
 
 	// If file exists, continue by reading its contents to the map
-	data, err := ioutil.ReadFile(filename)
+	data, err := ioutil.ReadFile(client.filename)
 	if err != nil {
 		return client, err
 	}

@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: telegraf
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: telegraf
+  template:
+    metadata:
+      labels:
+        app: telegraf
+    spec:
+      containers:
+        - name: telegraf
+          image: telegraf
+          volumeMounts:
+            - name: config
+              mountPath: /etc/telegraf
+          env:
+            - name: MQTT_WATER_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: shared-environment
+                  key: MQTT_WATER_TOPIC
+            - name: MQTT_MOISTURE_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: shared-environment
+                  key: MQTT_MOISTURE_TOPIC
+            - name: INFLUXDB_TOKEN
+              valueFrom:
+                configMapKeyRef:
+                  name: shared-environment
+                  key: INFLUXDB_TOKEN
+            - name: INFLUXDB_ORG
+              valueFrom:
+                configMapKeyRef:
+                  name: shared-environment
+                  key: INFLUXDB_ORG
+            - name: INFLUXDB_BUCKET
+              valueFrom:
+                configMapKeyRef:
+                  name: shared-environment
+                  key: INFLUXDB_BUCKET
+      volumes:
+        - name: config
+          configMap:
+            name: telegraf-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: telegraf-config
+  namespace: default
+data:
+  telegraf.conf: |
+    [global_tags]
+    [agent]
+      interval = "10s"
+      round_interval = true
+      metric_batch_size = 1000
+      metric_buffer_limit = 10000
+      collection_jitter = "0s"
+      flush_interval = "10s"
+      flush_jitter = "0s"
+      precision = ""
+      hostname = ""
+      omit_hostname = false
+    [[outputs.influxdb_v2]]
+      urls = ["http://influxdb:8086"]
+      token = "${INFLUXDB_TOKEN}"
+      organization = "${INFLUXDB_ORG}"
+      bucket = "${INFLUXDB_BUCKET}"
+    [[inputs.mqtt_consumer]]
+      servers = ["tcp://mosquitto:1883"]
+      topics = [
+        "${MQTT_WATER_TOPIC}",
+        "${MQTT_MOISTURE_TOPIC}"
+      ]
+      data_format = "influx"

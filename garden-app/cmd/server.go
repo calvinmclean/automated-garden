@@ -29,8 +29,7 @@ func init() {
 // Run will execute the Run function provided by the `server` package for running the webserver
 func Run(cmd *cobra.Command, args []string) {
 	port := viper.GetInt("web_server.port")
-	plantsFilename := viper.GetString("web_server.plants_filename")
 
 	cmd.Printf("Starting garden-app webserver on port %d...\n", port)
-	server.Run(port, plantsFilename)
+	server.Run(port)
 }

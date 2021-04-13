@@ -18,7 +18,7 @@ var logger *logrus.Logger
 
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
 // and is called by the "server" command
-func Run(port int, plantsFilename string) {
+func Run(port int) {
 	logger = logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
@@ -42,7 +42,7 @@ func Run(port int, plantsFilename string) {
 
 	// RESTy routes for Plant API actions
 	// The PlantsResource will initialize the Scheduler and Storage Client
-	plantsResource, err := NewPlantsResource(plantsFilename)
+	plantsResource, err := NewPlantsResource()
 	if err != nil {
 		logger.Error("Error initializing '/plants' endpoint: ", err)
 		os.Exit(1)

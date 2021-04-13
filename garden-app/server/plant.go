@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
+	"github.com/spf13/viper"
 )
 
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
@@ -23,10 +24,15 @@ type PlantsResource struct {
 }
 
 // NewPlantsResource creates a new PlantsResource
-func NewPlantsResource(filename string) (pr PlantsResource, err error) {
+func NewPlantsResource() (pr PlantsResource, err error) {
 	pr = PlantsResource{moistureCache: map[xid.ID]float64{}}
 
-	pr.storageClient, err = storage.NewYAMLClient(filename)
+	var storageConfig storage.Config
+	if err = viper.UnmarshalKey("storage", &storageConfig); err != nil {
+		return
+	}
+
+	pr.storageClient, err = storage.NewStorageClient(storageConfig)
 	if err != nil {
 		err = fmt.Errorf("unable to initialize storage client: %v", err)
 		return

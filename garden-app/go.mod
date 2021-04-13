@@ -3,12 +3,14 @@ module github.com/calvinmclean/automated-garden/garden-app
 go 1.16
 
 require (
+	github.com/Azure/go-autorest v11.1.2+incompatible // indirect
 	github.com/eclipse/paho.mqtt.golang v1.3.2
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-chi/chi v4.0.2+incompatible
+	github.com/go-chi/chi v4.0.2+incompatible // indirect
 	github.com/go-chi/chi/v5 v5.0.2
 	github.com/go-chi/render v1.0.1
 	github.com/go-co-op/gocron v1.0.0
+	github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
 	github.com/kr/text v0.2.0 // indirect
@@ -30,4 +32,7 @@ require (
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+	k8s.io/apimachinery v0.19.9
+	k8s.io/client-go v0.19.9
+	k8s.io/klog v0.3.1 // indirect
 )
