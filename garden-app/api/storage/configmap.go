@@ -41,12 +41,12 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	// Ccreate the in-cluster config
 	k8sConfig, err := rest.InClusterConfig()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to create InClusterConfig: %v", err)
 	}
 	// Create the clientset
 	clientset, err := kubernetes.NewForConfig(k8sConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to create Clientset: %v", err)
 	}
 
 	client.k8sClient = clientset.CoreV1().ConfigMaps("default")
@@ -54,11 +54,11 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	// Get the ConfigMap and read into map
 	configMap, err := client.k8sClient.Get(context.TODO(), client.configMapName, metav1.GetOptions{})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to get ConfigMap '%s': %v", client.configMapName, err)
 	}
 	err = yaml.Unmarshal([]byte(configMap.Data[client.keyName]), &client.plants)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to unmarshal YAML map of Plants: %v", err)
 	}
 
 	// Create start dates for Plants if it is empty
@@ -97,12 +97,18 @@ func (c *ConfigMapClient) SavePlant(plant *api.Plant) error {
 	// Marshal map to YAML bytes
 	content, err := yaml.Marshal(c.plants)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to marshal YAML string from Plants map: %v", err)
 	}
 
 	// Read the current ConfigMap, overwrite the Plants data, and update it
 	configMap, err := c.k8sClient.Get(context.TODO(), c.configMapName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("unable to get ConfigMap '%s' from K8s: %v", c.configMapName, err)
+	}
 	configMap.Data[c.keyName] = string(content)
 	_, err = c.k8sClient.Update(context.TODO(), configMap, metav1.UpdateOptions{})
-	return err
+	if err != nil {
+		return fmt.Errorf("unable to update ConfigMap '%s' in K8s cluster: %v", c.configMapName, err)
+	}
+	return nil
 }

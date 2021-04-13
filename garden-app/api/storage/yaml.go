@@ -13,7 +13,6 @@ import (
 
 // YAMLClient implements the Client interface to use a YAML file as a storage mechanism
 type YAMLClient struct {
-	// filename string
 	plants   map[xid.ID]*api.Plant
 	filename string
 	Config   Config
