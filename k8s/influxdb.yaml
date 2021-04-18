@@ -15,47 +15,17 @@ spec:
     spec:
       containers:
         - name: influxdb
-          image: quay.io/influxdb/influxdb:v2.0.2
+          image: quay.io/influxdb/influxdb:v2.0.4
           ports:
             - containerPort: 8086
-      #   - name: influxdb-setup
-      #     image: quay.io/influxdb/influxdb:v2.0.2
-      #     command:
-      #       - /entrypoint/entrypoint.sh
-      #     volumeMounts:
-      #       - name: entrypoint
-      #         mountPath: /entrypoint
-      #     env:
-      #       - name: ADMIN_USER
-      #         valueFrom:
-      #           configMapKeyRef:
-      #             name: shared-environment
-      #             key: ADMIN_USER
-      #       - name: ADMIN_PSWD
-      #         valueFrom:
-      #           configMapKeyRef:
-      #             name: shared-environment
-      #             key: ADMIN_PSWD
-      #       - name: INFLUXDB_TOKEN
-      #         valueFrom:
-      #           configMapKeyRef:
-      #             name: shared-environment
-      #             key: INFLUXDB_TOKEN
-      #       - name: INFLUXDB_ORG
-      #         valueFrom:
-      #           configMapKeyRef:
-      #             name: shared-environment
-      #             key: INFLUXDB_ORG
-      #       - name: INFLUXDB_BUCKET
-      #         valueFrom:
-      #           configMapKeyRef:
-      #             name: shared-environment
-      #             key: INFLUXDB_BUCKET
-      # volumes:
-      #   - name: entrypoint
-      #     configMap:
-      #       name: influxdb-script
-      #       defaultMode: 0755
+          volumeMounts:
+            - name: data
+              mountPath: /root/.influxdbv2
+              subPath: influxdb
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: data-pvc
 ---
 apiVersion: v1
 kind: Service
@@ -70,21 +40,3 @@ spec:
     - port: 8086
       targetPort: 8086
       nodePort: 30004
-# ---
-# apiVersion: v1
-# kind: ConfigMap
-# metadata:
-#   name: influxdb-script
-#   namespace: default
-# data:
-#   entrypoint.sh: |
-#     #!/bin/bash
-#     ping="influx ping --host http://localhost:8086"
-#     while ! eval $ping; do sleep 3; done
-#     influx setup -f \
-#         --host http://localhost:8086 \
-#         -o ${INFLUXDB_ORG} \
-#         -b ${INFLUXDB_BUCKET} \
-#         -u ${ADMIN_USER} \
-#         -p ${ADMIN_PSWD} \
-#         -t ${INFLUXDB_TOKEN}
