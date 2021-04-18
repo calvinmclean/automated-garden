@@ -54,7 +54,7 @@ data:
     web_server:
       port: 80
     mqtt:
-      broker: "mqtt"
+      broker: "mosquitto"
       port: 1883
       client_id: "garden-app"
       watering_topic: "{{.Garden}}/command/water"
@@ -109,3 +109,5 @@ data:
             watering_amount: 10000
             interval: 72h
             minimum_moisture: 45
+# in order to read/write the ConfigMap from the pod, you need to create a ClusterRoleBinding:
+# kubectl create clusterrolebinding default --clusterrole=admin --serviceaccount=default:default
