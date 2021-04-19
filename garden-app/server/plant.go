@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/render"
 	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
-	"github.com/spf13/viper"
 )
 
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
@@ -21,18 +20,17 @@ type PlantsResource struct {
 	storageClient storage.Client
 	scheduler     *gocron.Scheduler
 	moistureCache map[xid.ID]float64
+	config        Config
 }
 
 // NewPlantsResource creates a new PlantsResource
-func NewPlantsResource() (pr PlantsResource, err error) {
-	pr = PlantsResource{moistureCache: map[xid.ID]float64{}}
-
-	var storageConfig storage.Config
-	if err = viper.UnmarshalKey("storage", &storageConfig); err != nil {
-		return
+func NewPlantsResource(config Config) (pr PlantsResource, err error) {
+	pr = PlantsResource{
+		moistureCache: map[xid.ID]float64{},
+		config:        config,
 	}
 
-	pr.storageClient, err = storage.NewStorageClient(storageConfig)
+	pr.storageClient, err = storage.NewStorageClient(config.StorageConfig)
 	if err != nil {
 		err = fmt.Errorf("unable to initialize storage client: %v", err)
 		return
@@ -107,7 +105,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
-	if err := action.Execute(plant); err != nil {
+	if err := action.Execute(plant, pr.config.MQTTConfig, pr.config.InfluxDBConfig); err != nil {
 		render.Render(w, r, ServerError(err))
 		return
 	}
@@ -239,7 +237,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 }
 
 func (pr PlantsResource) getAndCacheMoisture(plant *api.Plant) {
-	moisture, err := plant.GetMoisture()
+	moisture, err := plant.GetMoisture(pr.config.InfluxDBConfig)
 	if err != nil {
 		logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
 	}

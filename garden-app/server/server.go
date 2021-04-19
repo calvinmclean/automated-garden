@@ -8,6 +8,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -16,9 +19,22 @@ import (
 
 var logger *logrus.Logger
 
+// Config holds all the options and sub-configs for the server
+type Config struct {
+	WebConfig      `mapstructure:"web_server"`
+	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
+	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
+	StorageConfig  storage.Config  `mapstructure:"storage"`
+}
+
+// WebConfig is used to allow reading the "web_server" section into the main Config struct
+type WebConfig struct {
+	Port int `yaml:"port"`
+}
+
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
 // and is called by the "server" command
-func Run(port int) {
+func Run(config Config) {
 	logger = logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
@@ -42,14 +58,14 @@ func Run(port int) {
 
 	// RESTy routes for Plant API actions
 	// The PlantsResource will initialize the Scheduler and Storage Client
-	plantsResource, err := NewPlantsResource()
+	plantsResource, err := NewPlantsResource(config)
 	if err != nil {
 		logger.Error("Error initializing '/plants' endpoint: ", err)
 		os.Exit(1)
 	}
 	r.Mount("/plants", plantsResource.routes())
 
-	http.ListenAndServe(fmt.Sprintf(":%d", port), r)
+	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), r)
 }
 
 // staticHandler routes to the `./static` directory for serving static HTML and JavaScript

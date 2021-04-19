@@ -3,7 +3,6 @@ package api
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"text/template"
 	"time"
 
@@ -48,11 +47,8 @@ func (p *Plant) WateringAction() *WaterAction {
 }
 
 // GetMoisture will read the most recent moisture data from InfluxDB for this Plant
-func (p *Plant) GetMoisture() (float64, error) {
-	client, err := influxdb.NewClient()
-	if err != nil {
-		return 0, fmt.Errorf("unable to initialize influxdb client: %v", err)
-	}
+func (p *Plant) GetMoisture(config influxdb.Config) (float64, error) {
+	client := influxdb.NewClient(config)
 
 	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 	defer cancel()

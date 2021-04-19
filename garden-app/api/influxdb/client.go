@@ -7,7 +7,6 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	"github.com/spf13/viper"
 )
 
 const (
@@ -44,23 +43,23 @@ func (q moistureQueryData) String() (string, error) {
 // Client wraps an InfluxDB2 Client and our custom config
 type Client struct {
 	influxdb2.Client
-	config *struct {
-		Address string `mapstructure:"address"`
-		Token   string `mapstructure:"token"`
-		Org     string `mapstructure:"org"`
-		Bucket  string `mapstructure:"bucket"`
-	}
+	config Config
+}
+
+// Config holds configuration values for connecting the the InfluxDB server
+type Config struct {
+	Address string `yaml:"address"`
+	Token   string `yaml:"token"`
+	Org     string `yaml:"org"`
+	Bucket  string `yaml:"bucket"`
 }
 
 // NewClient creates an InfluxDB client from the viper config
-func NewClient() (*Client, error) {
-	var client Client
-	if err := viper.UnmarshalKey("influxdb", &client.config); err != nil {
-		return &client, err
+func NewClient(config Config) *Client {
+	return &Client{
+		influxdb2.NewClient(config.Address, config.Token),
+		config,
 	}
-
-	client.Client = influxdb2.NewClient(client.config.Address, client.config.Token)
-	return &client, nil
 }
 
 // GetMoisture returns the plant's average soil moisture in the last 15 minutes

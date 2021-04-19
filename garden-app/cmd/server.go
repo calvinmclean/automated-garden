@@ -28,8 +28,12 @@ func init() {
 
 // Run will execute the Run function provided by the `server` package for running the webserver
 func Run(cmd *cobra.Command, args []string) {
-	port := viper.GetInt("web_server.port")
+	var config server.Config
+	if err := viper.Unmarshal(&config); err != nil {
+		cmd.PrintErrln("unable to read config from file: ", err)
+		return
+	}
 
-	cmd.Printf("Starting garden-app webserver on port %d...\n", port)
-	server.Run(port)
+	cmd.Printf("Starting garden-app webserver on port %d...\n", config.Port)
+	server.Run(config)
 }
