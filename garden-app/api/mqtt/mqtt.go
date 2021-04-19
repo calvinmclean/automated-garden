@@ -32,6 +32,7 @@ func NewMQTTClient(config Config) (Client, error) {
 	return Client{mqtt.NewClient(opts), config}, nil
 }
 
+// Publish will send the message to the specified MQTT topic
 func (client Client) Publish(topic string, message []byte) error {
 	if token := client.Client.Connect(); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
