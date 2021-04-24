@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
@@ -53,9 +51,6 @@ func Run(config Config) {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	// Static handler for HTML pages
-	r.Get("/*", staticHandler)
-
 	// RESTy routes for Plant API actions
 	// The PlantsResource will initialize the Scheduler and Storage Client
 	plantsResource, err := NewPlantsResource(config)
@@ -66,15 +61,4 @@ func Run(config Config) {
 	r.Mount("/plants", plantsResource.routes())
 
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), r)
-}
-
-// staticHandler routes to the `./static` directory for serving static HTML and JavaScript
-func staticHandler(w http.ResponseWriter, r *http.Request) {
-	workDir, _ := os.Getwd()
-	filesDir := http.Dir(filepath.Join(workDir, "static"))
-
-	rctx := chi.RouteContext(r.Context())
-	pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
-	fs := http.StripPrefix(pathPrefix, http.FileServer(filesDir))
-	fs.ServeHTTP(w, r)
 }
