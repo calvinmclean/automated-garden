@@ -16,6 +16,7 @@ import (
 // often to water, and the PlantPosition field will tell the microcontroller which plant to water
 type Plant struct {
 	Name             string           `json:"name" yaml:"name,omitempty"`
+	Details          *Details         `json:"details,omitempty" yaml:"details,omitempty"`
 	ID               xid.ID           `json:"id" yaml:"id,omitempty"`
 	Garden           string           `json:"garden" yaml:"garden,omitempty"`
 	PlantPosition    int              `json:"plant_position" yaml:"plant_position"`
@@ -23,6 +24,15 @@ type Plant struct {
 	EndDate          *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	SkipCount        int              `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
 	WateringStrategy WateringStrategy `json:"watering_strategy,omitempty" yaml:"watering_strategy,omitempty"`
+}
+
+// Details is a struct holding some additional details about a Plant that are primarily for user convenience
+// and are generally not used by the application
+type Details struct {
+	Description   string `json:"description" yaml:"description,omitempty"`
+	Notes         string `json:"notes" yaml:"notes,omitempty"`
+	TimeToHarvest string `json:"time_to_harvest" yaml:"time_to_harvest,omitempty"`
+	Count         int    `json:"count" yaml:"count,omitempty"`
 }
 
 // WateringStrategy allows the user to have more control over how the Plant is watered using an Interval
