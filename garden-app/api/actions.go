@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -85,11 +86,16 @@ type WaterMessage struct {
 // if configured
 func (action *WaterAction) Execute(p *Plant, mqttConfig mqtt.Config, influxdbConfig influxdb.Config) error {
 	if p.WateringStrategy.MinimumMoisture > 0 && !action.IgnoreMoisture {
-		moisture, err := p.GetMoisture(influxdbConfig)
+		influxdbClient := influxdb.NewClient(influxdbConfig)
+		defer influxdbClient.Close()
+
+		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
+		defer cancel()
+
+		moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, p.Garden)
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)
 		}
-
 		if moisture > float64(p.WateringStrategy.MinimumMoisture) {
 			return fmt.Errorf("moisture value %f%% is above threshold %d%%", moisture, p.WateringStrategy.MinimumMoisture)
 		}

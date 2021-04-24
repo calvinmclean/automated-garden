@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -236,10 +237,20 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (pr PlantsResource) getAndCacheMoisture(plant *api.Plant) {
-	moisture, err := plant.GetMoisture(pr.config.InfluxDBConfig)
+func (pr PlantsResource) getAndCacheMoisture(p *api.Plant) {
+	influxdbClient := influxdb.NewClient(pr.config.InfluxDBConfig)
+	defer influxdbClient.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
+	defer cancel()
+
+	moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, p.Garden)
 	if err != nil {
-		logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
+		logger.Errorf("error getting Plant's moisture data: %v", err)
 	}
-	pr.moistureCache[plant.ID] = moisture
+
+	if err != nil {
+		logger.Errorf("unable to get moisture of Plant %v: %v", p.ID, err)
+	}
+	pr.moistureCache[p.ID] = moisture
 }

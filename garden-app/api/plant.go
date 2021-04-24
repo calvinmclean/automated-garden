@@ -2,11 +2,9 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"text/template"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
 	"github.com/rs/xid"
 )
 
@@ -54,13 +52,4 @@ func (p *Plant) Topic(topic string) (string, error) {
 // WateringAction creates the default/basic WateringAction for this Plant
 func (p *Plant) WateringAction() *WaterAction {
 	return &WaterAction{Duration: p.WateringStrategy.WateringAmount}
-}
-
-// GetMoisture will read the most recent moisture data from InfluxDB for this Plant
-func (p *Plant) GetMoisture(config influxdb.Config) (float64, error) {
-	client := influxdb.NewClient(config)
-
-	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
-	defer cancel()
-	return client.GetMoisture(ctx, p.PlantPosition, p.Garden)
 }
