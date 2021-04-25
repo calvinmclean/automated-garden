@@ -33,7 +33,7 @@ func (pr PlantsResource) addWateringSchedule(p *api.Plant) error {
 		waterTime.Minute(),
 		waterTime.Second(),
 		0,
-		p.CreatedAt.Location(),
+		waterTime.Location(),
 	)
 
 	// Schedule the WaterAction execution
