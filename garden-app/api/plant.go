@@ -27,10 +27,10 @@ type Plant struct {
 // Details is a struct holding some additional details about a Plant that are primarily for user convenience
 // and are generally not used by the application
 type Details struct {
-	Description   string `json:"description" yaml:"description,omitempty"`
-	Notes         string `json:"notes" yaml:"notes,omitempty"`
-	TimeToHarvest string `json:"time_to_harvest" yaml:"time_to_harvest,omitempty"`
-	Count         int    `json:"count" yaml:"count,omitempty"`
+	Description   string `json:"description,omitempty" yaml:"description,omitempty"`
+	Notes         string `json:"notes,omitempty" yaml:"notes,omitempty"`
+	TimeToHarvest string `json:"time_to_harvest,omitempty" yaml:"time_to_harvest,omitempty"`
+	Count         int    `json:"count,omitempty" yaml:"count,omitempty"`
 }
 
 // WateringStrategy allows the user to have more control over how the Plant is watered using an Interval
