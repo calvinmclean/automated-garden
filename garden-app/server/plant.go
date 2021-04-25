@@ -212,11 +212,19 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 
 	plant := request.Plant
 
-	// Assign new unique ID and StartDate to plant
+	// Check that water time is valid
+	_, err := time.Parse(api.WaterTimeFormat, plant.WateringStrategy.Time)
+	if err != nil {
+		logger.Errorf("Invalid time format for WateringStrategy.Time: %s", plant.WateringStrategy.Time)
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	// Assign new unique ID and CreatedAt to plant
 	plant.ID = xid.New()
-	if plant.StartDate == nil {
+	if plant.CreatedAt == nil {
 		now := time.Now()
-		plant.StartDate = &now
+		plant.CreatedAt = &now
 	}
 
 	// Start watering schedule

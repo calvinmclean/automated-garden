@@ -43,7 +43,7 @@ func TestUnmarshalJSON(t *testing.T) {
 			"watering_amount": 15000,
 			"interval": "24h"
 		},
-		"start_date": "2020-01-15T00:00:00-07:00",
+		"created_at": "2020-01-15T00:00:00-07:00",
 		"end_date": null
 	}`)
 	var actual Plant
@@ -59,7 +59,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		Name:          "Cherry Tomato",
 		ID:            id,
 		PlantPosition: 0,
-		StartDate:     &startDate,
+		CreatedAt:     &startDate,
 		WateringStrategy: WateringStrategy{
 			WateringAmount: 15000,
 			Interval:       "24h",
@@ -74,7 +74,7 @@ func TestUnmarshalJSON(t *testing.T) {
 		{"Name", expected.Name, actual.Name},
 		{"ID", expected.ID, actual.ID},
 		{"PlantPosition", expected.PlantPosition, actual.PlantPosition},
-		{"StartDate", expected.StartDate.String(), actual.StartDate.String()},
+		{"CreatedAt", expected.CreatedAt.String(), actual.CreatedAt.String()},
 		{"EndDate", expected.EndDate, actual.EndDate},
 		{"SkipCount", expected.SkipCount, actual.SkipCount},
 		{"WateringAmount", expected.WateringStrategy.WateringAmount, actual.WateringStrategy.WateringAmount},

@@ -43,9 +43,9 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 
 	// Create start dates for Plants if it is empty
 	for _, plant := range client.plants {
-		if plant.StartDate == nil {
+		if plant.CreatedAt == nil {
 			now := time.Now().Add(1 * time.Minute)
-			plant.StartDate = &now
+			plant.CreatedAt = &now
 			client.SavePlant(plant)
 		}
 	}

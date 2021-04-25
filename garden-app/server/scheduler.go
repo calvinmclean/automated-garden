@@ -6,8 +6,9 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 )
 
-// addWateringSchedule will schedule watering actions for the Plant based off the StartDate
-// and Interval. The scheduled Job is tagged with the Plant's ID so it can easily be removed
+// addWateringSchedule will schedule watering actions for the Plant based off the CreatedAt date,
+// WateringStrategy time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
+// easily be removed
 func (pr PlantsResource) addWateringSchedule(p *api.Plant) error {
 	logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
@@ -17,11 +18,29 @@ func (pr PlantsResource) addWateringSchedule(p *api.Plant) error {
 		return err
 	}
 
+	// Parse Plant's WateringStrategy.Time (has no "date")
+	waterTime, err := time.Parse(api.WaterTimeFormat, p.WateringStrategy.Time)
+	if err != nil {
+		return err
+	}
+
+	// Create startDate using the CreatedAt date with the WateringStrategy's timestamp
+	startDate := time.Date(
+		p.CreatedAt.Year(),
+		p.CreatedAt.Month(),
+		p.CreatedAt.Day(),
+		waterTime.Hour(),
+		waterTime.Minute(),
+		waterTime.Second(),
+		0,
+		p.CreatedAt.Location(),
+	)
+
 	// Schedule the WaterAction execution
 	action := p.WateringAction()
 	_, err = pr.scheduler.
 		Every(duration).
-		StartAt(*p.StartDate).
+		StartAt(startDate).
 		Tag(p.ID.String()).
 		Do(func() {
 			err = action.Execute(p, pr.config.MQTTConfig, pr.config.InfluxDBConfig)
