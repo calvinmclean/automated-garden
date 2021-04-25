@@ -23,7 +23,11 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 	if _, ok := config.Options["filename"]; !ok {
 		return nil, fmt.Errorf("missing config key 'filename'")
 	}
-	client := &YAMLClient{filename: config.Options["filename"], Config: config}
+	client := &YAMLClient{
+		plants:   map[xid.ID]*api.Plant{},
+		filename: config.Options["filename"],
+		Config:   config,
+	}
 
 	// If file does not exist, that is fine and we will just have an empty map
 	_, err := os.Stat(client.Config.Options["filename"])

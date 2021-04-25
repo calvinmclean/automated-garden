@@ -35,6 +35,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	client := &ConfigMapClient{
 		configMapName: config.Options["name"],
 		keyName:       config.Options["key"],
+		plants:        map[xid.ID]*api.Plant{},
 		Config:        config,
 	}
 

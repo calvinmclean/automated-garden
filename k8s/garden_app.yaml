@@ -71,43 +71,5 @@ data:
       options:
         name: "garden-app-config"
         key: "plants.yaml"
-  plants.yaml: |
-    bvtomctnf4q280jbci3g:
-      name: Basil
-      id: bvtomctnf4q280jbci3g
-      garden: garden
-      plant_position: 1
-      start_date: 2021-01-14T22:00:10.880112-07:00
-      watering_strategy:
-          watering_amount: 8000
-          interval: 24h
-    9m4e2mr0ui3e8a215n4g:
-        name: Cherry Tomato
-        id: 9m4e2mr0ui3e8a215n4g
-        garden: garden
-        plant_position: 2
-        start_date: 2021-01-14T22:00:20.880112-07:00
-        watering_strategy:
-            watering_amount: 10000
-            interval: 24h
-    bvtol25nf4q25rqmno5g:
-        name: Green Onion
-        id: bvtol25nf4q25rqmno5g
-        garden: garden
-        plant_position: 0
-        start_date: 2021-01-14T22:00:00.880112-07:00
-        watering_strategy:
-            watering_amount: 10000
-            interval: 24h
-    c16h30adveu3dmtmq7mg:
-        name: Money Tree
-        id: c16h30adveu3dmtmq7mg
-        garden: office-plant
-        plant_position: 0
-        start_date: 2021-03-13T19:24:49.097629252Z
-        watering_strategy:
-            watering_amount: 10000
-            interval: 72h
-            minimum_moisture: 45
 # in order to read/write the ConfigMap from the pod, you need to create a ClusterRoleBinding:
 # kubectl create clusterrolebinding default --clusterrole=admin --serviceaccount=default:default
