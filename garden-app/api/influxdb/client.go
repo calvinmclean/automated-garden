@@ -48,10 +48,10 @@ type Client struct {
 
 // Config holds configuration values for connecting the the InfluxDB server
 type Config struct {
-	Address string `yaml:"address"`
-	Token   string `yaml:"token"`
-	Org     string `yaml:"org"`
-	Bucket  string `yaml:"bucket"`
+	Address string `mapstructure:"address"`
+	Token   string `mapstructure:"token"`
+	Org     string `mapstructure:"org"`
+	Bucket  string `mapstructure:"bucket"`
 }
 
 // NewClient creates an InfluxDB client from the viper config

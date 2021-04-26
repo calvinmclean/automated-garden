@@ -9,8 +9,8 @@ import (
 
 // Config is used to identify and configure a storage client
 type Config struct {
-	Type    string            `yaml:"type"`
-	Options map[string]string `yaml:"options"`
+	Type    string            `mapstructure:"type"`
+	Options map[string]string `mapstructure:"options"`
 }
 
 // Client is a "generic" interface used to interact with our storage backend (DB, file, etc)

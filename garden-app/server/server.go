@@ -27,7 +27,7 @@ type Config struct {
 
 // WebConfig is used to allow reading the "web_server" section into the main Config struct
 type WebConfig struct {
-	Port int `yaml:"port"`
+	Port int `mapstructure:"port"`
 }
 
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application

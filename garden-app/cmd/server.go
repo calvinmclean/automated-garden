@@ -21,9 +21,6 @@ var (
 func init() {
 	serverCommand.Flags().Int("port", 80, "port to run Application server on")
 	viper.BindPFlag("web_server.port", serverCommand.Flags().Lookup("port"))
-
-	serverCommand.Flags().StringVar(&plantFile, "plants", "plants.yaml", "path to plants file")
-	viper.BindPFlag("web_server.plants_filename", serverCommand.Flags().Lookup("plants"))
 }
 
 // Run will execute the Run function provided by the `server` package for running the webserver

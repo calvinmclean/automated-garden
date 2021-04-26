@@ -8,14 +8,14 @@ import (
 
 // Config is used to read the necessary configuration values from a YAML file
 type Config struct {
-	ClientID string `yaml:"client_id"`
-	Broker   string `yaml:"broker"`
-	Port     int    `yaml:"port"`
+	ClientID string `mapstructure:"client_id"`
+	Broker   string `mapstructure:"broker"`
+	Port     int    `mapstructure:"port"`
 
-	WateringTopic string `yaml:"watering_topic"`
-	SkipTopic     string `yaml:"skip_topic"`
-	StopTopic     string `yaml:"stop_topic"`
-	StopAllTopic  string `yaml:"stop_all_topic"`
+	WateringTopic string `mapstructure:"watering_topic"`
+	SkipTopic     string `mapstructure:"skip_topic"`
+	StopTopic     string `mapstructure:"stop_topic"`
+	StopAllTopic  string `mapstructure:"stop_all_topic"`
 }
 
 // Client is a wrapper struct for connecting our config and MQTT Client
@@ -33,11 +33,11 @@ func NewMQTTClient(config Config) (Client, error) {
 }
 
 // Publish will send the message to the specified MQTT topic
-func (client Client) Publish(topic string, message []byte) error {
-	if token := client.Client.Connect(); token.Wait() && token.Error() != nil {
+func (c Client) Publish(topic string, message []byte) error {
+	if token := c.Client.Connect(); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
 	}
-	if token := client.Client.Publish(topic, 0, false, message); token.Wait() && token.Error() != nil {
+	if token := c.Client.Publish(topic, byte(0), false, message); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
 	}
 	return nil
