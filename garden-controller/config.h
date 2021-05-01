@@ -37,6 +37,11 @@
 #define MQTT_STOP_ALL_TOPIC GARDEN_NAME"/command/stop_all"
 #define MQTT_WATER_DATA_TOPIC GARDEN_NAME"/data/water"
 
+#define MQTT_LOGGING
+#ifdef MQTT_LOGGING
+#define MQTT_LOGGING_TOPIC GARDEN_NAME"/data/logs"
+#endif
+
 // Size of JSON object calculated using Arduino JSON Assistant
 #define JSON_CAPACITY 48
 #endif

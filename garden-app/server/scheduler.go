@@ -43,6 +43,7 @@ func (pr PlantsResource) addWateringSchedule(p *api.Plant) error {
 		StartAt(startDate).
 		Tag(p.ID.String()).
 		Do(func() {
+			logger.Infof("Executing WateringAction to water Plant %s for %d ms", p.ID.String(), action.Duration)
 			err = action.Execute(p, pr.config.MQTTConfig, pr.config.InfluxDBConfig)
 			if err != nil {
 				logger.Error("Error executing scheduled plant watering action: ", err)

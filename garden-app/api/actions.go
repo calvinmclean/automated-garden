@@ -54,7 +54,7 @@ func (action *StopAction) Execute(p *Plant, mqttConfig mqtt.Config, influxdbConf
 	if err != nil {
 		return fmt.Errorf("unable to create MQTT Client: %v", err)
 	}
-	defer mqttClient.Disconnect(0)
+	defer mqttClient.Disconnect(250)
 
 	templateString := mqttClient.StopTopic
 	if action.All {
@@ -118,7 +118,7 @@ func (action *WaterAction) Execute(p *Plant, mqttConfig mqtt.Config, influxdbCon
 	if err != nil {
 		return fmt.Errorf("unable to create MQTT Client: %v", err)
 	}
-	defer mqttClient.Disconnect(0)
+	defer mqttClient.Disconnect(250)
 
 	topic, err := p.Topic(mqttClient.WateringTopic)
 	if err != nil {

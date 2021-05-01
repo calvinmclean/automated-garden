@@ -67,6 +67,14 @@ void setup() {
 #ifdef ENABLE_WATERING_INTERVAL
     xTaskCreate(waterIntervalTask, "WaterIntervalTask", 2048, NULL, 1, &waterIntervalTaskHandle);
 #endif
+
+#ifdef ENABLE_MQTT_LOGGING
+    if (client.connected()) {
+        client.publish(MQTT_LOGGING_TOPIC, "logs message=\"garden-controller setup complete\"");
+    } else {
+        printf("unable to publish: not connected to MQTT broker\n");
+    }
+#endif
 }
 
 void loop() {}
