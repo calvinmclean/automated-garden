@@ -69,6 +69,8 @@ void setup() {
 #endif
 
 #ifdef ENABLE_MQTT_LOGGING
+    // Delay 1 second to allow MQTT to connect
+    delay(1000);
     if (client.connected()) {
         client.publish(MQTT_LOGGING_TOPIC, "logs message=\"garden-controller setup complete\"");
     } else {
