@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/robfig/cron/v3"
 	"golang.org/x/sync/singleflight"
 )
 
@@ -13,30 +14,31 @@ import (
 type Job struct {
 	sync.RWMutex
 	jobFunction
-	interval          int           // pause interval * unit between runs
-	duration          time.Duration // time duration between runs
-	unit              timeUnit      // time units, ,e.g. 'minutes', 'hours'...
-	startsImmediately bool          // if the Job should run upon scheduler start
-	atTime            time.Duration // optional time at which this Job runs when interval is day
-	startAtTime       time.Time     // optional time at which the Job starts
-	error             error         // error related to Job
-	lastRun           time.Time     // datetime of last run
-	nextRun           time.Time     // datetime of next run
-	scheduledWeekday  *time.Weekday // Specific day of the week to start on
-	dayOfTheMonth     int           // Specific day of the month to run the job
-	tags              []string      // allow the user to tag Jobs with certain labels
-	runCount          int           // number of times the job ran
-	timer             *time.Timer
+	interval          int            // pause interval * unit between runs
+	duration          time.Duration  // time duration between runs
+	unit              schedulingUnit // time units, ,e.g. 'minutes', 'hours'...
+	startsImmediately bool           // if the Job should run upon scheduler start
+	atTime            time.Duration  // optional time at which this Job runs when interval is day
+	startAtTime       time.Time      // optional time at which the Job starts
+	error             error          // error related to Job
+	lastRun           time.Time      // datetime of last run
+	nextRun           time.Time      // datetime of next run
+	scheduledWeekday  *time.Weekday  // Specific day of the week to start on
+	dayOfTheMonth     int            // Specific day of the month to run the job
+	tags              []string       // allow the user to tag Jobs with certain labels
+	runCount          int            // number of times the job ran
+	timer             *time.Timer    // handles running tasks at specific time
+	cronSchedule      cron.Schedule  // stores the schedule when a task uses cron
 }
 
 type jobFunction struct {
-	functions map[string]interface{}   // Map for the function task store
-	params    map[string][]interface{} // Map for function and params of function
-	name      string                   // the Job name to run, func[jobFunc]
-	runConfig runConfig                // configuration for how many times to run the job
-	limiter   *singleflight.Group      // limits inflight runs of job to one
-	ctx       context.Context          // for cancellation
-	cancel    context.CancelFunc       // for cancellation
+	function   interface{}         // task's function
+	parameters []interface{}       // task's function parameters
+	name       string              //nolint the function name to run
+	runConfig  runConfig           // configuration for how many times to run the job
+	limiter    *singleflight.Group // limits inflight runs of job to one
+	ctx        context.Context     // for cancellation
+	cancel     context.CancelFunc  // for cancellation
 }
 
 type runConfig struct {
@@ -56,8 +58,8 @@ const (
 	singletonMode
 )
 
-// NewJob creates a new Job with the provided interval
-func NewJob(interval int) *Job {
+// newJob creates a new Job with the provided interval
+func newJob(interval int, startImmediately bool) *Job {
 	ctx, cancel := context.WithCancel(context.Background())
 	return &Job{
 		interval: interval,
@@ -65,13 +67,11 @@ func NewJob(interval int) *Job {
 		lastRun:  time.Time{},
 		nextRun:  time.Time{},
 		jobFunction: jobFunction{
-			functions: make(map[string]interface{}),
-			params:    make(map[string][]interface{}),
-			ctx:       ctx,
-			cancel:    cancel,
+			ctx:    ctx,
+			cancel: cancel,
 		},
 		tags:              []string{},
-		startsImmediately: true,
+		startsImmediately: startImmediately,
 	}
 }
 
@@ -109,6 +109,30 @@ func (j *Job) setStartAtTime(t time.Time) {
 	j.startAtTime = t
 }
 
+func (j *Job) getUnit() schedulingUnit {
+	j.RLock()
+	defer j.RUnlock()
+	return j.unit
+}
+
+func (j *Job) setUnit(t schedulingUnit) {
+	j.Lock()
+	defer j.Unlock()
+	j.unit = t
+}
+
+func (j *Job) getDuration() time.Duration {
+	j.RLock()
+	defer j.RUnlock()
+	return j.duration
+}
+
+func (j *Job) setDuration(t time.Duration) {
+	j.Lock()
+	defer j.Unlock()
+	j.duration = t
+}
+
 // Error returns an error if one occurred while creating the Job.
 // If multiple errors occurred, they will be wrapped and can be
 // checked using the standard unwrap options.
@@ -141,6 +165,8 @@ func (j *Job) Tags() []string {
 
 // ScheduledTime returns the time of the Job's next scheduled run
 func (j *Job) ScheduledTime() time.Time {
+	j.RLock()
+	defer j.RUnlock()
 	return j.nextRun
 }
 
@@ -221,10 +247,11 @@ func (j *Job) RunCount() int {
 	return j.runCount
 }
 
-func (j *Job) stopTimer() {
+func (j *Job) stop() {
 	j.Lock()
 	defer j.Unlock()
 	if j.timer != nil {
 		j.timer.Stop()
 	}
+	j.cancel()
 }

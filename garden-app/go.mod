@@ -9,7 +9,7 @@ require (
 	github.com/go-chi/chi v4.0.2+incompatible // indirect
 	github.com/go-chi/chi/v5 v5.0.2
 	github.com/go-chi/render v1.0.1
-	github.com/go-co-op/gocron v1.0.0
+	github.com/go-co-op/gocron v1.5.0
 	github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8 // indirect
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/influxdata/influxdb-client-go/v2 v2.2.2
