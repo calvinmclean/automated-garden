@@ -1,6 +1,8 @@
 #ifndef buttons_h
 #define buttons_h
 
+#define DEBOUNCE_DELAY 50
+
 /* button variables */
 unsigned long lastDebounceTime = 0;
 int buttonStates[NUM_PLANTS];

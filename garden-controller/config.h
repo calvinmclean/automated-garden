@@ -58,8 +58,6 @@
  *   Default time to water for if none is specified. This is used by button and interval watering
  * ENABLE_BUTTONS
  *   Configure if there are any hardware buttons corresponding to plants
- * DEBOUNCE_DELAY
- *   Delay to use when handling button debounce
  * STOP_BUTTON_PIN
  *   Pin used for the button that will stop all watering
  * ENABLE_WATERING_INTERVAL
@@ -73,17 +71,16 @@
 #define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
 #define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
 #define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
-#define DEFAULT_WATER_TIME 15000
+#define DEFAULT_WATER_TIME 5000
 
 #define ENABLE_BUTTONS
 #ifdef ENABLE_BUTTONS
-#define DEBOUNCE_DELAY 50
 #define STOP_BUTTON_PIN GPIO_NUM_23
 #endif
 
 // Currently, moisture sensing requires Wifi and MQTT because the logic for
 // handling this data lives in the garden-app
-#define ENABLE_MOISTURE_SENSORS
+// #define ENABLE_MOISTURE_SENSORS
 #ifdef ENABLE_MOISTURE_SENSORS AND ENABLE_WIFI
 #define MQTT_MOISTURE_DATA_TOPIC GARDEN_NAME"/data/moisture"
 #define MOISTURE_SENSOR_AIR_VALUE 3415

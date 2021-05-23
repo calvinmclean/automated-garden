@@ -1,15 +1,14 @@
 #ifdef ENABLE_BUTTONS
 
 void setupButtons() {
-    xTaskCreate(readButtonsTask, "ReadButtonsTask", 2048, NULL, 1, &readButtonsTaskHandle);
-
     // Setup button pins and state
     for (int i = 0; i < NUM_PLANTS; i++) {
-        gpio_reset_pin(plants[i][2]);
         gpio_set_direction(plants[i][2], GPIO_MODE_INPUT);
         buttonStates[i] = LOW;
         lastButtonStates[i] = LOW;
     }
+
+    xTaskCreate(readButtonsTask, "ReadButtonsTask", 2048, NULL, 1, &readButtonsTaskHandle);
 }
 
 /*
@@ -50,11 +49,9 @@ void readButton(int valveID) {
             buttonStates[valveID] = reading;
 
             // If our button state is HIGH, water the plant
-            if (buttonStates[valveID] == HIGH) {
-                if (reading == HIGH) {
-                    printf("button pressed: %d\n", valveID);
-                    waterPlant(valveID, DEFAULT_WATER_TIME, "N/A");
-                }
+            if (reading == HIGH && buttonStates[valveID] == HIGH) {
+                printf("button pressed: %d\n", valveID);
+                waterPlant(valveID, DEFAULT_WATER_TIME, "N/A");
             }
         }
     }
