@@ -19,7 +19,7 @@ func (pr PlantsResource) addWateringSchedule(p *api.Plant) error {
 	}
 
 	// Parse Plant's WateringStrategy.Time (has no "date")
-	waterTime, err := time.Parse(api.WaterTimeFormat, p.WateringStrategy.Time)
+	waterTime, err := time.Parse(api.WaterTimeFormat, p.WateringStrategy.StartTime)
 	if err != nil {
 		return err
 	}

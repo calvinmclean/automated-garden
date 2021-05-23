@@ -213,9 +213,9 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	plant := request.Plant
 
 	// Check that water time is valid
-	_, err := time.Parse(api.WaterTimeFormat, plant.WateringStrategy.Time)
+	_, err := time.Parse(api.WaterTimeFormat, plant.WateringStrategy.StartTime)
 	if err != nil {
-		logger.Errorf("Invalid time format for WateringStrategy.Time: %s", plant.WateringStrategy.Time)
+		logger.Errorf("Invalid time format for WateringStrategy.StartTime: %s", plant.WateringStrategy.StartTime)
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}

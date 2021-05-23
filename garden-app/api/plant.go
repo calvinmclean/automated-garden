@@ -44,7 +44,7 @@ type WateringStrategy struct {
 	WateringAmount  int    `json:"watering_amount" yaml:"watering_amount"`
 	Interval        string `json:"interval" yaml:"interval"`
 	MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
-	Time            string `json:"time" yaml:"time"`
+	StartTime       string `json:"start_time" yaml:"start_time"`
 }
 
 // Topic is used to populate and return a MQTT Topic string from a template string input
