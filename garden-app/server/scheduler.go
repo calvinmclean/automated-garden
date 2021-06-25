@@ -1,9 +1,11 @@
 package server
 
 import (
+	"errors"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/go-co-op/gocron"
 )
 
 // addWateringSchedule will schedule watering actions for the Plant based off the CreatedAt date,
@@ -64,7 +66,7 @@ func (pr PlantsResource) removeWateringSchedule(p *api.Plant) error {
 
 // resetWateringSchedule will simply remove the existing Job and create a new one
 func (pr PlantsResource) resetWateringSchedule(p *api.Plant) error {
-	if err := pr.removeWateringSchedule(p); err != nil {
+	if err := pr.removeWateringSchedule(p); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
 	return pr.addWateringSchedule(p)
