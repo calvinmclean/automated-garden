@@ -13,6 +13,8 @@ This project is a monorepo containing code for an ESP32-based microcontroller pr
 
 ## Components
 
+![Garden](../assets/FlowDiagram.png?raw=true)
+
 ### Garden App
 This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements the following features:
   - CRUD operations for Plants using RESTy API
