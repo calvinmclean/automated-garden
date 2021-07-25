@@ -21,7 +21,7 @@ github.com/go-chi/chi/v5/middleware
 # github.com/go-chi/render v1.0.1
 ## explicit
 github.com/go-chi/render
-# github.com/go-co-op/gocron v1.5.0
+# github.com/go-co-op/gocron v1.6.2
 ## explicit
 github.com/go-co-op/gocron
 # github.com/go-logr/logr v0.2.0
