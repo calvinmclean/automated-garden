@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"fmt"
+	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -20,20 +21,24 @@ type Config struct {
 
 // Client is a wrapper struct for connecting our config and MQTT Client
 type Client struct {
+	mu sync.Mutex
 	mqtt.Client
 	Config
 }
 
 // NewMQTTClient is used to create and return a MQTTClient
-func NewMQTTClient(config Config) (Client, error) {
+func NewMQTTClient(config Config) (*Client, error) {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", config.Broker, config.Port))
 	opts.SetClientID(config.ClientID)
-	return Client{mqtt.NewClient(opts), config}, nil
+	return &Client{Client: mqtt.NewClient(opts), Config: config}, nil
 }
 
 // Publish will send the message to the specified MQTT topic
-func (c Client) Publish(topic string, message []byte) error {
+func (c *Client) Publish(topic string, message []byte) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	defer c.Client.Disconnect(250)
 	if token := c.Client.Connect(); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
 	}

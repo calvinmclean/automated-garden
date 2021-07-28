@@ -8,6 +8,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/api"
 	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -19,6 +20,7 @@ import (
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
 	storageClient storage.Client
+	mqttClient    *mqtt.Client
 	scheduler     *gocron.Scheduler
 	moistureCache map[xid.ID]float64
 	config        Config
@@ -36,6 +38,13 @@ func NewPlantsResource(config Config) (pr PlantsResource, err error) {
 		err = fmt.Errorf("unable to initialize storage client: %v", err)
 		return
 	}
+
+	pr.mqttClient, err = mqtt.NewMQTTClient(pr.config.MQTTConfig)
+	if err != nil {
+		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
+		return
+	}
+
 	pr.scheduler = gocron.NewScheduler(time.Local)
 
 	// Initialize watering Jobs for each Plant from the storage client
@@ -106,7 +115,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
-	if err := action.Execute(plant, pr.config.MQTTConfig, pr.config.InfluxDBConfig); err != nil {
+	if err := action.Execute(plant, pr.mqttClient, pr.config.InfluxDBConfig); err != nil {
 		render.Render(w, r, ServerError(err))
 		return
 	}
