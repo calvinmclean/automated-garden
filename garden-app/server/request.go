@@ -4,12 +4,12 @@ import (
 	"errors"
 	"net/http"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 )
 
 // PlantRequest wraps a Plant into a request so we can handle Bind/Render in this package
 type PlantRequest struct {
-	*api.Plant
+	*pkg.Plant
 }
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
@@ -19,7 +19,7 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 		return errors.New("missing required Plant fields")
 	}
 
-	if p.WateringStrategy == (api.WateringStrategy{}) {
+	if p.WateringStrategy == (pkg.WateringStrategy{}) {
 		return errors.New("missing required watering_strategy field")
 	}
 	if p.WateringStrategy.Interval == "" {
@@ -40,7 +40,7 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 
 // AggregateActionRequest wraps a AggregateAction into a request so we can handle Bind/Render in this package
 type AggregateActionRequest struct {
-	*api.AggregateAction
+	*pkg.AggregateAction
 }
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.

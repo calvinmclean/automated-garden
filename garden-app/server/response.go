@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/go-chi/render"
 )
 
@@ -66,7 +66,7 @@ type AllPlantsResponse struct {
 }
 
 // NewAllPlantsResponse will create an AllPlantsResponse from a list of Plants
-func (pr PlantsResource) NewAllPlantsResponse(plants []*api.Plant) *AllPlantsResponse {
+func (pr PlantsResource) NewAllPlantsResponse(plants []*pkg.Plant) *AllPlantsResponse {
 	plantResponses := []*PlantResponse{}
 	for _, p := range plants {
 		plantResponses = append(plantResponses, pr.NewPlantResponse(p, 0))
@@ -82,14 +82,14 @@ func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) erro
 // PlantResponse is used to represent a Plant in the response body with the additional Moisture data
 // and hypermedia Links fields
 type PlantResponse struct {
-	*api.Plant
+	*pkg.Plant
 	Moisture         float64    `json:"moisture,omitempty"`
 	NextWateringTime *time.Time `json:"next_watering_time,omitempty"`
 	Links            []Link     `json:"links,omitempty"`
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
-func (pr PlantsResource) NewPlantResponse(plant *api.Plant, moisture float64, links ...Link) *PlantResponse {
+func (pr PlantsResource) NewPlantResponse(plant *pkg.Plant, moisture float64, links ...Link) *PlantResponse {
 	return &PlantResponse{
 		plant,
 		moisture,

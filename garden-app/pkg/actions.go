@@ -1,12 +1,12 @@
-package api
+package pkg
 
 import (
 	"context"
 	"encoding/json"
 	"fmt"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/rs/xid"
 )
 

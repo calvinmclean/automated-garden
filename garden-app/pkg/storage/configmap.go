@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -19,7 +19,7 @@ import (
 type ConfigMapClient struct {
 	configMapName string
 	keyName       string
-	plants        map[xid.ID]*api.Plant
+	plants        map[xid.ID]*pkg.Plant
 	k8sClient     v1.ConfigMapInterface
 	Config        Config
 }
@@ -35,7 +35,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	client := &ConfigMapClient{
 		configMapName: config.Options["name"],
 		keyName:       config.Options["key"],
-		plants:        map[xid.ID]*api.Plant{},
+		plants:        map[xid.ID]*pkg.Plant{},
 		Config:        config,
 	}
 
@@ -75,13 +75,13 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 }
 
 // GetPlant just returns the request Plant from the map
-func (c *ConfigMapClient) GetPlant(id xid.ID) (*api.Plant, error) {
+func (c *ConfigMapClient) GetPlant(id xid.ID) (*pkg.Plant, error) {
 	return c.plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *ConfigMapClient) GetPlants(getEndDated bool) []*api.Plant {
-	result := []*api.Plant{}
+func (c *ConfigMapClient) GetPlants(getEndDated bool) []*pkg.Plant {
+	result := []*pkg.Plant{}
 	for _, p := range c.plants {
 		// Only return end-dated plants if specifically asked for
 		if getEndDated || (!getEndDated && p.EndDate == nil) {
@@ -92,7 +92,7 @@ func (c *ConfigMapClient) GetPlants(getEndDated bool) []*api.Plant {
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *ConfigMapClient) SavePlant(plant *api.Plant) error {
+func (c *ConfigMapClient) SavePlant(plant *pkg.Plant) error {
 	c.plants[plant.ID] = plant
 
 	// Marshal map to YAML bytes

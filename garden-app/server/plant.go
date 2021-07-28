@@ -6,10 +6,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api"
-	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
-	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-co-op/gocron"
@@ -106,7 +106,7 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
-	plant := r.Context().Value("plant").(*api.Plant)
+	plant := r.Context().Value("plant").(*pkg.Plant)
 
 	action := &AggregateActionRequest{}
 	if err := render.Bind(r, action); err != nil {
@@ -134,7 +134,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 
 // getPlant simply returns the Plant requested by the provided ID
 func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
-	plant := r.Context().Value("plant").(*api.Plant)
+	plant := r.Context().Value("plant").(*pkg.Plant)
 	moisture, cached := pr.moistureCache[plant.ID]
 	plantResponse := pr.NewPlantResponse(plant, moisture)
 	if err := render.Render(w, r, plantResponse); err != nil {
@@ -152,7 +152,7 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 
 // updatePlant will change any specified fields of the Plant and save it
 func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
-	request := &PlantRequest{r.Context().Value("plant").(*api.Plant)}
+	request := &PlantRequest{r.Context().Value("plant").(*pkg.Plant)}
 
 	// Read the request body into existing plant to overwrite fields
 	if err := render.Bind(r, request); err != nil {
@@ -180,7 +180,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 
 // endDatePlant will mark the Plant's end date as now and save it
 func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
-	plant := r.Context().Value("plant").(*api.Plant)
+	plant := r.Context().Value("plant").(*pkg.Plant)
 
 	// Set end date of Plant and save
 	now := time.Now()
@@ -222,7 +222,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	plant := request.Plant
 
 	// Check that water time is valid
-	_, err := time.Parse(api.WaterTimeFormat, plant.WateringStrategy.StartTime)
+	_, err := time.Parse(pkg.WaterTimeFormat, plant.WateringStrategy.StartTime)
 	if err != nil {
 		logger.Errorf("Invalid time format for WateringStrategy.StartTime: %s", plant.WateringStrategy.StartTime)
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -254,7 +254,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (pr PlantsResource) getAndCacheMoisture(p *api.Plant) {
+func (pr PlantsResource) getAndCacheMoisture(p *pkg.Plant) {
 	influxdbClient := influxdb.NewClient(pr.config.InfluxDBConfig)
 	defer influxdbClient.Close()
 

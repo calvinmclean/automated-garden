@@ -6,9 +6,9 @@ import (
 	"os"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/api/mqtt"
-	"github.com/calvinmclean/automated-garden/garden-app/api/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"

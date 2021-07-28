@@ -3,7 +3,7 @@ package storage
 import (
 	"fmt"
 
-	"github.com/calvinmclean/automated-garden/garden-app/api"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
 )
 
@@ -15,9 +15,9 @@ type Config struct {
 
 // Client is a "generic" interface used to interact with our storage backend (DB, file, etc)
 type Client interface {
-	GetPlant(xid.ID) (*api.Plant, error)
-	GetPlants(bool) []*api.Plant
-	SavePlant(*api.Plant) error
+	GetPlant(xid.ID) (*pkg.Plant, error)
+	GetPlants(bool) []*pkg.Plant
+	SavePlant(*pkg.Plant) error
 }
 
 // NewStorageClient will use the config to create and return the correct type of storage client
