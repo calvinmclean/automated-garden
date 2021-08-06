@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -30,38 +29,52 @@ type PlantsResource struct {
 	config        Config
 }
 
+var garden = "garden"
+
 // NewPlantsResource creates a new PlantsResource
-func NewPlantsResource(config Config) (pr PlantsResource, err error) {
+func NewPlantsResource(config Config, storageClient storage.Client, mqttClient *mqtt.Client, scheduler *gocron.Scheduler) (pr PlantsResource, err error) {
 	pr = PlantsResource{
+		storageClient: storageClient,
+		mqttClient:    mqttClient,
+		scheduler:     scheduler,
 		moistureCache: map[xid.ID]float64{},
 		config:        config,
 	}
-
-	pr.storageClient, err = storage.NewStorageClient(config.StorageConfig)
-	if err != nil {
-		err = fmt.Errorf("unable to initialize storage client: %v", err)
-		return
-	}
-
-	pr.mqttClient, err = mqtt.NewMQTTClient(pr.config.MQTTConfig)
-	if err != nil {
-		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
-		return
-	}
-
-	pr.scheduler = gocron.NewScheduler(time.Local)
-
-	// Initialize watering Jobs for each Plant from the storage client
-	for _, p := range pr.storageClient.GetPlants(false) {
-		if err = pr.addWateringSchedule(p); err != nil {
-			err = fmt.Errorf("unable to add watering Job for Plant %s: %v", p.ID.String(), err)
-			return
-		}
-	}
-
-	pr.scheduler.StartAsync()
 	return
 }
+
+// // NewPlantsResource creates a new PlantsResource
+// func NewPlantsResource(config Config) (pr PlantsResource, err error) {
+// 	pr = PlantsResource{
+// 		moistureCache: map[xid.ID]float64{},
+// 		config:        config,
+// 	}
+
+// 	pr.storageClient, err = storage.NewStorageClient(config.StorageConfig)
+// 	if err != nil {
+// 		err = fmt.Errorf("unable to initialize storage client: %v", err)
+// 		return
+// 	}
+
+// 	pr.mqttClient, err = mqtt.NewMQTTClient(pr.config.MQTTConfig)
+// 	if err != nil {
+// 		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
+// 		return
+// 	}
+
+// 	pr.scheduler = gocron.NewScheduler(time.Local)
+
+// 	// Initialize watering Jobs for each Plant from the storage client
+// 	for _, p := range pr.storageClient.GetPlants(garden, false) {
+// 		if err = pr.addWateringSchedule(p); err != nil {
+// 			err = fmt.Errorf("unable to add watering Job for Plant %s: %v", p.ID.String(), err)
+// 			return
+// 		}
+// 	}
+
+// 	pr.scheduler.StartAsync()
+// 	return
+// }
 
 // routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
 func (pr PlantsResource) routes() chi.Router {
@@ -91,7 +104,7 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 			return
 		}
 
-		plant, err := pr.storageClient.GetPlant(id)
+		plant, err := pr.storageClient.GetPlant(garden, id)
 		if err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
@@ -126,7 +139,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 
 	// Save the Plant in case anything was changed (watering a plant might change the skip_count field)
 	// TODO: consider giving the action the ability to use the storage client
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(garden, plant); err != nil {
 		logger.Error("Error saving plant: ", err)
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -172,7 +185,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save the Plant
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(garden, plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -189,7 +202,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	// Set end date of Plant and save
 	now := time.Now()
 	plant.EndDate = &now
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(garden, plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -209,7 +222,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 // getAllPlants will return a list of all Plants
 func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
-	plants := pr.storageClient.GetPlants(getEndDated)
+	plants := pr.storageClient.GetPlants(garden, getEndDated)
 	if err := render.Render(w, r, pr.NewAllPlantsResponse(plants)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
@@ -246,7 +259,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save the Plant
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(garden, plant); err != nil {
 		logger.Error("Error saving plant: ", err)
 		render.Render(w, r, InternalServerError(err))
 		return

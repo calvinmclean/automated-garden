@@ -15,9 +15,13 @@ type Config struct {
 
 // Client is a "generic" interface used to interact with our storage backend (DB, file, etc)
 type Client interface {
-	GetPlant(xid.ID) (*pkg.Plant, error)
-	GetPlants(bool) []*pkg.Plant
-	SavePlant(*pkg.Plant) error
+	GetGarden(string) (*pkg.Garden, error)
+
+	GetPlant(string, xid.ID) (*pkg.Plant, error)
+	GetPlants(string, bool) []*pkg.Plant
+	SavePlant(string, *pkg.Plant) error
+
+	Save() error
 }
 
 // NewStorageClient will use the config to create and return the correct type of storage client

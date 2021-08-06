@@ -13,7 +13,7 @@ import (
 
 // YAMLClient implements the Client interface to use a YAML file as a storage mechanism
 type YAMLClient struct {
-	plants   map[xid.ID]*pkg.Plant
+	gardens  map[string]*pkg.Garden
 	filename string
 	Config   Config
 }
@@ -24,7 +24,7 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 		return nil, fmt.Errorf("missing config key 'filename'")
 	}
 	client := &YAMLClient{
-		plants:   map[xid.ID]*pkg.Plant{},
+		gardens:  map[string]*pkg.Garden{},
 		filename: config.Options["filename"],
 		Config:   config,
 	}
@@ -40,32 +40,43 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 	if err != nil {
 		return client, err
 	}
-	err = yaml.Unmarshal(data, &client.plants)
+	err = yaml.Unmarshal(data, &client.gardens)
 	if err != nil {
 		return client, err
 	}
 
-	// Create start dates for Plants if it is empty
-	for _, plant := range client.plants {
-		if plant.CreatedAt == nil {
-			now := time.Now().Add(1 * time.Minute)
-			plant.CreatedAt = &now
-			client.SavePlant(plant)
+	// Create start dates for Gardens and Plants if it is empty
+	for _, garden := range client.gardens {
+		now := time.Now().Add(1 * time.Minute)
+		if garden.CreatedAt == nil {
+			garden.CreatedAt = &now
+			client.Save()
+		}
+		for _, plant := range garden.Plants {
+			if plant.CreatedAt == nil {
+				plant.CreatedAt = &now
+				client.SavePlant(garden.Name, plant)
+			}
 		}
 	}
 
 	return client, err
 }
 
+// GetGarden returns the garden
+func (c *YAMLClient) GetGarden(name string) (*pkg.Garden, error) {
+	return c.gardens[name], nil
+}
+
 // GetPlant just returns the request Plant from the map
-func (c *YAMLClient) GetPlant(id xid.ID) (*pkg.Plant, error) {
-	return c.plants[id], nil
+func (c *YAMLClient) GetPlant(garden string, id xid.ID) (*pkg.Plant, error) {
+	return c.gardens[garden].Plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *YAMLClient) GetPlants(getEndDated bool) []*pkg.Plant {
+func (c *YAMLClient) GetPlants(garden string, getEndDated bool) []*pkg.Plant {
 	result := []*pkg.Plant{}
-	for _, p := range c.plants {
+	for _, p := range c.gardens[garden].Plants {
 		// Only return end-dated plants if specifically asked for
 		if getEndDated || (!getEndDated && p.EndDate == nil) {
 			result = append(result, p)
@@ -75,11 +86,15 @@ func (c *YAMLClient) GetPlants(getEndDated bool) []*pkg.Plant {
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *YAMLClient) SavePlant(plant *pkg.Plant) error {
-	c.plants[plant.ID] = plant
+func (c *YAMLClient) SavePlant(garden string, plant *pkg.Plant) error {
+	c.gardens[garden].Plants[plant.ID] = plant
+	return c.Save()
+}
 
+// Save saves the client's data back to a persistent source
+func (c *YAMLClient) Save() error {
 	// Marshal map to YAML bytes
-	content, err := yaml.Marshal(c.plants)
+	content, err := yaml.Marshal(c.gardens)
 	if err != nil {
 		return err
 	}

@@ -55,12 +55,21 @@ func Run(config Config) {
 
 	// RESTy routes for Plant API actions
 	// The PlantsResource will initialize the Scheduler and Storage Client
-	plantsResource, err := NewPlantsResource(config)
+	gardenResource, err := NewGardenResource(config)
 	if err != nil {
-		logger.Error("Error initializing '/plants' endpoint: ", err)
+		logger.Error("Error initializing '/gardens' endpoint: ", err)
 		os.Exit(1)
 	}
-	r.Mount("/plants", plantsResource.routes())
+	r.Mount("/gardens", gardenResource.routes())
+
+	// // RESTy routes for Plant API actions
+	// // The PlantsResource will initialize the Scheduler and Storage Client
+	// plantsResource, err := NewPlantsResource(config)
+	// if err != nil {
+	// 	logger.Error("Error initializing '/plants' endpoint: ", err)
+	// 	os.Exit(1)
+	// }
+	// r.Mount("/plants", plantsResource.routes())
 
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), r)
 }

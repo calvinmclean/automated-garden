@@ -19,7 +19,7 @@ import (
 type ConfigMapClient struct {
 	configMapName string
 	keyName       string
-	plants        map[xid.ID]*pkg.Plant
+	gardens       map[string]*pkg.Garden
 	k8sClient     v1.ConfigMapInterface
 	Config        Config
 }
@@ -35,7 +35,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	client := &ConfigMapClient{
 		configMapName: config.Options["name"],
 		keyName:       config.Options["key"],
-		plants:        map[xid.ID]*pkg.Plant{},
+		gardens:       map[string]*pkg.Garden{},
 		Config:        config,
 	}
 
@@ -57,32 +57,44 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to get ConfigMap '%s': %v", client.configMapName, err)
 	}
-	err = yaml.Unmarshal([]byte(configMap.Data[client.keyName]), &client.plants)
+	err = yaml.Unmarshal([]byte(configMap.Data[client.keyName]), &client.gardens)
 	if err != nil {
 		return nil, fmt.Errorf("unable to unmarshal YAML map of Plants: %v", err)
 	}
 
-	// Create start dates for Plants if it is empty
-	for _, plant := range client.plants {
-		if plant.CreatedAt == nil {
-			now := time.Now().Add(1 * time.Minute)
-			plant.CreatedAt = &now
-			client.SavePlant(plant)
+	// Create start dates for Gardens and Plants if it is empty
+	for _, garden := range client.gardens {
+		now := time.Now().Add(1 * time.Minute)
+		if garden.CreatedAt == nil {
+			garden.CreatedAt = &now
+			client.Save()
+		}
+		for _, plant := range garden.Plants {
+			if plant.CreatedAt == nil {
+				now := time.Now().Add(1 * time.Minute)
+				plant.CreatedAt = &now
+				client.SavePlant(garden.Name, plant)
+			}
 		}
 	}
 
 	return client, nil
 }
 
+// GetGarden returns the garden
+func (c *ConfigMapClient) GetGarden(name string) (*pkg.Garden, error) {
+	return c.gardens[name], nil
+}
+
 // GetPlant just returns the request Plant from the map
-func (c *ConfigMapClient) GetPlant(id xid.ID) (*pkg.Plant, error) {
-	return c.plants[id], nil
+func (c *ConfigMapClient) GetPlant(garden string, id xid.ID) (*pkg.Plant, error) {
+	return c.gardens[garden].Plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *ConfigMapClient) GetPlants(getEndDated bool) []*pkg.Plant {
+func (c *ConfigMapClient) GetPlants(garden string, getEndDated bool) []*pkg.Plant {
 	result := []*pkg.Plant{}
-	for _, p := range c.plants {
+	for _, p := range c.gardens[garden].Plants {
 		// Only return end-dated plants if specifically asked for
 		if getEndDated || (!getEndDated && p.EndDate == nil) {
 			result = append(result, p)
@@ -92,11 +104,15 @@ func (c *ConfigMapClient) GetPlants(getEndDated bool) []*pkg.Plant {
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *ConfigMapClient) SavePlant(plant *pkg.Plant) error {
-	c.plants[plant.ID] = plant
+func (c *ConfigMapClient) SavePlant(garden string, plant *pkg.Plant) error {
+	c.gardens[garden].Plants[plant.ID] = plant
+	return c.Save()
+}
 
+// Save saves the client's data back to a persistent source
+func (c *ConfigMapClient) Save() error {
 	// Marshal map to YAML bytes
-	content, err := yaml.Marshal(c.plants)
+	content, err := yaml.Marshal(c.gardens)
 	if err != nil {
 		return fmt.Errorf("unable to marshal YAML string from Plants map: %v", err)
 	}
