@@ -2,13 +2,13 @@ package server
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-co-op/gocron"
@@ -22,66 +22,64 @@ const (
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
-	storageClient storage.Client
+	GardenResource
 	mqttClient    *mqtt.Client
-	scheduler     *gocron.Scheduler
 	moistureCache map[xid.ID]float64
-	config        Config
+	scheduler     *gocron.Scheduler
 }
+
+const (
+	plantBasePath  = "/plants"
+	plantPathParam = "plantID"
+	plantCtxKey    = "plant"
+)
 
 var garden = "garden"
 
 // NewPlantsResource creates a new PlantsResource
-func NewPlantsResource(config Config, storageClient storage.Client, mqttClient *mqtt.Client, scheduler *gocron.Scheduler) (pr PlantsResource, err error) {
-	pr = PlantsResource{
-		storageClient: storageClient,
-		mqttClient:    mqttClient,
-		scheduler:     scheduler,
-		moistureCache: map[xid.ID]float64{},
-		config:        config,
+func NewPlantsResource(gr GardenResource) (PlantsResource, error) {
+	pr := PlantsResource{
+		GardenResource: gr,
+		moistureCache:  map[xid.ID]float64{},
+		scheduler:      gocron.NewScheduler(time.Local),
 	}
-	return
+
+	// Initialize MQTT Client
+	var err error
+	pr.mqttClient, err = mqtt.NewMQTTClient(gr.config.MQTTConfig)
+	if err != nil {
+		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
+		return pr, err
+	}
+
+	// Initialize watering Jobs for each Plant from the storage client
+	allGardens, err := pr.storageClient.GetGardens(false)
+	if err != nil {
+		return pr, err
+	}
+	for _, g := range allGardens {
+		allPlants, err := pr.storageClient.GetPlants(g.Name, false)
+		if err != nil {
+			return pr, err
+		}
+		for _, p := range allPlants {
+			if err = pr.addWateringSchedule(p); err != nil {
+				err = fmt.Errorf("unable to add watering Job for Plant %s: %v", p.ID.String(), err)
+				return pr, err
+			}
+		}
+	}
+
+	pr.scheduler.StartAsync()
+	return pr, err
 }
-
-// // NewPlantsResource creates a new PlantsResource
-// func NewPlantsResource(config Config) (pr PlantsResource, err error) {
-// 	pr = PlantsResource{
-// 		moistureCache: map[xid.ID]float64{},
-// 		config:        config,
-// 	}
-
-// 	pr.storageClient, err = storage.NewStorageClient(config.StorageConfig)
-// 	if err != nil {
-// 		err = fmt.Errorf("unable to initialize storage client: %v", err)
-// 		return
-// 	}
-
-// 	pr.mqttClient, err = mqtt.NewMQTTClient(pr.config.MQTTConfig)
-// 	if err != nil {
-// 		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
-// 		return
-// 	}
-
-// 	pr.scheduler = gocron.NewScheduler(time.Local)
-
-// 	// Initialize watering Jobs for each Plant from the storage client
-// 	for _, p := range pr.storageClient.GetPlants(garden, false) {
-// 		if err = pr.addWateringSchedule(p); err != nil {
-// 			err = fmt.Errorf("unable to add watering Job for Plant %s: %v", p.ID.String(), err)
-// 			return
-// 		}
-// 	}
-
-// 	pr.scheduler.StartAsync()
-// 	return
-// }
 
 // routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
 func (pr PlantsResource) routes() chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", pr.createPlant)
 	r.Get("/", pr.getAllPlants)
-	r.Route("/{plantID}", func(r chi.Router) {
+	r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
 		r.Use(pr.plantContextMiddleware)
 
 		r.Post("/action", pr.plantAction)
@@ -98,13 +96,14 @@ func (pr PlantsResource) routes() chi.Router {
 func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Convert ID string to xid
-		id, err := xid.FromString(chi.URLParam(r, "plantID"))
+		id, err := xid.FromString(chi.URLParam(r, plantPathParam))
 		if err != nil {
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
+		gardenName := chi.URLParam(r, gardenPathParam)
 
-		plant, err := pr.storageClient.GetPlant(garden, id)
+		plant, err := pr.storageClient.GetPlant(gardenName, id)
 		if err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
@@ -222,7 +221,11 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 // getAllPlants will return a list of all Plants
 func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
-	plants := pr.storageClient.GetPlants(garden, getEndDated)
+	plants, err := pr.storageClient.GetPlants(garden, getEndDated)
+	if err != nil {
+		render.Render(w, r, ErrRender(err))
+		return
+	}
 	if err := render.Render(w, r, pr.NewAllPlantsResponse(plants)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}

@@ -68,13 +68,24 @@ func (c *YAMLClient) GetGarden(name string) (*pkg.Garden, error) {
 	return c.gardens[name], nil
 }
 
+// GetGardens returns all the gardens
+func (c *YAMLClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
+	result := []*pkg.Garden{}
+	for _, g := range c.gardens {
+		if getEndDated || (!getEndDated && g.EndDate == nil) {
+			result = append(result, g)
+		}
+	}
+	return result, nil
+}
+
 // GetPlant just returns the request Plant from the map
 func (c *YAMLClient) GetPlant(garden string, id xid.ID) (*pkg.Plant, error) {
 	return c.gardens[garden].Plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *YAMLClient) GetPlants(garden string, getEndDated bool) []*pkg.Plant {
+func (c *YAMLClient) GetPlants(garden string, getEndDated bool) ([]*pkg.Plant, error) {
 	result := []*pkg.Plant{}
 	for _, p := range c.gardens[garden].Plants {
 		// Only return end-dated plants if specifically asked for
@@ -82,7 +93,7 @@ func (c *YAMLClient) GetPlants(garden string, getEndDated bool) []*pkg.Plant {
 			result = append(result, p)
 		}
 	}
-	return result
+	return result, nil
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file

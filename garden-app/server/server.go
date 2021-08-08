@@ -53,23 +53,18 @@ func Run(config Config) {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	// RESTy routes for Plant API actions
-	// The PlantsResource will initialize the Scheduler and Storage Client
+	// RESTy routes for Garden and Plant API
 	gardenResource, err := NewGardenResource(config)
 	if err != nil {
-		logger.Error("Error initializing '/gardens' endpoint: ", err)
+		logger.Errorf("Error initializing '%s' endpoint: %v", gardenBasePath, err)
 		os.Exit(1)
 	}
-	r.Mount("/gardens", gardenResource.routes())
-
-	// // RESTy routes for Plant API actions
-	// // The PlantsResource will initialize the Scheduler and Storage Client
-	// plantsResource, err := NewPlantsResource(config)
-	// if err != nil {
-	// 	logger.Error("Error initializing '/plants' endpoint: ", err)
-	// 	os.Exit(1)
-	// }
-	// r.Mount("/plants", plantsResource.routes())
+	plantsResource, err := NewPlantsResource(gardenResource)
+	if err != nil {
+		logger.Errorf("Error initializing '%s' endpoint: %v", plantBasePath, err)
+		os.Exit(1)
+	}
+	r.Mount(gardenBasePath, gardenResource.routes(plantsResource))
 
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), r)
 }
