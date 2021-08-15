@@ -12,18 +12,18 @@ import (
 	"github.com/rs/xid"
 )
 
-// PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
-// to function, including storage, scheduling, and caching
+const (
+	gardenBasePath  = "/gardens"
+	gardenPathParam = "gardenID"
+	gardenCtxKey    = contextKey("garden")
+)
+
+// GardenResource encapsulates the structs and dependencies necessary for the "/gardens" API
+// to function, including storage and configurating
 type GardenResource struct {
 	storageClient storage.Client
 	config        Config
 }
-
-const (
-	gardenBasePath  = "/gardens"
-	gardenPathParam = "gardenID"
-	gardenCtxKey    = "garden"
-)
 
 // NewGardenResource creates a new GardenResource
 func NewGardenResource(config Config) (gr GardenResource, err error) {
@@ -70,7 +70,7 @@ func (gr GardenResource) gardenContextMiddleware(next http.Handler) http.Handler
 
 		garden, err := gr.storageClient.GetGarden(gardenID)
 		if err != nil {
-			render.Render(w, r, ServerError(err))
+			render.Render(w, r, InternalServerError(err))
 			return
 		}
 		if garden == nil {
@@ -84,22 +84,22 @@ func (gr GardenResource) gardenContextMiddleware(next http.Handler) http.Handler
 }
 
 // getAllGardens will return a list of all Gardens
-func (pr GardenResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
+func (gr GardenResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
-	gardens, err := pr.storageClient.GetGardens(getEndDated)
+	gardens, err := gr.storageClient.GetGardens(getEndDated)
 	if err != nil {
 		render.Render(w, r, ErrRender(err))
 		return
 	}
-	if err := render.Render(w, r, pr.NewAllGardensResponse(gardens)); err != nil {
+	if err := render.Render(w, r, gr.NewAllGardensResponse(gardens)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // getGarden will return a garden by ID/name
-func (pr GardenResource) getGarden(w http.ResponseWriter, r *http.Request) {
+func (gr GardenResource) getGarden(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	gardenResponse := pr.NewGardenResponse(garden)
+	gardenResponse := gr.NewGardenResponse(garden)
 	if err := render.Render(w, r, gardenResponse); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}

@@ -16,7 +16,9 @@ import (
 )
 
 const (
-	plantCtxKey = contextKey("plant")
+	plantBasePath  = "/plants"
+	plantPathParam = "plantID"
+	plantCtxKey    = contextKey("plant")
 )
 
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
@@ -27,12 +29,6 @@ type PlantsResource struct {
 	moistureCache map[xid.ID]float64
 	scheduler     *gocron.Scheduler
 }
-
-const (
-	plantBasePath  = "/plants"
-	plantPathParam = "plantID"
-	plantCtxKey    = "plant"
-)
 
 // NewPlantsResource creates a new PlantsResource
 func NewPlantsResource(gr GardenResource) (PlantsResource, error) {

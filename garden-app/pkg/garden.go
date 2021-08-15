@@ -6,6 +6,7 @@ import (
 	"github.com/rs/xid"
 )
 
+// Garden is the representation of a single garden-controller device. It is the container for Plants
 type Garden struct {
 	Name      string            `json:"name" yaml:"name,omitempty"`
 	ID        xid.ID            `json:"id" yaml:"id,omitempty"`
