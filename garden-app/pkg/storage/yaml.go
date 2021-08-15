@@ -13,7 +13,7 @@ import (
 
 // YAMLClient implements the Client interface to use a YAML file as a storage mechanism
 type YAMLClient struct {
-	gardens  map[string]*pkg.Garden
+	gardens  map[xid.ID]*pkg.Garden
 	filename string
 	Config   Config
 }
@@ -24,7 +24,7 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 		return nil, fmt.Errorf("missing config key 'filename'")
 	}
 	client := &YAMLClient{
-		gardens:  map[string]*pkg.Garden{},
+		gardens:  map[xid.ID]*pkg.Garden{},
 		filename: config.Options["filename"],
 		Config:   config,
 	}
@@ -55,7 +55,7 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 		for _, plant := range garden.Plants {
 			if plant.CreatedAt == nil {
 				plant.CreatedAt = &now
-				client.SavePlant(garden.Name, plant)
+				client.SavePlant(garden.ID, plant)
 			}
 		}
 	}
@@ -64,8 +64,8 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 }
 
 // GetGarden returns the garden
-func (c *YAMLClient) GetGarden(name string) (*pkg.Garden, error) {
-	return c.gardens[name], nil
+func (c *YAMLClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
+	return c.gardens[id], nil
 }
 
 // GetGardens returns all the gardens
@@ -80,12 +80,12 @@ func (c *YAMLClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 }
 
 // GetPlant just returns the request Plant from the map
-func (c *YAMLClient) GetPlant(garden string, id xid.ID) (*pkg.Plant, error) {
+func (c *YAMLClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 	return c.gardens[garden].Plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *YAMLClient) GetPlants(garden string, getEndDated bool) ([]*pkg.Plant, error) {
+func (c *YAMLClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
 	result := []*pkg.Plant{}
 	for _, p := range c.gardens[garden].Plants {
 		// Only return end-dated plants if specifically asked for
@@ -97,7 +97,7 @@ func (c *YAMLClient) GetPlants(garden string, getEndDated bool) ([]*pkg.Plant, e
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *YAMLClient) SavePlant(garden string, plant *pkg.Plant) error {
+func (c *YAMLClient) SavePlant(garden xid.ID, plant *pkg.Plant) error {
 	c.gardens[garden].Plants[plant.ID] = plant
 	return c.Save()
 }

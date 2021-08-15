@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/rs/xid"
 )
 
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
@@ -19,7 +21,7 @@ type GardenResource struct {
 
 const (
 	gardenBasePath  = "/gardens"
-	gardenPathParam = "gardenName"
+	gardenPathParam = "gardenID"
 	gardenCtxKey    = "garden"
 )
 
@@ -46,7 +48,7 @@ func (gr GardenResource) routes(pr PlantsResource) chi.Router {
 	r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
 		r.Use(gr.gardenContextMiddleware)
 
-		// r.Get("/", gr.getGarden)
+		r.Get("/", gr.getGarden)
 		// r.Patch("/", gr.updateGarden)
 		// r.Delete("/", gr.endDateGarden)
 
@@ -60,9 +62,13 @@ func (gr GardenResource) routes(pr PlantsResource) chi.Router {
 // we stop here and return a 404.
 func (gr GardenResource) gardenContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		gardenName := chi.URLParam(r, gardenPathParam)
+		gardenID, err := xid.FromString(chi.URLParam(r, gardenPathParam))
+		if err != nil {
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
 
-		garden, err := gr.storageClient.GetGarden(gardenName)
+		garden, err := gr.storageClient.GetGarden(gardenID)
 		if err != nil {
 			render.Render(w, r, ServerError(err))
 			return
@@ -86,6 +92,15 @@ func (pr GardenResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err := render.Render(w, r, pr.NewAllGardensResponse(gardens)); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+// getGarden will return a garden by ID/name
+func (pr GardenResource) getGarden(w http.ResponseWriter, r *http.Request) {
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	gardenResponse := pr.NewGardenResponse(garden)
+	if err := render.Render(w, r, gardenResponse); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }

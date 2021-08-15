@@ -19,7 +19,7 @@ import (
 type ConfigMapClient struct {
 	configMapName string
 	keyName       string
-	gardens       map[string]*pkg.Garden
+	gardens       map[xid.ID]*pkg.Garden
 	k8sClient     v1.ConfigMapInterface
 	Config        Config
 }
@@ -35,7 +35,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	client := &ConfigMapClient{
 		configMapName: config.Options["name"],
 		keyName:       config.Options["key"],
-		gardens:       map[string]*pkg.Garden{},
+		gardens:       map[xid.ID]*pkg.Garden{},
 		Config:        config,
 	}
 
@@ -73,7 +73,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 			if plant.CreatedAt == nil {
 				now := time.Now().Add(1 * time.Minute)
 				plant.CreatedAt = &now
-				client.SavePlant(garden.Name, plant)
+				client.SavePlant(garden.ID, plant)
 			}
 		}
 	}
@@ -82,8 +82,8 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 }
 
 // GetGarden returns the garden
-func (c *ConfigMapClient) GetGarden(name string) (*pkg.Garden, error) {
-	return c.gardens[name], nil
+func (c *ConfigMapClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
+	return c.gardens[id], nil
 }
 
 // GetGardens returns all gardens
@@ -98,12 +98,12 @@ func (c *ConfigMapClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 }
 
 // GetPlant just returns the request Plant from the map
-func (c *ConfigMapClient) GetPlant(garden string, id xid.ID) (*pkg.Plant, error) {
+func (c *ConfigMapClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 	return c.gardens[garden].Plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *ConfigMapClient) GetPlants(garden string, getEndDated bool) ([]*pkg.Plant, error) {
+func (c *ConfigMapClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
 	result := []*pkg.Plant{}
 	for _, p := range c.gardens[garden].Plants {
 		// Only return end-dated plants if specifically asked for
@@ -115,7 +115,7 @@ func (c *ConfigMapClient) GetPlants(garden string, getEndDated bool) ([]*pkg.Pla
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *ConfigMapClient) SavePlant(garden string, plant *pkg.Plant) error {
+func (c *ConfigMapClient) SavePlant(garden xid.ID, plant *pkg.Plant) error {
 	c.gardens[garden].Plants[plant.ID] = plant
 	return c.Save()
 }

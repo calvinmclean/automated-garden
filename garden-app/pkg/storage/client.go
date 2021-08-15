@@ -15,12 +15,12 @@ type Config struct {
 
 // Client is a "generic" interface used to interact with our storage backend (DB, file, etc)
 type Client interface {
-	GetGarden(string) (*pkg.Garden, error)
+	GetGarden(xid.ID) (*pkg.Garden, error)
 	GetGardens(bool) ([]*pkg.Garden, error)
 
-	GetPlant(string, xid.ID) (*pkg.Plant, error)
-	GetPlants(string, bool) ([]*pkg.Plant, error)
-	SavePlant(string, *pkg.Plant) error
+	GetPlant(xid.ID, xid.ID) (*pkg.Plant, error)
+	GetPlants(xid.ID, bool) ([]*pkg.Plant, error)
+	SavePlant(xid.ID, *pkg.Plant) error
 
 	Save() error
 }

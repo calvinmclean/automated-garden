@@ -6,12 +6,13 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/go-co-op/gocron"
+	"github.com/rs/xid"
 )
 
 // addWateringSchedule will schedule watering actions for the Plant based off the CreatedAt date,
 // WateringStrategy time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
 // easily be removed
-func (pr PlantsResource) addWateringSchedule(p *pkg.Plant) error {
+func (pr PlantsResource) addWateringSchedule(gardenID xid.ID, p *pkg.Plant) error {
 	logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
 	// Read Plant's Interval string into a Duration
@@ -50,7 +51,7 @@ func (pr PlantsResource) addWateringSchedule(p *pkg.Plant) error {
 			if err != nil {
 				logger.Error("Error executing scheduled plant watering action: ", err)
 			}
-			err = pr.storageClient.SavePlant(garden, p)
+			err = pr.storageClient.SavePlant(gardenID, p)
 			if err != nil {
 				logger.Error("Error saving plant after watering: ", err)
 			}
@@ -65,11 +66,11 @@ func (pr PlantsResource) removeWateringSchedule(p *pkg.Plant) error {
 }
 
 // resetWateringSchedule will simply remove the existing Job and create a new one
-func (pr PlantsResource) resetWateringSchedule(p *pkg.Plant) error {
+func (pr PlantsResource) resetWateringSchedule(gardenID xid.ID, p *pkg.Plant) error {
 	if err := pr.removeWateringSchedule(p); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
-	return pr.addWateringSchedule(p)
+	return pr.addWateringSchedule(gardenID, p)
 }
 
 // getNextWateringTime determines the next scheduled watering time for a given Plant using tags
