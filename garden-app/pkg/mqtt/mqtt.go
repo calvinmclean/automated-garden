@@ -26,11 +26,20 @@ type Client struct {
 	Config
 }
 
-// NewMQTTClient is used to create and return a MQTTClient
-func NewMQTTClient(config Config) (*Client, error) {
+// NewMQTTClient is used to create and return a MQTTClient. The handlers argument enables the subscriber
+// using the supplied functions to handle incoming messages. It really should be used with only one function,
+// but I wanted to make it an optional argument, which required using the variadic function argument
+func NewMQTTClient(config Config, handlers ...mqtt.MessageHandler) (*Client, error) {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", config.Broker, config.Port))
 	opts.SetClientID(config.ClientID)
+	if len(handlers) > 0 {
+		opts.SetDefaultPublishHandler(mqtt.MessageHandler(func(c mqtt.Client, msg mqtt.Message) {
+			for _, handler := range handlers {
+				handler(c, msg)
+			}
+		}))
+	}
 	return &Client{Client: mqtt.NewClient(opts), Config: config}, nil
 }
 
@@ -45,5 +54,23 @@ func (c *Client) Publish(topic string, message []byte) error {
 	if token := c.Client.Publish(topic, byte(0), false, message); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
 	}
+	return nil
+}
+
+// Subscribe is a blocking method that listens on a topic. This should be used in a Go routine
+func (c *Client) Subscribe(topic string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	defer c.Client.Disconnect(250)
+	if token := c.Client.Connect(); token.Wait() && token.Error() != nil {
+		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
+	}
+	if token := c.Client.Subscribe(topic, byte(0), nil); token.Wait() && token.Error() != nil {
+		return fmt.Errorf("unable to subscribe to MQTT broker on topic '%s': %v", topic, token.Error())
+	}
+
+	for true {
+	}
+
 	return nil
 }

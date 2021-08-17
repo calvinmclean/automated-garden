@@ -27,10 +27,6 @@ func init() {
 	cobra.OnInitialize(initConfig)
 
 	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "", "path to config file")
-
-	rootCommand.AddCommand(
-		serverCommand,
-	)
 }
 
 func initConfig() {
