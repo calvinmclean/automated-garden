@@ -11,28 +11,50 @@ env:
   PROJECT_NAME: garden-app
 
 jobs:
-  # lint:
-  #   runs-on: ubuntu-latest
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
 
-  #   steps:
-  #     - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
 
-  #     - name: Set up Go
-  #       uses: actions/setup-go@v2
-  #       with:
-  #         go-version: 1.16
+      - name: Install golint
+        run: go get -u golang.org/x/lint/golint
 
-  #     - name: Lint
-  #       working-directory: ./garden-app
-  #       run: golint $(go list ./... | grep -v /vendor/)
+      - name: Lint
+        id: lint
+        working-directory: ./${{ env.PROJECT_NAME }}
+        run: echo "::set-output name=LINT_OUTPUT::$(golint $(go list ./... | grep -v /vendor/))"
 
-  #     - name: vet
-  #       working-directory: ./garden-app
-  #       run: go vet $(go list ./... | grep -v /vendor/)
+      - name: Lint Check
+        run: test -z "${{ steps.lint.outputs.LINT_OUTPUT }}"
+
+      - name: Format
+        id: format
+        working-directory: ./${{ env.PROJECT_NAME }}
+        run: echo "::set-output name=FORMAT_OUTPUT::$(gofmt -d -s $(find . -name "*.go" | grep -v /vendor/))"
+
+      - name: Format Check
+        run: test -z "${{ steps.format.outputs.FORMAT_OUTPUT }}"
+
+      - name: Vet
+        id: vet
+        working-directory: ./garden-app
+        run: echo "::set-output name=VET_OUTPUT::$(go vet $(go list ./... | grep -v /vendor/))"
+
+      - name: Vet Check
+        run: test -z "${{ steps.vet.outputs.VET_OUTPUT }}"
+
+      - name: Test
+        working-directory: ./garden-app
+        run: go test ./...
 
   build:
+    needs: go
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v2
 
