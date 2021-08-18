@@ -16,6 +16,10 @@ import (
 	"github.com/rs/xid"
 )
 
+const (
+	plantCtxKey = contextKey("plant")
+)
+
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
@@ -89,7 +93,7 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 
 		plant, err := pr.storageClient.GetPlant(id)
 		if err != nil {
-			render.Render(w, r, ServerError(err))
+			render.Render(w, r, InternalServerError(err))
 			return
 		}
 		if plant == nil {
@@ -97,7 +101,7 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), "plant", plant)
+		ctx := context.WithValue(r.Context(), plantCtxKey, plant)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -106,7 +110,7 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
-	plant := r.Context().Value("plant").(*pkg.Plant)
+	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 
 	action := &AggregateActionRequest{}
 	if err := render.Bind(r, action); err != nil {
@@ -116,7 +120,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 
 	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
 	if err := action.Execute(plant, pr.mqttClient, pr.config.InfluxDBConfig); err != nil {
-		render.Render(w, r, ServerError(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
@@ -124,7 +128,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	// TODO: consider giving the action the ability to use the storage client
 	if err := pr.storageClient.SavePlant(plant); err != nil {
 		logger.Error("Error saving plant: ", err)
-		render.Render(w, r, ServerError(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
@@ -134,7 +138,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 
 // getPlant simply returns the Plant requested by the provided ID
 func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
-	plant := r.Context().Value("plant").(*pkg.Plant)
+	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 	moisture, cached := pr.moistureCache[plant.ID]
 	plantResponse := pr.NewPlantResponse(plant, moisture)
 	if err := render.Render(w, r, plantResponse); err != nil {
@@ -152,7 +156,7 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 
 // updatePlant will change any specified fields of the Plant and save it
 func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
-	request := &PlantRequest{r.Context().Value("plant").(*pkg.Plant)}
+	request := &PlantRequest{r.Context().Value(plantCtxKey).(*pkg.Plant)}
 
 	// Read the request body into existing plant to overwrite fields
 	if err := render.Bind(r, request); err != nil {
@@ -163,13 +167,13 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 
 	// Update the watering schedule for the Plant
 	if err := pr.resetWateringSchedule(plant); err != nil {
-		render.Render(w, r, ServerError(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
 	// Save the Plant
 	if err := pr.storageClient.SavePlant(plant); err != nil {
-		render.Render(w, r, ServerError(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
@@ -180,20 +184,20 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 
 // endDatePlant will mark the Plant's end date as now and save it
 func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
-	plant := r.Context().Value("plant").(*pkg.Plant)
+	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 
 	// Set end date of Plant and save
 	now := time.Now()
 	plant.EndDate = &now
 	if err := pr.storageClient.SavePlant(plant); err != nil {
-		render.Render(w, r, ServerError(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
 	// Remove scheduled watering Job
 	if err := pr.removeWateringSchedule(plant); err != nil {
 		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
-		render.Render(w, r, ServerError(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
@@ -244,7 +248,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	// Save the Plant
 	if err := pr.storageClient.SavePlant(plant); err != nil {
 		logger.Error("Error saving plant: ", err)
-		render.Render(w, r, ServerError(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 

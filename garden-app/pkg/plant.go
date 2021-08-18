@@ -9,6 +9,7 @@ import (
 )
 
 const (
+	// WaterTimeFormat is used to control format of time fields
 	WaterTimeFormat = "15:04:05-07:00"
 )
 

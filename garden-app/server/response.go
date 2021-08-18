@@ -50,8 +50,8 @@ func ErrRender(err error) render.Renderer {
 	}
 }
 
-// ServerError creates a generic 500 error for a server-side error
-func ServerError(err error) render.Renderer {
+// InternalServerError creates a generic 500 error for a server-side error
+func InternalServerError(err error) render.Renderer {
 	return &ErrResponse{
 		Err:            err,
 		HTTPStatusCode: 500,
