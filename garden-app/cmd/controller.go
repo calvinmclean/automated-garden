@@ -18,8 +18,8 @@ var (
 )
 
 func init() {
-	controllerCommand.Flags().StringVarP(&gardenName, "garden-name", "g", "garden", "Name of the garden-controller (helps determine which MQTT topic to subscribe to)")
-	controllerCommand.MarkFlagRequired("garden-name")
+	controllerCommand.Flags().StringVarP(&gardenName, "name", "n", "garden", "Name of the garden-controller (helps determine which MQTT topic to subscribe to)")
+	viper.BindPFlag("garden_name", controllerCommand.Flags().Lookup("name"))
 
 	rootCommand.AddCommand(controllerCommand)
 }
@@ -31,8 +31,6 @@ func Controller(cmd *cobra.Command, args []string) {
 		cmd.PrintErrln("unable to read config from file: ", err)
 		return
 	}
-
-	config.GardenName = gardenName
 
 	controller.Start(config)
 }

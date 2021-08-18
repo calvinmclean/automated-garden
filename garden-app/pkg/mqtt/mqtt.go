@@ -57,8 +57,8 @@ func (c *Client) Publish(topic string, message []byte) error {
 	return nil
 }
 
-// Subscribe is a blocking method that listens on a topic. This should be used in a Go routine
-func (c *Client) Subscribe(topic string) error {
+// Subscribe is a blocking method that listens on a topic. This should be used in a Go routine with a blocking handler supplied
+func (c *Client) Subscribe(topic string, blockingHandler func()) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	defer c.Client.Disconnect(250)
@@ -69,8 +69,7 @@ func (c *Client) Subscribe(topic string) error {
 		return fmt.Errorf("unable to subscribe to MQTT broker on topic '%s': %v", topic, token.Error())
 	}
 
-	for true {
-	}
+	blockingHandler()
 
 	return nil
 }

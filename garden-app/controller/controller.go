@@ -2,11 +2,13 @@ package controller
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"strings"
 	"sync"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	paho "github.com/eclipse/paho.mqtt.golang"
@@ -19,7 +21,7 @@ var logger *logrus.Logger
 type Config struct {
 	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
-	GardenName     string
+	GardenName     string          `mapstructure:"garden_name"`
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller
@@ -38,7 +40,7 @@ func Start(config Config) {
 
 	controller := Controller{Config: config}
 
-	logger.Infof("Starting controller '%s'\n", controller.GardenName)
+	logger.Infof("starting controller '%s'\n", controller.GardenName)
 
 	topics, err := topics(controller.MQTTConfig, controller.GardenName)
 	if err != nil {
@@ -49,7 +51,7 @@ func Start(config Config) {
 	wg := sync.WaitGroup{}
 	for i, topic := range topics {
 		wg.Add(1)
-		logger.Infof("Subscribing on topic: %s", topic)
+		logger.Infof("subscribing on topic: %s", topic)
 
 		// Override configured ClientID with the GardenName from command flags
 		controller.MQTTConfig.ClientID = fmt.Sprintf("%s-%d", controller.GardenName, i)
@@ -58,7 +60,11 @@ func Start(config Config) {
 			logger.Errorf("unable to initialize MQTT client: %v", err)
 			return
 		}
-		go mqttClient.Subscribe(topic)
+		go mqttClient.Subscribe(topic, func() {
+			for true {
+			}
+			wg.Done()
+		})
 	}
 	wg.Wait()
 }
@@ -69,19 +75,35 @@ func getHandlerForTopic(topic string) paho.MessageHandler {
 	switch t := strings.Split(topic, "/")[2]; t {
 	case "water":
 		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
-			fmt.Printf("WATER: %s MESSAGE: %s\n", msg.Topic(), string(msg.Payload()))
+			var waterMsg pkg.WaterMessage
+			err := json.Unmarshal(msg.Payload(), &waterMsg)
+			if err != nil {
+				logger.Errorf("unable to unmarshal WaterMessage JSON: %s", err.Error())
+			}
+			logger.WithFields(logrus.Fields{
+				"topic":          msg.Topic(),
+				"plant_id":       waterMsg.PlantID,
+				"plant_position": waterMsg.PlantPosition,
+				"duration":       waterMsg.Duration,
+			}).Info("received WaterAction")
 		})
 	case "stop":
 		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
-			fmt.Printf("STOP: %s MESSAGE: %s\n", msg.Topic(), string(msg.Payload()))
+			logger.WithFields(logrus.Fields{
+				"topic": msg.Topic(),
+			}).Info("received StopAction")
 		})
 	case "stop_all":
 		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
-			fmt.Printf("STOP ALL: %s MESSAGE: %s\n", msg.Topic(), string(msg.Payload()))
+			logger.WithFields(logrus.Fields{
+				"topic": msg.Topic(),
+			}).Info("received StopAllAction")
 		})
 	default:
 		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
-			fmt.Printf("DEFAULT: %s MESSAGE: %s\n", msg.Topic(), string(msg.Payload()))
+			logger.WithFields(logrus.Fields{
+				"topic": msg.Topic(),
+			}).Infof("received message on unexpected topic: %s", string(msg.Payload()))
 		})
 	}
 }
