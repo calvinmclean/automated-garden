@@ -70,6 +70,8 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.PROJECT_NAME }}
+          flavor: |
+            latest=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
