@@ -15,7 +15,7 @@ spec:
     spec:
       containers:
         - name: garden-app
-          image: calvinmclean/garden-app
+          image: ghcr.io/calvinmclean/garden-app
           ports:
             - containerPort: 80
           volumeMounts:

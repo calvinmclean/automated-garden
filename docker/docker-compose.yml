@@ -43,7 +43,7 @@ services:
       - "9001:9001"
 
   # garden-app:
-  #   image: "calvinmclean/garden-app:latest"
+  #   image: "ghcr.io/calvinmclean/garden-app"
   #   build: "../garden-app"
   #   ports:
   #     - "80:80"
