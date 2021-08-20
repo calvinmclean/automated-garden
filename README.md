@@ -2,8 +2,7 @@
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/calvinmclean/automated-garden)](https://goreportcard.com/report/github.com/calvinmclean/automated-garden)
 [![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/calvinmclean/automated-garden?filename=garden-app%2Fgo.mod)](https://github.com/calvinmclean/automated-garden/blob/main/garden-app/go.mod)
-[![Docker Build Status](https://img.shields.io/docker/cloud/build/calvinmclean/garden-app)](https://hub.docker.com/repository/docker/calvinmclean/garden-app)
-[![Docker Image Size (tag)](https://img.shields.io/docker/image-size/calvinmclean/garden-app/latest)](https://hub.docker.com/repository/docker/calvinmclean/garden-app)
+![GitHub Workflow Status](https://img.shields.io/github/workflow/status/calvinmclean/automated-garden/CI)
 [![License](https://img.shields.io/github/license/calvinmclean/automated-garden)](https://github.com/calvinmclean/automated-garden/blob/main/LICENSE)
 
 This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with the garden.
