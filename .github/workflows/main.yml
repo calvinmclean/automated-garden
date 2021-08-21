@@ -42,14 +42,14 @@ jobs:
 
       - name: Vet
         id: vet
-        working-directory: ./garden-app
+        working-directory: ./${{ env.PROJECT_NAME }}
         run: echo "::set-output name=VET_OUTPUT::$(go vet $(go list ./... | grep -v /vendor/))"
 
       - name: Vet Check
         run: test -z "${{ steps.vet.outputs.VET_OUTPUT }}"
 
       - name: Test
-        working-directory: ./garden-app
+        working-directory: ./${{ env.PROJECT_NAME }}
         run: go test ./...
 
   build:
