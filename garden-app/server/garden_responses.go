@@ -19,10 +19,10 @@ type GardenResponse struct {
 func (gr GardenResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
 	return &GardenResponse{
 		garden,
-		Link{"collection", fmt.Sprintf("%s/%s%s", gardenBasePath, garden.Name, plantBasePath)},
+		Link{"collection", fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)},
 		append(links, Link{
 			"self",
-			fmt.Sprintf("%s/%s", gardenBasePath, garden.Name),
+			fmt.Sprintf("%s/%s", gardenBasePath, garden.ID),
 		}),
 	}
 }

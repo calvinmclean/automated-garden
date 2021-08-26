@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -43,14 +44,14 @@ func NewGardenResource(config Config) (gr GardenResource, err error) {
 // routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
 func (gr GardenResource) routes(pr PlantsResource) chi.Router {
 	r := chi.NewRouter()
-	// r.Post("/", gr.createGarden)
+	r.Post("/", gr.createGarden)
 	r.Get("/", gr.getAllGardens)
 	r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
 		r.Use(gr.gardenContextMiddleware)
 
 		r.Get("/", gr.getGarden)
 		// r.Patch("/", gr.updateGarden)
-		// r.Delete("/", gr.endDateGarden)
+		r.Delete("/", gr.endDateGarden)
 
 		r.Mount(plantBasePath, pr.routes())
 	})
@@ -83,6 +84,35 @@ func (gr GardenResource) gardenContextMiddleware(next http.Handler) http.Handler
 	})
 }
 
+func (gr GardenResource) createGarden(w http.ResponseWriter, r *http.Request) {
+	request := &GardenRequest{}
+	if err := render.Bind(r, request); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	garden := request.Garden
+
+	// Assign new unique ID and CreatedAt to garden
+	garden.ID = xid.New()
+	if garden.CreatedAt == nil {
+		now := time.Now()
+		garden.CreatedAt = &now
+	}
+
+	// Save the Garden
+	if err := gr.storageClient.SaveGarden(garden); err != nil {
+		logger.Error("Error saving plant: ", err)
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
 // getAllGardens will return a list of all Gardens
 func (gr GardenResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
@@ -101,6 +131,23 @@ func (gr GardenResource) getGarden(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	gardenResponse := gr.NewGardenResponse(garden)
 	if err := render.Render(w, r, gardenResponse); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+// endDatePlant will mark the Plant's end date as now and save it
+func (gr GardenResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+
+	// Set end date of Garden and save
+	now := time.Now()
+	garden.EndDate = &now
+	if err := gr.storageClient.SaveGarden(garden); err != nil {
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }

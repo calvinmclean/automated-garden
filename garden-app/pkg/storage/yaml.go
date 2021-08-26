@@ -79,6 +79,12 @@ func (c *YAMLClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 	return result, nil
 }
 
+// SaveGarden saves a garden and writes it back to the YAML file
+func (c *YAMLClient) SaveGarden(garden *pkg.Garden) error {
+	c.gardens[garden.ID] = garden
+	return c.Save()
+}
+
 // GetPlant just returns the request Plant from the map
 func (c *YAMLClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 	return c.gardens[garden].Plants[id], nil

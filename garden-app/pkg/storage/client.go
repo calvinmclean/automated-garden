@@ -17,6 +17,7 @@ type Config struct {
 type Client interface {
 	GetGarden(xid.ID) (*pkg.Garden, error)
 	GetGardens(bool) ([]*pkg.Garden, error)
+	SaveGarden(*pkg.Garden) error
 
 	GetPlant(xid.ID, xid.ID) (*pkg.Plant, error)
 	GetPlants(xid.ID, bool) ([]*pkg.Plant, error)

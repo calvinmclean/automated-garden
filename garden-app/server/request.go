@@ -53,3 +53,23 @@ func (action *AggregateActionRequest) Bind(r *http.Request) error {
 	}
 	return nil
 }
+
+// GardenRequest wraps a Garden into a request so we can handle Bind/Render in this package
+type GardenRequest struct {
+	*pkg.Garden
+}
+
+// Bind is used to make this struct compatible with the go-chi webserver for reading incoming
+// JSON requests
+func (g *GardenRequest) Bind(r *http.Request) error {
+	if g == nil {
+		return errors.New("missing required Garden fields")
+	}
+	if g.Name == "" {
+		return errors.New("missing required name field")
+	}
+	if len(g.Plants) > 0 {
+		return errors.New("cannot create new Garden with Plants")
+	}
+	return nil
+}
