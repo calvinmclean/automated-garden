@@ -17,13 +17,20 @@ type GardenResponse struct {
 
 // NewGardenResponse creates a self-referencing GardenResponse
 func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
+	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)
 	return &GardenResponse{
 		garden,
-		Link{"collection", fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)},
-		append(links, Link{
-			"self",
-			fmt.Sprintf("%s/%s", gardenBasePath, garden.ID),
-		}),
+		Link{"collection", plantsPath},
+		append(links,
+			Link{
+				"self",
+				fmt.Sprintf("%s/%s", gardenBasePath, garden.ID),
+			},
+			Link{
+				"plants",
+				plantsPath,
+			},
+		),
 	}
 }
 

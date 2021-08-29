@@ -38,14 +38,25 @@ type PlantResponse struct {
 
 // NewPlantResponse creates a self-referencing PlantResponse
 func (pr PlantsResource) NewPlantResponse(plant *pkg.Plant, moisture float64, links ...Link) *PlantResponse {
+	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, plant.GardenID)
 	return &PlantResponse{
 		plant,
 		moisture,
 		pr.getNextWateringTime(plant),
-		append(links, Link{
-			"self",
-			fmt.Sprintf("/plants/%s", plant.ID),
-		}),
+		append(links,
+			Link{
+				"self",
+				fmt.Sprintf("%s%s/%s", gardenPath, plantBasePath, plant.ID),
+			},
+			Link{
+				"garden",
+				gardenPath,
+			},
+			Link{
+				"actions",
+				fmt.Sprintf("%s%s/%s/actions", gardenPath, plantBasePath, plant.ID),
+			},
+		),
 	}
 }
 
