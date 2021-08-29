@@ -124,7 +124,6 @@ func (pr PlantsResource) loadPlantAndGarden(r *http.Request) (*pkg.Plant, *pkg.G
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 
 	action := &AggregateActionRequest{}
@@ -141,7 +140,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 
 	// Save the Plant in case anything was changed (watering a plant might change the skip_count field)
 	// TODO: consider giving the action the ability to use the storage client
-	if err := pr.storageClient.SavePlant(garden.ID, plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		logger.Error("Error saving plant: ", err)
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -189,7 +188,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save the Plant
-	if err := pr.storageClient.SavePlant(garden.ID, plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -202,12 +201,11 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 // endDatePlant will mark the Plant's end date as now and save it
 func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
 	// Set end date of Plant and save
 	now := time.Now()
 	plant.EndDate = &now
-	if err := pr.storageClient.SavePlant(garden.ID, plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -258,12 +256,14 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Assign new unique ID and CreatedAt to plant
+	// Assign values to fields that may not be set in the request
 	plant.ID = xid.New()
 	if plant.CreatedAt == nil {
 		now := time.Now()
 		plant.CreatedAt = &now
 	}
+	plant.Garden = garden.Name
+	plant.GardenID = garden.ID
 
 	// Start watering schedule
 	if err := pr.addWateringSchedule(garden.ID, plant); err != nil {
@@ -271,7 +271,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save the Plant
-	if err := pr.storageClient.SavePlant(garden.ID, plant); err != nil {
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		logger.Error("Error saving plant: ", err)
 		render.Render(w, r, InternalServerError(err))
 		return

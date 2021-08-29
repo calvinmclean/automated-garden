@@ -1,8 +1,6 @@
 package pkg
 
 import (
-	"bytes"
-	"text/template"
 	"time"
 
 	"github.com/rs/xid"
@@ -22,6 +20,7 @@ type Plant struct {
 	Details          *Details         `json:"details,omitempty" yaml:"details,omitempty"`
 	ID               xid.ID           `json:"id" yaml:"id,omitempty"`
 	Garden           string           `json:"garden" yaml:"garden,omitempty"`
+	GardenID         xid.ID           `json:"garden_id" yaml:"garden_id,omitempty"`
 	PlantPosition    int              `json:"plant_position" yaml:"plant_position"`
 	CreatedAt        *time.Time       `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate          *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
@@ -46,14 +45,6 @@ type WateringStrategy struct {
 	Interval        string `json:"interval" yaml:"interval"`
 	MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
 	StartTime       string `json:"start_time" yaml:"start_time"`
-}
-
-// Topic is used to populate and return a MQTT Topic string from a template string input
-func (p *Plant) Topic(topic string) (string, error) {
-	t := template.Must(template.New("topic").Parse(topic))
-	var result bytes.Buffer
-	err := t.Execute(&result, p)
-	return result.String(), err
 }
 
 // WateringAction creates the default/basic WateringAction for this Plant

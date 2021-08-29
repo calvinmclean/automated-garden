@@ -73,7 +73,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 			if plant.CreatedAt == nil {
 				now := time.Now().Add(1 * time.Minute)
 				plant.CreatedAt = &now
-				client.SavePlant(garden.ID, plant)
+				client.SavePlant(plant)
 			}
 		}
 	}
@@ -121,8 +121,8 @@ func (c *ConfigMapClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Pla
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *ConfigMapClient) SavePlant(garden xid.ID, plant *pkg.Plant) error {
-	c.gardens[garden].Plants[plant.ID] = plant
+func (c *ConfigMapClient) SavePlant(plant *pkg.Plant) error {
+	c.gardens[plant.GardenID].Plants[plant.ID] = plant
 	return c.Save()
 }
 

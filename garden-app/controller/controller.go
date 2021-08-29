@@ -112,7 +112,7 @@ func getHandlerForTopic(topic string) paho.MessageHandler {
 func topics(config mqtt.Config, gardenName string) ([]string, error) {
 	templateData := map[string]string{"Garden": gardenName}
 	topics := []string{}
-	templates := []string{config.WateringTopic, config.StopTopic, config.StopAllTopic}
+	templates := []string{config.WateringTopicTemplate, config.StopTopicTemplate, config.StopAllTopicTemplate}
 	for _, topicTemplate := range templates {
 		t := template.Must(template.New("topic").Parse(topicTemplate))
 		var topic bytes.Buffer

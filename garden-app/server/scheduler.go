@@ -51,7 +51,7 @@ func (pr PlantsResource) addWateringSchedule(gardenID xid.ID, p *pkg.Plant) erro
 			if err != nil {
 				logger.Error("Error executing scheduled plant watering action: ", err)
 			}
-			err = pr.storageClient.SavePlant(gardenID, p)
+			err = pr.storageClient.SavePlant(p)
 			if err != nil {
 				logger.Error("Error saving plant after watering: ", err)
 			}

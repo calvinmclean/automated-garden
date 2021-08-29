@@ -50,11 +50,11 @@ type StopAction struct {
 
 // Execute sends the message over MQTT to the embedded garden controller
 func (action *StopAction) Execute(p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
-	templateString := mqttClient.StopTopic
+	topicFunc := mqttClient.StopTopic
 	if action.All {
-		templateString = mqttClient.StopAllTopic
+		topicFunc = mqttClient.StopAllTopic
 	}
-	topic, err := p.Topic(templateString)
+	topic, err := topicFunc(p.Garden)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
@@ -108,7 +108,7 @@ func (action *WaterAction) Execute(p *Plant, mqttClient *mqtt.Client, influxdbCo
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %v", err)
 	}
 
-	topic, err := p.Topic(mqttClient.WateringTopic)
+	topic, err := mqttClient.WateringTopic(p.Garden)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}

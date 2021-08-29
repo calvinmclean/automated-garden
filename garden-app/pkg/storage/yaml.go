@@ -55,7 +55,7 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 		for _, plant := range garden.Plants {
 			if plant.CreatedAt == nil {
 				plant.CreatedAt = &now
-				client.SavePlant(garden.ID, plant)
+				client.SavePlant(plant)
 			}
 		}
 	}
@@ -103,8 +103,8 @@ func (c *YAMLClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, e
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *YAMLClient) SavePlant(garden xid.ID, plant *pkg.Plant) error {
-	c.gardens[garden].Plants[plant.ID] = plant
+func (c *YAMLClient) SavePlant(plant *pkg.Plant) error {
+	c.gardens[plant.GardenID].Plants[plant.ID] = plant
 	return c.Save()
 }
 

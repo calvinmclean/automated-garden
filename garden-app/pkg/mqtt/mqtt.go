@@ -1,7 +1,9 @@
 package mqtt
 
 import (
+	"bytes"
 	"fmt"
+	"html/template"
 	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -13,10 +15,9 @@ type Config struct {
 	Broker   string `mapstructure:"broker"`
 	Port     int    `mapstructure:"port"`
 
-	WateringTopic string `mapstructure:"watering_topic"`
-	SkipTopic     string `mapstructure:"skip_topic"`
-	StopTopic     string `mapstructure:"stop_topic"`
-	StopAllTopic  string `mapstructure:"stop_all_topic"`
+	WateringTopicTemplate string `mapstructure:"watering_topic"`
+	StopTopicTemplate     string `mapstructure:"stop_topic"`
+	StopAllTopicTemplate  string `mapstructure:"stop_all_topic"`
 }
 
 // Client is a wrapper struct for connecting our config and MQTT Client
@@ -72,4 +73,28 @@ func (c *Client) Subscribe(topic string, blockingHandler func()) error {
 	blockingHandler()
 
 	return nil
+}
+
+// WateringTopic returns the topic string for watering a plant
+func (c *Client) WateringTopic(gardenName string) (string, error) {
+	return c.executeTopicTemplate(c.WateringTopicTemplate, gardenName)
+}
+
+// StopTopic returns the topic string for stopping watering a single plant
+func (c *Client) StopTopic(gardenName string) (string, error) {
+	return c.executeTopicTemplate(c.StopTopicTemplate, gardenName)
+}
+
+// StopAllTopic returns the topic string for stopping watering all plants in a garden
+func (c *Client) StopAllTopic(gardenName string) (string, error) {
+	return c.executeTopicTemplate(c.StopAllTopicTemplate, gardenName)
+}
+
+// executeTopicTemplate is a helper function used by all the exported topic evaluation functions
+func (c *Client) executeTopicTemplate(templateString string, gardenName string) (string, error) {
+	t := template.Must(template.New("topic").Parse(templateString))
+	var result bytes.Buffer
+	data := map[string]string{"Garden": gardenName}
+	err := t.Execute(&result, data)
+	return result.String(), err
 }
