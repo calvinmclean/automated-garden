@@ -24,18 +24,18 @@ const (
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
-	GardenResource
+	GardensResource
 	mqttClient    *mqtt.Client
 	moistureCache map[xid.ID]float64
 	scheduler     *gocron.Scheduler
 }
 
 // NewPlantsResource creates a new PlantsResource
-func NewPlantsResource(gr GardenResource) (PlantsResource, error) {
+func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 	pr := PlantsResource{
-		GardenResource: gr,
-		moistureCache:  map[xid.ID]float64{},
-		scheduler:      gocron.NewScheduler(time.Local),
+		GardensResource: gr,
+		moistureCache:   map[xid.ID]float64{},
+		scheduler:       gocron.NewScheduler(time.Local),
 	}
 
 	// Initialize MQTT Client

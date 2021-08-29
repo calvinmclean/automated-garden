@@ -16,7 +16,7 @@ type GardenResponse struct {
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
-func (gr GardenResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
+func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
 	return &GardenResponse{
 		garden,
 		Link{"collection", fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)},
@@ -39,7 +39,7 @@ type AllGardensResponse struct {
 }
 
 // NewAllGardensResponse will create an AllGardensResponse from a list of Gardens
-func (gr GardenResource) NewAllGardensResponse(gardens []*pkg.Garden) *AllGardensResponse {
+func (gr GardensResource) NewAllGardensResponse(gardens []*pkg.Garden) *AllGardensResponse {
 	gardenResponses := []*GardenResponse{}
 	for _, g := range gardens {
 		gardenResponses = append(gardenResponses, gr.NewGardenResponse(g))

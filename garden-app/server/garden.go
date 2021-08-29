@@ -19,16 +19,16 @@ const (
 	gardenCtxKey    = contextKey("garden")
 )
 
-// GardenResource encapsulates the structs and dependencies necessary for the "/gardens" API
+// GardensResource encapsulates the structs and dependencies necessary for the "/gardens" API
 // to function, including storage and configurating
-type GardenResource struct {
+type GardensResource struct {
 	storageClient storage.Client
 	config        Config
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config) (gr GardenResource, err error) {
-	gr = GardenResource{
+func NewGardenResource(config Config) (gr GardensResource, err error) {
+	gr = GardensResource{
 		config: config,
 	}
 
@@ -42,7 +42,7 @@ func NewGardenResource(config Config) (gr GardenResource, err error) {
 }
 
 // routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
-func (gr GardenResource) routes(pr PlantsResource) chi.Router {
+func (gr GardensResource) routes(pr PlantsResource) chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", gr.createGarden)
 	r.Get("/", gr.getAllGardens)
@@ -61,7 +61,7 @@ func (gr GardenResource) routes(pr PlantsResource) chi.Router {
 // gardenContextMiddleware middleware is used to load a Garden object from the URL
 // parameters passed through as the request. In case the Garden could not be found,
 // we stop here and return a 404.
-func (gr GardenResource) gardenContextMiddleware(next http.Handler) http.Handler {
+func (gr GardensResource) gardenContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gardenID, err := xid.FromString(chi.URLParam(r, gardenPathParam))
 		if err != nil {
@@ -84,7 +84,7 @@ func (gr GardenResource) gardenContextMiddleware(next http.Handler) http.Handler
 	})
 }
 
-func (gr GardenResource) createGarden(w http.ResponseWriter, r *http.Request) {
+func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 	request := &GardenRequest{}
 	if err := render.Bind(r, request); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
@@ -114,7 +114,7 @@ func (gr GardenResource) createGarden(w http.ResponseWriter, r *http.Request) {
 }
 
 // getAllGardens will return a list of all Gardens
-func (gr GardenResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
+func (gr GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 	gardens, err := gr.storageClient.GetGardens(getEndDated)
 	if err != nil {
@@ -127,7 +127,7 @@ func (gr GardenResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
 }
 
 // getGarden will return a garden by ID/name
-func (gr GardenResource) getGarden(w http.ResponseWriter, r *http.Request) {
+func (gr GardensResource) getGarden(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	gardenResponse := gr.NewGardenResponse(garden)
 	if err := render.Render(w, r, gardenResponse); err != nil {
@@ -136,7 +136,7 @@ func (gr GardenResource) getGarden(w http.ResponseWriter, r *http.Request) {
 }
 
 // endDatePlant will mark the Plant's end date as now and save it
-func (gr GardenResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
+func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
 	// Set end date of Garden and save
@@ -153,7 +153,7 @@ func (gr GardenResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
 }
 
 // updateGarden updates any fields in the existing Garden from the request
-func (gr GardenResource) updateGarden(w http.ResponseWriter, r *http.Request) {
+func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 	request := &GardenRequest{}
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
