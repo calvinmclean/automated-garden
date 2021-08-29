@@ -69,7 +69,7 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 		return errors.New("missing required name field")
 	}
 	if len(g.Plants) > 0 {
-		return errors.New("cannot create new Garden with Plants")
+		return errors.New("cannot add or modify Plants with this request")
 	}
 	return nil
 }

@@ -50,7 +50,7 @@ func (gr GardenResource) routes(pr PlantsResource) chi.Router {
 		r.Use(gr.gardenContextMiddleware)
 
 		r.Get("/", gr.getGarden)
-		// r.Patch("/", gr.updateGarden)
+		r.Patch("/", gr.updateGarden)
 		r.Delete("/", gr.endDateGarden)
 
 		r.Mount(plantBasePath, pr.routes())
@@ -142,6 +142,31 @@ func (gr GardenResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
 	// Set end date of Garden and save
 	now := time.Now()
 	garden.EndDate = &now
+	if err := gr.storageClient.SaveGarden(garden); err != nil {
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+// updateGarden updates any fields in the existing Garden from the request
+func (gr GardenResource) updateGarden(w http.ResponseWriter, r *http.Request) {
+	request := &GardenRequest{}
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+
+	// Read the request body into existing garden to overwrite fields
+	if err := render.Bind(r, request); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	// Manually update garden fields that are allowed to be changed
+	garden.Name = request.Name
+
+	// Save the Garden
 	if err := gr.storageClient.SaveGarden(garden); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
