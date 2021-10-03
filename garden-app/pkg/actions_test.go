@@ -1,51 +1,13 @@
 package pkg
 
 import (
-	"context"
 	"errors"
 	"testing"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/stretchr/testify/mock"
 )
-
-type MockMQTTClient struct {
-	mock.Mock
-}
-
-func (m *MockMQTTClient) Publish(topic string, message []byte) error {
-	args := m.Called(topic, message)
-	return args.Error(0)
-}
-func (m *MockMQTTClient) Subscribe(topic string, blockingHandler func()) error {
-	args := m.Called(topic, blockingHandler)
-	return args.Error(0)
-}
-
-func (m *MockMQTTClient) WateringTopic(gardenName string) (string, error) {
-	args := m.Called(gardenName)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockMQTTClient) StopTopic(gardenName string) (string, error) {
-	args := m.Called(gardenName)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockMQTTClient) StopAllTopic(gardenName string) (string, error) {
-	args := m.Called(gardenName)
-	return args.String(0), args.Error(1)
-}
-
-type MockInfluxDBClient struct {
-	mock.Mock
-}
-
-func (m *MockInfluxDBClient) GetMoisture(ctx context.Context, plantPosition int, gardenTopic string) (float64, error) {
-	args := m.Called(ctx, plantPosition, gardenTopic)
-	return args.Get(0).(float64), args.Error(1)
-}
-
-func (m *MockInfluxDBClient) Close() {}
 
 func TestAggregateAction(t *testing.T) {
 	garden := &Garden{
@@ -54,8 +16,8 @@ func TestAggregateAction(t *testing.T) {
 	t.Run("SuccessfulEmptyAggregateAction", func(t *testing.T) {
 		plant := &Plant{}
 		action := &AggregateAction{}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
 		if err != nil {
@@ -69,8 +31,8 @@ func TestAggregateAction(t *testing.T) {
 		action := &AggregateAction{
 			Stop: &StopAction{},
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("StopTopic", "garden").Return("garden/action/stop", nil)
 		mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
 
@@ -86,8 +48,8 @@ func TestAggregateAction(t *testing.T) {
 		action := &AggregateAction{
 			Stop: &StopAction{},
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("StopTopic", "garden").Return("", errors.New("template error"))
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
@@ -107,8 +69,8 @@ func TestAggregateAction(t *testing.T) {
 				Duration: 1000,
 			},
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
 		mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 
@@ -126,8 +88,8 @@ func TestAggregateAction(t *testing.T) {
 				Duration: 1000,
 			},
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("WateringTopic", "garden").Return("", errors.New("template error"))
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
@@ -149,8 +111,8 @@ func TestStopActionExecute(t *testing.T) {
 	t.Run("Successful", func(t *testing.T) {
 		plant := &Plant{}
 		action := &StopAction{}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("StopTopic", "garden").Return("garden/action/stop", nil)
 		mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
 
@@ -164,8 +126,8 @@ func TestStopActionExecute(t *testing.T) {
 	t.Run("SuccessfulStopAll", func(t *testing.T) {
 		action := &StopAction{true}
 		plant := &Plant{}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("StopAllTopic", "garden").Return("garden/action/stop_all", nil)
 		mqttClient.On("Publish", "garden/action/stop_all", mock.Anything).Return(nil)
 
@@ -179,8 +141,8 @@ func TestStopActionExecute(t *testing.T) {
 	t.Run("TopicTemplateError", func(t *testing.T) {
 		plant := &Plant{}
 		action := &StopAction{}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("StopTopic", "garden").Return("", errors.New("template error"))
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
@@ -204,8 +166,8 @@ func TestWaterActionExecute(t *testing.T) {
 	}
 	t.Run("Successful", func(t *testing.T) {
 		plant := &Plant{}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
 		mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 
@@ -218,8 +180,8 @@ func TestWaterActionExecute(t *testing.T) {
 	})
 	t.Run("TopicTemplateError", func(t *testing.T) {
 		plant := &Plant{}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("WateringTopic", "garden").Return("", errors.New("template error"))
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
@@ -236,8 +198,8 @@ func TestWaterActionExecute(t *testing.T) {
 		plant := &Plant{
 			SkipCount: 1,
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
 		if err == nil {
@@ -258,8 +220,8 @@ func TestWaterActionExecute(t *testing.T) {
 				MinimumMoisture: 50,
 			},
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
 		mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 		influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(0), nil)
@@ -277,8 +239,8 @@ func TestWaterActionExecute(t *testing.T) {
 				MinimumMoisture: 50,
 			},
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(51), nil)
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
@@ -297,8 +259,8 @@ func TestWaterActionExecute(t *testing.T) {
 				MinimumMoisture: 50,
 			},
 		}
-		mqttClient := new(MockMQTTClient)
-		influxdbClient := new(MockInfluxDBClient)
+		mqttClient := new(mqtt.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(0), errors.New("influxdb error"))
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)

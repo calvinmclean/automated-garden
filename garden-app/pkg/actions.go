@@ -10,12 +10,6 @@ import (
 	"github.com/rs/xid"
 )
 
-// ActionExecutor is an interface used to create generic actions that the CLI or webserver
-// can execute without knowing much detail about what the action is really doing
-type ActionExecutor interface {
-	Execute(*Garden, *Plant, *mqtt.Client, influxdb.Config) error
-}
-
 // AggregateAction collects all the possible actions into a single struct/request so one
 // or more action can be performed from a single request
 type AggregateAction struct {

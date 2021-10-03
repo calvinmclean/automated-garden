@@ -43,9 +43,7 @@ func (q moistureQueryData) String() (string, error) {
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
 	GetMoisture(context.Context, int, string) (float64, error)
-	Close()
-	// TODO: Once I implement auto mock-generation, extend this interface:
-	// influxdb2.Client
+	influxdb2.Client
 }
 
 // client wraps an InfluxDB2 Client and our custom config
