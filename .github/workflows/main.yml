@@ -3,8 +3,6 @@ name: CI
 on:
   push:
     branches-ignore: [ 'assets' ]
-    tags:
-      - '*'
   pull_request:
     branches: [ main ]
 
@@ -74,8 +72,6 @@ jobs:
           images: ${{ env.REGISTRY }}/${{ github.actor }}/${{ env.PROJECT_NAME }}
           flavor: |
             latest=${{ github.ref == 'refs/heads/main' }}
-          tags: |
-            type=semver,pattern={{raw}}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
