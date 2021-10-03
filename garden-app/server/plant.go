@@ -134,7 +134,9 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
-	if err := action.Execute(garden, plant, pr.mqttClient, pr.config.InfluxDBConfig); err != nil {
+	influxdbClient := influxdb.NewClient(pr.config.InfluxDBConfig)
+	defer influxdbClient.Close()
+	if err := action.Execute(garden, plant, pr.mqttClient, influxdbClient); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}

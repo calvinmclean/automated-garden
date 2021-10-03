@@ -40,8 +40,16 @@ func (q moistureQueryData) String() (string, error) {
 	return queryBytes.String(), nil
 }
 
-// Client wraps an InfluxDB2 Client and our custom config
-type Client struct {
+// Client is an interface that allows querying InfluxDB for data
+type Client interface {
+	GetMoisture(context.Context, int, string) (float64, error)
+	Close()
+	// TODO: Once I implement auto mock-generation, extend this interface:
+	// influxdb2.Client
+}
+
+// client wraps an InfluxDB2 Client and our custom config
+type client struct {
 	influxdb2.Client
 	config Config
 }
@@ -55,15 +63,15 @@ type Config struct {
 }
 
 // NewClient creates an InfluxDB client from the viper config
-func NewClient(config Config) *Client {
-	return &Client{
+func NewClient(config Config) Client {
+	return &client{
 		influxdb2.NewClient(config.Address, config.Token),
 		config,
 	}
 }
 
 // GetMoisture returns the plant's average soil moisture in the last 15 minutes
-func (client *Client) GetMoisture(ctx context.Context, plantPosition int, gardenTopic string) (result float64, err error) {
+func (client *client) GetMoisture(ctx context.Context, plantPosition int, gardenTopic string) (result float64, err error) {
 	// Prepare query
 	queryString, err := moistureQueryData{
 		Bucket:        client.config.Bucket,

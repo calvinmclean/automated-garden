@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/go-co-op/gocron"
 )
 
@@ -45,8 +46,11 @@ func (pr PlantsResource) addWateringSchedule(g *pkg.Garden, p *pkg.Plant) error 
 		StartAt(startDate).
 		Tag(p.ID.String()).
 		Do(func() {
+			influxdbClient := influxdb.NewClient(pr.config.InfluxDBConfig)
+			defer influxdbClient.Close()
+
 			logger.Infof("Executing WateringAction to water Plant %s for %d ms", p.ID.String(), action.Duration)
-			err = action.Execute(g, p, pr.mqttClient, pr.config.InfluxDBConfig)
+			err = action.Execute(g, p, pr.mqttClient, influxdbClient)
 			if err != nil {
 				logger.Error("Error executing scheduled plant watering action: ", err)
 			}
