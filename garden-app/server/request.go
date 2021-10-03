@@ -62,7 +62,7 @@ type GardenRequest struct {
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
 func (g *GardenRequest) Bind(r *http.Request) error {
-	if g == nil {
+	if g == nil || g.Garden == nil {
 		return errors.New("missing required Garden fields")
 	}
 	if g.Name == "" {

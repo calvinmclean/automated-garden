@@ -110,16 +110,6 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 	})
 }
 
-func (pr PlantsResource) loadPlantAndGarden(r *http.Request) (*pkg.Plant, *pkg.Garden, error) {
-	plantID, err := xid.FromString(chi.URLParam(r, plantPathParam))
-	if err != nil {
-		return nil, nil, err
-	}
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	plant := garden.Plants[plantID]
-	return plant, garden, nil
-}
-
 // plantAction reads an AggregateAction request and uses it to execute one of the actions
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
