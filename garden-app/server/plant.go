@@ -57,7 +57,7 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 			return pr, err
 		}
 		for _, p := range allPlants {
-			if err = pr.addWateringSchedule(g.ID, p); err != nil {
+			if err = pr.addWateringSchedule(g, p); err != nil {
 				err = fmt.Errorf("unable to add watering Job for Plant %s: %v", p.ID.String(), err)
 				return pr, err
 			}
@@ -124,6 +124,7 @@ func (pr PlantsResource) loadPlantAndGarden(r *http.Request) (*pkg.Plant, *pkg.G
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 
 	action := &AggregateActionRequest{}
@@ -133,7 +134,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
-	if err := action.Execute(plant, pr.mqttClient, pr.config.InfluxDBConfig); err != nil {
+	if err := action.Execute(garden, plant, pr.mqttClient, pr.config.InfluxDBConfig); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -153,6 +154,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 // getPlant simply returns the Plant requested by the provided ID
 func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
 	moisture, cached := pr.moistureCache[plant.ID]
 	plantResponse := pr.NewPlantResponse(plant, moisture)
@@ -163,7 +165,7 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 	// If moisture was not already cached (and plant has moisture sensor), asynchronously get it and cache it
 	// Otherwise, clear cache
 	if !cached && plant.WateringStrategy.MinimumMoisture > 0 {
-		go pr.getAndCacheMoisture(plant)
+		go pr.getAndCacheMoisture(garden, plant)
 	} else {
 		delete(pr.moistureCache, plant.ID)
 	}
@@ -182,7 +184,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	plant := request.Plant
 
 	// Update the watering schedule for the Plant
-	if err := pr.resetWateringSchedule(garden.ID, plant); err != nil {
+	if err := pr.resetWateringSchedule(garden, plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -262,11 +264,10 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 		now := time.Now()
 		plant.CreatedAt = &now
 	}
-	plant.Garden = garden.Name
 	plant.GardenID = garden.ID
 
 	// Start watering schedule
-	if err := pr.addWateringSchedule(garden.ID, plant); err != nil {
+	if err := pr.addWateringSchedule(garden, plant); err != nil {
 		logger.Errorf("Unable to add watering Job for Plant %s: %v", plant.ID.String(), err)
 	}
 
@@ -283,14 +284,14 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (pr PlantsResource) getAndCacheMoisture(p *pkg.Plant) {
+func (pr PlantsResource) getAndCacheMoisture(g *pkg.Garden, p *pkg.Plant) {
 	influxdbClient := influxdb.NewClient(pr.config.InfluxDBConfig)
 	defer influxdbClient.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 	defer cancel()
 
-	moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, p.Garden)
+	moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
 	if err != nil {
 		logger.Errorf("error getting Plant's moisture data: %v", err)
 	}

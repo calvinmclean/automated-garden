@@ -13,7 +13,7 @@ import (
 // ActionExecutor is an interface used to create generic actions that the CLI or webserver
 // can execute without knowing much detail about what the action is really doing
 type ActionExecutor interface {
-	Execute(*Plant, *mqtt.Client, influxdb.Config) error
+	Execute(*Garden, *Plant, *mqtt.Client, influxdb.Config) error
 }
 
 // AggregateAction collects all the possible actions into a single struct/request so one
@@ -26,14 +26,14 @@ type AggregateAction struct {
 // Execute is responsible for performing the actual individual actions in this aggregate.
 // The actions are executed in a deliberate order to be most intuitive for a user that wants
 // to perform multiple actions with one request
-func (action *AggregateAction) Execute(p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
+func (action *AggregateAction) Execute(g *Garden, p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
 	if action.Stop != nil {
-		if err := action.Stop.Execute(p, mqttClient, influxdbConfig); err != nil {
+		if err := action.Stop.Execute(g, p, mqttClient, influxdbConfig); err != nil {
 			return err
 		}
 	}
 	if action.Water != nil {
-		if err := action.Water.Execute(p, mqttClient, influxdbConfig); err != nil {
+		if err := action.Water.Execute(g, p, mqttClient, influxdbConfig); err != nil {
 			return err
 		}
 	}
@@ -49,12 +49,12 @@ type StopAction struct {
 }
 
 // Execute sends the message over MQTT to the embedded garden controller
-func (action *StopAction) Execute(p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
+func (action *StopAction) Execute(g *Garden, p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
 	topicFunc := mqttClient.StopTopic
 	if action.All {
 		topicFunc = mqttClient.StopAllTopic
 	}
-	topic, err := topicFunc(p.Garden)
+	topic, err := topicFunc(g.Name)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
@@ -78,7 +78,7 @@ type WaterMessage struct {
 // Execute sends the message over MQTT to the embedded garden controller. Before doing this, it
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
-func (action *WaterAction) Execute(p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
+func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
 	if p.WateringStrategy.MinimumMoisture > 0 && !action.IgnoreMoisture {
 		influxdbClient := influxdb.NewClient(influxdbConfig)
 		defer influxdbClient.Close()
@@ -86,7 +86,7 @@ func (action *WaterAction) Execute(p *Plant, mqttClient *mqtt.Client, influxdbCo
 		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 		defer cancel()
 
-		moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, p.Garden)
+		moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)
 		}
@@ -108,7 +108,7 @@ func (action *WaterAction) Execute(p *Plant, mqttClient *mqtt.Client, influxdbCo
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %v", err)
 	}
 
-	topic, err := mqttClient.WateringTopic(p.Garden)
+	topic, err := mqttClient.WateringTopic(g.Name)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}

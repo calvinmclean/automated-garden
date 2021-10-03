@@ -31,9 +31,6 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if p.Name == "" {
 		return errors.New("missing required name field")
 	}
-	if len(p.Garden) != 0 {
-		return errors.New("manual specification of garden name is not allowed")
-	}
 	if len(p.GardenID) != 0 {
 		return errors.New("manual specification of garden ID is not allowed")
 	}
