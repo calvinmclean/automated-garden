@@ -25,7 +25,7 @@ const (
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
 	GardensResource
-	mqttClient    *mqtt.Client
+	mqttClient    mqtt.Client
 	moistureCache map[xid.ID]float64
 	scheduler     *gocron.Scheduler
 }

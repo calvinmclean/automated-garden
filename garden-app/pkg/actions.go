@@ -26,7 +26,7 @@ type AggregateAction struct {
 // Execute is responsible for performing the actual individual actions in this aggregate.
 // The actions are executed in a deliberate order to be most intuitive for a user that wants
 // to perform multiple actions with one request
-func (action *AggregateAction) Execute(g *Garden, p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
+func (action *AggregateAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbConfig influxdb.Config) error {
 	if action.Stop != nil {
 		if err := action.Stop.Execute(g, p, mqttClient, influxdbConfig); err != nil {
 			return err
@@ -49,7 +49,7 @@ type StopAction struct {
 }
 
 // Execute sends the message over MQTT to the embedded garden controller
-func (action *StopAction) Execute(g *Garden, p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
+func (action *StopAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbConfig influxdb.Config) error {
 	topicFunc := mqttClient.StopTopic
 	if action.All {
 		topicFunc = mqttClient.StopAllTopic
@@ -78,7 +78,7 @@ type WaterMessage struct {
 // Execute sends the message over MQTT to the embedded garden controller. Before doing this, it
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
-func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient *mqtt.Client, influxdbConfig influxdb.Config) error {
+func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbConfig influxdb.Config) error {
 	if p.WateringStrategy.MinimumMoisture > 0 && !action.IgnoreMoisture {
 		influxdbClient := influxdb.NewClient(influxdbConfig)
 		defer influxdbClient.Close()

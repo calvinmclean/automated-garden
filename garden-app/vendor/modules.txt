@@ -94,6 +94,8 @@ github.com/modern-go/reflect2
 github.com/pelletier/go-toml
 # github.com/pkg/errors v0.9.1
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/robfig/cron/v3 v3.0.1
 github.com/robfig/cron/v3
 # github.com/rs/xid v1.2.1
@@ -122,6 +124,12 @@ github.com/spf13/pflag
 # github.com/spf13/viper v1.7.1
 ## explicit
 github.com/spf13/viper
+# github.com/stretchr/objx v0.1.1
+github.com/stretchr/objx
+# github.com/stretchr/testify v1.7.0
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/mock
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
 # golang.org/x/crypto v0.0.0-20200622213623-75b288015ac9

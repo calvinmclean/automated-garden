@@ -20,8 +20,17 @@ type Config struct {
 	StopAllTopicTemplate  string `mapstructure:"stop_all_topic"`
 }
 
-// Client is a wrapper struct for connecting our config and MQTT Client
-type Client struct {
+// Client is an interface that allows access to MQTT functionality within the garden-app
+type Client interface {
+	Publish(string, []byte) error
+	Subscribe(string, func()) error
+	WateringTopic(string) (string, error)
+	StopTopic(string) (string, error)
+	StopAllTopic(string) (string, error)
+}
+
+// client is a wrapper struct for connecting our config and MQTT Client. It implements the Client interface
+type client struct {
 	mu sync.Mutex
 	mqtt.Client
 	Config
@@ -30,7 +39,7 @@ type Client struct {
 // NewMQTTClient is used to create and return a MQTTClient. The handlers argument enables the subscriber
 // using the supplied functions to handle incoming messages. It really should be used with only one function,
 // but I wanted to make it an optional argument, which required using the variadic function argument
-func NewMQTTClient(config Config, handlers ...mqtt.MessageHandler) (*Client, error) {
+func NewMQTTClient(config Config, handlers ...mqtt.MessageHandler) (Client, error) {
 	opts := mqtt.NewClientOptions()
 	opts.AddBroker(fmt.Sprintf("tcp://%s:%d", config.Broker, config.Port))
 	opts.SetClientID(config.ClientID)
@@ -41,11 +50,11 @@ func NewMQTTClient(config Config, handlers ...mqtt.MessageHandler) (*Client, err
 			}
 		}))
 	}
-	return &Client{Client: mqtt.NewClient(opts), Config: config}, nil
+	return &client{Client: mqtt.NewClient(opts), Config: config}, nil
 }
 
 // Publish will send the message to the specified MQTT topic
-func (c *Client) Publish(topic string, message []byte) error {
+func (c *client) Publish(topic string, message []byte) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	defer c.Client.Disconnect(250)
@@ -59,7 +68,7 @@ func (c *Client) Publish(topic string, message []byte) error {
 }
 
 // Subscribe is a blocking method that listens on a topic. This should be used in a Go routine with a blocking handler supplied
-func (c *Client) Subscribe(topic string, blockingHandler func()) error {
+func (c *client) Subscribe(topic string, blockingHandler func()) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	defer c.Client.Disconnect(250)
@@ -76,22 +85,22 @@ func (c *Client) Subscribe(topic string, blockingHandler func()) error {
 }
 
 // WateringTopic returns the topic string for watering a plant
-func (c *Client) WateringTopic(gardenName string) (string, error) {
+func (c *client) WateringTopic(gardenName string) (string, error) {
 	return c.executeTopicTemplate(c.WateringTopicTemplate, gardenName)
 }
 
 // StopTopic returns the topic string for stopping watering a single plant
-func (c *Client) StopTopic(gardenName string) (string, error) {
+func (c *client) StopTopic(gardenName string) (string, error) {
 	return c.executeTopicTemplate(c.StopTopicTemplate, gardenName)
 }
 
 // StopAllTopic returns the topic string for stopping watering all plants in a garden
-func (c *Client) StopAllTopic(gardenName string) (string, error) {
+func (c *client) StopAllTopic(gardenName string) (string, error) {
 	return c.executeTopicTemplate(c.StopAllTopicTemplate, gardenName)
 }
 
 // executeTopicTemplate is a helper function used by all the exported topic evaluation functions
-func (c *Client) executeTopicTemplate(templateString string, gardenName string) (string, error) {
+func (c *client) executeTopicTemplate(templateString string, gardenName string) (string, error) {
 	t := template.Must(template.New("topic").Parse(templateString))
 	var result bytes.Buffer
 	data := map[string]string{"Garden": gardenName}
