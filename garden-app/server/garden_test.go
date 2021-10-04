@@ -47,7 +47,6 @@ func TestGardenContextMiddleware(t *testing.T) {
 		storageClient.On("GetGarden", garden.ID).Return(garden, nil)
 
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			// TODO: Test that middleware did some things (set context, etc)
 			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 			if garden != g {
 				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
@@ -80,7 +79,6 @@ func TestGardenContextMiddleware(t *testing.T) {
 		garden := createExampleGarden()
 
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			// TODO: Test that middleware did some things (set context, etc)
 			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 			if garden != g {
 				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
@@ -121,7 +119,6 @@ func TestGardenContextMiddleware(t *testing.T) {
 		storageClient.On("GetGarden", garden.ID).Return(nil, errors.New("storage client error"))
 
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			// TODO: Test that middleware did some things (set context, etc)
 			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 			if garden != g {
 				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
@@ -163,7 +160,6 @@ func TestGardenContextMiddleware(t *testing.T) {
 		storageClient.On("GetGarden", garden.ID).Return(nil, nil)
 
 		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			// TODO: Test that middleware did some things (set context, etc)
 			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 			if garden != g {
 				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
@@ -219,7 +215,7 @@ func TestCreateGarden(t *testing.T) {
 		}
 
 		// check HTTP response body
-		matcher := regexp.MustCompile(`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d{5,6}-07:00","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
+		matcher := regexp.MustCompile(`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
 		actual := strings.TrimSpace(w.Body.String())
 		if !matcher.MatchString(actual) {
 			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
@@ -423,7 +419,7 @@ func TestEndDateGarden(t *testing.T) {
 		}
 
 		// check HTTP response body
-		matcher := regexp.MustCompile(`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d{5,6}-07:00","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d{5,6}-07:00","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
+		matcher := regexp.MustCompile(`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
 		actual := strings.TrimSpace(w.Body.String())
 		if !matcher.MatchString(actual) {
 			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
@@ -484,7 +480,7 @@ func TestUpdateGarden(t *testing.T) {
 		}
 
 		// check HTTP response body
-		matcher := regexp.MustCompile(`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d{5,6}-07:00","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
+		matcher := regexp.MustCompile(`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
 		actual := strings.TrimSpace(w.Body.String())
 		if !matcher.MatchString(actual) {
 			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
