@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/rs/xid"
 )
 
 // PlantRequest wraps a Plant into a request so we can handle Bind/Render in this package
@@ -15,7 +16,7 @@ type PlantRequest struct {
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
 func (p *PlantRequest) Bind(r *http.Request) error {
-	if p == nil {
+	if p == nil || p.Plant == nil {
 		return errors.New("missing required Plant fields")
 	}
 
@@ -31,7 +32,7 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if p.Name == "" {
 		return errors.New("missing required name field")
 	}
-	if len(p.GardenID) != 0 {
+	if p.GardenID != xid.NilID() {
 		return errors.New("manual specification of garden ID is not allowed")
 	}
 

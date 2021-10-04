@@ -304,11 +304,11 @@ func TestGetAllGardens(t *testing.T) {
 			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 		}
 
-		gardenJson, _ := json.Marshal(gr.NewAllGardensResponse(gardens))
+		gardenJSON, _ := json.Marshal(gr.NewAllGardensResponse(gardens))
 		// check HTTP response body
 		actual := strings.TrimSpace(w.Body.String())
-		if actual != string(gardenJson) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJson))
+		if actual != string(gardenJSON) {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJSON))
 		}
 		storageClient.AssertExpectations(t)
 	})
@@ -332,11 +332,11 @@ func TestGetAllGardens(t *testing.T) {
 			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 		}
 
-		gardenJson, _ := json.Marshal(gr.NewAllGardensResponse(gardens))
+		gardenJSON, _ := json.Marshal(gr.NewAllGardensResponse(gardens))
 		// check HTTP response body
 		actual := strings.TrimSpace(w.Body.String())
-		if actual != string(gardenJson) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJson))
+		if actual != string(gardenJSON) {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJSON))
 		}
 		storageClient.AssertExpectations(t)
 	})
@@ -390,11 +390,11 @@ func TestGetGarden(t *testing.T) {
 			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 		}
 
-		gardenJson, _ := json.Marshal(gr.NewGardenResponse(garden))
+		gardenJSON, _ := json.Marshal(gr.NewGardenResponse(garden))
 		// check HTTP response body
 		actual := strings.TrimSpace(w.Body.String())
-		if actual != string(gardenJson) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJson))
+		if actual != string(gardenJSON) {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJSON))
 		}
 		storageClient.AssertExpectations(t)
 	})
