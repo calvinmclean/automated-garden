@@ -77,6 +77,7 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 		defer cancel()
 
+		defer influxdbClient.Close()
 		moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)

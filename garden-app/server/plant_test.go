@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -11,11 +12,14 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
+	"github.com/stretchr/testify/mock"
 )
 
 func createExamplePlant() *pkg.Plant {
@@ -102,11 +106,7 @@ func TestPlantContextMiddleware(t *testing.T) {
 
 func TestGetPlant(t *testing.T) {
 	t.Run("Successful", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
 		pr := PlantsResource{
-			GardensResource: GardensResource{
-				storageClient: storageClient,
-			},
 			moistureCache: map[xid.ID]float64{},
 			scheduler:     gocron.NewScheduler(time.Local),
 		}
@@ -132,21 +132,21 @@ func TestGetPlant(t *testing.T) {
 		if actual != string(plantJSON) {
 			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(plantJSON))
 		}
-		storageClient.AssertExpectations(t)
 	})
 	t.Run("SuccessfulWithMoisture", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
+		influxdbClient := new(influxdb.MockClient)
 		pr := PlantsResource{
-			GardensResource: GardensResource{
-				storageClient: storageClient,
-			},
-			moistureCache: map[xid.ID]float64{},
-			scheduler:     gocron.NewScheduler(time.Local),
+			influxdbClient: influxdbClient,
+			moistureCache:  map[xid.ID]float64{},
+			scheduler:      gocron.NewScheduler(time.Local),
 		}
 		garden := createExampleGarden()
 		plant := createExamplePlant()
 		plant.WateringStrategy = pkg.WateringStrategy{MinimumMoisture: 1}
 
+		influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), nil)
+		influxdbClient.On("Close")
+
 		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
 		plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
 		r := httptest.NewRequest("GET", "/plant", nil).WithContext(plantCtx)
@@ -166,6 +166,189 @@ func TestGetPlant(t *testing.T) {
 		if actual != string(plantJSON) {
 			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(plantJSON))
 		}
-		storageClient.AssertExpectations(t)
+		influxdbClient.AssertExpectations(t)
 	})
+	t.Run("ErrorGettingMoisture", func(t *testing.T) {
+		influxdbClient := new(influxdb.MockClient)
+		pr := PlantsResource{
+			influxdbClient: influxdbClient,
+			moistureCache:  map[xid.ID]float64{},
+			scheduler:      gocron.NewScheduler(time.Local),
+		}
+		garden := createExampleGarden()
+		plant := createExamplePlant()
+		plant.WateringStrategy = pkg.WateringStrategy{MinimumMoisture: 1}
+
+		influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), errors.New("influxdb error"))
+		influxdbClient.On("Close")
+
+		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+		plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
+		r := httptest.NewRequest("GET", "/plant", nil).WithContext(plantCtx)
+		w := httptest.NewRecorder()
+		h := http.HandlerFunc(pr.getPlant)
+
+		h.ServeHTTP(w, r)
+
+		// check HTTP response status code
+		if w.Code != http.StatusOK {
+			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
+		}
+
+		plantJSON, _ := json.Marshal(pr.NewPlantResponse(plant, 0))
+		// check HTTP response body
+		actual := strings.TrimSpace(w.Body.String())
+		if actual != string(plantJSON) {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(plantJSON))
+		}
+		influxdbClient.AssertExpectations(t)
+	})
+}
+func TestPlantAction(t *testing.T) {
+	t.Run("BadRequest", func(t *testing.T) {
+		pr := PlantsResource{
+			moistureCache: map[xid.ID]float64{},
+			scheduler:     gocron.NewScheduler(time.Local),
+		}
+		garden := createExampleGarden()
+		plant := createExamplePlant()
+
+		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+		plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
+		r := httptest.NewRequest("POST", "/plant", strings.NewReader(`bad request`)).WithContext(plantCtx)
+		r.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		h := http.HandlerFunc(pr.plantAction)
+
+		h.ServeHTTP(w, r)
+
+		// check HTTP response status code
+		if w.Code != http.StatusBadRequest {
+			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusBadRequest)
+		}
+
+		expected := `{"status":"Invalid request.","error":"invalid character 'b' looking for beginning of value"}`
+		// check HTTP response body
+		actual := strings.TrimSpace(w.Body.String())
+		if actual != expected {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
+		}
+	})
+	t.Run("SuccessfulWaterAction", func(t *testing.T) {
+		mqttClient := new(mqtt.MockClient)
+		mqttClient.On("WateringTopic", "test garden").Return("garden/action/water", nil)
+		mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+		storageClient := new(storage.MockClient)
+		storageClient.On("SavePlant", mock.Anything).Return(nil)
+
+		pr := PlantsResource{
+			GardensResource: GardensResource{
+				storageClient: storageClient,
+			},
+			mqttClient:    mqttClient,
+			moistureCache: map[xid.ID]float64{},
+			scheduler:     gocron.NewScheduler(time.Local),
+		}
+		garden := createExampleGarden()
+		plant := createExamplePlant()
+
+		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+		plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
+		r := httptest.NewRequest("POST", "/plant", strings.NewReader(`{"water":{"duration":1000}}`)).WithContext(plantCtx)
+		r.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		h := http.HandlerFunc(pr.plantAction)
+
+		h.ServeHTTP(w, r)
+
+		// check HTTP response status code
+		if w.Code != http.StatusAccepted {
+			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusAccepted)
+		}
+
+		expected := "null"
+		// check HTTP response body
+		actual := strings.TrimSpace(w.Body.String())
+		if actual != expected {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
+		}
+		storageClient.AssertExpectations(t)
+		mqttClient.AssertExpectations(t)
+	})
+	t.Run("ExecuteErrorForWaterAction", func(t *testing.T) {
+		mqttClient := new(mqtt.MockClient)
+		mqttClient.On("WateringTopic", "test garden").Return("", errors.New("template error"))
+
+		pr := PlantsResource{
+			mqttClient:    mqttClient,
+			moistureCache: map[xid.ID]float64{},
+			scheduler:     gocron.NewScheduler(time.Local),
+		}
+		garden := createExampleGarden()
+		plant := createExamplePlant()
+
+		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+		plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
+		r := httptest.NewRequest("POST", "/plant", strings.NewReader(`{"water":{"duration":1000}}`)).WithContext(plantCtx)
+		r.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		h := http.HandlerFunc(pr.plantAction)
+
+		h.ServeHTTP(w, r)
+
+		// check HTTP response status code
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
+		}
+
+		expected := `{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`
+		// check HTTP response body
+		actual := strings.TrimSpace(w.Body.String())
+		if actual != expected {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
+		}
+		mqttClient.AssertExpectations(t)
+	})
+	t.Run("StorageClientErrorForWaterAction", func(t *testing.T) {
+		mqttClient := new(mqtt.MockClient)
+		mqttClient.On("WateringTopic", "test garden").Return("garden/action/water", nil)
+		mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+		storageClient := new(storage.MockClient)
+		storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
+
+		pr := PlantsResource{
+			GardensResource: GardensResource{
+				storageClient: storageClient,
+			},
+			mqttClient:    mqttClient,
+			moistureCache: map[xid.ID]float64{},
+			scheduler:     gocron.NewScheduler(time.Local),
+		}
+		garden := createExampleGarden()
+		plant := createExamplePlant()
+
+		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+		plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
+		r := httptest.NewRequest("POST", "/plant", strings.NewReader(`{"water":{"duration":1000}}`)).WithContext(plantCtx)
+		r.Header.Add("Content-Type", "application/json")
+		w := httptest.NewRecorder()
+		h := http.HandlerFunc(pr.plantAction)
+
+		h.ServeHTTP(w, r)
+
+		// check HTTP response status code
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
+		}
+
+		expected := `{"status":"Server Error.","error":"storage error"}`
+		// check HTTP response body
+		actual := strings.TrimSpace(w.Body.String())
+		if actual != expected {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
+		}
+		storageClient.AssertExpectations(t)
+		mqttClient.AssertExpectations(t)
+	})
+
 }

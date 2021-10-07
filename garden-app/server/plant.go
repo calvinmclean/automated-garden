@@ -25,9 +25,10 @@ const (
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
 	GardensResource
-	mqttClient    mqtt.Client
-	moistureCache map[xid.ID]float64
-	scheduler     *gocron.Scheduler
+	mqttClient     mqtt.Client
+	influxdbClient influxdb.Client
+	moistureCache  map[xid.ID]float64
+	scheduler      *gocron.Scheduler
 }
 
 // NewPlantsResource creates a new PlantsResource
@@ -45,6 +46,8 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
 		return pr, err
 	}
+
+	pr.influxdbClient = influxdb.NewClient(pr.config.InfluxDBConfig)
 
 	// Initialize watering Jobs for each Plant from the storage client
 	allGardens, err := pr.storageClient.GetGardens(false)
@@ -124,9 +127,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Plant %s\n", plant.ID)
-	influxdbClient := influxdb.NewClient(pr.config.InfluxDBConfig)
-	defer influxdbClient.Close()
-	if err := action.Execute(garden, plant, pr.mqttClient, influxdbClient); err != nil {
+	if err := action.Execute(garden, plant, pr.mqttClient, pr.influxdbClient); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -154,10 +155,12 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrRender(err))
 	}
 
-	// If moisture was not already cached (and plant has moisture sensor), asynchronously get it and cache it
+	// If moisture was not already cached (and plant has moisture sensor), get it and cache it
 	// Otherwise, clear cache
 	if !cached && plant.WateringStrategy.MinimumMoisture > 0 {
-		go pr.getAndCacheMoisture(garden, plant)
+		// I was doing this with a goroutine, but that made the call untestable. I don't think there was any benefit to
+		// using the goroutine because the result is already rendered
+		pr.getAndCacheMoisture(garden, plant)
 	} else {
 		delete(pr.moistureCache, plant.ID)
 	}
@@ -277,17 +280,12 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 }
 
 func (pr PlantsResource) getAndCacheMoisture(g *pkg.Garden, p *pkg.Plant) {
-	influxdbClient := influxdb.NewClient(pr.config.InfluxDBConfig)
-	defer influxdbClient.Close()
+	defer pr.influxdbClient.Close()
 
 	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 	defer cancel()
 
-	moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
-	if err != nil {
-		logger.Errorf("error getting Plant's moisture data: %v", err)
-	}
-
+	moisture, err := pr.influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
 	if err != nil {
 		logger.Errorf("unable to get moisture of Plant %v: %v", p.ID, err)
 	}

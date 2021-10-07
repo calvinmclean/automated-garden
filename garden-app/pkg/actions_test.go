@@ -225,6 +225,7 @@ func TestWaterActionExecute(t *testing.T) {
 		mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
 		mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 		influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(0), nil)
+		influxdbClient.On("Close")
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
 		if err != nil {
@@ -242,6 +243,7 @@ func TestWaterActionExecute(t *testing.T) {
 		mqttClient := new(mqtt.MockClient)
 		influxdbClient := new(influxdb.MockClient)
 		influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(51), nil)
+		influxdbClient.On("Close")
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
 		if err == nil {
@@ -262,6 +264,7 @@ func TestWaterActionExecute(t *testing.T) {
 		mqttClient := new(mqtt.MockClient)
 		influxdbClient := new(influxdb.MockClient)
 		influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(0), errors.New("influxdb error"))
+		influxdbClient.On("Close")
 
 		err := action.Execute(garden, plant, mqttClient, influxdbClient)
 		if err == nil {
