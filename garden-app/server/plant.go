@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -208,7 +209,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove scheduled watering Job
-	if err := pr.removeWateringSchedule(plant); err != nil {
+	if err := pr.removeWateringSchedule(plant); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -225,7 +226,7 @@ func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plants, err := pr.storageClient.GetPlants(garden.ID, getEndDated)
 	if err != nil {
-		render.Render(w, r, ErrRender(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 	if err := render.Render(w, r, pr.NewAllPlantsResponse(plants)); err != nil {
