@@ -138,7 +138,7 @@ func (pr PlantsResource) backwardCompatibleMiddleware(next http.Handler) http.Ha
 
 		gardens, err := pr.storageClient.GetGardens(false)
 		if err != nil {
-			render.Render(w, r, ErrNotFoundResponse)
+			render.Render(w, r, InternalServerError(err))
 			return
 		}
 
