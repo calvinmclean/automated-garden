@@ -538,18 +538,13 @@ func TestEndDatePlant(t *testing.T) {
 
 func TestGetAllPlants(t *testing.T) {
 	t.Run("SuccessfulEndDatedFalse", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
 		pr := PlantsResource{
-			GardensResource: GardensResource{
-				storageClient: storageClient,
-			},
 			moistureCache: map[xid.ID]float64{},
 			scheduler:     gocron.NewScheduler(time.Local),
 		}
 		garden := createExampleGarden()
-		plants := []*pkg.Plant{createExamplePlant()}
-
-		storageClient.On("GetPlants", garden.ID, false).Return(plants, nil)
+		plant := createExamplePlant()
+		garden.Plants[plant.ID] = plant
 
 		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
 		r := httptest.NewRequest("GET", "/plant", nil).WithContext(gardenCtx)
@@ -563,7 +558,7 @@ func TestGetAllPlants(t *testing.T) {
 			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 		}
 
-		plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(plants))
+		plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse([]*pkg.Plant{plant}))
 		// check HTTP response body
 		actual := strings.TrimSpace(w.Body.String())
 		if actual != string(plantJSON) {
@@ -571,18 +566,15 @@ func TestGetAllPlants(t *testing.T) {
 		}
 	})
 	t.Run("SuccessfulEndDatedTrue", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
 		pr := PlantsResource{
-			GardensResource: GardensResource{
-				storageClient: storageClient,
-			},
 			moistureCache: map[xid.ID]float64{},
 			scheduler:     gocron.NewScheduler(time.Local),
 		}
 		garden := createExampleGarden()
-		plants := []*pkg.Plant{createExamplePlant()}
+		plant := createExamplePlant()
+		garden.Plants[plant.ID] = plant
 
-		storageClient.On("GetPlants", garden.ID, true).Return(plants, nil)
+		// storageClient.On("GetPlants", garden.ID, true).Return(plants, nil)
 
 		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
 		r := httptest.NewRequest("GET", "/plant?end_dated=true", nil).WithContext(gardenCtx)
@@ -596,44 +588,11 @@ func TestGetAllPlants(t *testing.T) {
 			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 		}
 
-		plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(plants))
+		plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse([]*pkg.Plant{plant}))
 		// check HTTP response body
 		actual := strings.TrimSpace(w.Body.String())
 		if actual != string(plantJSON) {
 			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(plantJSON))
-		}
-	})
-	t.Run("StorageClientError", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		pr := PlantsResource{
-			GardensResource: GardensResource{
-				storageClient: storageClient,
-			},
-			moistureCache: map[xid.ID]float64{},
-			scheduler:     gocron.NewScheduler(time.Local),
-		}
-		garden := createExampleGarden()
-		plants := []*pkg.Plant{createExamplePlant()}
-
-		storageClient.On("GetPlants", garden.ID, false).Return(plants, errors.New("storage error"))
-
-		gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
-		r := httptest.NewRequest("GET", "/plant", nil).WithContext(gardenCtx)
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(pr.getAllPlants)
-
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
-		}
-
-		expected := `{"status":"Server Error.","error":"storage error"}`
-		// check HTTP response body
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
 		}
 	})
 }

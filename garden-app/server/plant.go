@@ -75,8 +75,24 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 // routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
 func (pr PlantsResource) routes() chi.Router {
 	r := chi.NewRouter()
-	r.Use(pr.gardenContextMiddleware)
 	r.Post("/", pr.createPlant)
+	r.Get("/", pr.getAllPlants)
+	r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
+		r.Use(pr.plantContextMiddleware)
+
+		r.Post("/action", pr.plantAction)
+		r.Get("/", pr.getPlant)
+		r.Patch("/", pr.updatePlant)
+		r.Delete("/", pr.endDatePlant)
+	})
+	return r
+}
+
+// backwardCompatibleRoutes is the same as regular routes, but uses a different middleware allowing for compatibility
+// with the API before adding Gardens. This does not allow for creating Plants since that requires a Garden
+func (pr PlantsResource) backwardCompatibleRoutes() chi.Router {
+	r := chi.NewRouter()
+	r.Use(pr.backwardCompatibleMiddleware)
 	r.Get("/", pr.getAllPlants)
 	r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
 		r.Use(pr.plantContextMiddleware)
@@ -110,6 +126,34 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 
 		// t := context.WithValue(r.Context(), gardenCtxKey, garden)
 		ctx := context.WithValue(r.Context(), plantCtxKey, plant)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
+// backwardCompatibleMiddleware allows REST APIs that are compatible with the V1 which did not include gardens resources.
+// Instead of relying on gardenID in the route, this will combine all Gardens into a new one containing all Plants
+func (pr PlantsResource) backwardCompatibleMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		allPlants := map[xid.ID]*pkg.Plant{}
+
+		gardens, err := pr.storageClient.GetGardens(false)
+		if err != nil {
+			render.Render(w, r, ErrNotFoundResponse)
+			return
+		}
+
+		for _, g := range gardens {
+			for id, p := range g.Plants {
+				allPlants[id] = p
+			}
+		}
+
+		garden := &pkg.Garden{
+			Name:   "All Gardens Combined",
+			Plants: allPlants,
+		}
+
+		ctx := context.WithValue(r.Context(), gardenCtxKey, garden)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -224,10 +268,11 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	plants, err := pr.storageClient.GetPlants(garden.ID, getEndDated)
-	if err != nil {
-		render.Render(w, r, InternalServerError(err))
-		return
+	plants := []*pkg.Plant{}
+	for _, p := range garden.Plants {
+		if getEndDated || (!getEndDated && p.EndDate == nil) {
+			plants = append(plants, p)
+		}
 	}
 	if err := render.Render(w, r, pr.NewAllPlantsResponse(plants)); err != nil {
 		render.Render(w, r, ErrRender(err))
