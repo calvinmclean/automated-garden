@@ -97,6 +97,6 @@ func (client *client) GetMoisture(ctx context.Context, plantPosition int, garden
 	return
 }
 
-func (client *client) GetLastContact(ctx context.Context, gardenTopic string) (time.Time, error) {
+func (client *client) GetLastContact(ctx context.Context, gardenName string) (time.Time, error) {
 	return time.Now(), nil
 }
