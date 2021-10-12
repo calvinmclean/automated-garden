@@ -27,6 +27,10 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 				fmt.Sprintf("%s/%s", gardenBasePath, garden.ID),
 			},
 			Link{
+				"health",
+				fmt.Sprintf("%s/%s/health", gardenBasePath, garden.ID),
+			},
+			Link{
 				"plants",
 				plantsPath,
 			},
@@ -54,7 +58,19 @@ func (gr GardensResource) NewAllGardensResponse(gardens []*pkg.Garden) *AllGarde
 	return &AllGardensResponse{gardenResponses}
 }
 
-// Render will take the map of Gardens and convert it to a list for a more RESTy response
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response
 func (pr *AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+// GardenHealthResponse allpws for returning GardenHealth in an HTTP response
+type GardenHealthResponse struct {
+	pkg.GardenHealth
+}
+
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response
+func (gh GardenHealthResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }

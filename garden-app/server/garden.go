@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -22,8 +23,9 @@ const (
 // GardensResource encapsulates the structs and dependencies necessary for the "/gardens" API
 // to function, including storage and configurating
 type GardensResource struct {
-	storageClient storage.Client
-	config        Config
+	storageClient  storage.Client
+	influxdbClient influxdb.Client
+	config         Config
 }
 
 // NewGardenResource creates a new GardenResource
@@ -37,6 +39,8 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 		err = fmt.Errorf("unable to initialize storage client: %v", err)
 		return
 	}
+
+	gr.influxdbClient = influxdb.NewClient(gr.config.InfluxDBConfig)
 
 	return
 }
@@ -52,6 +56,7 @@ func (gr GardensResource) routes(pr PlantsResource) chi.Router {
 		r.Get("/", gr.getGarden)
 		r.Patch("/", gr.updateGarden)
 		r.Delete("/", gr.endDateGarden)
+		r.Get("/health", gr.getGardenHealth)
 
 		r.Mount(plantBasePath, pr.routes())
 	})
@@ -173,6 +178,17 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+// getGardenHealth responds with the Garden's health status bsed on querying InfluxDB for self-reported status
+func (gr GardensResource) getGardenHealth(w http.ResponseWriter, r *http.Request) {
+	defer gr.influxdbClient.Close()
+
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	health := garden.Health(gr.influxdbClient)
+	if err := render.Render(w, r, GardenHealthResponse{health}); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }

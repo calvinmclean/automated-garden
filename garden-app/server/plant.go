@@ -26,10 +26,9 @@ const (
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
 	GardensResource
-	mqttClient     mqtt.Client
-	influxdbClient influxdb.Client
-	moistureCache  map[xid.ID]float64
-	scheduler      *gocron.Scheduler
+	mqttClient    mqtt.Client
+	moistureCache map[xid.ID]float64
+	scheduler     *gocron.Scheduler
 }
 
 // NewPlantsResource creates a new PlantsResource
@@ -47,8 +46,6 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
 		return pr, err
 	}
-
-	pr.influxdbClient = influxdb.NewClient(pr.config.InfluxDBConfig)
 
 	// Initialize watering Jobs for each Plant from the storage client
 	allGardens, err := pr.storageClient.GetGardens(false)

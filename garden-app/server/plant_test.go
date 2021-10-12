@@ -242,9 +242,11 @@ func TestGetPlant(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			pr := PlantsResource{
-				influxdbClient: influxdbClient,
-				moistureCache:  map[xid.ID]float64{},
-				scheduler:      gocron.NewScheduler(time.Local),
+				GardensResource: GardensResource{
+					influxdbClient: influxdbClient,
+				},
+				moistureCache: map[xid.ID]float64{},
+				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			garden := createExampleGarden()
 

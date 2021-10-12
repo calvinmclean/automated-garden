@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -137,7 +138,7 @@ func TestCreateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "test garden"}`,
-			`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -206,7 +207,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", false).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
+			`{"gardens":\[{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -215,7 +216,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", true).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
+			`{"gardens":\[{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -303,7 +304,7 @@ func TestEndDateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
-			`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -362,7 +363,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name"}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -412,6 +413,70 @@ func TestUpdateGarden(t *testing.T) {
 			if !matcher.MatchString(actual) {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
 			}
+		})
+	}
+}
+
+func TestGetGardenHealth(t *testing.T) {
+	now := time.Now()
+	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
+	tests := []struct {
+		name     string
+		time     time.Time
+		err      error
+		expected string
+	}{
+		{
+			"UP",
+			now,
+			nil,
+			fmt.Sprintf(`{"status":"UP","last_contact":"%s"}`, now.Format(time.RFC3339Nano)),
+		},
+		{
+			"DOWN",
+			fiveMinutesAgo,
+			nil,
+			fmt.Sprintf(`{"status":"DOWN","last_contact":"%s"}`, fiveMinutesAgo.Format(time.RFC3339Nano)),
+		},
+		{
+			"N/A",
+			now,
+			errors.New("influxdb error"),
+			`{"status":"N/A","details":"influxdb error"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := new(storage.MockClient)
+			influxdbClient := new(influxdb.MockClient)
+			gr := GardensResource{
+				storageClient:  storageClient,
+				influxdbClient: influxdbClient,
+				config:         Config{},
+			}
+			garden := createExampleGarden()
+			influxdbClient.On("GetLastContact", mock.Anything, "test garden").Return(tt.time, tt.err)
+			influxdbClient.On("Close")
+
+			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			r := httptest.NewRequest("GET", "/health", nil).WithContext(ctx)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(gr.getGardenHealth)
+
+			h.ServeHTTP(w, r)
+
+			// check HTTP response status code
+			if w.Code != http.StatusOK {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
+			}
+
+			// check HTTP response body
+			actual := strings.TrimSpace(w.Body.String())
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			}
+			storageClient.AssertExpectations(t)
 		})
 	}
 }
