@@ -43,6 +43,7 @@ func (q moistureQueryData) String() (string, error) {
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
 	GetMoisture(context.Context, int, string) (float64, error)
+	GetLastContact(context.Context, string) (time.Time, error)
 	influxdb2.Client
 }
 
@@ -94,4 +95,8 @@ func (client *client) GetMoisture(ctx context.Context, plantPosition int, garden
 	}
 	err = queryResult.Err()
 	return
+}
+
+func (client *client) GetLastContact(ctx context.Context, gardenTopic string) (time.Time, error) {
+	return time.Now(), nil
 }
