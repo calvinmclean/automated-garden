@@ -58,11 +58,11 @@ func TestPlantContextMiddleware(t *testing.T) {
 	})
 
 	tests := []struct {
-		name  string
-		plant *pkg.Plant
-		path  string
-		code  int
-		body  string
+		name     string
+		plant    *pkg.Plant
+		path     string
+		code     int
+		expected string
 	}{
 		{
 			"Successful",
@@ -103,8 +103,8 @@ func TestPlantContextMiddleware(t *testing.T) {
 			}
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())
-			if actual != tt.body {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.body)
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
 			}
 		})
 	}

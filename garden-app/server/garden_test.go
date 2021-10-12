@@ -37,332 +37,227 @@ func createExampleGarden() *pkg.Garden {
 }
 
 func TestGardenContextMiddleware(t *testing.T) {
-	t.Run("Successful", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
-		storageClient.On("GetGarden", garden.ID).Return(garden, nil)
+	garden := createExampleGarden()
 
-		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-			if garden != g {
-				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
+	tests := []struct {
+		name      string
+		setupMock func(*storage.MockClient)
+		path      string
+		expected  string
+		code      int
+	}{
+		{
+			"Successful",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetGarden", mock.Anything).Return(garden, nil)
+			},
+			"/garden/c5cvhpcbcv45e8bp16dg",
+			"",
+			http.StatusOK,
+		},
+		{
+			"ErrorInvalidID",
+			func(storageClient *storage.MockClient) {},
+			"/garden/not-an-xid",
+			`{"status":"Invalid request.","error":"xid: invalid ID"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"StorageClientError",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetGarden", garden.ID).Return(nil, errors.New("storage client error"))
+			},
+			"/garden/c5cvhpcbcv45e8bp16dg",
+			`{"status":"Server Error.","error":"storage client error"}`,
+			http.StatusInternalServerError,
+		},
+		{
+			"StatusNotFound",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetGarden", garden.ID).Return(nil, nil)
+			},
+			"/garden/c5cvhpcbcv45e8bp16dg",
+			`{"status":"Resource not found."}`,
+			http.StatusNotFound,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := new(storage.MockClient)
+			tt.setupMock(storageClient)
+			gr := GardensResource{
+				storageClient: storageClient,
+				config:        Config{},
 			}
-			render.Status(r, http.StatusOK)
-		}
-
-		router := chi.NewRouter()
-		router.Route(fmt.Sprintf("/garden/{%s}", gardenPathParam), func(r chi.Router) {
-			r.Use(gr.gardenContextMiddleware)
-			r.Get("/", testHandler)
-		})
-
-		r := httptest.NewRequest("GET", "/garden/c5cvhpcbcv45e8bp16dg", nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusOK {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
-		}
-	})
-	t.Run("ErrorInvalidID", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
-
-		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-			if garden != g {
-				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
+			testHandler := func(w http.ResponseWriter, r *http.Request) {
+				g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+				if garden != g {
+					t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
+				}
+				render.Status(r, http.StatusOK)
 			}
-			render.Status(r, http.StatusOK)
-		}
 
-		router := chi.NewRouter()
-		router.Route(fmt.Sprintf("/garden/{%s}", gardenPathParam), func(r chi.Router) {
-			r.Use(gr.gardenContextMiddleware)
-			r.Get("/", testHandler)
-		})
+			router := chi.NewRouter()
+			router.Route(fmt.Sprintf("/garden/{%s}", gardenPathParam), func(r chi.Router) {
+				r.Use(gr.gardenContextMiddleware)
+				r.Get("/", testHandler)
+			})
 
-		r := httptest.NewRequest("GET", "/garden/not-an-xid", nil)
-		w := httptest.NewRecorder()
+			r := httptest.NewRequest("GET", tt.path, nil)
+			w := httptest.NewRecorder()
 
-		router.ServeHTTP(w, r)
+			router.ServeHTTP(w, r)
 
-		// check HTTP response status code
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusBadRequest)
-		}
-		// check HTTP response body
-		expected := `{"status":"Invalid request.","error":"xid: invalid ID"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
-	t.Run("StorageClientError", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
-		storageClient.On("GetGarden", garden.ID).Return(nil, errors.New("storage client error"))
-
-		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-			if garden != g {
-				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
+			// check HTTP response status code
+			if w.Code != tt.code {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
 			}
-			render.Status(r, http.StatusOK)
-		}
 
-		router := chi.NewRouter()
-		router.Route(fmt.Sprintf("/garden/{%s}", gardenPathParam), func(r chi.Router) {
-			r.Use(gr.gardenContextMiddleware)
-			r.Get("/", testHandler)
-		})
-
-		r := httptest.NewRequest("GET", "/garden/c5cvhpcbcv45e8bp16dg", nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Server Error.","error":"storage client error"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
-	t.Run("NotFoundError", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
-		storageClient.On("GetGarden", garden.ID).Return(nil, nil)
-
-		testHandler := func(w http.ResponseWriter, r *http.Request) {
-			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-			if garden != g {
-				t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
+			actual := strings.TrimSpace(w.Body.String())
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
 			}
-			render.Status(r, http.StatusOK)
-		}
-
-		router := chi.NewRouter()
-		router.Route(fmt.Sprintf("/garden/{%s}", gardenPathParam), func(r chi.Router) {
-			r.Use(gr.gardenContextMiddleware)
-			r.Get("/", testHandler)
+			storageClient.AssertExpectations(t)
 		})
-
-		r := httptest.NewRequest("GET", "/garden/c5cvhpcbcv45e8bp16dg", nil)
-		w := httptest.NewRecorder()
-
-		router.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusNotFound {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusNotFound)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Resource not found."}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
+	}
 }
 
 func TestCreateGarden(t *testing.T) {
-	t.Run("Successful", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		storageClient.On("SaveGarden", mock.Anything).Return(nil)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
+	tests := []struct {
+		name           string
+		setupMock      func(*storage.MockClient)
+		body           string
+		expectedRegexp string
+		code           int
+	}{
+		{
+			"Successful",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+			},
+			`{"name": "test garden"}`,
+			`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			http.StatusCreated,
+		},
+		{
+			"ErrorInvalidRequestBody",
+			func(storageClient *storage.MockClient) {},
+			"{}",
+			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"StorageClientError",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
+			},
+			`{"name": "test garden"}`,
+			`{"status":"Server Error.","error":"storage client error"}`,
+			http.StatusInternalServerError,
+		},
+	}
 
-		r := httptest.NewRequest("POST", "/garden", strings.NewReader(`{"name": "test garden"}`))
-		r.Header.Add("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.createGarden)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := new(storage.MockClient)
+			tt.setupMock(storageClient)
+			gr := GardensResource{
+				storageClient: storageClient,
+				config:        Config{},
+			}
 
-		h.ServeHTTP(w, r)
+			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
+			r.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(gr.createGarden)
 
-		// check HTTP response status code
-		if w.Code != http.StatusCreated {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusCreated)
-		}
+			h.ServeHTTP(w, r)
 
-		// check HTTP response body
-		matcher := regexp.MustCompile(`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
-		actual := strings.TrimSpace(w.Body.String())
-		if !matcher.MatchString(actual) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-		}
-		storageClient.AssertExpectations(t)
-	})
-	t.Run("ErrorInvalidRequestBody", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
+			// check HTTP response status code
+			if w.Code != tt.code {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
+			}
 
-		r := httptest.NewRequest("POST", "/garden", strings.NewReader("{}"))
-		r.Header.Add("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.createGarden)
-
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusBadRequest)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Invalid request.","error":"missing required Garden fields"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
-	t.Run("StorageClientError", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-
-		r := httptest.NewRequest("POST", "/garden", strings.NewReader(`{"name": "test garden"}`))
-		r.Header.Add("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.createGarden)
-
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Server Error.","error":"storage client error"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
+			// check HTTP response body
+			matcher := regexp.MustCompile(tt.expectedRegexp)
+			actual := strings.TrimSpace(w.Body.String())
+			if !matcher.MatchString(actual) {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
+			}
+			storageClient.AssertExpectations(t)
+		})
+	}
 }
 
 func TestGetAllGardens(t *testing.T) {
-	t.Run("Successful", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		gardens := []*pkg.Garden{createExampleGarden()}
-		storageClient.On("GetGardens", false).Return(gardens, nil)
+	gardens := []*pkg.Garden{createExampleGarden()}
 
-		r := httptest.NewRequest("GET", "/garden", nil)
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.getAllGardens)
+	tests := []struct {
+		name           string
+		targetURL      string
+		setupMock      func(*storage.MockClient)
+		expectedRegexp string
+		status         int
+	}{
+		{
+			"SuccessfulEndDatedFalse",
+			"/gardens",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetGardens", false).Return(gardens, nil)
+			},
+			`{"gardens":\[{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
+			http.StatusOK,
+		},
+		{
+			"SuccessfulEndDatedTrue",
+			"/gardens?end_dated=true",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetGardens", true).Return(gardens, nil)
+			},
+			`{"gardens":\[{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
+			http.StatusOK,
+		},
+		{
+			"StorageClientError",
+			"/gardens",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetGardens", false).Return([]*pkg.Garden{}, errors.New("storage client error"))
+			},
+			`{"status":"Error rendering response.","error":"storage client error"}`,
+			http.StatusUnprocessableEntity,
+		},
+	}
 
-		h.ServeHTTP(w, r)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := new(storage.MockClient)
+			gr := GardensResource{
+				storageClient: storageClient,
+				config:        Config{},
+			}
+			tt.setupMock(storageClient)
 
-		// check HTTP response status code
-		if w.Code != http.StatusOK {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
-		}
+			r := httptest.NewRequest("GET", tt.targetURL, nil)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(gr.getAllGardens)
 
-		gardenJSON, _ := json.Marshal(gr.NewAllGardensResponse(gardens))
-		// check HTTP response body
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != string(gardenJSON) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJSON))
-		}
-		storageClient.AssertExpectations(t)
-	})
-	t.Run("SuccessfulWithGetEndDated", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		gardens := []*pkg.Garden{createExampleGarden()}
-		storageClient.On("GetGardens", true).Return(gardens, nil)
+			h.ServeHTTP(w, r)
 
-		r := httptest.NewRequest("GET", "/garden?end_dated=true", nil)
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.getAllGardens)
+			// check HTTP response status code
+			if w.Code != tt.status {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
+			}
 
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusOK {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
-		}
-
-		gardenJSON, _ := json.Marshal(gr.NewAllGardensResponse(gardens))
-		// check HTTP response body
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != string(gardenJSON) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJSON))
-		}
-		storageClient.AssertExpectations(t)
-	})
-	t.Run("StorageClientError", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		storageClient.On("GetGardens", false).Return([]*pkg.Garden{}, errors.New("storage client error"))
-
-		r := httptest.NewRequest("GET", "/garden", nil)
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.getAllGardens)
-
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusUnprocessableEntity {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusUnprocessableEntity)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Error rendering response.","error":"storage client error"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
+			// check HTTP response body
+			matcher := regexp.MustCompile(tt.expectedRegexp)
+			actual := strings.TrimSpace(w.Body.String())
+			if !matcher.MatchString(actual) {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
+			}
+			storageClient.AssertExpectations(t)
+		})
+	}
 }
 
 func TestGetGarden(t *testing.T) {
@@ -397,152 +292,126 @@ func TestGetGarden(t *testing.T) {
 }
 
 func TestEndDateGarden(t *testing.T) {
-	t.Run("Successful", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		storageClient.On("SaveGarden", mock.Anything).Return(nil)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
+	tests := []struct {
+		name           string
+		setupMock      func(*storage.MockClient)
+		expectedRegexp string
+		status         int
+	}{
+		{
+			"Successful",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+			},
+			`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			http.StatusOK,
+		},
+		{
+			"StorageClientError",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
+			},
+			`{"status":"Server Error.","error":"storage client error"}`,
+			http.StatusInternalServerError,
+		},
+	}
 
-		ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
-		r := httptest.NewRequest("DELETE", "/garden", nil).WithContext(ctx)
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.endDateGarden)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := new(storage.MockClient)
+			tt.setupMock(storageClient)
+			gr := GardensResource{
+				storageClient: storageClient,
+				config:        Config{},
+			}
+			garden := createExampleGarden()
 
-		h.ServeHTTP(w, r)
+			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			r := httptest.NewRequest("DELETE", "/garden", nil).WithContext(ctx)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(gr.endDateGarden)
 
-		// check HTTP response status code
-		if w.Code != http.StatusOK {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
-		}
+			h.ServeHTTP(w, r)
 
-		// check HTTP response body
-		matcher := regexp.MustCompile(`{"name":"test garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
-		actual := strings.TrimSpace(w.Body.String())
-		if !matcher.MatchString(actual) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-		}
-	})
-	t.Run("StorageClientError", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
+			// check HTTP response status code
+			if w.Code != tt.status {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
+			}
 
-		ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
-		r := httptest.NewRequest("DELETE", "/garden", nil).WithContext(ctx)
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.endDateGarden)
-
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Server Error.","error":"storage client error"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
+			// check HTTP response body
+			matcher := regexp.MustCompile(tt.expectedRegexp)
+			actual := strings.TrimSpace(w.Body.String())
+			if !matcher.MatchString(actual) {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
+			}
+		})
+	}
 }
 
 func TestUpdateGarden(t *testing.T) {
-	t.Run("Successful", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		storageClient.On("SaveGarden", mock.Anything).Return(nil)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
+	tests := []struct {
+		name           string
+		setupMock      func(*storage.MockClient)
+		body           string
+		expectedRegexp string
+		status         int
+	}{
+		{
+			"Successful",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+			},
+			`{"name": "new name"}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			http.StatusOK,
+		},
+		{
+			"StorageClientError",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
+			},
+			`{"name": "new name"}`,
+			`{"status":"Server Error.","error":"storage client error"}`,
+			http.StatusInternalServerError,
+		},
+		{
+			"ErrorInvalidRequestBody",
+			func(storageClient *storage.MockClient) {},
+			"{}",
+			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
+			http.StatusBadRequest,
+		},
+	}
 
-		ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
-		r := httptest.NewRequest("PATCH", "/garden", strings.NewReader(`{"name": "new name"}`)).WithContext(ctx)
-		r.Header.Add("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.updateGarden)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := new(storage.MockClient)
+			tt.setupMock(storageClient)
+			gr := GardensResource{
+				storageClient: storageClient,
+				config:        Config{},
+			}
+			garden := createExampleGarden()
 
-		h.ServeHTTP(w, r)
+			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			r := httptest.NewRequest("PATCH", "/garden", strings.NewReader(tt.body)).WithContext(ctx)
+			r.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(gr.updateGarden)
 
-		// check HTTP response status code
-		if w.Code != http.StatusOK {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
-		}
+			h.ServeHTTP(w, r)
 
-		// check HTTP response body
-		matcher := regexp.MustCompile(`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`)
-		actual := strings.TrimSpace(w.Body.String())
-		if !matcher.MatchString(actual) {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-		}
-	})
-	t.Run("StorageClientError", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
+			// check HTTP response status code
+			if w.Code != tt.status {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
+			}
 
-		ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
-		r := httptest.NewRequest("PATCH", "/garden", strings.NewReader(`{"name": "new name"}`)).WithContext(ctx)
-		r.Header.Add("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.updateGarden)
-
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusInternalServerError {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Server Error.","error":"storage client error"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
-	t.Run("ErrorInvalidRequestBody", func(t *testing.T) {
-		storageClient := new(storage.MockClient)
-		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-		}
-		garden := createExampleGarden()
-
-		ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
-		r := httptest.NewRequest("PATCH", "/garden", strings.NewReader("{}")).WithContext(ctx)
-		r.Header.Add("Content-Type", "application/json")
-		w := httptest.NewRecorder()
-		h := http.HandlerFunc(gr.updateGarden)
-
-		h.ServeHTTP(w, r)
-
-		// check HTTP response status code
-		if w.Code != http.StatusBadRequest {
-			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusBadRequest)
-		}
-
-		// check HTTP response body
-		expected := `{"status":"Invalid request.","error":"missing required Garden fields"}`
-		actual := strings.TrimSpace(w.Body.String())
-		if actual != expected {
-			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
-		}
-		storageClient.AssertExpectations(t)
-	})
+			// check HTTP response body
+			matcher := regexp.MustCompile(tt.expectedRegexp)
+			actual := strings.TrimSpace(w.Body.String())
+			if !matcher.MatchString(actual) {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
+			}
+		})
+	}
 }
