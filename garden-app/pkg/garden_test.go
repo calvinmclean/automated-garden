@@ -30,9 +30,15 @@ func TestHealth(t *testing.T) {
 		},
 		{
 			"InfluxDBError",
-			time.Now(),
+			time.Time{},
 			errors.New("influxdb error"),
 			"N/A",
+		},
+		{
+			"ZeroTime",
+			time.Time{},
+			nil,
+			"DOWN",
 		},
 	}
 

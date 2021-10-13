@@ -19,6 +19,12 @@ const (
 |> filter(fn: (r) => r["plant"] == "{{.PlantPosition}}")
 |> filter(fn: (r) => r["topic"] == "{{.GardenTopic}}/data/moisture")
 |> mean()`
+	healthQueryTemplate = `from(bucket: "{{.Bucket}}")
+|> range(start: -{{.Start}})
+|> filter(fn: (r) => r["_measurement"] == "health")
+|> filter(fn: (r) => r["_field"] == "garden")
+|> filter(fn: (r) => r["_value"] == "{{.GardenName}}")
+|> last()`
 )
 
 // moistureQueryData is used to fill out the moistureQueryTemplate
@@ -32,6 +38,24 @@ type moistureQueryData struct {
 // String executes the moistureQueryTemplate with the moistureQueryData to create a string
 func (q moistureQueryData) String() (string, error) {
 	queryTemplate := template.Must(template.New("query").Parse(moistureQueryTemplate))
+	var queryBytes bytes.Buffer
+	err := queryTemplate.Execute(&queryBytes, q)
+	if err != nil {
+		return "", err
+	}
+	return queryBytes.String(), nil
+}
+
+// healthQueryData is used to fill out the healthQueryTemplate
+type healthQueryData struct {
+	Bucket     string
+	Start      time.Duration
+	GardenName string
+}
+
+// String executes the healthQueryTemplate with the healthQueryData to create a string
+func (q healthQueryData) String() (string, error) {
+	queryTemplate := template.Must(template.New("query").Parse(healthQueryTemplate))
 	var queryBytes bytes.Buffer
 	err := queryTemplate.Execute(&queryBytes, q)
 	if err != nil {
@@ -97,6 +121,29 @@ func (client *client) GetMoisture(ctx context.Context, plantPosition int, garden
 	return
 }
 
-func (client *client) GetLastContact(ctx context.Context, gardenName string) (time.Time, error) {
-	return time.Now(), nil
+func (client *client) GetLastContact(ctx context.Context, gardenName string) (result time.Time, err error) {
+	// Prepare query
+	queryString, err := healthQueryData{
+		Bucket:     client.config.Bucket,
+		Start:      time.Minute * 15,
+		GardenName: gardenName,
+	}.String()
+	if err != nil {
+		return
+	}
+
+	// Query InfluxDB
+	queryAPI := client.QueryAPI(client.config.Org)
+	queryResult, err := queryAPI.Query(ctx, queryString)
+	if err != nil {
+		return
+	}
+
+	// Read and return the result
+	if queryResult.Next() {
+		time := queryResult.Record().Time()
+		result = time
+	}
+	err = queryResult.Err()
+	return
 }

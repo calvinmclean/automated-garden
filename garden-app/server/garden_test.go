@@ -421,28 +421,28 @@ func TestGetGardenHealth(t *testing.T) {
 	now := time.Now()
 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
 	tests := []struct {
-		name     string
-		time     time.Time
-		err      error
-		expected string
+		name           string
+		time           time.Time
+		err            error
+		expectedStatus string
 	}{
 		{
 			"UP",
 			now,
 			nil,
-			fmt.Sprintf(`{"status":"UP","last_contact":"%s"}`, now.Format(time.RFC3339Nano)),
+			"UP",
 		},
 		{
 			"DOWN",
 			fiveMinutesAgo,
 			nil,
-			fmt.Sprintf(`{"status":"DOWN","last_contact":"%s"}`, fiveMinutesAgo.Format(time.RFC3339Nano)),
+			"DOWN",
 		},
 		{
 			"N/A",
 			now,
 			errors.New("influxdb error"),
-			`{"status":"N/A","details":"influxdb error"}`,
+			"N/A",
 		},
 	}
 
@@ -472,9 +472,13 @@ func TestGetGardenHealth(t *testing.T) {
 			}
 
 			// check HTTP response body
-			actual := strings.TrimSpace(w.Body.String())
-			if actual != tt.expected {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			var actual GardenHealthResponse
+			err := json.Unmarshal(w.Body.Bytes(), &actual)
+			if err != nil {
+				t.Errorf("Unexpected error unmarshaling GardenHealthResponse: %v", err)
+			}
+			if actual.Status != tt.expectedStatus {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual.Status, tt.expectedStatus)
 			}
 			storageClient.AssertExpectations(t)
 		})

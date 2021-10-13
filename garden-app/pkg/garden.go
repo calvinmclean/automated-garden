@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -37,8 +38,16 @@ func (g *Garden) Health(influxdbClient influxdb.Client) GardenHealth {
 		}
 	}
 
-	// Garden is considered "UP" if it's last contact was after 5 minutes ago
-	up := lastContact.After(time.Now().Add(-5 * time.Minute))
+	if lastContact.IsZero() {
+		return GardenHealth{
+			Status:  "DOWN",
+			Details: "no last contact time available",
+		}
+	}
+
+	// Garden is considered "UP" if it's last contact was less than 5 minutes ago
+	between := time.Since(lastContact)
+	up := between < 5*time.Minute
 
 	status := "UP"
 	if !up {
@@ -48,5 +57,6 @@ func (g *Garden) Health(influxdbClient influxdb.Client) GardenHealth {
 	return GardenHealth{
 		Status:      status,
 		LastContact: &lastContact,
+		Details:     fmt.Sprintf("last contact from Garden was %v ago", between),
 	}
 }
