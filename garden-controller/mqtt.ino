@@ -15,6 +15,9 @@ void setupMQTT() {
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(publisherTask, "PublisherTask", 2048, NULL, 1, &publisherTaskHandle);
+#ifdef ENABLE_MQTT_HEALTH
+    xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
+#endif
 }
 
 void setupWifi() {
@@ -55,6 +58,25 @@ void publisherTask(void* parameters) {
             }
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
+    }
+    vTaskDelete(NULL);
+}
+
+/*
+  publisherTask runs every minute and publishes a message to MQTT to record a health check-in
+*/
+void healthPublisherTask(void* parameters) {
+    WateringEvent we;
+    while (true) {
+        char message[50];
+        sprintf(message, "health garden=\"%s\"", GARDEN_NAME);
+        if (client.connected()) {
+            printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", healthDataTopic, message);
+            client.publish(healthDataTopic, message);
+        } else {
+            printf("unable to publish: not connected to MQTT broker\n");
+        }
+        vTaskDelay(HEALTH_PUBLISH_INTERVAL / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
 }

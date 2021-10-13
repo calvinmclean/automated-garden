@@ -14,5 +14,7 @@ data:
   # Telegraf
   MQTT_WATER_TOPIC: garden/data/water
   MQTT_MOISTURE_TOPIC: garden/data/moisture
+  MQTT_LOGGING_TOPIC: garden/data/moisture
+  MQTT_HEALTH_TOPIC: garden/data/health
   # Grafana
   GF_PATHS_PROVISIONING: /etc/grafana/provisioning
