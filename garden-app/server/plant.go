@@ -162,6 +162,16 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 
+	if garden.Name == "All Gardens Combined" {
+		var err error
+		garden, err = pr.storageClient.GetGarden(plant.GardenID)
+		if err != nil {
+			logger.Error("Error getting Garden for backwards-compatible action: ", err)
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
+	}
+
 	action := &AggregateActionRequest{}
 	if err := render.Bind(r, action); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
