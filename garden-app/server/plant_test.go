@@ -635,9 +635,14 @@ func TestGetAllPlants(t *testing.T) {
 			}
 
 			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(tt.expected))
+			// When the expected result contains more than one Plant, on some occassions it might be out of order
+			var reversePlantJSON []byte
+			if len(tt.expected) > 1 {
+				reversePlantJSON, _ = json.Marshal(pr.NewAllPlantsResponse([]*pkg.Plant{tt.expected[1], tt.expected[0]}))
+			}
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())
-			if actual != string(plantJSON) {
+			if actual != string(plantJSON) && actual != string(reversePlantJSON) {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(plantJSON))
 			}
 		})
