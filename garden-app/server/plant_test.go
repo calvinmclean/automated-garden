@@ -201,6 +201,91 @@ func TestBackwardsCompatibleMiddleware(t *testing.T) {
 	})
 }
 
+func TestBackwardsCompatibleActionMiddleware(t *testing.T) {
+	t.Run("Successful", func(t *testing.T) {
+		storageClient := new(storage.MockClient)
+		pr := PlantsResource{
+			GardensResource: GardensResource{
+				storageClient: storageClient,
+				config:        Config{},
+			},
+		}
+		garden := createExampleGarden()
+		plant := createExamplePlant()
+		plant.GardenID = garden.ID
+
+		storageClient.On("GetGarden", garden.ID).Return(garden, nil)
+
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+			if g != garden {
+				t.Errorf("Unexpected Garden. Expected %v, got %v", garden, g)
+			}
+			render.Status(r, http.StatusOK)
+		}
+
+		router := chi.NewRouter()
+		router.Route("/plants", func(r chi.Router) {
+			r.Use(pr.backwardsCompatibleActionMiddleware)
+			r.Get("/", testHandler)
+		})
+
+		ctx := context.WithValue(context.Background(), plantCtxKey, plant)
+		r := httptest.NewRequest("GET", "/plants", nil).WithContext(ctx)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, r)
+
+		// check HTTP response status code
+		if w.Code != http.StatusOK {
+			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
+		}
+	})
+	t.Run("StorageClientError", func(t *testing.T) {
+		storageClient := new(storage.MockClient)
+		pr := PlantsResource{
+			GardensResource: GardensResource{
+				storageClient: storageClient,
+				config:        Config{},
+			},
+		}
+		garden := createExampleGarden()
+		plant := createExamplePlant()
+		plant.GardenID = garden.ID
+
+		storageClient.On("GetGarden", garden.ID).Return(nil, errors.New("storage client error"))
+
+		testHandler := func(w http.ResponseWriter, r *http.Request) {
+			render.Status(r, http.StatusOK)
+		}
+
+		router := chi.NewRouter()
+		router.Route("/plants", func(r chi.Router) {
+			r.Use(pr.backwardsCompatibleActionMiddleware)
+			r.Get("/", testHandler)
+		})
+
+		ctx := context.WithValue(context.Background(), plantCtxKey, plant)
+		r := httptest.NewRequest("GET", "/plants", nil).WithContext(ctx)
+		w := httptest.NewRecorder()
+
+		router.ServeHTTP(w, r)
+
+		// check HTTP response status code
+		if w.Code != http.StatusInternalServerError {
+			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusInternalServerError)
+		}
+
+		// check HTTP response body
+		expected := `{"status":"Server Error.","error":"storage client error"}`
+		actual := strings.TrimSpace(w.Body.String())
+		if actual != expected {
+			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, expected)
+		}
+		storageClient.AssertExpectations(t)
+	})
+}
+
 func TestGetPlant(t *testing.T) {
 	tests := []struct {
 		name      string

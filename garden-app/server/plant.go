@@ -94,7 +94,7 @@ func (pr PlantsResource) backwardCompatibleRoutes() chi.Router {
 	r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
 		r.Use(pr.plantContextMiddleware)
 
-		r.Post("/action", pr.plantAction)
+		r.With(pr.backwardsCompatibleActionMiddleware).Post("/action", pr.plantAction)
 		r.Get("/", pr.getPlant)
 		r.Patch("/", pr.updatePlant)
 		r.Delete("/", pr.endDatePlant)
@@ -155,22 +155,26 @@ func (pr PlantsResource) backwardCompatibleMiddleware(next http.Handler) http.Ha
 	})
 }
 
+func (pr PlantsResource) backwardsCompatibleActionMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+		garden, err := pr.storageClient.GetGarden(plant.GardenID)
+		if err != nil {
+			logger.Error("Error getting Garden for backwards-compatible action: ", err)
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
+		ctx := context.WithValue(r.Context(), gardenCtxKey, garden)
+		next.ServeHTTP(w, r.WithContext(ctx))
+	})
+}
+
 // plantAction reads an AggregateAction request and uses it to execute one of the actions
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
-
-	if garden.Name == "All Gardens Combined" {
-		var err error
-		garden, err = pr.storageClient.GetGarden(plant.GardenID)
-		if err != nil {
-			logger.Error("Error getting Garden for backwards-compatible action: ", err)
-			render.Render(w, r, InternalServerError(err))
-			return
-		}
-	}
 
 	action := &AggregateActionRequest{}
 	if err := render.Bind(r, action); err != nil {
