@@ -104,6 +104,9 @@ func (c *YAMLClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, e
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
 func (c *YAMLClient) SavePlant(plant *pkg.Plant) error {
+	if c.gardens[plant.GardenID].Plants == nil {
+		c.gardens[plant.GardenID].Plants = map[xid.ID]*pkg.Plant{}
+	}
 	c.gardens[plant.GardenID].Plants[plant.ID] = plant
 	return c.Save()
 }
