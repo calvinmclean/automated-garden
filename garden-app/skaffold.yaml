@@ -10,3 +10,4 @@ deploy:
   kubectl:
     manifests:
     - ../deploy/skaffold/*
+  kubeContext: docker-desktop
