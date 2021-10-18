@@ -26,7 +26,8 @@ type Client interface {
 	WateringTopic(string) (string, error)
 	StopTopic(string) (string, error)
 	StopAllTopic(string) (string, error)
-	Connect() mqtt.Token
+	Connect() error
+	Disconnect(uint)
 }
 
 // client is a wrapper struct for connecting our config and MQTT Client. It implements the Client interface
@@ -62,13 +63,22 @@ func NewMQTTClient(config Config, defaultHandler mqtt.MessageHandler, handlers .
 	return &client{Client: mqtt.NewClient(opts), Config: config}, nil
 }
 
+// Connect uses the MQTT Client's Connect function but returns the error instead of Token
+func (c *client) Connect() error {
+	if c.Client.IsConnected() {
+		return nil
+	}
+	token := c.Client.Connect()
+	token.Wait()
+	return token.Error()
+}
+
 // Publish will send the message to the specified MQTT topic
 func (c *client) Publish(topic string, message []byte) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	defer c.Client.Disconnect(250)
-	if token := c.Client.Connect(); token.Wait() && token.Error() != nil {
-		return fmt.Errorf("unable to connect to MQTT broker: %v", token.Error())
+	if err := c.Connect(); err != nil {
+		return fmt.Errorf("unable to connect to MQTT broker: %v", err)
 	}
 	if token := c.Client.Publish(topic, byte(0), false, message); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())

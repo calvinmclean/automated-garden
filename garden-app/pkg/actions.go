@@ -53,6 +53,11 @@ func (action *StopAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, _
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
+	if err = mqttClient.Connect(); err != nil {
+		return fmt.Errorf("unable to connect to MQTT broker: %v", err)
+	}
+	defer mqttClient.Disconnect(250)
+
 	return mqttClient.Publish(topic, []byte("no message"))
 }
 
@@ -104,6 +109,11 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
+
+	if err = mqttClient.Connect(); err != nil {
+		return fmt.Errorf("unable to connect to MQTT broker: %v", err)
+	}
+	defer mqttClient.Disconnect(250)
 
 	return mqttClient.Publish(topic, msg)
 }

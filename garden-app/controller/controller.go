@@ -7,6 +7,7 @@ import (
 	"html/template"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -22,6 +23,7 @@ type Config struct {
 	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
 	GardenName     string          `mapstructure:"garden_name"`
+	Plants         []int           `mapstructure:"plants"`
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller
@@ -48,6 +50,7 @@ func Start(config Config) {
 		return
 	}
 
+	// Build TopicHandlers to handle subscription to each topic
 	var handlers []mqtt.TopicHandler
 	for _, topic := range topics {
 		logger.Infof("subscribing on topic: %s", topic)
@@ -57,26 +60,45 @@ func Start(config Config) {
 		})
 	}
 
-	// Override configured ClientID with the GardenName from command flags
-	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.GardenName)
+	// Create default handler and mqttClient, then connect
 	defaultHandler := paho.MessageHandler(func(c paho.Client, msg paho.Message) {
 		logger.WithFields(logrus.Fields{
 			"topic": msg.Topic(),
 		}).Infof("default handler called with message: %s", string(msg.Payload()))
 	})
+	// Override configured ClientID with the GardenName from command flags
+	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.GardenName)
 	mqttClient, err := mqtt.NewMQTTClient(controller.MQTTConfig, defaultHandler, handlers...)
 	if err != nil {
 		logger.Errorf("unable to initialize MQTT client: %v", err)
 		return
 	}
-
-	wg := sync.WaitGroup{}
-	wg.Add(1)
-	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
-		logger.Errorf("unable to connect to MQTT broker: %v", token.Error())
+	if err := mqttClient.Connect(); err != nil {
+		logger.Errorf("unable to connect to MQTT broker: %v", err.Error())
 	}
 
+	// Initiate publishing goroutines and wait
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	for _, plant := range config.Plants {
+		wg.Add(1)
+		go publishMoistureData(mqttClient, plant, config.GardenName)
+	}
 	wg.Wait()
+}
+
+func publishMoistureData(mqttClient mqtt.Client, plant int, gardenName string) {
+	for {
+		moisture := 0.5
+		topic := fmt.Sprintf("%s/data/moisture", gardenName)
+		logger.Infof("Publishing moisture data for Plant %d on topic %s: %.2f", plant, topic, moisture)
+		err := mqttClient.Publish(topic, []byte("WOW"))
+		if err != nil {
+			logger.Errorf("Encountered error publishing: %v", err)
+		}
+
+		time.Sleep(5 * time.Second)
+	}
 }
 
 // getHandlerForTopic provides a different MessageHandler function for each of the expected

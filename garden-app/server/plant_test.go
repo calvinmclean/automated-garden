@@ -381,7 +381,9 @@ func TestPlantAction(t *testing.T) {
 			"SuccessfulWaterAction",
 			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("WateringTopic", "test-garden").Return("garden/action/water", nil)
+				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Disconnect", mock.Anything)
 				storageClient.On("SavePlant", mock.Anything).Return(nil)
 			},
 			`{"water":{"duration":1000}}`,
@@ -401,7 +403,9 @@ func TestPlantAction(t *testing.T) {
 			"StorageClientErrorForWaterAction",
 			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("WateringTopic", "test-garden").Return("garden/action/water", nil)
+				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Disconnect", mock.Anything)
 				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
 			},
 			`{"water":{"duration":1000}}`,
