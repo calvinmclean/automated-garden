@@ -48,24 +48,34 @@ func Start(config Config) {
 		return
 	}
 
-	wg := sync.WaitGroup{}
-	for i, topic := range topics {
-		wg.Add(1)
+	var handlers []mqtt.TopicHandler
+	for _, topic := range topics {
 		logger.Infof("subscribing on topic: %s", topic)
-
-		// Override configured ClientID with the GardenName from command flags
-		controller.MQTTConfig.ClientID = fmt.Sprintf("%s-%d", controller.GardenName, i)
-		mqttClient, err := mqtt.NewMQTTClient(controller.MQTTConfig, getHandlerForTopic(topic))
-		if err != nil {
-			logger.Errorf("unable to initialize MQTT client: %v", err)
-			return
-		}
-		go mqttClient.Subscribe(topic, func() {
-			for true {
-			}
-			wg.Done()
+		handlers = append(handlers, mqtt.TopicHandler{
+			Topic:   topic,
+			Handler: getHandlerForTopic(topic),
 		})
 	}
+
+	// Override configured ClientID with the GardenName from command flags
+	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.GardenName)
+	defaultHandler := paho.MessageHandler(func(c paho.Client, msg paho.Message) {
+		logger.WithFields(logrus.Fields{
+			"topic": msg.Topic(),
+		}).Infof("default handler called with message: %s", string(msg.Payload()))
+	})
+	mqttClient, err := mqtt.NewMQTTClient(controller.MQTTConfig, defaultHandler, handlers...)
+	if err != nil {
+		logger.Errorf("unable to initialize MQTT client: %v", err)
+		return
+	}
+
+	wg := sync.WaitGroup{}
+	wg.Add(1)
+	if token := mqttClient.Connect(); token.Wait() && token.Error() != nil {
+		logger.Errorf("unable to connect to MQTT broker: %v", token.Error())
+	}
+
 	wg.Wait()
 }
 

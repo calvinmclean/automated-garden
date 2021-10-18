@@ -42,7 +42,7 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 
 	// Initialize MQTT Client
 	var err error
-	pr.mqttClient, err = mqtt.NewMQTTClient(gr.config.MQTTConfig)
+	pr.mqttClient, err = mqtt.NewMQTTClient(gr.config.MQTTConfig, nil)
 	if err != nil {
 		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
 		return pr, err
