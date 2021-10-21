@@ -34,6 +34,7 @@ func Controller(cmd *cobra.Command, args []string) {
 		cmd.PrintErrln("unable to read config from file: ", err)
 		return
 	}
+	config.LogLevel = parsedLogLevel
 
 	controller.Start(config)
 }

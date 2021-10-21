@@ -7,8 +7,6 @@ import (
 )
 
 var (
-	plantFile string
-
 	serverCommand = &cobra.Command{
 		Use:     "server",
 		Aliases: []string{"run"},
@@ -32,6 +30,7 @@ func Server(cmd *cobra.Command, args []string) {
 		cmd.PrintErrln("unable to read config from file: ", err)
 		return
 	}
+	config.LogLevel = parsedLogLevel
 
 	cmd.Printf("Starting garden-app webserver on port %d...\n", config.Port)
 	server.Run(config)

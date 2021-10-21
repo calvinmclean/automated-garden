@@ -24,6 +24,7 @@ type Config struct {
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
 	GardenName     string          `mapstructure:"garden_name"`
 	Plants         []int           `mapstructure:"plants"`
+	LogLevel       logrus.Level
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller
@@ -39,6 +40,9 @@ func Start(config Config) {
 		DisableColors: false,
 		FullTimestamp: true,
 	})
+	logger.SetLevel(config.LogLevel)
+
+	logger.Infof("Publishing moisture data for Plants: %v", config.Plants)
 
 	controller := Controller{Config: config}
 

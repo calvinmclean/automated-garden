@@ -23,6 +23,7 @@ type Config struct {
 	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
 	StorageConfig  storage.Config  `mapstructure:"storage"`
+	LogLevel       logrus.Level
 }
 
 // WebConfig is used to allow reading the "web_server" section into the main Config struct
@@ -40,6 +41,8 @@ func Run(config Config) {
 		DisableColors: false,
 		FullTimestamp: true,
 	})
+	logger.SetLevel(config.LogLevel)
+
 	r := chi.NewRouter()
 
 	r.Use(middleware.RequestID)
