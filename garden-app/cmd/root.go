@@ -19,13 +19,6 @@ var (
 		Use:   "garden-app",
 		Short: "A command line application for the automated home garden",
 		Long:  `This CLI is used to run and interact with this webserver application for your automated home garden`,
-		ValidArgsFunction: func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-			var levels []string
-			for _, l := range logrus.AllLevels {
-				levels = append(levels, l.String())
-			}
-			return levels, cobra.ShellCompDirectiveDefault
-		},
 	}
 )
 
@@ -38,7 +31,16 @@ func init() {
 	cobra.OnInitialize(initConfig, parseLogLevel)
 
 	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "", "path to config file")
+	rootCommand.MarkPersistentFlagRequired("config")
+
 	rootCommand.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "level of logging to display")
+	rootCommand.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+		var levels []string
+		for _, l := range logrus.AllLevels {
+			levels = append(levels, l.String())
+		}
+		return levels, cobra.ShellCompDirectiveDefault
+	})
 }
 
 func initConfig() {
