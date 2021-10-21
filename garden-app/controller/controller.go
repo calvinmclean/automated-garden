@@ -20,16 +20,18 @@ var logger *logrus.Logger
 
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
-	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
-	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
-	GardenName     string          `mapstructure:"garden_name"`
-	Plants         []int           `mapstructure:"plants"`
-	LogLevel       logrus.Level
+	InfluxDBConfig       influxdb.Config `mapstructure:"influxdb"`
+	MQTTConfig           mqtt.Config     `mapstructure:"mqtt"`
+	GardenName           string          `mapstructure:"garden_name"`
+	Plants               []int           `mapstructure:"plants"`
+	PublishWateringEvent bool            `mapstructure:"publish_watering_event"`
+	LogLevel             logrus.Level
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller
 type Controller struct {
 	Config
+	mqttClient mqtt.Client
 }
 
 // Start runs the main code of the mock garden-controller by creating MQTT clients and
@@ -60,7 +62,7 @@ func Start(config Config) {
 		logger.Infof("subscribing on topic: %s", topic)
 		handlers = append(handlers, mqtt.TopicHandler{
 			Topic:   topic,
-			Handler: getHandlerForTopic(topic),
+			Handler: controller.getHandlerForTopic(topic),
 		})
 	}
 
@@ -72,12 +74,12 @@ func Start(config Config) {
 	})
 	// Override configured ClientID with the GardenName from command flags
 	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.GardenName)
-	mqttClient, err := mqtt.NewMQTTClient(controller.MQTTConfig, defaultHandler, handlers...)
+	controller.mqttClient, err = mqtt.NewMQTTClient(controller.MQTTConfig, defaultHandler, handlers...)
 	if err != nil {
 		logger.Errorf("unable to initialize MQTT client: %v", err)
 		return
 	}
-	if err := mqttClient.Connect(); err != nil {
+	if err := controller.mqttClient.Connect(); err != nil {
 		logger.Errorf("unable to connect to MQTT broker: %v", err.Error())
 	}
 
@@ -86,17 +88,20 @@ func Start(config Config) {
 	wg.Add(1)
 	for _, plant := range config.Plants {
 		wg.Add(1)
-		go publishMoistureData(mqttClient, plant, config.GardenName)
+		go controller.publishMoistureData(plant, config.GardenName)
 	}
 	wg.Wait()
 }
 
-func publishMoistureData(mqttClient mqtt.Client, plant int, gardenName string) {
+func (c *Controller) publishMoistureData(plant int, gardenName string) {
 	for {
-		moisture := 0.5
+		moisture := 50
 		topic := fmt.Sprintf("%s/data/moisture", gardenName)
 		logger.Infof("Publishing moisture data for Plant %d on topic %s: %.2f", plant, topic, moisture)
-		err := mqttClient.Publish(topic, []byte("WOW"))
+		err := c.mqttClient.Publish(
+			topic,
+			[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
+		)
 		if err != nil {
 			logger.Errorf("Encountered error publishing: %v", err)
 		}
@@ -105,12 +110,29 @@ func publishMoistureData(mqttClient mqtt.Client, plant int, gardenName string) {
 	}
 }
 
+// publishWateringEvent logs moisture data to InfluxDB via Telegraf and MQTT
+func (c *Controller) publishWateringEvent(waterMsg pkg.WaterMessage, cmdTopic string) {
+	if !c.PublishWateringEvent {
+		return
+	}
+	// Incoming topic is "{{.GardenName}}/command/water" but we need to publish on "{{.GardenName}}/data/water"
+	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
+	logger.Infof("Publishing watering event for Plant on topic %s: %v", dataTopic, waterMsg)
+	err := c.mqttClient.Publish(
+		dataTopic,
+		[]byte(fmt.Sprintf("water,plant=%d millis=%d", waterMsg.PlantPosition, waterMsg.Duration)),
+	)
+	if err != nil {
+		logger.Errorf("Encountered error publishing: %v", err)
+	}
+}
+
 // getHandlerForTopic provides a different MessageHandler function for each of the expected
 // topics to be able to handle them in different ways
-func getHandlerForTopic(topic string) paho.MessageHandler {
+func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 	switch t := strings.Split(topic, "/")[2]; t {
 	case "water":
-		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
+		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
 			var waterMsg pkg.WaterMessage
 			err := json.Unmarshal(msg.Payload(), &waterMsg)
 			if err != nil {
@@ -122,21 +144,22 @@ func getHandlerForTopic(topic string) paho.MessageHandler {
 				"plant_position": waterMsg.PlantPosition,
 				"duration":       waterMsg.Duration,
 			}).Info("received WaterAction")
+			c.publishWateringEvent(waterMsg, topic)
 		})
 	case "stop":
-		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
+		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
 			logger.WithFields(logrus.Fields{
 				"topic": msg.Topic(),
 			}).Info("received StopAction")
 		})
 	case "stop_all":
-		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
+		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
 			logger.WithFields(logrus.Fields{
 				"topic": msg.Topic(),
 			}).Info("received StopAllAction")
 		})
 	default:
-		return paho.MessageHandler(func(c paho.Client, msg paho.Message) {
+		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
 			logger.WithFields(logrus.Fields{
 				"topic": msg.Topic(),
 			}).Infof("received message on unexpected topic: %s", string(msg.Payload()))

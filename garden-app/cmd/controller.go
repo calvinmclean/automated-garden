@@ -7,9 +7,11 @@ import (
 )
 
 var (
-	gardenName         string
-	plantsWithMoisture []int
-	controllerCommand  = &cobra.Command{
+	gardenName           string
+	plantsWithMoisture   []int
+	publishWateringEvent bool
+
+	controllerCommand = &cobra.Command{
 		Use:   "controller",
 		Short: "Run a mock garden-controller",
 		Long:  `Subscribes on a MQTT topic to act as a mock garden-controller for testing purposes`,
@@ -23,6 +25,9 @@ func init() {
 
 	controllerCommand.Flags().IntSliceVarP(&plantsWithMoisture, "plants", "p", []int{}, "Plant positions for which moisture data should be emulated")
 	viper.BindPFlag("plants", controllerCommand.Flags().Lookup("plants"))
+
+	controllerCommand.Flags().BoolVar(&publishWateringEvent, "publish-watering-event", false, "Whether or not watering events should be published for logging")
+	viper.BindPFlag("publish_watering_event", controllerCommand.Flags().Lookup("publish-watering-event"))
 
 	rootCommand.AddCommand(controllerCommand)
 }
