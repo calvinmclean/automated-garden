@@ -1,10 +1,8 @@
 package pkg
 
 import (
-	"context"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/rs/xid"
 )
 
@@ -57,25 +55,4 @@ type WateringHistory struct {
 // WateringAction creates the default/basic WateringAction for this Plant
 func (p *Plant) WateringAction() *WaterAction {
 	return &WaterAction{Duration: p.WateringStrategy.WateringAmount}
-}
-
-// WateringHistory gets previous WateringEvents for this Plant from InfluxDB
-func (p *Plant) WateringHistory(influxdbClient influxdb.Client, garden *Garden) (result []WateringHistory, err error) {
-	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
-	defer cancel()
-
-	queryResult, err := influxdbClient.GetWateringHistory(ctx, p.PlantPosition, garden.Name)
-	if err != nil {
-		return
-	}
-
-	// Read and return the result
-	for queryResult.Next() {
-		result = append(result, WateringHistory{
-			WateringAmount: int(queryResult.Record().Value().(float64)),
-			RecordTime:     queryResult.Record().Time(),
-		})
-	}
-	err = queryResult.Err()
-	return
 }

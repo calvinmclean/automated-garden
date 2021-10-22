@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -78,7 +79,7 @@ func (pr PlantsResource) routes() chi.Router {
 		r.Use(pr.plantContextMiddleware)
 
 		r.Post("/action", pr.plantAction)
-		r.Get("/history", pr.getWateringHistory)
+		r.Get("/history", pr.wateringHistory)
 		r.Get("/", pr.getPlant)
 		r.Patch("/", pr.updatePlant)
 		r.Delete("/", pr.endDatePlant)
@@ -96,7 +97,7 @@ func (pr PlantsResource) backwardCompatibleRoutes() chi.Router {
 		r.Use(pr.plantContextMiddleware)
 
 		r.With(pr.backwardsCompatibleActionMiddleware).Post("/action", pr.plantAction)
-		r.With(pr.backwardsCompatibleActionMiddleware).Get("/history", pr.getWateringHistory)
+		r.With(pr.backwardsCompatibleActionMiddleware).Get("/history", pr.wateringHistory)
 		r.Get("/", pr.getPlant)
 		r.Patch("/", pr.updatePlant)
 		r.Delete("/", pr.endDatePlant)
@@ -338,14 +339,34 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// getWateringHistory responds with the Plant's recent watering events read from InfluxDB
-func (pr PlantsResource) getWateringHistory(w http.ResponseWriter, r *http.Request) {
-	defer pr.influxdbClient.Close()
-
+// wateringHistory responds with the Plant's recent watering events read from InfluxDB
+func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 
-	history, err := plant.WateringHistory(pr.influxdbClient, garden)
+	// Read query parameters and set default values
+	timeRangeString := r.URL.Query().Get("range")
+	if len(timeRangeString) == 0 {
+		timeRangeString = "72h"
+	}
+	limitString := r.URL.Query().Get("limit")
+	if len(limitString) == 0 {
+		limitString = "5"
+	}
+
+	// Parse query parameter strings into correct types
+	timeRange, err := time.ParseDuration(timeRangeString)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	limit, err := strconv.ParseUint(limitString, 0, 64)
+	if err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	history, err := pr.getWateringHistory(plant, garden, timeRange, int(limit))
 	if err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -366,4 +387,30 @@ func (pr PlantsResource) getAndCacheMoisture(g *pkg.Garden, p *pkg.Plant) {
 		logger.Errorf("unable to get moisture of Plant %v: %v", p.ID, err)
 	}
 	pr.moistureCache[p.ID] = moisture
+}
+
+// getWateringHistory gets previous WateringEvents for this Plant from InfluxDB
+func (pr PlantsResource) getWateringHistory(plant *pkg.Plant, garden *pkg.Garden, timeRange time.Duration, limit int) (result []pkg.WateringHistory, err error) {
+	defer pr.influxdbClient.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
+	defer cancel()
+
+	queryResult, err := pr.influxdbClient.GetWateringHistory(ctx, plant.PlantPosition, garden.Name, timeRange)
+	if err != nil {
+		return
+	}
+
+	// Read and return the result (up to limit)
+	for queryResult.Next() {
+		if len(result) >= limit {
+			break
+		}
+		result = append(result, pkg.WateringHistory{
+			WateringAmount: int(queryResult.Record().Value().(float64)),
+			RecordTime:     queryResult.Record().Time(),
+		})
+	}
+	err = queryResult.Err()
+	return
 }
