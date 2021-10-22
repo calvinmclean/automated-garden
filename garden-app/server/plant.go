@@ -78,6 +78,7 @@ func (pr PlantsResource) routes() chi.Router {
 		r.Use(pr.plantContextMiddleware)
 
 		r.Post("/action", pr.plantAction)
+		r.Get("/history", pr.getWateringHistory)
 		r.Get("/", pr.getPlant)
 		r.Patch("/", pr.updatePlant)
 		r.Delete("/", pr.endDatePlant)
@@ -95,6 +96,7 @@ func (pr PlantsResource) backwardCompatibleRoutes() chi.Router {
 		r.Use(pr.plantContextMiddleware)
 
 		r.With(pr.backwardsCompatibleActionMiddleware).Post("/action", pr.plantAction)
+		r.With(pr.backwardsCompatibleActionMiddleware).Get("/history", pr.getWateringHistory)
 		r.Get("/", pr.getPlant)
 		r.Patch("/", pr.updatePlant)
 		r.Delete("/", pr.endDatePlant)
@@ -332,6 +334,23 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 
 	render.Status(r, http.StatusCreated)
 	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+// getWateringHistory responds with the Plant's recent watering events read from InfluxDB
+func (pr PlantsResource) getWateringHistory(w http.ResponseWriter, r *http.Request) {
+	defer pr.influxdbClient.Close()
+
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+
+	history, err := plant.WateringHistory(pr.influxdbClient, garden)
+	if err != nil {
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+	if err := render.Render(w, r, NewPlantWateringHistoryResponse(history)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }

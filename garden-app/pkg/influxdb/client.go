@@ -7,6 +7,7 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	influxdb2Api "github.com/influxdata/influxdb-client-go/v2/api"
 )
 
 const (
@@ -17,7 +18,7 @@ const (
 |> filter(fn: (r) => r["_measurement"] == "moisture")
 |> filter(fn: (r) => r["_field"] == "value")
 |> filter(fn: (r) => r["plant"] == "{{.PlantPosition}}")
-|> filter(fn: (r) => r["topic"] == "{{.GardenTopic}}/data/moisture")
+|> filter(fn: (r) => r["topic"] == "{{.GardenName}}/data/moisture")
 |> mean()`
 	healthQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
@@ -25,39 +26,27 @@ const (
 |> filter(fn: (r) => r["_field"] == "garden")
 |> filter(fn: (r) => r["_value"] == "{{.GardenName}}")
 |> last()`
+	wateringHistoryQueryTemplate = `from(bucket: "{{.Bucket}}")
+|> range(start: -{{.Start}})
+|> filter(fn: (r) => r["_measurement"] == "water")
+|> filter(fn: (r) => r["topic"] == "{{.GardenName}}/data/water")
+|> filter(fn: (r) => r["plant"] == "{{.PlantPosition}}")
+|> yield(name: "last")`
 )
 
-// moistureQueryData is used to fill out the moistureQueryTemplate
-type moistureQueryData struct {
+// queryData is used to fill out any of the query templates
+type queryData struct {
 	Bucket        string
 	Start         time.Duration
 	PlantPosition int
-	GardenTopic   string
+	GardenName    string
 }
 
-// String executes the moistureQueryTemplate with the moistureQueryData to create a string
-func (q moistureQueryData) String() (string, error) {
-	queryTemplate := template.Must(template.New("query").Parse(moistureQueryTemplate))
+// String executes the specified template with the queryData to create a string
+func (q queryData) String(queryTemplate string) (string, error) {
+	t := template.Must(template.New("query").Parse(queryTemplate))
 	var queryBytes bytes.Buffer
-	err := queryTemplate.Execute(&queryBytes, q)
-	if err != nil {
-		return "", err
-	}
-	return queryBytes.String(), nil
-}
-
-// healthQueryData is used to fill out the healthQueryTemplate
-type healthQueryData struct {
-	Bucket     string
-	Start      time.Duration
-	GardenName string
-}
-
-// String executes the healthQueryTemplate with the healthQueryData to create a string
-func (q healthQueryData) String() (string, error) {
-	queryTemplate := template.Must(template.New("query").Parse(healthQueryTemplate))
-	var queryBytes bytes.Buffer
-	err := queryTemplate.Execute(&queryBytes, q)
+	err := t.Execute(&queryBytes, q)
 	if err != nil {
 		return "", err
 	}
@@ -68,6 +57,7 @@ func (q healthQueryData) String() (string, error) {
 type Client interface {
 	GetMoisture(context.Context, int, string) (float64, error)
 	GetLastContact(context.Context, string) (time.Time, error)
+	GetWateringHistory(context.Context, int, string) (*influxdb2Api.QueryTableResult, error)
 	influxdb2.Client
 }
 
@@ -94,14 +84,14 @@ func NewClient(config Config) Client {
 }
 
 // GetMoisture returns the plant's average soil moisture in the last 15 minutes
-func (client *client) GetMoisture(ctx context.Context, plantPosition int, gardenTopic string) (result float64, err error) {
+func (client *client) GetMoisture(ctx context.Context, plantPosition int, gardenName string) (result float64, err error) {
 	// Prepare query
-	queryString, err := moistureQueryData{
+	queryString, err := queryData{
 		Bucket:        client.config.Bucket,
 		Start:         time.Minute * 15,
 		PlantPosition: plantPosition,
-		GardenTopic:   gardenTopic,
-	}.String()
+		GardenName:    gardenName,
+	}.String(moistureQueryTemplate)
 	if err != nil {
 		return
 	}
@@ -123,11 +113,11 @@ func (client *client) GetMoisture(ctx context.Context, plantPosition int, garden
 
 func (client *client) GetLastContact(ctx context.Context, gardenName string) (result time.Time, err error) {
 	// Prepare query
-	queryString, err := healthQueryData{
+	queryString, err := queryData{
 		Bucket:     client.config.Bucket,
 		Start:      time.Minute * 15,
 		GardenName: gardenName,
-	}.String()
+	}.String(healthQueryTemplate)
 	if err != nil {
 		return
 	}
@@ -146,4 +136,22 @@ func (client *client) GetLastContact(ctx context.Context, gardenName string) (re
 	}
 	err = queryResult.Err()
 	return
+}
+
+// GetWateringHistory gets recent watering events for a specific Plant
+func (client *client) GetWateringHistory(ctx context.Context, plantPosition int, gardenName string) (*influxdb2Api.QueryTableResult, error) {
+	// Prepare query
+	queryString, err := queryData{
+		Bucket:        client.config.Bucket,
+		Start:         time.Minute * 15, // TODO: allow changing interval
+		GardenName:    gardenName,
+		PlantPosition: plantPosition,
+	}.String(wateringHistoryQueryTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	// Query InfluxDB
+	queryAPI := client.QueryAPI(client.config.Org)
+	return queryAPI.Query(ctx, queryString) // TODO: Determine better return type. I cannot import WateringHistory struct here...
 }

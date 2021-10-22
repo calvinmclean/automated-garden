@@ -118,6 +118,29 @@ func (_m *MockClient) GetMoisture(_a0 context.Context, _a1 int, _a2 string) (flo
 	return r0, r1
 }
 
+// GetWateringHistory provides a mock function with given fields: _a0, _a1, _a2
+func (_m *MockClient) GetWateringHistory(_a0 context.Context, _a1 int, _a2 string) (*api.QueryTableResult, error) {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 *api.QueryTableResult
+	if rf, ok := ret.Get(0).(func(context.Context, int, string) *api.QueryTableResult); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*api.QueryTableResult)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(context.Context, int, string) error); ok {
+		r1 = rf(_a0, _a1, _a2)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // HTTPService provides a mock function with given fields:
 func (_m *MockClient) HTTPService() http.Service {
 	ret := _m.Called()

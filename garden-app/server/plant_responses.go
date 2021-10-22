@@ -65,3 +65,36 @@ func (pr PlantsResource) NewPlantResponse(plant *pkg.Plant, moisture float64, li
 func (p *PlantResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
+
+// PlantWateringHistoryResponse wraps a slice of WateringHistory structs plus some aggregate stats for an HTTP response
+type PlantWateringHistoryResponse struct {
+	History []pkg.WateringHistory `json:"history"`
+	Count   int                   `json:"count"`
+	Average string                `json:"average"`
+	Total   string                `json:"total"`
+}
+
+// NewPlantWateringHistoryResponse creates a response by creating some basic statistics about a list of history events
+func NewPlantWateringHistoryResponse(history []pkg.WateringHistory) PlantWateringHistoryResponse {
+	total := 0
+	for _, h := range history {
+		total += h.WateringAmount
+	}
+	// The average needs to be parsed as a string because I do not want to convert to int and lose precision
+	average, err := time.ParseDuration(fmt.Sprintf("%fms", float64(total)/float64(len(history))))
+	if err != nil {
+		average = -1
+	}
+	return PlantWateringHistoryResponse{
+		History: history,
+		Count:   len(history),
+		Average: average.String(),
+		Total:   time.Duration(total * int(time.Millisecond)).String(),
+	}
+}
+
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response
+func (resp PlantWateringHistoryResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
