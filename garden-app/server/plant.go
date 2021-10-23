@@ -396,21 +396,19 @@ func (pr PlantsResource) getWateringHistory(plant *pkg.Plant, garden *pkg.Garden
 	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 	defer cancel()
 
-	queryResult, err := pr.influxdbClient.GetWateringHistory(ctx, plant.PlantPosition, garden.Name, timeRange)
+	history, err := pr.influxdbClient.GetWateringHistory(ctx, plant.PlantPosition, garden.Name, timeRange)
 	if err != nil {
 		return
 	}
 
-	// Read and return the result (up to limit)
-	for queryResult.Next() {
+	for _, h := range history {
 		if len(result) >= limit {
 			break
 		}
 		result = append(result, pkg.WateringHistory{
-			WateringAmount: int(queryResult.Record().Value().(float64)),
-			RecordTime:     queryResult.Record().Time(),
+			WateringAmount: h["WateringAmount"].(int),
+			RecordTime:     h["RecordTime"].(time.Time),
 		})
 	}
-	err = queryResult.Err()
 	return
 }

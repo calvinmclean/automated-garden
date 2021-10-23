@@ -7,7 +7,6 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
-	influxdb2Api "github.com/influxdata/influxdb-client-go/v2/api"
 )
 
 const (
@@ -57,7 +56,7 @@ func (q queryData) String(queryTemplate string) (string, error) {
 type Client interface {
 	GetMoisture(context.Context, int, string) (float64, error)
 	GetLastContact(context.Context, string) (time.Time, error)
-	GetWateringHistory(context.Context, int, string, time.Duration) (*influxdb2Api.QueryTableResult, error)
+	GetWateringHistory(context.Context, int, string, time.Duration) ([]map[string]interface{}, error)
 	influxdb2.Client
 }
 
@@ -139,7 +138,7 @@ func (client *client) GetLastContact(ctx context.Context, gardenName string) (re
 }
 
 // GetWateringHistory gets recent watering events for a specific Plant
-func (client *client) GetWateringHistory(ctx context.Context, plantPosition int, gardenName string, timeRange time.Duration) (*influxdb2Api.QueryTableResult, error) {
+func (client *client) GetWateringHistory(ctx context.Context, plantPosition int, gardenName string, timeRange time.Duration) ([]map[string]interface{}, error) {
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:        client.config.Bucket,
@@ -153,5 +152,18 @@ func (client *client) GetWateringHistory(ctx context.Context, plantPosition int,
 
 	// Query InfluxDB
 	queryAPI := client.QueryAPI(client.config.Org)
-	return queryAPI.Query(ctx, queryString) // TODO: Determine better return type. I cannot import WateringHistory struct here...
+	queryResult, err := queryAPI.Query(ctx, queryString)
+	if err != nil {
+		return nil, err
+	}
+
+	// Read and return the result as slice of maps
+	result := []map[string]interface{}{}
+	for queryResult.Next() {
+		result = append(result, map[string]interface{}{
+			"WateringAmount": int(queryResult.Record().Value().(float64)),
+			"RecordTime":     queryResult.Record().Time(),
+		})
+	}
+	return result, queryResult.Err()
 }

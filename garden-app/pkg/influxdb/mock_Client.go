@@ -119,15 +119,15 @@ func (_m *MockClient) GetMoisture(_a0 context.Context, _a1 int, _a2 string) (flo
 }
 
 // GetWateringHistory provides a mock function with given fields: _a0, _a1, _a2, _a3
-func (_m *MockClient) GetWateringHistory(_a0 context.Context, _a1 int, _a2 string, _a3 time.Duration) (*api.QueryTableResult, error) {
+func (_m *MockClient) GetWateringHistory(_a0 context.Context, _a1 int, _a2 string, _a3 time.Duration) ([]map[string]interface{}, error) {
 	ret := _m.Called(_a0, _a1, _a2, _a3)
 
-	var r0 *api.QueryTableResult
-	if rf, ok := ret.Get(0).(func(context.Context, int, string, time.Duration) *api.QueryTableResult); ok {
+	var r0 []map[string]interface{}
+	if rf, ok := ret.Get(0).(func(context.Context, int, string, time.Duration) []map[string]interface{}); ok {
 		r0 = rf(_a0, _a1, _a2, _a3)
 	} else {
 		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*api.QueryTableResult)
+			r0 = ret.Get(0).([]map[string]interface{})
 		}
 	}
 
