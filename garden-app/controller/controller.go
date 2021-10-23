@@ -22,7 +22,7 @@ var logger *logrus.Logger
 type Config struct {
 	InfluxDBConfig       influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig           mqtt.Config     `mapstructure:"mqtt"`
-	GardenName           string          `mapstructure:"garden_name"`
+	Garden               string          `mapstructure:"garden_name"`
 	Plants               []int           `mapstructure:"plants"`
 	PublishWateringEvent bool            `mapstructure:"publish_watering_event"`
 	PublishHealth        bool            `mapstructure:"publish_health"`
@@ -47,13 +47,13 @@ func Start(config Config) {
 
 	controller := Controller{Config: config}
 
-	logger.Infof("starting controller '%s'\n", controller.GardenName)
+	logger.Infof("starting controller '%s'\n", controller.Garden)
 
 	if len(config.Plants) > 0 {
 		logger.Infof("publishing moisture data for Plants: %v", config.Plants)
 	}
 
-	topics, err := topics(controller.MQTTConfig, controller.GardenName)
+	topics, err := controller.topics()
 	if err != nil {
 		logger.Errorf("unable to determine topics: %v", err)
 		return
@@ -76,7 +76,7 @@ func Start(config Config) {
 		}).Infof("default handler called with message: %s", string(msg.Payload()))
 	})
 	// Override configured ClientID with the GardenName from command flags
-	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.GardenName)
+	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.Garden)
 	controller.mqttClient, err = mqtt.NewMQTTClient(controller.MQTTConfig, defaultHandler, handlers...)
 	if err != nil {
 		logger.Errorf("unable to initialize MQTT client: %v", err)
@@ -91,7 +91,7 @@ func Start(config Config) {
 	wg.Add(1)
 	for _, plant := range config.Plants {
 		wg.Add(1)
-		go controller.publishMoistureData(plant, config.GardenName)
+		go controller.publishMoistureData(plant)
 	}
 	if controller.PublishHealth {
 		go controller.publishHealthInfo()
@@ -99,10 +99,10 @@ func Start(config Config) {
 	wg.Wait()
 }
 
-func (c *Controller) publishMoistureData(plant int, gardenName string) {
+func (c *Controller) publishMoistureData(plant int) {
 	for {
 		moisture := 50
-		topic := fmt.Sprintf("%s/data/moisture", gardenName)
+		topic := fmt.Sprintf("%s/data/moisture", c.Garden)
 		logger.Infof("publishing moisture data for Plant %d on topic %s: %.2f", plant, topic, moisture)
 		err := c.mqttClient.Publish(
 			topic,
@@ -175,10 +175,10 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 
 // publishHealthInfo publishes an InfluxDB line every minute to record that the controller is alive and active
 func (c *Controller) publishHealthInfo() {
-	topic := fmt.Sprintf("%s/data/health", c.GardenName)
+	topic := fmt.Sprintf("%s/data/health", c.Garden)
 	for {
 		logger.Infof("publishing health data on topic %s", topic)
-		err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.GardenName)))
+		err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
 		if err != nil {
 			logger.Errorf("encountered error publishing: %v", err)
 		}
@@ -187,14 +187,17 @@ func (c *Controller) publishHealthInfo() {
 }
 
 // topics returns a list of topics based on the Config values and provided GardenName
-func topics(config mqtt.Config, gardenName string) ([]string, error) {
-	templateData := map[string]string{"Garden": gardenName}
+func (c *Controller) topics() ([]string, error) {
 	topics := []string{}
-	templates := []string{config.WateringTopicTemplate, config.StopTopicTemplate, config.StopAllTopicTemplate}
+	templates := []string{
+		c.Config.MQTTConfig.WateringTopicTemplate,
+		c.Config.MQTTConfig.StopTopicTemplate,
+		c.Config.MQTTConfig.StopAllTopicTemplate,
+	}
 	for _, topicTemplate := range templates {
 		t := template.Must(template.New("topic").Parse(topicTemplate))
 		var topic bytes.Buffer
-		err := t.Execute(&topic, templateData)
+		err := t.Execute(&topic, c.Config)
 		if err != nil {
 			return topics, err
 		}
