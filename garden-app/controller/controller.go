@@ -27,7 +27,7 @@ type Config struct {
 	InfluxDBConfig       influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig           mqtt.Config     `mapstructure:"mqtt"`
 	Garden               string          `mapstructure:"garden_name"`
-	Plants               []int           `mapstructure:"plants"`
+	NumPlants            int             `mapstructure:"num_plants"`
 	MoistureStrategy     string          `mapstructure:"moisture_strategy"`
 	MoistureValue        int             `mapstructure:"moisture_value"`
 	MoistureInterval     time.Duration   `mapstructure:"moisture_interval"`
@@ -57,8 +57,8 @@ func Start(config Config) {
 
 	logger.Infof("starting controller '%s'\n", controller.Garden)
 
-	if len(config.Plants) > 0 {
-		logger.Infof("publishing moisture data for Plants: %v", config.Plants)
+	if config.NumPlants > 0 {
+		logger.Infof("publishing moisture data for %d Plants", config.NumPlants)
 	}
 
 	topics, err := controller.topics()
@@ -98,11 +98,11 @@ func Start(config Config) {
 	wg := &sync.WaitGroup{}
 	var plantChannels [](chan int)
 	wg.Add(1) // This waitgroup addition is for the mqttClient topic listener
-	for _, plant := range config.Plants {
+	for p := 0; p < controller.NumPlants; p++ {
 		wg.Add(1)
 		quit := make(chan int)
 		plantChannels = append(plantChannels, quit)
-		go controller.publishMoistureData(plant, quit, wg)
+		go controller.publishMoistureData(p, quit, wg)
 	}
 	healthPublisherQuit := make(chan int)
 	if controller.PublishHealth {
