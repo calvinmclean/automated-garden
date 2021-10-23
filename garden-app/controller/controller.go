@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"html/template"
+	"math/rand"
 	"strings"
 	"sync"
 	"time"
@@ -24,6 +25,9 @@ type Config struct {
 	MQTTConfig           mqtt.Config     `mapstructure:"mqtt"`
 	Garden               string          `mapstructure:"garden_name"`
 	Plants               []int           `mapstructure:"plants"`
+	MoistureStrategy     string          `mapstructure:"moisture_strategy"`
+	MoistureValue        int             `mapstructure:"moisture_value"`
+	MoistureInterval     time.Duration   `mapstructure:"moisture_interval"`
 	PublishWateringEvent bool            `mapstructure:"publish_watering_event"`
 	PublishHealth        bool            `mapstructure:"publish_health"`
 	LogLevel             logrus.Level
@@ -101,9 +105,9 @@ func Start(config Config) {
 
 func (c *Controller) publishMoistureData(plant int) {
 	for {
-		moisture := 50
+		moisture := c.createMoistureData()
 		topic := fmt.Sprintf("%s/data/moisture", c.Garden)
-		logger.Infof("publishing moisture data for Plant %d on topic %s: %.2f", plant, topic, moisture)
+		logger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
 		err := c.mqttClient.Publish(
 			topic,
 			[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
@@ -112,7 +116,32 @@ func (c *Controller) publishMoistureData(plant int) {
 			logger.Errorf("encountered error publishing: %v", err)
 		}
 
-		time.Sleep(5 * time.Second)
+		time.Sleep(c.MoistureInterval)
+	}
+}
+
+// createMoistureData uses the MoistureStrategy config to create a moisture data point
+func (c *Controller) createMoistureData() int {
+	switch c.MoistureStrategy {
+	case "random":
+		source := rand.New(rand.NewSource(time.Now().UnixNano()))
+		return source.Intn(c.MoistureValue)
+	case "constant":
+		return c.MoistureValue
+	case "increasing":
+		c.MoistureValue++
+		if c.MoistureValue > 100 {
+			c.MoistureValue = 0
+		}
+		return c.MoistureValue
+	case "decreasing":
+		c.MoistureValue--
+		if c.MoistureValue < 0 {
+			c.MoistureValue = 100
+		}
+		return c.MoistureValue
+	default:
+		return 0
 	}
 }
 
