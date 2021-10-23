@@ -45,11 +45,13 @@ func Start(config Config) {
 	})
 	logger.SetLevel(config.LogLevel)
 
-	logger.Infof("Publishing moisture data for Plants: %v", config.Plants)
-
 	controller := Controller{Config: config}
 
 	logger.Infof("starting controller '%s'\n", controller.GardenName)
+
+	if len(config.Plants) > 0 {
+		logger.Infof("publishing moisture data for Plants: %v", config.Plants)
+	}
 
 	topics, err := topics(controller.MQTTConfig, controller.GardenName)
 	if err != nil {
@@ -101,13 +103,13 @@ func (c *Controller) publishMoistureData(plant int, gardenName string) {
 	for {
 		moisture := 50
 		topic := fmt.Sprintf("%s/data/moisture", gardenName)
-		logger.Infof("Publishing moisture data for Plant %d on topic %s: %.2f", plant, topic, moisture)
+		logger.Infof("publishing moisture data for Plant %d on topic %s: %.2f", plant, topic, moisture)
 		err := c.mqttClient.Publish(
 			topic,
 			[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
 		)
 		if err != nil {
-			logger.Errorf("Encountered error publishing: %v", err)
+			logger.Errorf("encountered error publishing: %v", err)
 		}
 
 		time.Sleep(5 * time.Second)
@@ -121,13 +123,13 @@ func (c *Controller) publishWateringEvent(waterMsg pkg.WaterMessage, cmdTopic st
 	}
 	// Incoming topic is "{{.GardenName}}/command/water" but we need to publish on "{{.GardenName}}/data/water"
 	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
-	logger.Infof("Publishing watering event for Plant on topic %s: %v", dataTopic, waterMsg)
+	logger.Infof("publishing watering event for Plant on topic %s: %v", dataTopic, waterMsg)
 	err := c.mqttClient.Publish(
 		dataTopic,
 		[]byte(fmt.Sprintf("water,plant=%d millis=%d", waterMsg.PlantPosition, waterMsg.Duration)),
 	)
 	if err != nil {
-		logger.Errorf("Encountered error publishing: %v", err)
+		logger.Errorf("encountered error publishing: %v", err)
 	}
 }
 
@@ -175,10 +177,10 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 func (c *Controller) publishHealthInfo() {
 	topic := fmt.Sprintf("%s/data/health", c.GardenName)
 	for {
-		logger.Infof("Publishing health data on topic %s", topic)
+		logger.Infof("publishing health data on topic %s", topic)
 		err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.GardenName)))
 		if err != nil {
-			logger.Errorf("Encountered error publishing: %v", err)
+			logger.Errorf("encountered error publishing: %v", err)
 		}
 		time.Sleep(1 * time.Minute)
 	}
