@@ -25,6 +25,7 @@ type Config struct {
 	GardenName           string          `mapstructure:"garden_name"`
 	Plants               []int           `mapstructure:"plants"`
 	PublishWateringEvent bool            `mapstructure:"publish_watering_event"`
+	PublishHealth        bool            `mapstructure:"publish_health"`
 	LogLevel             logrus.Level
 }
 
@@ -89,6 +90,9 @@ func Start(config Config) {
 	for _, plant := range config.Plants {
 		wg.Add(1)
 		go controller.publishMoistureData(plant, config.GardenName)
+	}
+	if controller.PublishHealth {
+		go controller.publishHealthInfo()
 	}
 	wg.Wait()
 }
@@ -164,6 +168,19 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 				"topic": msg.Topic(),
 			}).Infof("received message on unexpected topic: %s", string(msg.Payload()))
 		})
+	}
+}
+
+// publishHealthInfo publishes an InfluxDB line every minute to record that the controller is alive and active
+func (c *Controller) publishHealthInfo() {
+	topic := fmt.Sprintf("%s/data/health", c.GardenName)
+	for {
+		logger.Infof("Publishing health data on topic %s", topic)
+		err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.GardenName)))
+		if err != nil {
+			logger.Errorf("Encountered error publishing: %v", err)
+		}
+		time.Sleep(1 * time.Minute)
 	}
 }
 

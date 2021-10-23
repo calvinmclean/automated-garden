@@ -10,6 +10,7 @@ var (
 	gardenName           string
 	plantsWithMoisture   []int
 	publishWateringEvent bool
+	publishHealth        bool
 
 	controllerCommand = &cobra.Command{
 		Use:   "controller",
@@ -28,6 +29,9 @@ func init() {
 
 	controllerCommand.Flags().BoolVar(&publishWateringEvent, "publish-watering-event", false, "Whether or not watering events should be published for logging")
 	viper.BindPFlag("publish_watering_event", controllerCommand.Flags().Lookup("publish-watering-event"))
+
+	controllerCommand.Flags().BoolVar(&publishHealth, "publish-health", false, "Whether or not to publish health data every minute")
+	viper.BindPFlag("publish_health", controllerCommand.Flags().Lookup("publish-health"))
 
 	rootCommand.AddCommand(controllerCommand)
 }
