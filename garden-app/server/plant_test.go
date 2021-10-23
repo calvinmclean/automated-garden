@@ -380,7 +380,7 @@ func TestPlantAction(t *testing.T) {
 		{
 			"SuccessfulWaterAction",
 			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
-				mqttClient.On("WateringTopic", "test garden").Return("garden/action/water", nil)
+				mqttClient.On("WateringTopic", "test-garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				storageClient.On("SavePlant", mock.Anything).Return(nil)
 			},
@@ -391,7 +391,7 @@ func TestPlantAction(t *testing.T) {
 		{
 			"ExecuteErrorForWaterAction",
 			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
-				mqttClient.On("WateringTopic", "test garden").Return("", errors.New("template error"))
+				mqttClient.On("WateringTopic", "test-garden").Return("", errors.New("template error"))
 			},
 			`{"water":{"duration":1000}}`,
 			`{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`,
@@ -400,7 +400,7 @@ func TestPlantAction(t *testing.T) {
 		{
 			"StorageClientErrorForWaterAction",
 			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
-				mqttClient.On("WateringTopic", "test garden").Return("garden/action/water", nil)
+				mqttClient.On("WateringTopic", "test-garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
 			},
@@ -725,6 +725,114 @@ func TestCreatePlant(t *testing.T) {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
 			}
 			storageClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestWateringHistory(t *testing.T) {
+	recordTime, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	tests := []struct {
+		name        string
+		setupMock   func(*influxdb.MockClient)
+		queryParams string
+		expected    string
+		status      int
+	}{
+		{
+			"BadRequestInvalidLimit",
+			func(*influxdb.MockClient) {},
+			"?limit=-1",
+			`{"status":"Invalid request.","error":"strconv.ParseUint: parsing \"-1\": invalid syntax"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"BadRequestInvalidTimeRange",
+			func(*influxdb.MockClient) {},
+			"?range=notTime",
+			`{"status":"Invalid request.","error":"time: invalid duration \"notTime\""}`,
+			http.StatusBadRequest,
+		},
+		{
+			"SuccessfulWaterHistoryEmpty",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).Return([]map[string]interface{}{}, nil)
+				influxdbClient.On("Close")
+			},
+			"",
+			`{"history":null,"count":0,"average":"-1ns","total":"0s"}`,
+			http.StatusOK,
+		},
+		{
+			"SuccessfulWaterHistory",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).
+					Return([]map[string]interface{}{{"WateringAmount": 3000, "RecordTime": recordTime}}, nil)
+				influxdbClient.On("Close")
+			},
+			"",
+			`{"history":[{"watering_amount":3000,"record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			http.StatusOK,
+		},
+		{
+			"SuccessfulWaterHistoryWithLimit",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).
+					Return([]map[string]interface{}{
+						{"WateringAmount": 3000, "RecordTime": recordTime},
+						{"WateringAmount": 3000, "RecordTime": recordTime.Add(1 * time.Hour)},
+					}, nil)
+				influxdbClient.On("Close")
+			},
+			"?limit=1",
+			`{"history":[{"watering_amount":3000,"record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			http.StatusOK,
+		},
+		{
+			"InfluxDBClientError",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).
+					Return([]map[string]interface{}{}, errors.New("influxdb error"))
+				influxdbClient.On("Close")
+			},
+			"",
+			`{"status":"Server Error.","error":"influxdb error"}`,
+			http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupMock(influxdbClient)
+
+			pr := PlantsResource{
+				GardensResource: GardensResource{
+					influxdbClient: influxdbClient,
+				},
+				moistureCache: map[xid.ID]float64{},
+			}
+			garden := createExampleGarden()
+			plant := createExamplePlant()
+
+			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
+			r := httptest.NewRequest("GET", fmt.Sprintf("/history%s", tt.queryParams), nil).WithContext(plantCtx)
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(pr.wateringHistory)
+
+			h.ServeHTTP(w, r)
+
+			// check HTTP response status code
+			if w.Code != tt.status {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
+			}
+
+			// check HTTP response body
+			actual := strings.TrimSpace(w.Body.String())
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			}
+			influxdbClient.AssertExpectations(t)
 		})
 	}
 }
