@@ -6,8 +6,11 @@ import (
 	"fmt"
 	"html/template"
 	"math/rand"
+	"os"
+	"os/signal"
 	"strings"
 	"sync"
+	"syscall"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -91,32 +94,66 @@ func Start(config Config) {
 	}
 
 	// Initiate publishing goroutines and wait
-	wg := sync.WaitGroup{}
-	wg.Add(1)
+	wg := &sync.WaitGroup{}
+	var plantChannels [](chan int)
+	wg.Add(1) // This waitgroup addition is for the mqttClient topic listener
 	for _, plant := range config.Plants {
 		wg.Add(1)
-		go controller.publishMoistureData(plant)
+		quit := make(chan int)
+		plantChannels = append(plantChannels, quit)
+		go controller.publishMoistureData(plant, quit, wg)
 	}
+	healthPublisherQuit := make(chan int)
 	if controller.PublishHealth {
-		go controller.publishHealthInfo()
+		wg.Add(1)
+		go controller.publishHealthInfo(healthPublisherQuit, wg)
 	}
+
+	// Close Handler
+	c := make(chan os.Signal, 1)
+	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	var shutdownStart time.Time
+	go func() {
+		<-c
+		shutdownStart = time.Now()
+		logger.Info("gracefully shutting down controller")
+		// Close channel for each moisture publishing goroutine
+		for _, q := range plantChannels {
+			close(q)
+		}
+		// Close channel for health publishing goroutine
+		if controller.PublishHealth {
+			close(healthPublisherQuit)
+		}
+		// Disconnect mqttClient and reduce waitgroup
+		logger.Info("disconnecting MQTT Client")
+		controller.mqttClient.Disconnect(1000)
+		wg.Done()
+	}()
 	wg.Wait()
+	logger.Infof("controller shutdown gracefully in %v", time.Since(shutdownStart))
 }
 
-func (c *Controller) publishMoistureData(plant int) {
+func (c *Controller) publishMoistureData(plant int, quit chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	for {
-		moisture := c.createMoistureData()
-		topic := fmt.Sprintf("%s/data/moisture", c.Garden)
-		logger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
-		err := c.mqttClient.Publish(
-			topic,
-			[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
-		)
-		if err != nil {
-			logger.Errorf("encountered error publishing: %v", err)
+		select {
+		case <-quit:
+			logger.Infof("quitting moisture data publisher for Plant %d", plant)
+			return
+		default:
+			moisture := c.createMoistureData()
+			topic := fmt.Sprintf("%s/data/moisture", c.Garden)
+			logger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
+			err := c.mqttClient.Publish(
+				topic,
+				[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
+			)
+			if err != nil {
+				logger.Errorf("encountered error publishing: %v", err)
+			}
+			interruptibleSleep(c.MoistureInterval, quit)
 		}
-
-		time.Sleep(c.MoistureInterval)
 	}
 }
 
@@ -203,15 +240,22 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 }
 
 // publishHealthInfo publishes an InfluxDB line every minute to record that the controller is alive and active
-func (c *Controller) publishHealthInfo() {
+func (c *Controller) publishHealthInfo(quit chan int, wg *sync.WaitGroup) {
+	defer wg.Done()
 	topic := fmt.Sprintf("%s/data/health", c.Garden)
 	for {
-		logger.Infof("publishing health data on topic %s", topic)
-		err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
-		if err != nil {
-			logger.Errorf("encountered error publishing: %v", err)
+		select {
+		case <-quit:
+			logger.Info("quitting health publisher")
+			return
+		default:
+			logger.Infof("publishing health data on topic %s", topic)
+			err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
+			if err != nil {
+				logger.Errorf("encountered error publishing: %v", err)
+			}
+			interruptibleSleep(1*time.Minute, quit)
 		}
-		time.Sleep(1 * time.Minute)
 	}
 }
 
@@ -233,4 +277,13 @@ func (c *Controller) topics() ([]string, error) {
 		topics = append(topics, topic.String())
 	}
 	return topics, nil
+}
+
+func interruptibleSleep(d time.Duration, interrupt chan int) {
+	select {
+	case <-interrupt:
+		break
+	case <-time.After(d):
+		break
+	}
 }
