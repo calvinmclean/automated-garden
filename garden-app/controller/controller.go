@@ -17,6 +17,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	paho "github.com/eclipse/paho.mqtt.golang"
+	"github.com/go-co-op/gocron"
 	"github.com/sirupsen/logrus"
 )
 
@@ -94,70 +95,65 @@ func Start(config Config) {
 		logger.Errorf("unable to connect to MQTT broker: %v", err.Error())
 	}
 
-	// Initiate publishing goroutines and wait
-	wg := &sync.WaitGroup{}
-	var quitChannels []chan int
-	wg.Add(1) // This waitgroup addition is for the mqttClient topic listener
+	// Initialize scheduler and schedule publishing Jobs
+	scheduler := gocron.NewScheduler(time.Local)
 	for p := 0; p < controller.NumPlants; p++ {
-		wg.Add(1)
-		quit := make(chan int)
-		quitChannels = append(quitChannels, quit)
-		go controller.publishMoistureData(p, quit, wg)
+		scheduler.Every(controller.MoistureInterval).Do(controller.publishMoistureData, p)
 	}
 	if controller.PublishHealth {
-		wg.Add(1)
-		quit := make(chan int)
-		quitChannels = append(quitChannels, quit)
-		go controller.publishHealthInfo(quit, wg)
+		scheduler.Every(controller.HealthInterval).Do(controller.publishHealthInfo)
 	}
+	scheduler.StartAsync()
 
 	// Shutdown gracefully on Ctrl+C
+	wg := &sync.WaitGroup{}
+	wg.Add(1)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	var shutdownStart time.Time
 	go func() {
 		<-quit
-		shutdownStart = controller.shutdownGracefully(quitChannels, wg)
+		shutdownStart = controller.shutdownGracefully(scheduler, wg)
 	}()
 	wg.Wait()
 	logger.Infof("controller shutdown gracefully in %v", time.Since(shutdownStart))
 }
 
-func (c *Controller) shutdownGracefully(quitChannels []chan int, wg *sync.WaitGroup) time.Time {
+func (c *Controller) shutdownGracefully(scheduler *gocron.Scheduler, wg *sync.WaitGroup) time.Time {
+	defer wg.Done()
 	shutdownStart := time.Now()
 	logger.Info("gracefully shutting down controller")
-	// Close channel for each publishing goroutine
-	for _, q := range quitChannels {
-		close(q)
-	}
-	// Disconnect mqttClient and reduce waitgroup
+
+	scheduler.Stop()
+
+	// Disconnect mqttClient
 	logger.Info("disconnecting MQTT Client")
 	c.mqttClient.Disconnect(1000)
-	wg.Done()
 
 	return shutdownStart
 }
 
-func (c *Controller) publishMoistureData(plant int, quit chan int, wg *sync.WaitGroup) {
-	defer wg.Done()
-	for {
-		select {
-		case <-quit:
-			logger.Infof("quitting moisture data publisher for Plant %d", plant)
-			return
-		default:
-			moisture := c.createMoistureData()
-			topic := fmt.Sprintf("%s/data/moisture", c.Garden)
-			logger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
-			err := c.mqttClient.Publish(
-				topic,
-				[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
-			)
-			if err != nil {
-				logger.Errorf("encountered error publishing: %v", err)
-			}
-			interruptibleSleep(c.MoistureInterval, quit)
-		}
+// publishMoistureData publishes an InfluxDB line containing moisture data for a Plant
+func (c *Controller) publishMoistureData(plant int) {
+	moisture := c.createMoistureData()
+	topic := fmt.Sprintf("%s/data/moisture", c.Garden)
+	logger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
+	err := c.mqttClient.Publish(
+		topic,
+		[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
+	)
+	if err != nil {
+		logger.Errorf("encountered error publishing: %v", err)
+	}
+}
+
+// publishHealthInfo publishes an InfluxDB line to record that the controller is alive and active
+func (c *Controller) publishHealthInfo() {
+	topic := fmt.Sprintf("%s/data/health", c.Garden)
+	logger.Infof("publishing health data on topic %s", topic)
+	err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
+	if err != nil {
+		logger.Errorf("encountered error publishing: %v", err)
 	}
 }
 
@@ -243,26 +239,6 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 	}
 }
 
-// publishHealthInfo publishes an InfluxDB line every minute to record that the controller is alive and active
-func (c *Controller) publishHealthInfo(quit chan int, wg *sync.WaitGroup) {
-	defer wg.Done()
-	topic := fmt.Sprintf("%s/data/health", c.Garden)
-	for {
-		select {
-		case <-quit:
-			logger.Info("quitting health publisher")
-			return
-		default:
-			logger.Infof("publishing health data on topic %s", topic)
-			err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
-			if err != nil {
-				logger.Errorf("encountered error publishing: %v", err)
-			}
-			interruptibleSleep(c.HealthInterval, quit)
-		}
-	}
-}
-
 // topics returns a list of topics based on the Config values and provided GardenName
 func (c *Controller) topics() ([]string, error) {
 	topics := []string{}
@@ -281,13 +257,4 @@ func (c *Controller) topics() ([]string, error) {
 		topics = append(topics, topic.String())
 	}
 	return topics, nil
-}
-
-func interruptibleSleep(d time.Duration, interrupt chan int) {
-	select {
-	case <-interrupt:
-		break
-	case <-time.After(d):
-		break
-	}
 }
