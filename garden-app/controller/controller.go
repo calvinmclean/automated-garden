@@ -33,6 +33,7 @@ type Config struct {
 	MoistureInterval     time.Duration   `mapstructure:"moisture_interval"`
 	PublishWateringEvent bool            `mapstructure:"publish_watering_event"`
 	PublishHealth        bool            `mapstructure:"publish_health"`
+	HealthInterval       time.Duration   `mapstructure:"health_interval"`
 	LogLevel             logrus.Level
 }
 
@@ -254,7 +255,7 @@ func (c *Controller) publishHealthInfo(quit chan int, wg *sync.WaitGroup) {
 			if err != nil {
 				logger.Errorf("encountered error publishing: %v", err)
 			}
-			interruptibleSleep(1*time.Minute, quit)
+			interruptibleSleep(c.HealthInterval, quit)
 		}
 	}
 }

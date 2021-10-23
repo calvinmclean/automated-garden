@@ -16,6 +16,7 @@ var (
 	moistureInterval     time.Duration
 	publishWateringEvent bool
 	publishHealth        bool
+	healthInterval       time.Duration
 
 	controllerCommand = &cobra.Command{
 		Use:   "controller",
@@ -41,14 +42,17 @@ func init() {
 	controllerCommand.Flags().IntVar(&moistureValue, "moisture-value", 100, "The value, or starting value, to use for moisture data publishing")
 	viper.BindPFlag("moisture_value", controllerCommand.Flags().Lookup("moisture-value"))
 
-	controllerCommand.Flags().DurationVar(&moistureInterval, "interval", 10*time.Second, "Interval between moisture data publishing")
-	viper.BindPFlag("moisture_interval", controllerCommand.Flags().Lookup("interval"))
+	controllerCommand.Flags().DurationVar(&moistureInterval, "moisture-interval", 10*time.Second, "Interval between moisture data publishing")
+	viper.BindPFlag("moisture_interval", controllerCommand.Flags().Lookup("moisture-interval"))
 
 	controllerCommand.Flags().BoolVar(&publishWateringEvent, "publish-watering-event", false, "Whether or not watering events should be published for logging")
 	viper.BindPFlag("publish_watering_event", controllerCommand.Flags().Lookup("publish-watering-event"))
 
 	controllerCommand.Flags().BoolVar(&publishHealth, "publish-health", false, "Whether or not to publish health data every minute")
 	viper.BindPFlag("publish_health", controllerCommand.Flags().Lookup("publish-health"))
+
+	controllerCommand.Flags().DurationVar(&healthInterval, "health-interval", time.Minute, "Interval between health data publishing")
+	viper.BindPFlag("health_interval", controllerCommand.Flags().Lookup("health-interval"))
 
 	rootCommand.AddCommand(controllerCommand)
 }
