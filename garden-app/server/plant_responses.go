@@ -56,6 +56,10 @@ func (pr PlantsResource) NewPlantResponse(plant *pkg.Plant, moisture float64, li
 				"actions",
 				fmt.Sprintf("%s%s/%s/actions", gardenPath, plantBasePath, plant.ID),
 			},
+			Link{
+				"history",
+				fmt.Sprintf("%s%s/%s/history", gardenPath, plantBasePath, plant.ID),
+			},
 		),
 	}
 }
