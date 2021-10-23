@@ -96,43 +96,46 @@ func Start(config Config) {
 
 	// Initiate publishing goroutines and wait
 	wg := &sync.WaitGroup{}
-	var plantChannels [](chan int)
+	var quitChannels []chan int
 	wg.Add(1) // This waitgroup addition is for the mqttClient topic listener
 	for p := 0; p < controller.NumPlants; p++ {
 		wg.Add(1)
 		quit := make(chan int)
-		plantChannels = append(plantChannels, quit)
+		quitChannels = append(quitChannels, quit)
 		go controller.publishMoistureData(p, quit, wg)
 	}
-	healthPublisherQuit := make(chan int)
 	if controller.PublishHealth {
 		wg.Add(1)
-		go controller.publishHealthInfo(healthPublisherQuit, wg)
+		quit := make(chan int)
+		quitChannels = append(quitChannels, quit)
+		go controller.publishHealthInfo(quit, wg)
 	}
 
-	// Close Handler
-	c := make(chan os.Signal, 1)
-	signal.Notify(c, os.Interrupt, syscall.SIGTERM)
+	// Shutdown gracefully on Ctrl+C
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
 	var shutdownStart time.Time
 	go func() {
-		<-c
-		shutdownStart = time.Now()
-		logger.Info("gracefully shutting down controller")
-		// Close channel for each moisture publishing goroutine
-		for _, q := range plantChannels {
-			close(q)
-		}
-		// Close channel for health publishing goroutine
-		if controller.PublishHealth {
-			close(healthPublisherQuit)
-		}
-		// Disconnect mqttClient and reduce waitgroup
-		logger.Info("disconnecting MQTT Client")
-		controller.mqttClient.Disconnect(1000)
-		wg.Done()
+		<-quit
+		shutdownStart = controller.shutdownGracefully(quitChannels, wg)
 	}()
 	wg.Wait()
 	logger.Infof("controller shutdown gracefully in %v", time.Since(shutdownStart))
+}
+
+func (c *Controller) shutdownGracefully(quitChannels []chan int, wg *sync.WaitGroup) time.Time {
+	shutdownStart := time.Now()
+	logger.Info("gracefully shutting down controller")
+	// Close channel for each publishing goroutine
+	for _, q := range quitChannels {
+		close(q)
+	}
+	// Disconnect mqttClient and reduce waitgroup
+	logger.Info("disconnecting MQTT Client")
+	c.mqttClient.Disconnect(1000)
+	wg.Done()
+
+	return shutdownStart
 }
 
 func (c *Controller) publishMoistureData(plant int, quit chan int, wg *sync.WaitGroup) {
