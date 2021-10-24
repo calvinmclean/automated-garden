@@ -113,24 +113,18 @@ func Start(config Config) {
 	var shutdownStart time.Time
 	go func() {
 		<-quit
-		shutdownStart = controller.shutdownGracefully(scheduler, wg)
+		shutdownStart = time.Now()
+		logger.Info("gracefully shutting down controller")
+
+		scheduler.Stop()
+
+		// Disconnect mqttClient
+		logger.Info("disconnecting MQTT Client")
+		controller.mqttClient.Disconnect(1000)
+		wg.Done()
 	}()
 	wg.Wait()
 	logger.Infof("controller shutdown gracefully in %v", time.Since(shutdownStart))
-}
-
-func (c *Controller) shutdownGracefully(scheduler *gocron.Scheduler, wg *sync.WaitGroup) time.Time {
-	defer wg.Done()
-	shutdownStart := time.Now()
-	logger.Info("gracefully shutting down controller")
-
-	scheduler.Stop()
-
-	// Disconnect mqttClient
-	logger.Info("disconnecting MQTT Client")
-	c.mqttClient.Disconnect(1000)
-
-	return shutdownStart
 }
 
 // publishMoistureData publishes an InfluxDB line containing moisture data for a Plant
