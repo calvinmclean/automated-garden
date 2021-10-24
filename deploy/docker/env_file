@@ -8,10 +8,10 @@ INFLUXDB_ORG="garden"
 INFLUXDB_BUCKET="garden"
 
 # Telegraf
-MQTT_WATER_TOPIC="test-garden/data/water"
-MQTT_MOISTURE_TOPIC="test-garden/data/moisture"
-MQTT_LOGGING_TOPIC="test-garden/data/logs"
-MQTT_HEALTH_TOPIC="test-garden/data/health"
+MQTT_WATER_TOPIC="+/data/water"
+MQTT_MOISTURE_TOPIC="+/data/moisture"
+MQTT_LOGGING_TOPIC="+/data/logs"
+MQTT_HEALTH_TOPIC="+/data/health"
 
 # Grafana
 GF_SECURITY_ADMIN_USER="${ADMIN_USER}"
