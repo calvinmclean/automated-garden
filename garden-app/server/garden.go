@@ -62,9 +62,8 @@ func (gr GardensResource) routes(pr PlantsResource) chi.Router {
 			r.Use(gr.restrictEndDatedMiddleware)
 
 			r.Get("/health", gr.getGardenHealth)
+			r.Mount(plantBasePath, pr.routes())
 		})
-
-		r.Mount(plantBasePath, pr.routes())
 	})
 	return r
 }
