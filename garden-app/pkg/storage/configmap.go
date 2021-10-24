@@ -90,7 +90,7 @@ func (c *ConfigMapClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
 func (c *ConfigMapClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 	result := []*pkg.Garden{}
 	for _, g := range c.gardens {
-		if getEndDated || (!getEndDated && g.EndDate == nil) {
+		if getEndDated || !g.EndDated() {
 			result = append(result, g)
 		}
 	}
@@ -112,8 +112,7 @@ func (c *ConfigMapClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error)
 func (c *ConfigMapClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
 	result := []*pkg.Plant{}
 	for _, p := range c.gardens[garden].Plants {
-		// Only return end-dated plants if specifically asked for
-		if getEndDated || (!getEndDated && p.EndDate == nil) {
+		if getEndDated || !p.EndDated() {
 			result = append(result, p)
 		}
 	}

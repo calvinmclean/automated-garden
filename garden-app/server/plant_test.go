@@ -286,6 +286,65 @@ func TestBackwardsCompatibleActionMiddleware(t *testing.T) {
 	})
 }
 
+func TestPlantRestrictEndDatedMiddleware(t *testing.T) {
+	pr := PlantsResource{
+		GardensResource: GardensResource{},
+	}
+	plant := createExamplePlant()
+	endDatedPlant := createExamplePlant()
+	endDate := time.Now().Add(-1 * time.Minute)
+	endDatedPlant.EndDate = &endDate
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		render.Status(r, http.StatusOK)
+	}
+
+	router := chi.NewRouter()
+	router.Route("/plant", func(r chi.Router) {
+		r.Use(pr.restrictEndDatedMiddleware)
+		r.Get("/", testHandler)
+	})
+
+	tests := []struct {
+		name     string
+		plant    *pkg.Plant
+		code     int
+		expected string
+	}{
+		{
+			"PlantNotEndDated",
+			plant,
+			http.StatusOK,
+			"",
+		},
+		{
+			"PlantEndDated",
+			endDatedPlant,
+			http.StatusBadRequest,
+			`{"status":"Invalid request.","error":"resource not available for end-dated Plant"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), plantCtxKey, tt.plant)
+			r := httptest.NewRequest("GET", "/plant", nil).WithContext(ctx)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, r)
+
+			// check HTTP response status code
+			if w.Code != tt.code {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
+			}
+			// check HTTP response body
+			actual := strings.TrimSpace(w.Body.String())
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			}
+		})
+	}
+}
+
 func TestGetPlant(t *testing.T) {
 	tests := []struct {
 		name      string

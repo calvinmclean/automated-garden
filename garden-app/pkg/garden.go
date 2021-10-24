@@ -60,3 +60,8 @@ func (g *Garden) Health(influxdbClient influxdb.Client) GardenHealth {
 		Details:     fmt.Sprintf("last contact from Garden was %v ago", between),
 	}
 }
+
+// EndDated returns true if the Garden is end-dated
+func (g *Garden) EndDated() bool {
+	return g.EndDate != nil && g.EndDate.Before(time.Now())
+}

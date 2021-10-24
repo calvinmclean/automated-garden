@@ -78,11 +78,17 @@ func (pr PlantsResource) routes() chi.Router {
 	r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
 		r.Use(pr.plantContextMiddleware)
 
-		r.Post("/action", pr.plantAction)
-		r.Get("/history", pr.wateringHistory)
 		r.Get("/", pr.getPlant)
 		r.Patch("/", pr.updatePlant)
 		r.Delete("/", pr.endDatePlant)
+
+		// Add new middleware to restrict certain paths to non-end-dated Plants
+		r.Route("/", func(r chi.Router) {
+			r.Use(pr.restrictEndDatedMiddleware)
+
+			r.Post("/action", pr.plantAction)
+			r.Get("/history", pr.wateringHistory)
+		})
 	})
 	return r
 }
@@ -96,13 +102,33 @@ func (pr PlantsResource) backwardCompatibleRoutes() chi.Router {
 	r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
 		r.Use(pr.plantContextMiddleware)
 
-		r.With(pr.backwardsCompatibleActionMiddleware).Post("/action", pr.plantAction)
-		r.With(pr.backwardsCompatibleActionMiddleware).Get("/history", pr.wateringHistory)
 		r.Get("/", pr.getPlant)
 		r.Patch("/", pr.updatePlant)
 		r.Delete("/", pr.endDatePlant)
+
+		// Add new middleware to restrict certain paths to non-end-dated Plants
+		r.Route("/", func(r chi.Router) {
+			r.Use(pr.restrictEndDatedMiddleware)
+
+			r.With(pr.backwardsCompatibleActionMiddleware).Post("/action", pr.plantAction)
+			r.With(pr.backwardsCompatibleActionMiddleware).Get("/history", pr.wateringHistory)
+		})
+
 	})
 	return r
+}
+
+// restrictEndDatedMiddleware will return a 400 response if the requested Plant is end-dated
+func (pr PlantsResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+
+		if plant.EndDated() {
+			render.Render(w, r, ErrInvalidRequest(fmt.Errorf("resource not available for end-dated Plant")))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // plantContextMiddleware middleware is used to load a Plant object from the URL
@@ -284,7 +310,7 @@ func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plants := []*pkg.Plant{}
 	for _, p := range garden.Plants {
-		if getEndDated || (!getEndDated && p.EndDate == nil) {
+		if getEndDated || (p.EndDate == nil || p.EndDate.After(time.Now())) {
 			plants = append(plants, p)
 		}
 	}

@@ -56,3 +56,26 @@ func TestHealth(t *testing.T) {
 		})
 	}
 }
+
+func TestGardenEndDated(t *testing.T) {
+	pastDate := time.Now().Add(-1 * time.Minute)
+	futureDate := time.Now().Add(time.Minute)
+	tests := []struct {
+		name     string
+		endDate  *time.Time
+		expected bool
+	}{
+		{"NilEndDateFalse", nil, false},
+		{"EndDateFutureEndDateFalse", &futureDate, false},
+		{"EndDatePastEndDateTrue", &pastDate, true},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Garden{EndDate: tt.endDate}
+			if g.EndDated() != tt.expected {
+				t.Errorf("Unexpected result: expected=%v, actual=%v", tt.expected, g.EndDated())
+			}
+		})
+	}
+}

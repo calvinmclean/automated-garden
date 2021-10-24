@@ -56,11 +56,30 @@ func (gr GardensResource) routes(pr PlantsResource) chi.Router {
 		r.Get("/", gr.getGarden)
 		r.Patch("/", gr.updateGarden)
 		r.Delete("/", gr.endDateGarden)
-		r.Get("/health", gr.getGardenHealth)
+
+		// Add new middleware to restrict certain paths to non-end-dated Gardens
+		r.Route("/", func(r chi.Router) {
+			r.Use(gr.restrictEndDatedMiddleware)
+
+			r.Get("/health", gr.getGardenHealth)
+		})
 
 		r.Mount(plantBasePath, pr.routes())
 	})
 	return r
+}
+
+// restrictEndDatedMiddleware will return a 400 response if the requested Garden is end-dated
+func (gr GardensResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+
+		if garden.EndDated() {
+			render.Render(w, r, ErrInvalidRequest(fmt.Errorf("resource not available for end-dated Garden")))
+			return
+		}
+		next.ServeHTTP(w, r)
+	})
 }
 
 // gardenContextMiddleware middleware is used to load a Garden object from the URL

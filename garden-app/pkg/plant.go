@@ -56,3 +56,8 @@ type WateringHistory struct {
 func (p *Plant) WateringAction() *WaterAction {
 	return &WaterAction{Duration: p.WateringStrategy.WateringAmount}
 }
+
+// EndDated returns true if the Plant is end-dated
+func (p *Plant) EndDated() bool {
+	return p.EndDate != nil && p.EndDate.Before(time.Now())
+}

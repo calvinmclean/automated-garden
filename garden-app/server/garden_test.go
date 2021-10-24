@@ -124,6 +124,63 @@ func TestGardenContextMiddleware(t *testing.T) {
 	}
 }
 
+func TestGardenRestrictEndDatedMiddleware(t *testing.T) {
+	gr := GardensResource{}
+	garden := createExampleGarden()
+	endDatedGarden := createExampleGarden()
+	endDate := time.Now().Add(-1 * time.Minute)
+	endDatedGarden.EndDate = &endDate
+	testHandler := func(w http.ResponseWriter, r *http.Request) {
+		render.Status(r, http.StatusOK)
+	}
+
+	router := chi.NewRouter()
+	router.Route("/garden", func(r chi.Router) {
+		r.Use(gr.restrictEndDatedMiddleware)
+		r.Get("/", testHandler)
+	})
+
+	tests := []struct {
+		name     string
+		garden   *pkg.Garden
+		code     int
+		expected string
+	}{
+		{
+			"GardenNotEndDated",
+			garden,
+			http.StatusOK,
+			"",
+		},
+		{
+			"GardenEndDated",
+			endDatedGarden,
+			http.StatusBadRequest,
+			`{"status":"Invalid request.","error":"resource not available for end-dated Garden"}`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
+			r := httptest.NewRequest("GET", "/garden", nil).WithContext(ctx)
+			w := httptest.NewRecorder()
+
+			router.ServeHTTP(w, r)
+
+			// check HTTP response status code
+			if w.Code != tt.code {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
+			}
+			// check HTTP response body
+			actual := strings.TrimSpace(w.Body.String())
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			}
+		})
+	}
+}
+
 func TestCreateGarden(t *testing.T) {
 	tests := []struct {
 		name           string
