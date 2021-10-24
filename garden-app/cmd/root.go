@@ -30,8 +30,7 @@ func Execute() error {
 func init() {
 	cobra.OnInitialize(initConfig, parseLogLevel)
 
-	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "", "path to config file")
-	rootCommand.MarkPersistentFlagRequired("config")
+	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "config.yaml", "path to config file")
 
 	rootCommand.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "level of logging to display")
 	rootCommand.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
