@@ -194,6 +194,60 @@ func TestGardenRequest(t *testing.T) {
 			"missing required name field",
 		},
 		{
+			"InvalidNameErrorError$",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden$",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError#",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden#",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError*",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden*",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError>",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden>",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError+",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden+",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError/",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden/",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
 			"CreatingPlantsNotAllowedError",
 			&GardenRequest{
 				Garden: &pkg.Garden{

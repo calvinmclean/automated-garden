@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"net/http"
+	"regexp"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -68,6 +69,10 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 	}
 	if g.Name == "" {
 		return errors.New("missing required name field")
+	}
+	illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
+	if illegalRegexp.MatchString(g.Name) {
+		return errors.New("one or more invalid characters in Garden name")
 	}
 	if len(g.Plants) > 0 {
 		return errors.New("cannot add or modify Plants with this request")
