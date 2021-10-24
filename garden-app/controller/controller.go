@@ -101,7 +101,7 @@ func Start(config Config) {
 		scheduler.Every(controller.MoistureInterval).Do(controller.publishMoistureData, p)
 	}
 	if controller.PublishHealth {
-		scheduler.Every(controller.HealthInterval).Do(controller.publishHealthInfo)
+		scheduler.Every(controller.HealthInterval).Do(controller.publishHealthData)
 	}
 	scheduler.StartAsync()
 
@@ -141,8 +141,8 @@ func (c *Controller) publishMoistureData(plant int) {
 	}
 }
 
-// publishHealthInfo publishes an InfluxDB line to record that the controller is alive and active
-func (c *Controller) publishHealthInfo() {
+// publishHealthData publishes an InfluxDB line to record that the controller is alive and active
+func (c *Controller) publishHealthData() {
 	topic := fmt.Sprintf("%s/data/health", c.Garden)
 	logger.Infof("publishing health data on topic %s", topic)
 	err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
