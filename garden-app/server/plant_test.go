@@ -600,7 +600,7 @@ func TestEndDatePlant(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SavePlant", mock.Anything).Return(nil)
 			},
-			`{"name":"test plant","id":"[0-9a-v]{20}","garden_id":null,"plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"actions","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/actions"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/history"}\]}`,
+			`{"name":"test plant","id":"[0-9a-v]{20}","garden_id":null,"plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
 		},
 		{
