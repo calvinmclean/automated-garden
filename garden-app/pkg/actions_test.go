@@ -360,3 +360,139 @@ func TestWaterActionExecute(t *testing.T) {
 		})
 	}
 }
+
+func TestGardenAction(t *testing.T) {
+	garden := &Garden{
+		Name: "garden",
+	}
+
+	tests := []struct {
+		name      string
+		action    *GardenAction
+		setupMock func(*mqtt.MockClient, *influxdb.MockClient)
+		assert    func(error, *testing.T)
+	}{
+		{
+			"SuccessfulGardenActionWithLightAction",
+			&GardenAction{
+				Light: &LightAction{},
+			},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
+				mqttClient.On("Connect").Return(nil)
+				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Disconnect", mock.Anything)
+			},
+			func(err error, t *testing.T) {
+				if err != nil {
+					t.Errorf("Unexpected error occurred when executing GardenAction: %v", err)
+				}
+			},
+		},
+		{
+			"FailedGardenActionWithLightAction",
+			&GardenAction{
+				Light: &LightAction{},
+			},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("LightTopic", "garden").Return("", errors.New("template error"))
+			},
+			func(err error, t *testing.T) {
+				if err == nil {
+					t.Error("Expected error, but nil was returned")
+				}
+				if err.Error() != "unable to fill MQTT topic template: template error" {
+					t.Errorf("Unexpected error string: %v", err)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plant := &Plant{}
+			mqttClient := new(mqtt.MockClient)
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupMock(mqttClient, influxdbClient)
+
+			err := tt.action.Execute(garden, plant, mqttClient, influxdbClient)
+			tt.assert(err, t)
+			mqttClient.AssertExpectations(t)
+			influxdbClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestLightActionExecute(t *testing.T) {
+	garden := &Garden{
+		Name: "garden",
+	}
+
+	tests := []struct {
+		name      string
+		action    *LightAction
+		setupMock func(*mqtt.MockClient, *influxdb.MockClient)
+		assert    func(error, *testing.T)
+	}{
+		{
+			"Successful",
+			&LightAction{},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
+				mqttClient.On("Connect").Return(nil)
+				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Disconnect", mock.Anything)
+			},
+			func(err error, t *testing.T) {
+				if err != nil {
+					t.Errorf("Unexpected error occurred when executing LightAction: %v", err)
+				}
+			},
+		},
+		{
+			"TopicTemplateError",
+			&LightAction{},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("LightTopic", "garden").Return("", errors.New("template error"))
+			},
+			func(err error, t *testing.T) {
+				if err == nil {
+					t.Error("Expected error, but nil was returned")
+				}
+				if err.Error() != "unable to fill MQTT topic template: template error" {
+					t.Errorf("Unexpected error string: %v", err)
+				}
+			},
+		},
+		{
+			"MQTTConnectError",
+			&LightAction{},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
+				mqttClient.On("Connect").Return(errors.New("mqtt error"))
+			},
+			func(err error, t *testing.T) {
+				if err == nil {
+					t.Error("Expected error, but nil was returned")
+				}
+				if err.Error() != "unable to connect to MQTT broker: mqtt error" {
+					t.Errorf("Unexpected error string: %v", err)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plant := &Plant{}
+			mqttClient := new(mqtt.MockClient)
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupMock(mqttClient, influxdbClient)
+
+			err := tt.action.Execute(garden, plant, mqttClient, influxdbClient)
+			tt.assert(err, t)
+			mqttClient.AssertExpectations(t)
+			influxdbClient.AssertExpectations(t)
+		})
+	}
+}

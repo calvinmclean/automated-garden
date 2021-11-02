@@ -18,6 +18,7 @@ type Config struct {
 	WateringTopicTemplate string `mapstructure:"watering_topic"`
 	StopTopicTemplate     string `mapstructure:"stop_topic"`
 	StopAllTopicTemplate  string `mapstructure:"stop_all_topic"`
+	LightTopicTemplate    string `mapstructure:"light_topic"`
 }
 
 // Client is an interface that allows access to MQTT functionality within the garden-app
@@ -26,6 +27,7 @@ type Client interface {
 	WateringTopic(string) (string, error)
 	StopTopic(string) (string, error)
 	StopAllTopic(string) (string, error)
+	LightTopic(string) (string, error)
 	Connect() error
 	Disconnect(uint)
 }
@@ -99,6 +101,11 @@ func (c *client) StopTopic(gardenName string) (string, error) {
 // StopAllTopic returns the topic string for stopping watering all plants in a garden
 func (c *client) StopAllTopic(gardenName string) (string, error) {
 	return c.executeTopicTemplate(c.StopAllTopicTemplate, gardenName)
+}
+
+// LightTopic returns the topic string for changing the lighting state in a Garden
+func (c *client) LightTopic(gardenName string) (string, error) {
+	return c.executeTopicTemplate(c.LightTopicTemplate, gardenName)
 }
 
 // executeTopicTemplate is a helper function used by all the exported topic evaluation functions

@@ -8,6 +8,7 @@ mqtt:
   watering_topic: "{{.Garden}}/command/water"
   stop_topic: "{{.Garden}}/command/stop"
   stop_all_topic: "{{.Garden}}/command/stop_all"
+  light_topic: "{{.Garden}}/command/light"
 influxdb:
   address: "http://localhost:8086"
   token: "my-token"

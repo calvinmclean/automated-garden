@@ -117,3 +117,47 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 
 	return mqttClient.Publish(topic, msg)
 }
+
+// GardenAction collects all the possible actions for a Garden into a single struct so these can easily be
+// received as one request
+type GardenAction struct {
+	Light *LightAction `json:"light"`
+}
+
+// LightAction is an action for turning on or off a light for the Garden. The State field is optional and it will just toggle
+// the current state if left empty.
+type LightAction struct {
+	State string `json:"state"`
+}
+
+// Execute sends an MQTT message to the garden controller to change the state of the light
+func (action *LightAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
+	msg, err := json.Marshal(action)
+	if err != nil {
+		return fmt.Errorf("unable to marshal LightAction to JSON: %v", err)
+	}
+
+	topic, err := mqttClient.LightTopic(g.Name)
+	if err != nil {
+		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
+	}
+
+	if err = mqttClient.Connect(); err != nil {
+		return fmt.Errorf("unable to connect to MQTT broker: %v", err)
+	}
+	defer mqttClient.Disconnect(250)
+
+	return mqttClient.Publish(topic, msg)
+}
+
+// Execute is responsible for performing the actual individual actions in this GardenAction.
+// The actions are executed in a deliberate order to be most intuitive for a user that wants
+// to perform multiple actions with one request
+func (action *GardenAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
+	if action.Light != nil {
+		if err := action.Light.Execute(g, p, mqttClient, influxdbClient); err != nil {
+			return err
+		}
+	}
+	return nil
+}
