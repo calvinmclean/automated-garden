@@ -145,7 +145,6 @@ func TestAggregateActionRequest(t *testing.T) {
 	t.Run("Successful", func(t *testing.T) {
 		ar := &PlantActionRequest{
 			PlantAction: &pkg.PlantAction{
-				Stop:  &pkg.StopAction{},
 				Water: &pkg.WaterAction{},
 			},
 		}

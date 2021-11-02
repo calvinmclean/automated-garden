@@ -50,7 +50,7 @@ type PlantActionRequest struct {
 func (action *PlantActionRequest) Bind(r *http.Request) error {
 	// a.AggregateAction is nil if no AggregateAction fields are sent in the request. Return an
 	// error to avoid a nil pointer dereference.
-	if action == nil || action.PlantAction == nil || (action.Water == nil && action.Stop == nil) {
+	if action == nil || action.PlantAction == nil || (action.Water == nil) {
 		return errors.New("missing required action fields")
 	}
 	return nil
