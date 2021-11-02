@@ -205,7 +205,7 @@ func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 
-	action := &AggregateActionRequest{}
+	action := &PlantActionRequest{}
 	if err := render.Bind(r, action); err != nil {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

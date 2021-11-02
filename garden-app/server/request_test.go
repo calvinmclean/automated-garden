@@ -120,7 +120,7 @@ func TestPlantRequest(t *testing.T) {
 func TestAggregateActionRequest(t *testing.T) {
 	tests := []struct {
 		name string
-		ar   *AggregateActionRequest
+		ar   *PlantActionRequest
 		err  string
 	}{
 		{
@@ -130,21 +130,21 @@ func TestAggregateActionRequest(t *testing.T) {
 		},
 		{
 			"EmptyActionError",
-			&AggregateActionRequest{},
+			&PlantActionRequest{},
 			"missing required action fields",
 		},
 		{
 			"EmptyAggregateActionError",
-			&AggregateActionRequest{
-				AggregateAction: &pkg.AggregateAction{},
+			&PlantActionRequest{
+				PlantAction: &pkg.PlantAction{},
 			},
 			"missing required action fields",
 		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
-		ar := &AggregateActionRequest{
-			AggregateAction: &pkg.AggregateAction{
+		ar := &PlantActionRequest{
+			PlantAction: &pkg.PlantAction{
 				Stop:  &pkg.StopAction{},
 				Water: &pkg.WaterAction{},
 			},

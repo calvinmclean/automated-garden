@@ -10,17 +10,17 @@ import (
 	"github.com/rs/xid"
 )
 
-// AggregateAction collects all the possible actions into a single struct/request so one
-// or more action can be performed from a single request
-type AggregateAction struct {
+// PlantAction collects all the possible actions for a Plant into a single struct so these can easily be
+// received as one request
+type PlantAction struct {
 	Water *WaterAction `json:"water"`
 	Stop  *StopAction  `json:"stop"`
 }
 
-// Execute is responsible for performing the actual individual actions in this aggregate.
+// Execute is responsible for performing the actual individual actions in this PlantAction.
 // The actions are executed in a deliberate order to be most intuitive for a user that wants
 // to perform multiple actions with one request
-func (action *AggregateAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
+func (action *PlantAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
 	if action.Stop != nil {
 		if err := action.Stop.Execute(g, p, mqttClient, influxdbClient); err != nil {
 			return err

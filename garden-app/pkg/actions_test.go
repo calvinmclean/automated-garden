@@ -9,30 +9,30 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func TestAggregateAction(t *testing.T) {
+func TestPlantAction(t *testing.T) {
 	garden := &Garden{
 		Name: "garden",
 	}
 
 	tests := []struct {
 		name      string
-		action    *AggregateAction
+		action    *PlantAction
 		setupMock func(*mqtt.MockClient, *influxdb.MockClient)
 		assert    func(error, *testing.T)
 	}{
 		{
-			"SuccessfulEmptyAggregateAction",
-			&AggregateAction{},
+			"SuccessfulEmptyPlantAction",
+			&PlantAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
 			func(err error, t *testing.T) {
 				if err != nil {
-					t.Errorf("Unexpected error occurred when executing AggregateAction: %v", err)
+					t.Errorf("Unexpected error occurred when executing PlantAction: %v", err)
 				}
 			},
 		},
 		{
-			"SuccessfulAggregateActionWithStopAction",
-			&AggregateAction{
+			"SuccessfulPlantActionWithStopAction",
+			&PlantAction{
 				Stop: &StopAction{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -43,13 +43,13 @@ func TestAggregateAction(t *testing.T) {
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
-					t.Errorf("Unexpected error occurred when executing AggregateAction: %v", err)
+					t.Errorf("Unexpected error occurred when executing PlantAction: %v", err)
 				}
 			},
 		},
 		{
-			"FailedAggregateActionWithStopAction",
-			&AggregateAction{
+			"FailedPlantActionWithStopAction",
+			&PlantAction{
 				Stop: &StopAction{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -65,8 +65,8 @@ func TestAggregateAction(t *testing.T) {
 			},
 		},
 		{
-			"SuccessfulAggregateActionWithWaterAction",
-			&AggregateAction{
+			"SuccessfulPlantActionWithWaterAction",
+			&PlantAction{
 				Water: &WaterAction{
 					Duration: 1000,
 				},
@@ -79,13 +79,13 @@ func TestAggregateAction(t *testing.T) {
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
-					t.Errorf("Unexpected error occurred when executing AggregateAction: %v", err)
+					t.Errorf("Unexpected error occurred when executing PlantAction: %v", err)
 				}
 			},
 		},
 		{
-			"SuccessfulAggregateActionWithWaterAction",
-			&AggregateAction{
+			"FailedPlantActionWithWaterAction",
+			&PlantAction{
 				Water: &WaterAction{
 					Duration: 1000,
 				},
