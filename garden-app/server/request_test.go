@@ -117,7 +117,7 @@ func TestPlantRequest(t *testing.T) {
 	}
 }
 
-func TestAggregateActionRequest(t *testing.T) {
+func TestPlantActionRequest(t *testing.T) {
 	tests := []struct {
 		name string
 		ar   *PlantActionRequest
@@ -134,7 +134,7 @@ func TestAggregateActionRequest(t *testing.T) {
 			"missing required action fields",
 		},
 		{
-			"EmptyAggregateActionError",
+			"EmptyPlantActionError",
 			&PlantActionRequest{
 				PlantAction: &pkg.PlantAction{},
 			},
@@ -151,7 +151,7 @@ func TestAggregateActionRequest(t *testing.T) {
 		r := httptest.NewRequest("", "/", nil)
 		err := ar.Bind(r)
 		if err != nil {
-			t.Errorf("Unexpected error reading AggregateActionRequest JSON: %v", err)
+			t.Errorf("Unexpected error reading PlantActionRequest JSON: %v", err)
 		}
 	})
 	for _, tt := range tests {
@@ -159,7 +159,60 @@ func TestAggregateActionRequest(t *testing.T) {
 			r := httptest.NewRequest("", "/", nil)
 			err := tt.ar.Bind(r)
 			if err == nil {
-				t.Error("Expected error reading AggregateActionRequest JSON, but none occurred")
+				t.Error("Expected error reading PlantActionRequest JSON, but none occurred")
+				return
+			}
+			if err.Error() != tt.err {
+				t.Errorf("Unexpected error string: %v", err)
+			}
+		})
+	}
+}
+
+func TestGardenActionRequest(t *testing.T) {
+	tests := []struct {
+		name string
+		ar   *GardenActionRequest
+		err  string
+	}{
+		{
+			"EmptyRequestError",
+			nil,
+			"missing required action fields",
+		},
+		{
+			"EmptyActionError",
+			&GardenActionRequest{},
+			"missing required action fields",
+		},
+		{
+			"EmptyGardenActionError",
+			&GardenActionRequest{
+				GardenAction: &pkg.GardenAction{},
+			},
+			"missing required action fields",
+		},
+	}
+
+	t.Run("Successful", func(t *testing.T) {
+		ar := &GardenActionRequest{
+			GardenAction: &pkg.GardenAction{
+				Light: &pkg.LightAction{},
+				Stop:  &pkg.StopAction{},
+			},
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading GardenActionRequest JSON: %v", err)
+		}
+	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest("", "/", nil)
+			err := tt.ar.Bind(r)
+			if err == nil {
+				t.Error("Expected error reading PlantActionRequest JSON, but none occurred")
 				return
 			}
 			if err.Error() != tt.err {

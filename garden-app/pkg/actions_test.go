@@ -161,12 +161,11 @@ func TestStopActionExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plant := &Plant{}
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, plant, mqttClient, influxdbClient)
+			err := tt.action.Execute(garden, mqttClient, influxdbClient)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -410,12 +409,11 @@ func TestGardenAction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plant := &Plant{}
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, plant, mqttClient, influxdbClient)
+			err := tt.action.Execute(garden, mqttClient, influxdbClient)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -484,12 +482,11 @@ func TestLightActionExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plant := &Plant{}
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, plant, mqttClient, influxdbClient)
+			err := tt.action.Execute(garden, mqttClient, influxdbClient)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)

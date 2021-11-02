@@ -8,6 +8,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -25,6 +26,7 @@ const (
 type GardensResource struct {
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
+	mqttClient     mqtt.Client
 	config         Config
 }
 
@@ -34,12 +36,21 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 		config: config,
 	}
 
+	// Initialize MQTT Client
+	gr.mqttClient, err = mqtt.NewMQTTClient(gr.config.MQTTConfig, nil)
+	if err != nil {
+		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
+		return
+	}
+
+	// Initialize Storage Client
 	gr.storageClient, err = storage.NewStorageClient(config.StorageConfig)
 	if err != nil {
 		err = fmt.Errorf("unable to initialize storage client: %v", err)
 		return
 	}
 
+	// Initialize InfluxDB Client
 	gr.influxdbClient = influxdb.NewClient(gr.config.InfluxDBConfig)
 
 	return
@@ -61,6 +72,7 @@ func (gr GardensResource) routes(pr PlantsResource) chi.Router {
 		r.Route("/", func(r chi.Router) {
 			r.Use(gr.restrictEndDatedMiddleware)
 
+			r.Post("/action", gr.gardenAction)
 			r.Get("/health", gr.getGardenHealth)
 			r.Mount(plantBasePath, pr.routes())
 		})
@@ -209,4 +221,26 @@ func (gr GardensResource) getGardenHealth(w http.ResponseWriter, r *http.Request
 	if err := render.Render(w, r, GardenHealthResponse{health}); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
+}
+
+// gardenAction reads a GardenAction request and uses it to execute one of the actions
+// that is available to run against a Plant. This one endpoint is used for all the different
+// kinds of actions so the action information is carried in the request body
+func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+
+	action := &GardenActionRequest{}
+	if err := render.Bind(r, action); err != nil {
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	logger.Infof("Received request to perform action on Garden %s\n", garden.ID)
+	if err := action.Execute(garden, gr.mqttClient, gr.influxdbClient); err != nil {
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	render.Status(r, http.StatusAccepted)
+	render.DefaultResponder(w, r, nil)
 }

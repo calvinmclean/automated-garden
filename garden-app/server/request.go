@@ -40,7 +40,7 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	return nil
 }
 
-// PlantActionRequest wraps a AggregateAction into a request so we can handle Bind/Render in this package
+// PlantActionRequest wraps a PlantAction into a request so we can handle Bind/Render in this package
 type PlantActionRequest struct {
 	*pkg.PlantAction
 }
@@ -48,9 +48,25 @@ type PlantActionRequest struct {
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
 // It will verify that the request is valid
 func (action *PlantActionRequest) Bind(r *http.Request) error {
-	// a.AggregateAction is nil if no AggregateAction fields are sent in the request. Return an
+	// PlantAction is nil if no PlantAction fields are sent in the request. Return an
 	// error to avoid a nil pointer dereference.
 	if action == nil || action.PlantAction == nil || (action.Water == nil) {
+		return errors.New("missing required action fields")
+	}
+	return nil
+}
+
+// GardenActionRequest wraps a GardenAction into a request so we can handle Bind/Render in this package
+type GardenActionRequest struct {
+	*pkg.GardenAction
+}
+
+// Bind is used to make this struct compatible with our REST API implemented with go-chi.
+// It will verify that the request is valid
+func (action *GardenActionRequest) Bind(r *http.Request) error {
+	// PlantAction is nil if no PlantAction fields are sent in the request. Return an
+	// error to avoid a nil pointer dereference.
+	if action == nil || action.GardenAction == nil || (action.Light == nil && action.Stop == nil) {
 		return errors.New("missing required action fields")
 	}
 	return nil

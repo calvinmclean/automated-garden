@@ -482,8 +482,8 @@ func TestPlantAction(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
+					mqttClient:    mqttClient,
 				},
-				mqttClient:    mqttClient,
 				moistureCache: map[xid.ID]float64{},
 			}
 			garden := createExampleGarden()

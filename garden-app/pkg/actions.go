@@ -95,14 +95,14 @@ type GardenAction struct {
 // Execute is responsible for performing the actual individual actions in this GardenAction.
 // The actions are executed in a deliberate order to be most intuitive for a user that wants
 // to perform multiple actions with one request
-func (action *GardenAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
+func (action *GardenAction) Execute(g *Garden, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
 	if action.Stop != nil {
-		if err := action.Stop.Execute(g, p, mqttClient, influxdbClient); err != nil {
+		if err := action.Stop.Execute(g, mqttClient, influxdbClient); err != nil {
 			return err
 		}
 	}
 	if action.Light != nil {
-		if err := action.Light.Execute(g, p, mqttClient, influxdbClient); err != nil {
+		if err := action.Light.Execute(g, mqttClient, influxdbClient); err != nil {
 			return err
 		}
 	}
@@ -116,7 +116,7 @@ type LightAction struct {
 }
 
 // Execute sends an MQTT message to the garden controller to change the state of the light
-func (action *LightAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
+func (action *LightAction) Execute(g *Garden, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
 	msg, err := json.Marshal(action)
 	if err != nil {
 		return fmt.Errorf("unable to marshal LightAction to JSON: %v", err)
@@ -142,7 +142,7 @@ type StopAction struct {
 }
 
 // Execute sends the message over MQTT to the embedded garden controller
-func (action *StopAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, _ influxdb.Client) error {
+func (action *StopAction) Execute(g *Garden, mqttClient mqtt.Client, _ influxdb.Client) error {
 	topicFunc := mqttClient.StopTopic
 	if action.All {
 		topicFunc = mqttClient.StopAllTopic

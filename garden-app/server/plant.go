@@ -10,7 +10,6 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-co-op/gocron"
@@ -27,7 +26,6 @@ const (
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
 	GardensResource
-	mqttClient    mqtt.Client
 	moistureCache map[xid.ID]float64
 	scheduler     *gocron.Scheduler
 }
@@ -38,14 +36,6 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 		GardensResource: gr,
 		moistureCache:   map[xid.ID]float64{},
 		scheduler:       gocron.NewScheduler(time.Local),
-	}
-
-	// Initialize MQTT Client
-	var err error
-	pr.mqttClient, err = mqtt.NewMQTTClient(gr.config.MQTTConfig, nil)
-	if err != nil {
-		err = fmt.Errorf("unable to initialize MQTT client: %v", err)
-		return pr, err
 	}
 
 	// Initialize watering Jobs for each Plant from the storage client
@@ -198,7 +188,7 @@ func (pr PlantsResource) backwardsCompatibleActionMiddleware(next http.Handler) 
 	})
 }
 
-// plantAction reads an AggregateAction request and uses it to execute one of the actions
+// plantAction reads a PlantAction request and uses it to execute one of the actions
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (pr PlantsResource) plantAction(w http.ResponseWriter, r *http.Request) {

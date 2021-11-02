@@ -14,6 +14,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -538,6 +539,77 @@ func TestGetGardenHealth(t *testing.T) {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual.Status, tt.expectedStatus)
 			}
 			storageClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGardenAction(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupMock func(*mqtt.MockClient)
+		body      string
+		expected  string
+		status    int
+	}{
+		{
+			"BadRequest",
+			func(mqttClient *mqtt.MockClient) {},
+			"bad request",
+			`{"status":"Invalid request.","error":"invalid character 'b' looking for beginning of value"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"SuccessfulLightAction",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
+				mqttClient.On("Connect").Return(nil)
+				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Disconnect", mock.Anything)
+			},
+			`{"light":{"state":"on"}}`,
+			"null",
+			http.StatusAccepted,
+		},
+		{
+			"ExecuteErrorForLightAction",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("LightTopic", "test-garden").Return("", errors.New("template error"))
+			},
+			`{"light":{"state":"on"}}`,
+			`{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`,
+			http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mqttClient := new(mqtt.MockClient)
+			tt.setupMock(mqttClient)
+
+			gr := GardensResource{
+				mqttClient: mqttClient,
+			}
+			garden := createExampleGarden()
+
+			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body)).WithContext(gardenCtx)
+			r.Header.Add("Content-Type", "application/json")
+			w := httptest.NewRecorder()
+			h := http.HandlerFunc(gr.gardenAction)
+
+			h.ServeHTTP(w, r)
+
+			// check HTTP response status code
+			if w.Code != tt.status {
+				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
+			}
+
+			// check HTTP response body
+			actual := strings.TrimSpace(w.Body.String())
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			}
+			mqttClient.AssertExpectations(t)
 		})
 	}
 }
