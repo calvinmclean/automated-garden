@@ -2,8 +2,10 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -68,6 +70,11 @@ func (action *GardenActionRequest) Bind(r *http.Request) error {
 	// error to avoid a nil pointer dereference.
 	if action == nil || action.GardenAction == nil || (action.Light == nil && action.Stop == nil) {
 		return errors.New("missing required action fields")
+	}
+	// Validate that action.Light.State is "", "on", or "off" (case insensitive)
+	state := strings.ToLower(action.Light.State)
+	if state != "" && state != "on" && state != "off" {
+		return fmt.Errorf("invalid \"state\" provided: \"%s\"", action.Light.State)
 	}
 	return nil
 }

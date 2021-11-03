@@ -192,13 +192,26 @@ func TestGardenActionRequest(t *testing.T) {
 			},
 			"missing required action fields",
 		},
+		{
+			"InvalidLightActionState",
+			&GardenActionRequest{
+				GardenAction: &pkg.GardenAction{
+					Light: &pkg.LightAction{
+						State: "WOW",
+					},
+				},
+			},
+			`invalid "state" provided: "WOW"`,
+		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
 		ar := &GardenActionRequest{
 			GardenAction: &pkg.GardenAction{
-				Light: &pkg.LightAction{},
-				Stop:  &pkg.StopAction{},
+				Light: &pkg.LightAction{
+					State: "ON",
+				},
+				Stop: &pkg.StopAction{},
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)
