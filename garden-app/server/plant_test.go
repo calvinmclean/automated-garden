@@ -388,9 +388,9 @@ func TestGetPlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
+					scheduler:      gocron.NewScheduler(time.Local),
 				},
 				moistureCache: map[xid.ID]float64{},
-				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			garden := createExampleGarden()
 
@@ -557,9 +557,9 @@ func TestUpdatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
+					scheduler:     gocron.NewScheduler(time.Local),
 				},
 				moistureCache: map[xid.ID]float64{},
-				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			garden := createExampleGarden()
 			plant := createExamplePlant()
@@ -621,9 +621,9 @@ func TestEndDatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
+					scheduler:     gocron.NewScheduler(time.Local),
 				},
 				moistureCache: map[xid.ID]float64{},
-				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			plant := createExamplePlant()
 
@@ -654,7 +654,9 @@ func TestEndDatePlant(t *testing.T) {
 func TestGetAllPlants(t *testing.T) {
 	pr := PlantsResource{
 		moistureCache: map[xid.ID]float64{},
-		scheduler:     gocron.NewScheduler(time.Local),
+		GardensResource: GardensResource{
+			scheduler: gocron.NewScheduler(time.Local),
+		},
 	}
 	garden := createExampleGarden()
 	plant := createExamplePlant()
@@ -762,9 +764,9 @@ func TestCreatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
+					scheduler:     gocron.NewScheduler(time.Local),
 				},
 				moistureCache: map[xid.ID]float64{},
-				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			garden := createExampleGarden()
 

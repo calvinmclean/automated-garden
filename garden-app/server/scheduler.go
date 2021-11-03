@@ -86,3 +86,57 @@ func (pr PlantsResource) getNextWateringTime(p *pkg.Plant) *time.Time {
 	}
 	return nil
 }
+
+// addLightSchedule will schedule LightActions to turn the light on and off based off the CreatedAt date,
+// LightingSchedule time, and Interval. The scheduled Jobs are tagged with the Garden's ID so they can
+// easily be removed
+func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
+	logger.Infof("Creating scheduled Jobs for lighting Garden %s", g.ID.String())
+
+	// Read Garden's Interval string into a Duration
+	duration, err := time.ParseDuration(g.LightSchedule.Interval)
+	if err != nil {
+		return err
+	}
+
+	// Parse Gardens's LightSchedule.Time (has no "date")
+	waterTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
+	if err != nil {
+		return err
+	}
+
+	// Create startDate using the CreatedAt date with the WateringStrategy's timestamp
+	startDate := time.Date(
+		g.CreatedAt.Year(),
+		g.CreatedAt.Month(),
+		g.CreatedAt.Day(),
+		waterTime.Hour(),
+		waterTime.Minute(),
+		waterTime.Second(),
+		0,
+		waterTime.Location(),
+	)
+
+	executeLightAction := func(action *pkg.LightAction) {
+		logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
+		err = action.Execute(g, gr.mqttClient)
+		if err != nil {
+			logger.Error("Error executing scheduled LightAction: ", err)
+		}
+	}
+
+	// Schedule the LightAction execution for ON and OFF
+	onAction := &pkg.LightAction{State: "ON"}
+	offAction := &pkg.LightAction{State: "OFF"}
+	_, err = gr.scheduler.
+		Every(duration).
+		StartAt(startDate).
+		Tag(g.ID.String()).
+		Do(executeLightAction, onAction)
+	_, err = gr.scheduler.
+		Every(duration).
+		StartAt(startDate).
+		Tag(g.ID.String()).
+		Do(executeLightAction, offAction)
+	return err
+}

@@ -12,6 +12,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
 )
 
@@ -27,13 +28,15 @@ type GardensResource struct {
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
 	mqttClient     mqtt.Client
+	scheduler      *gocron.Scheduler
 	config         Config
 }
 
 // NewGardenResource creates a new GardenResource
 func NewGardenResource(config Config) (gr GardensResource, err error) {
 	gr = GardensResource{
-		config: config,
+		scheduler: gocron.NewScheduler(time.Local),
+		config:    config,
 	}
 
 	// Initialize MQTT Client
@@ -52,6 +55,20 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 
 	// Initialize InfluxDB Client
 	gr.influxdbClient = influxdb.NewClient(gr.config.InfluxDBConfig)
+
+	// Initialize lighting schedules for all Gardens
+	allGardens, err := gr.storageClient.GetGardens(false)
+	if err != nil {
+		return gr, err
+	}
+	for _, g := range allGardens {
+		if g.LightSchedule != nil {
+			if err = gr.addLightSchedule(g); err != nil {
+				err = fmt.Errorf("unable to add lighting Job for Garden %v: %v", g.ID, err)
+				return gr, err
+			}
+		}
+	}
 
 	return
 }
@@ -133,6 +150,21 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 	if garden.CreatedAt == nil {
 		now := time.Now()
 		garden.CreatedAt = &now
+	}
+
+	// Start lighting schedule (if applicable)
+	if garden.LightSchedule != nil {
+		// Check that LightSchedule.StartTime is valid
+		_, err := time.Parse(pkg.LightTimeFormat, garden.LightSchedule.StartTime)
+		if err != nil {
+			logger.Errorf("Invalid time format for LightSchedule.StartTime: %s", garden.LightSchedule.StartTime)
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+
+		if err := gr.addLightSchedule(garden); err != nil {
+			logger.Errorf("Unable to add lighting Job for Garden %v: %v", garden.ID, err)
+		}
 	}
 
 	// Save the Garden
@@ -236,7 +268,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Garden %s\n", garden.ID)
-	if err := action.Execute(garden, gr.mqttClient, gr.influxdbClient); err != nil {
+	if err := action.Execute(garden, gr.mqttClient); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}

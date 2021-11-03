@@ -27,7 +27,6 @@ const (
 type PlantsResource struct {
 	GardensResource
 	moistureCache map[xid.ID]float64
-	scheduler     *gocron.Scheduler
 }
 
 // NewPlantsResource creates a new PlantsResource
@@ -35,7 +34,6 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 	pr := PlantsResource{
 		GardensResource: gr,
 		moistureCache:   map[xid.ID]float64{},
-		scheduler:       gocron.NewScheduler(time.Local),
 	}
 
 	// Initialize watering Jobs for each Plant from the storage client
@@ -50,7 +48,7 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 		}
 		for _, p := range allPlants {
 			if err = pr.addWateringSchedule(g, p); err != nil {
-				err = fmt.Errorf("unable to add watering Job for Plant %s: %v", p.ID.String(), err)
+				err = fmt.Errorf("unable to add watering Job for Plant %v: %v", p.ID, err)
 				return pr, err
 			}
 		}
@@ -339,7 +337,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 
 	// Start watering schedule
 	if err := pr.addWateringSchedule(garden, plant); err != nil {
-		logger.Errorf("Unable to add watering Job for Plant %s: %v", plant.ID.String(), err)
+		logger.Errorf("Unable to add watering Job for Plant %v: %v", plant.ID, err)
 	}
 
 	// Save the Plant

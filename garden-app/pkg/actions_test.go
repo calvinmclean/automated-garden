@@ -165,7 +165,7 @@ func TestStopActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, mqttClient, influxdbClient)
+			err := tt.action.Execute(garden, mqttClient)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -413,7 +413,7 @@ func TestGardenAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, mqttClient, influxdbClient)
+			err := tt.action.Execute(garden, mqttClient)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -486,7 +486,7 @@ func TestLightActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, mqttClient, influxdbClient)
+			err := tt.action.Execute(garden, mqttClient)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)

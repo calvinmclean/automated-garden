@@ -9,13 +9,19 @@ import (
 	"github.com/rs/xid"
 )
 
+const (
+	// LightTimeFormat is used to control format of time fields
+	LightTimeFormat = "15:04:05-07:00"
+)
+
 // Garden is the representation of a single garden-controller device. It is the container for Plants
 type Garden struct {
-	Name      string            `json:"name" yaml:"name,omitempty"`
-	ID        xid.ID            `json:"id" yaml:"id,omitempty"`
-	Plants    map[xid.ID]*Plant `json:"plants" yaml:"plants,omitempty"`
-	CreatedAt *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate   *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	Name          string            `json:"name" yaml:"name,omitempty"`
+	ID            xid.ID            `json:"id" yaml:"id,omitempty"`
+	Plants        map[xid.ID]*Plant `json:"plants" yaml:"plants,omitempty"`
+	CreatedAt     *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate       *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	LightSchedule *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
 }
 
 // GardenHealth holds information about the Garden controller's health status
@@ -23,6 +29,13 @@ type GardenHealth struct {
 	Status      string     `json:"status,omitempty"`
 	Details     string     `json:"details,omitempty"`
 	LastContact *time.Time `json:"last_contact,omitempty"`
+}
+
+// LightSchedule allows the user to control when the Garden light is turned on and off
+// "Time" should be in the format of LightTimeFormat constant ("15:04:05-07:00")
+type LightSchedule struct {
+	Interval  string `json:"interval" yaml:"interval"`
+	StartTime string `json:"start_time" yaml:"start_time"`
 }
 
 // Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time
