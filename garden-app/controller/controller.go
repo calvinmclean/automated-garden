@@ -224,6 +224,18 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 				"topic": msg.Topic(),
 			}).Info("received StopAllAction")
 		})
+	case "light":
+		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
+			var action pkg.LightAction
+			err := json.Unmarshal(msg.Payload(), &action)
+			if err != nil {
+				logger.Errorf("unable to unmarshal LightAction JSON: %s", err.Error())
+			}
+			logger.WithFields(logrus.Fields{
+				"topic": msg.Topic(),
+				"state": action.State,
+			}).Info("received LightAction")
+		})
 	default:
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
 			logger.WithFields(logrus.Fields{
@@ -240,6 +252,7 @@ func (c *Controller) topics() ([]string, error) {
 		c.Config.MQTTConfig.WateringTopicTemplate,
 		c.Config.MQTTConfig.StopTopicTemplate,
 		c.Config.MQTTConfig.StopAllTopicTemplate,
+		c.Config.MQTTConfig.LightTopicTemplate,
 	}
 	for _, topicTemplate := range templates {
 		t := template.Must(template.New("topic").Parse(topicTemplate))
