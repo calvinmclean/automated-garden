@@ -51,6 +51,7 @@ type TopicHandler struct {
 func NewMQTTClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...TopicHandler) (Client, error) {
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", config.Broker, config.Port))
 	opts.ClientID = config.ClientID
+	opts.AutoReconnect = true
 	if len(handlers) > 0 {
 		opts.OnConnect = func(c mqtt.Client) {
 			for _, handler := range handlers {

@@ -54,7 +54,6 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 		}
 	}
 
-	pr.scheduler.StartAsync()
 	return pr, err
 }
 

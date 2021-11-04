@@ -38,6 +38,7 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 		scheduler: gocron.NewScheduler(time.Local),
 		config:    config,
 	}
+	gr.scheduler.StartAsync()
 
 	// Initialize MQTT Client
 	gr.mqttClient, err = mqtt.NewMQTTClient(gr.config.MQTTConfig, nil)

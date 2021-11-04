@@ -575,9 +575,7 @@ func TestGardenAction(t *testing.T) {
 			"SuccessfulLightAction",
 			func(mqttClient *mqtt.MockClient) {
 				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			`{"light":{"state":"on"}}`,
 			"null",

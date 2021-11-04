@@ -39,9 +39,7 @@ func TestPlantAction(t *testing.T) {
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -101,9 +99,7 @@ func TestStopActionExecute(t *testing.T) {
 			&StopAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("StopTopic", "garden").Return("garden/action/stop", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -116,9 +112,7 @@ func TestStopActionExecute(t *testing.T) {
 			&StopAction{true},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("StopAllTopic", "garden").Return("garden/action/stop_all", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/stop_all", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -137,22 +131,6 @@ func TestStopActionExecute(t *testing.T) {
 					t.Error("Expected error, but nil was returned")
 				}
 				if err.Error() != "unable to fill MQTT topic template: template error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
-			},
-		},
-		{
-			"MQTTConnectError",
-			&StopAction{},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("StopTopic", "garden").Return("garden/action/stop", nil)
-				mqttClient.On("Connect").Return(errors.New("mqtt error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to connect to MQTT broker: mqtt error" {
 					t.Errorf("Unexpected error string: %v", err)
 				}
 			},
@@ -192,9 +170,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&Plant{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -239,9 +215,7 @@ func TestWaterActionExecute(t *testing.T) {
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 				influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(0), nil)
 				influxdbClient.On("Close")
 			},
@@ -291,22 +265,6 @@ func TestWaterActionExecute(t *testing.T) {
 				}
 			},
 		},
-		{
-			"MQTTConnectError",
-			&Plant{},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Connect").Return(errors.New("mqtt error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to connect to MQTT broker: mqtt error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -344,9 +302,7 @@ func TestGardenAction(t *testing.T) {
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -378,9 +334,7 @@ func TestGardenAction(t *testing.T) {
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("StopTopic", "garden").Return("garden/action/stop", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -437,9 +391,7 @@ func TestLightActionExecute(t *testing.T) {
 			&LightAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Connect").Return(nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-				mqttClient.On("Disconnect", mock.Anything)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -458,22 +410,6 @@ func TestLightActionExecute(t *testing.T) {
 					t.Error("Expected error, but nil was returned")
 				}
 				if err.Error() != "unable to fill MQTT topic template: template error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
-			},
-		},
-		{
-			"MQTTConnectError",
-			&LightAction{},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Connect").Return(errors.New("mqtt error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to connect to MQTT broker: mqtt error" {
 					t.Errorf("Unexpected error string: %v", err)
 				}
 			},

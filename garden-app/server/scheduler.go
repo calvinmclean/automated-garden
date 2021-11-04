@@ -8,6 +8,10 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
+const (
+	lightingInterval = 24 * time.Hour
+)
+
 // addWateringSchedule will schedule watering actions for the Plant based off the CreatedAt date,
 // WateringStrategy time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
 // easily be removed
@@ -100,7 +104,7 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 	}
 
 	// Parse Gardens's LightSchedule.Time (has no "date")
-	waterTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
+	lightTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
 	if err != nil {
 		return err
 	}
@@ -110,11 +114,11 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 		g.CreatedAt.Year(),
 		g.CreatedAt.Month(),
 		g.CreatedAt.Day(),
-		waterTime.Hour(),
-		waterTime.Minute(),
-		waterTime.Second(),
+		lightTime.Hour(),
+		lightTime.Minute(),
+		lightTime.Second(),
 		0,
-		waterTime.Location(),
+		lightTime.Location(),
 	)
 
 	executeLightAction := func(action *pkg.LightAction) {
@@ -129,13 +133,13 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 	onAction := &pkg.LightAction{State: "ON"}
 	offAction := &pkg.LightAction{State: "OFF"}
 	_, err = gr.scheduler.
-		Every(duration).
+		Every(lightingInterval).
 		StartAt(startDate).
 		Tag(g.ID.String()).
 		Do(executeLightAction, onAction)
 	_, err = gr.scheduler.
-		Every(duration).
-		StartAt(startDate).
+		Every(lightingInterval).
+		StartAt(startDate.Add(duration)).
 		Tag(g.ID.String()).
 		Do(executeLightAction, offAction)
 	return err
