@@ -64,15 +64,9 @@ func (pr PlantsResource) addWateringSchedule(g *pkg.Garden, p *pkg.Plant) error 
 	return err
 }
 
-// removeWateringSchedule is used to remove the Plant's scheduled watering Job
-// from the scheduler.
-func (pr PlantsResource) removeWateringSchedule(p *pkg.Plant) error {
-	return pr.scheduler.RemoveByTag(p.ID.String())
-}
-
 // resetWateringSchedule will simply remove the existing Job and create a new one
 func (pr PlantsResource) resetWateringSchedule(g *pkg.Garden, p *pkg.Plant) error {
-	if err := pr.removeWateringSchedule(p); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+	if err := pr.scheduler.RemoveByTag(p.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
 	return pr.addWateringSchedule(g, p)
@@ -143,4 +137,12 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 		Tag(g.ID.String()).
 		Do(executeLightAction, offAction)
 	return err
+}
+
+// resetWateringSchedule will simply remove the existing Job and create a new one
+func (gr GardensResource) resetLightingSchedule(g *pkg.Garden) error {
+	if err := gr.scheduler.RemoveByTag(g.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+		return err
+	}
+	return gr.addLightSchedule(g)
 }

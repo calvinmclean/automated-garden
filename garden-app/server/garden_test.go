@@ -395,6 +395,7 @@ func TestEndDateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
+				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			garden := createExampleGarden()
 
@@ -462,6 +463,7 @@ func TestUpdateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
+				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			garden := createExampleGarden()
 

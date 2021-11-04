@@ -280,7 +280,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove scheduled watering Job
-	if err := pr.removeWateringSchedule(plant); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+	if err := pr.scheduler.RemoveByTag(plant.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
 		render.Render(w, r, InternalServerError(err))
 		return

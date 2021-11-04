@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -215,6 +216,13 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Remove scheduled lighting actions
+	if err := gr.scheduler.RemoveByTag(garden.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+		logger.Errorf("Unable to remove watering Job for Garden %s: %v", garden.ID.String(), err)
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
 	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
@@ -233,6 +241,12 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 
 	// Manually update garden fields that are allowed to be changed
 	garden.Name = request.Name
+
+	// Update the lighting schedule for the Garden
+	if err := gr.resetLightingSchedule(garden); err != nil {
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
 
 	// Save the Garden
 	if err := gr.storageClient.SaveGarden(garden); err != nil {
