@@ -102,8 +102,8 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 	}
 
 	if g.LightSchedule != nil {
-		if g.LightSchedule.Interval == "" {
-			return errors.New("missing required light_schedule.interval field")
+		if g.LightSchedule.Duration == "" {
+			return errors.New("missing required light_schedule.duration field")
 		}
 		if g.LightSchedule.StartTime == "" {
 			return errors.New("missing required light_schedule.start_time field")

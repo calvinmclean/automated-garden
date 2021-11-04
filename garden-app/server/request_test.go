@@ -325,7 +325,7 @@ func TestGardenRequest(t *testing.T) {
 			"cannot add or modify Plants with this request",
 		},
 		{
-			"EmptyLightScheduleIntervalError",
+			"EmptyLightScheduleDurationError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
 					Name: "garden",
@@ -334,7 +334,7 @@ func TestGardenRequest(t *testing.T) {
 					},
 				},
 			},
-			"missing required light_schedule.interval field",
+			"missing required light_schedule.duration field",
 		},
 		{
 			"EmptyLightScheduleStartTimeError",
@@ -342,7 +342,7 @@ func TestGardenRequest(t *testing.T) {
 				Garden: &pkg.Garden{
 					Name: "garden",
 					LightSchedule: &pkg.LightSchedule{
-						Interval: "1m",
+						Duration: "1m",
 					},
 				},
 			},

@@ -34,7 +34,7 @@ type GardenHealth struct {
 // LightSchedule allows the user to control when the Garden light is turned on and off
 // "Time" should be in the format of LightTimeFormat constant ("15:04:05-07:00")
 type LightSchedule struct {
-	Interval  string `json:"interval" yaml:"interval"`
+	Duration  string `json:"duration" yaml:"duration"`
 	StartTime string `json:"start_time" yaml:"start_time"`
 }
 

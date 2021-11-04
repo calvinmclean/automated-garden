@@ -37,7 +37,7 @@ func createExampleGarden() *pkg.Garden {
 		Plants:    map[xid.ID]*pkg.Plant{},
 		CreatedAt: &time,
 		LightSchedule: &pkg.LightSchedule{
-			Interval:  "1m",
+			Duration:  "1m",
 			StartTime: "22:00:01-07:00",
 		},
 	}
@@ -200,8 +200,8 @@ func TestCreateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
-			`{"name": "test-garden", "light_schedule": {"interval": "1m", "start_time": "22:00:01-07:00"}}`,
-			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"interval":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			`{"name": "test-garden", "light_schedule": {"duration": "1m", "start_time": "22:00:01-07:00"}}`,
+			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -223,7 +223,7 @@ func TestCreateGarden(t *testing.T) {
 		{
 			"ErrorBadRequestInvalidStartTime",
 			func(storageClient *storage.MockClient) {},
-			`{"name":"test-garden","light_schedule":{"interval":"24h","start_time":"NOT A TIME"}}`,
+			`{"name":"test-garden","light_schedule":{"duration":"24h","start_time":"NOT A TIME"}}`,
 			`{"status":"Invalid request.","error":"parsing time \\"NOT A TIME\\" as \\"15:04:05-07:00\\": cannot parse \\"NOT A TIME\\" as \\"15\\""}`,
 			http.StatusBadRequest,
 		},
@@ -278,7 +278,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", false).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"interval":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -287,7 +287,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", true).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"interval":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -375,7 +375,7 @@ func TestEndDateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
-			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"interval":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
+			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -434,7 +434,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name"}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"interval":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
 			http.StatusOK,
 		},
 		{

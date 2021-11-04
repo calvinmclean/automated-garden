@@ -97,8 +97,8 @@ func (pr PlantsResource) getNextWateringTime(p *pkg.Plant) *time.Time {
 func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 	logger.Infof("Creating scheduled Jobs for lighting Garden %s", g.ID.String())
 
-	// Read Garden's Interval string into a Duration
-	duration, err := time.ParseDuration(g.LightSchedule.Interval)
+	// Read Garden's Duration string into a time.Duration
+	duration, err := time.ParseDuration(g.LightSchedule.Duration)
 	if err != nil {
 		return err
 	}
