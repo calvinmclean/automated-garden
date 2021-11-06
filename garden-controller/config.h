@@ -26,6 +26,8 @@
  *   Topic to subscribe to for incoming command to stop watering a plant and clear the watering queue
  * MQTT_LIGHT_TOPIC
  *   Topic to subscribe to for incoming command to change the state of an attached grow light
+ * MQTT_LIGHT_DATA_TOPIC
+ *   Topic to publish LightingEvents on
  * MQTT_WATER_DATA_TOPIC
  *   Topic to publish watering metrics on
  */
@@ -38,6 +40,7 @@
 #define MQTT_STOP_TOPIC GARDEN_NAME"/command/stop"
 #define MQTT_STOP_ALL_TOPIC GARDEN_NAME"/command/stop_all"
 #define MQTT_LIGHT_TOPIC GARDEN_NAME"/command/light"
+#define MQTT_LIGHT_DATA_TOPIC GARDEN_NAME"/data/light"
 #define MQTT_WATER_DATA_TOPIC GARDEN_NAME"/data/water"
 
 #define ENABLE_MQTT_HEALTH

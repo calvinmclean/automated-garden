@@ -6,15 +6,22 @@ void setupMQTT() {
     client.setCallback(processIncomingMessage);
 
     // Initialize publisher Queue
-    publisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WateringEvent));
-    if (publisherQueue == NULL) {
-        printf("error creating the publisherQueue\n");
+    waterPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WateringEvent));
+    if (waterPublisherQueue == NULL) {
+        printf("error creating the waterPublisherQueue\n");
     }
 
     // Start MQTT tasks
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
-    xTaskCreate(publisherTask, "PublisherTask", 2048, NULL, 1, &publisherTaskHandle);
+    xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
+#ifdef LIGHT_PIN
+    lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightingEvent));
+    if (lightPublisherQueue == NULL) {
+        printf("error creating the lightPublisherQueue\n");
+    }
+    xTaskCreate(lightPublisherTask, "LightPublisherTask", 2048, NULL, 1, &lightPublisherTaskHandle);
+#endif
 #ifdef ENABLE_MQTT_HEALTH
     xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
 #endif
@@ -41,13 +48,13 @@ void setupWifi() {
 }
 
 /*
-  publisherTask reads from a queue and publish WateringEvents as an InfluxDB
+  waterPublisherTask reads from a queue to publish WateringEvents as an InfluxDB
   line protocol message to MQTT
 */
-void publisherTask(void* parameters) {
+void waterPublisherTask(void* parameters) {
     WateringEvent we;
     while (true) {
-        if (xQueueReceive(publisherQueue, &we, portMAX_DELAY)) {
+        if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
             char message[50];
             sprintf(message, "water,plant=%d millis=%lu", we.plant_position, we.duration);
             if (client.connected()) {
@@ -63,7 +70,29 @@ void publisherTask(void* parameters) {
 }
 
 /*
-  publisherTask runs every minute and publishes a message to MQTT to record a health check-in
+  lightPublisherTask reads from a queue to publish LightingEvents as an InfluxDB
+  line protocol message to MQTT
+*/
+void lightPublisherTask(void* parameters) {
+    int state;
+    while (true) {
+        if (xQueueReceive(lightPublisherQueue, &state, portMAX_DELAY)) {
+            char message[50];
+            sprintf(message, "light,garden=\"%s\" state=%d", GARDEN_NAME, state);
+            if (client.connected()) {
+                printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", lightDataTopic, message);
+                client.publish(lightDataTopic, message);
+            } else {
+                printf("unable to publish: not connected to MQTT broker\n");
+            }
+        }
+        vTaskDelay(5 / portTICK_PERIOD_MS);
+    }
+    vTaskDelete(NULL);
+}
+
+/*
+  healthPublisherTask runs every minute and publishes a message to MQTT to record a health check-in
 */
 void healthPublisherTask(void* parameters) {
     WateringEvent we;

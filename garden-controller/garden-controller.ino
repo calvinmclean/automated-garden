@@ -142,7 +142,7 @@ void waterPlantTask(void* parameters) {
             plantOff(we.plant_position);
             we.duration = stop - start;
 #ifdef ENABLE_WIFI
-            xQueueSend(publisherQueue, &we, portMAX_DELAY);
+            xQueueSend(waterPublisherQueue, &we, portMAX_DELAY);
 #endif
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
@@ -216,8 +216,8 @@ void changeLight(LightingEvent le) {
     printf("Setting light state to %d\n", light_state);
     gpio_set_level(LIGHT_PIN, light_state);
 
-    // TODO: Add publisher queue for lighting tasks
-    // #ifdef ENABLE_WIFI
-    //             xQueueSend(publisherQueue, &we, portMAX_DELAY);
-    // #endif
+    // Log data to MQTT if enabled
+#ifdef ENABLE_WIFI
+    xQueueSend(lightPublisherQueue, &light_state, portMAX_DELAY);
+#endif
 }

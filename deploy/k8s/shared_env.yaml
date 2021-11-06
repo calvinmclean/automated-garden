@@ -13,6 +13,7 @@ data:
   INFLUXDB_BUCKET: garden
   # Telegraf
   MQTT_WATER_TOPIC: "+/data/water"
+  MQTT_LIGHT_TOPIC: "+/data/light"
   MQTT_MOISTURE_TOPIC: "+/data/moisture"
   MQTT_LOGGING_TOPIC: "+/data/logs"
   MQTT_HEALTH_TOPIC: "+/data/health"
