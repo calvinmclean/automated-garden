@@ -85,6 +85,27 @@ func (pr PlantsResource) getNextWateringTime(p *pkg.Plant) *time.Time {
 	return nil
 }
 
+// getNextLightOnTime returns the next time that the Garden's light will be turned to the specified state
+func (gr GardensResource) getNextLightTime(g *pkg.Garden, state string) *time.Time {
+	for _, job := range gr.scheduler.Jobs() {
+		matchedID := false
+		matchedState := false
+		for _, tag := range job.Tags() {
+			if tag == g.ID.String() {
+				matchedID = true
+			}
+			if tag == state {
+				matchedState = true
+			}
+		}
+		if matchedID && matchedState {
+			result := job.NextRun()
+			return &result
+		}
+	}
+	return nil
+}
+
 // addLightSchedule will schedule LightActions to turn the light on and off based off the CreatedAt date,
 // LightingSchedule time, and Interval. The scheduled Jobs are tagged with the Garden's ID so they can
 // easily be removed
@@ -124,17 +145,17 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 	}
 
 	// Schedule the LightAction execution for ON and OFF
-	onAction := &pkg.LightAction{State: "ON"}
-	offAction := &pkg.LightAction{State: "OFF"}
+	onAction := &pkg.LightAction{State: pkg.StateOn}
+	offAction := &pkg.LightAction{State: pkg.StateOff}
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate).
-		Tag(g.ID.String()).
+		Tag(g.ID.String(), pkg.StateOn).
 		Do(executeLightAction, onAction)
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate.Add(duration)).
-		Tag(g.ID.String()).
+		Tag(g.ID.String(), pkg.StateOff).
 		Do(executeLightAction, offAction)
 	return err
 }

@@ -201,7 +201,7 @@ func TestCreateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "test-garden", "light_schedule": {"duration": "1m", "start_time": "22:00:01-07:00"}}`,
-			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -307,6 +307,7 @@ func TestGetAllGardens(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
+				scheduler:     gocron.NewScheduler(time.Local),
 			}
 			tt.setupMock(storageClient)
 
@@ -338,6 +339,7 @@ func TestGetGarden(t *testing.T) {
 		gr := GardensResource{
 			storageClient: storageClient,
 			config:        Config{},
+			scheduler:     gocron.NewScheduler(time.Local),
 		}
 		garden := createExampleGarden()
 
@@ -435,7 +437,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name"}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"}\]}`,
 			http.StatusOK,
 		},
 		{

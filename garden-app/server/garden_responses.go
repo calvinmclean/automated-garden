@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 )
@@ -11,21 +12,32 @@ import (
 // and hypermedia Links fields
 type GardenResponse struct {
 	*pkg.Garden
-	Plants Link   `json:"plants"`
-	Links  []Link `json:"links,omitempty"`
+	NextLightAction *NextLightAction `json:"next_light_action,omitempty"`
+	Plants          Link             `json:"plants"`
+	Links           []Link           `json:"links,omitempty"`
+}
+
+// NextLightAction contains the time and state for the next scheduled LightAction
+type NextLightAction struct {
+	Time  *time.Time `json:"time"`
+	State string     `json:"state"`
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
 func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
 	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)
-	links = append(links,
+	response := &GardenResponse{
+		Garden: garden,
+		Plants: Link{"collection", plantsPath},
+	}
+	response.Links = append(links,
 		Link{
 			"self",
 			fmt.Sprintf("%s/%s", gardenBasePath, garden.ID),
 		},
 	)
 	if !garden.EndDated() {
-		links = append(links,
+		response.Links = append(response.Links,
 			Link{
 				"health",
 				fmt.Sprintf("%s/%s/health", gardenBasePath, garden.ID),
@@ -35,12 +47,27 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 				plantsPath,
 			},
 		)
+
+		if garden.LightSchedule != nil {
+			nextOnTime := gr.getNextLightTime(garden, pkg.StateOn)
+			nextOffTime := gr.getNextLightTime(garden, pkg.StateOff)
+			if nextOnTime != nil && nextOffTime != nil {
+				// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
+				if nextOnTime.Before(*nextOffTime) {
+					response.NextLightAction = &NextLightAction{
+						Time:  nextOnTime,
+						State: pkg.StateOn,
+					}
+				} else {
+					response.NextLightAction = &NextLightAction{
+						Time:  nextOffTime,
+						State: pkg.StateOff,
+					}
+				}
+			}
+		}
 	}
-	return &GardenResponse{
-		garden,
-		Link{"collection", plantsPath},
-		links,
-	}
+	return response
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing

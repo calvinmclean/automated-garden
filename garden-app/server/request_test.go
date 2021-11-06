@@ -209,7 +209,7 @@ func TestGardenActionRequest(t *testing.T) {
 		ar := &GardenActionRequest{
 			GardenAction: &pkg.GardenAction{
 				Light: &pkg.LightAction{
-					State: "ON",
+					State: pkg.StateOn,
 				},
 				Stop: &pkg.StopAction{},
 			},

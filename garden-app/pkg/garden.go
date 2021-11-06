@@ -12,6 +12,8 @@ import (
 const (
 	// LightTimeFormat is used to control format of time fields
 	LightTimeFormat = "15:04:05-07:00"
+	StateOn         = "ON"
+	StateOff        = "OFF"
 )
 
 // Garden is the representation of a single garden-controller device. It is the container for Plants
