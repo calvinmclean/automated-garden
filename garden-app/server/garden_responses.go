@@ -46,6 +46,10 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 				"plants",
 				plantsPath,
 			},
+			Link{
+				"action",
+				fmt.Sprintf("%s/%s/action", gardenBasePath, garden.ID),
+			},
 		)
 
 		if garden.LightSchedule != nil {

@@ -52,8 +52,8 @@ func (pr PlantsResource) NewPlantResponse(plant *pkg.Plant, moisture float64, li
 	if !plant.EndDated() {
 		links = append(links,
 			Link{
-				"actions",
-				fmt.Sprintf("%s%s/%s/actions", gardenPath, plantBasePath, plant.ID),
+				"action",
+				fmt.Sprintf("%s%s/%s/action", gardenPath, plantBasePath, plant.ID),
 			},
 			Link{
 				"history",
