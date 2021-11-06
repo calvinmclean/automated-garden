@@ -51,7 +51,8 @@ void readButton(int valveID) {
             // If our button state is HIGH, water the plant
             if (reading == HIGH && buttonStates[valveID] == HIGH) {
                 printf("button pressed: %d\n", valveID);
-                waterPlant(valveID, DEFAULT_WATER_TIME, "N/A");
+                WateringEvent we = { valveID, DEFAULT_WATER_TIME, "N/A" };
+                waterPlant(we);
             }
         }
     }

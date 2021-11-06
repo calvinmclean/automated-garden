@@ -94,6 +94,9 @@ void mqttConnectTask(void* parameters) {
                 client.subscribe(waterCommandTopic);
                 client.subscribe(stopCommandTopic);
                 client.subscribe(stopAllCommandTopic);
+#ifdef LIGHT_PIN
+                client.subscribe(lightCommandTopic);
+#endif
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }
@@ -125,6 +128,7 @@ void mqttLoopTask(void* parameters) {
     - stopCommandTopic: ignores message and stops the currently-watering plant
     - stopAllCommandTopic: ignores message, stops the currently-watering plant,
                            and clears the wateringQueue
+    - lightCommandTopic: accepts LightingEvent JSON to control a grow light
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
@@ -135,21 +139,26 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         printf("deserialize failed: %s\n", err.c_str());
     }
 
-    WateringEvent we = {
-        doc["plant_position"] | -1,
-        doc["duration"] | 0,
-        doc["id"] | "N/A"
-    };
-
     if (strcmp(topic, waterCommandTopic) == 0) {
+        WateringEvent we = {
+            doc["plant_position"] | -1,
+            doc["duration"] | 0,
+            doc["id"] | "N/A"
+        };
         printf("received command to water plant %d (%s) for %lu\n", we.plant_position, we.id, we.duration);
-        waterPlant(we.plant_position, we.duration, we.id);
+        waterPlant(we);
     } else if (strcmp(topic, stopCommandTopic) == 0) {
         printf("received command to stop watering\n");
         stopWatering();
     } else if (strcmp(topic, stopAllCommandTopic) == 0) {
         printf("received command to stop ALL watering\n");
         stopAllWatering();
+    } else if (strcmp(topic, lightCommandTopic) == 0) {
+        LightingEvent le = {
+            doc["state"] | ""
+        };
+        printf("received command to change state of the light: '%s'\n", le.state);
+        changeLight(le);
     }
 }
 

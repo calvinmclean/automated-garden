@@ -16,6 +16,7 @@ PubSubClient client(wifiClient);
 const char* waterCommandTopic = MQTT_WATER_TOPIC;
 const char* stopCommandTopic = MQTT_STOP_TOPIC;
 const char* stopAllCommandTopic = MQTT_STOP_ALL_TOPIC;
+const char* lightCommandTopic = MQTT_LIGHT_TOPIC;
 const char* waterDataTopic = MQTT_WATER_DATA_TOPIC;
 const char* healthDataTopic = MQTT_HEALTH_DATA_TOPIC;
 

@@ -19,6 +19,10 @@ typedef struct WateringEvent {
     const char* id;
 };
 
+typedef struct LightingEvent {
+    const char* state;
+};
+
 /* plant/valve variables */
 gpio_num_t plants[NUM_PLANTS][4] = PLANTS;
 
@@ -32,6 +36,9 @@ TaskHandle_t waterIntervalTaskHandle;
 QueueHandle_t wateringQueue;
 TaskHandle_t waterPlantTaskHandle;
 
+/* state variables */
+int light_state;
+
 void setup() {
     // Prepare pins
     for (int i = 0; i < NUM_PLANTS; i++) {
@@ -43,6 +50,12 @@ void setup() {
         gpio_reset_pin(plants[i][0]);
         gpio_set_direction(plants[i][0], GPIO_MODE_OUTPUT);
     }
+
+#ifdef LIGHT_PIN
+    gpio_reset_pin(LIGHT_PIN);
+    gpio_set_direction(LIGHT_PIN, GPIO_MODE_OUTPUT);
+    light_state = 0;
+#endif
 
 #ifdef ENABLE_WIFI
     setupWifi();
@@ -175,13 +188,36 @@ void stopAllWatering() {
   waterPlant pushes a WateringEvent to the queue in order to water a single
   plant. First it will make sure the ID is not out of bounds
 */
-void waterPlant(int plant_position, unsigned long duration, const char* id) {
+void waterPlant(WateringEvent we) {
     // Exit if valveID is out of bounds
-    if (plant_position >= NUM_PLANTS || plant_position < 0) {
-        printf("plant_position %d is out of range, aborting request\n", plant_position);
+    if (we.plant_position >= NUM_PLANTS || we.plant_position < 0) {
+        printf("plant_position %d is out of range, aborting request\n", we.plant_position);
         return;
     }
-    printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", id, plant_position, duration);
-    WateringEvent we = { plant_position, duration, id };
+    printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", we.id, we.plant_position, we.duration);
     xQueueSend(wateringQueue, &we, portMAX_DELAY);
+}
+
+/*
+  changeLight will use the state on the LightingEvent to change the state of the light. If the state
+  is empty, this will toggle the current state.
+  This is a non-blocking operation, so no task or queue is required.
+*/
+void changeLight(LightingEvent le) {
+    if (strlen(le.state) == 0) {
+        light_state = !light_state;
+    } else if (strcasecmp(le.state, "on") == 0) {
+        light_state = 1;
+    } else if (strcasecmp(le.state, "off") == 0) {
+        light_state = 0;
+    } else {
+        printf("Unrecognized LightEvent.state, so state will be unchanged\n");
+    }
+    printf("Setting light state to %d\n", light_state);
+    gpio_set_level(LIGHT_PIN, light_state);
+
+    // TODO: Add publisher queue for lighting tasks
+    // #ifdef ENABLE_WIFI
+    //             xQueueSend(publisherQueue, &we, portMAX_DELAY);
+    // #endif
 }

@@ -24,6 +24,8 @@
  *   Topic to subscribe to for incoming command to stop watering a plant
  * MQTT_STOP_ALL_TOPIC
  *   Topic to subscribe to for incoming command to stop watering a plant and clear the watering queue
+ * MQTT_LIGHT_TOPIC
+ *   Topic to subscribe to for incoming command to change the state of an attached grow light
  * MQTT_WATER_DATA_TOPIC
  *   Topic to publish watering metrics on
  */
@@ -35,6 +37,7 @@
 #define MQTT_WATER_TOPIC GARDEN_NAME"/command/water"
 #define MQTT_STOP_TOPIC GARDEN_NAME"/command/stop"
 #define MQTT_STOP_ALL_TOPIC GARDEN_NAME"/command/stop_all"
+#define MQTT_LIGHT_TOPIC GARDEN_NAME"/command/light"
 #define MQTT_WATER_DATA_TOPIC GARDEN_NAME"/data/water"
 
 #define ENABLE_MQTT_HEALTH
@@ -70,6 +73,8 @@
  *   Determines if we should water the plant automatically
  * INTERVAL
  *   The time, in milliseconds, to wait between automatic watering. Only used if ENABLE_WATERING_INTERVAL is defined.
+ * LIGHT_PIN
+ *   The pin used to control a grow light relay
  */
 #define NUM_PLANTS 3
 #define PUMP_PIN GPIO_NUM_18
@@ -78,6 +83,8 @@
 #define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
 #define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
 #define DEFAULT_WATER_TIME 5000
+
+#define LIGHT_PIN GPIO_NUM_18 // TODO: figure out real pin
 
 #define ENABLE_BUTTONS
 #ifdef ENABLE_BUTTONS
