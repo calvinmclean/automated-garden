@@ -17,6 +17,7 @@ var (
 	publishWateringEvent bool
 	publishHealth        bool
 	healthInterval       time.Duration
+	enableUI             bool
 
 	controllerCommand = &cobra.Command{
 		Use:   "controller",
@@ -53,6 +54,9 @@ func init() {
 
 	controllerCommand.Flags().DurationVar(&healthInterval, "health-interval", time.Minute, "Interval between health data publishing")
 	viper.BindPFlag("health_interval", controllerCommand.Flags().Lookup("health-interval"))
+
+	controllerCommand.Flags().BoolVar(&enableUI, "enable-ui", true, "Enable tview UI for nicer output")
+	viper.BindPFlag("enable_ui", controllerCommand.Flags().Lookup("enable-ui"))
 
 	rootCommand.AddCommand(controllerCommand)
 }

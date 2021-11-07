@@ -17,10 +17,14 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-co-op/gocron"
+	"github.com/rivo/tview"
 	"github.com/sirupsen/logrus"
 )
 
 var logger *logrus.Logger
+
+var pubLogger *logrus.Logger
+var subLogger *logrus.Logger
 
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
@@ -33,6 +37,7 @@ type Config struct {
 	PublishWateringEvent bool          `mapstructure:"publish_watering_event"`
 	PublishHealth        bool          `mapstructure:"publish_health"`
 	HealthInterval       time.Duration `mapstructure:"health_interval"`
+	EnableUI             bool          `mapstructure:"enable_ui"`
 	LogLevel             logrus.Level
 }
 
@@ -45,19 +50,21 @@ type Controller struct {
 // Start runs the main code of the mock garden-controller by creating MQTT clients and
 // subscribing to each topic
 func Start(config Config) {
-	logger = logrus.New()
-	logger.SetFormatter(&logrus.TextFormatter{
-		DisableColors: false,
-		FullTimestamp: true,
-	})
-	logger.SetLevel(config.LogLevel)
-
 	controller := Controller{Config: config}
+
+	logger = controller.setupLogger()
+	subLogger = controller.setupLogger()
+	pubLogger = controller.setupLogger()
+
+	var app *tview.Application
+	if controller.EnableUI {
+		app = controller.setupUI()
+	}
 
 	logger.Infof("starting controller '%s'\n", controller.Garden)
 
 	if config.NumPlants > 0 {
-		logger.Infof("publishing moisture data for %d Plants", config.NumPlants)
+		pubLogger.Infof("publishing moisture data for %d Plants", config.NumPlants)
 	}
 
 	topics, err := controller.topics()
@@ -69,7 +76,7 @@ func Start(config Config) {
 	// Build TopicHandlers to handle subscription to each topic
 	var handlers []mqtt.TopicHandler
 	for _, topic := range topics {
-		logger.Infof("subscribing on topic: %s", topic)
+		subLogger.Infof("subscribing on topic: %s", topic)
 		handlers = append(handlers, mqtt.TopicHandler{
 			Topic:   topic,
 			Handler: controller.getHandlerForTopic(topic),
@@ -121,31 +128,87 @@ func Start(config Config) {
 		controller.mqttClient.Disconnect(1000)
 		wg.Done()
 	}()
-	wg.Wait()
+
+	if controller.EnableUI {
+		if err := app.Run(); err != nil {
+			panic(err)
+		}
+	} else {
+		wg.Wait()
+	}
 	logger.Infof("controller shutdown gracefully in %v", time.Since(shutdownStart))
+}
+
+// setupLogger creates and configures a logger with colors and specified log level
+func (c *Controller) setupLogger() *logrus.Logger {
+	l := logrus.New()
+	l.SetFormatter(&logrus.TextFormatter{
+		DisableColors: false,
+		ForceColors:   true,
+		FullTimestamp: true,
+	})
+	l.SetLevel(c.LogLevel)
+	return l
+}
+
+// setupUI configures the two-column view for publish and subscribe logs
+func (c *Controller) setupUI() *tview.Application {
+	app := tview.NewApplication()
+
+	left := tview.NewTextView().
+		SetTextAlign(tview.AlignLeft).
+		SetText("Subscribe Logs").
+		SetDynamicColors(true).
+		SetChangedFunc(func() { app.Draw() })
+	right := tview.NewTextView().
+		SetTextAlign(tview.AlignLeft).
+		SetText("Publish Logs").
+		SetDynamicColors(true).
+		SetChangedFunc(func() { app.Draw() })
+
+	subLogger.SetOutput(tview.ANSIWriter(left))
+	pubLogger.SetOutput(tview.ANSIWriter(right))
+
+	header := tview.NewTextView().
+		SetTextAlign(tview.AlignCenter).
+		SetText(c.Garden)
+
+	grid := tview.NewGrid().
+		SetRows(3, 0).
+		SetBorders(true)
+
+	grid.
+		AddItem(header, 0, 0, 1, 2, 0, 0, false).
+		AddItem(left, 1, 0, 1, 1, 0, 100, false).
+		AddItem(right, 1, 1, 1, 1, 0, 100, false)
+
+	tview.ANSIWriter(left).Write([]byte("\n"))
+	tview.ANSIWriter(right).Write([]byte("\n"))
+
+	return app.SetRoot(grid, true)
 }
 
 // publishMoistureData publishes an InfluxDB line containing moisture data for a Plant
 func (c *Controller) publishMoistureData(plant int) {
 	moisture := c.createMoistureData()
 	topic := fmt.Sprintf("%s/data/moisture", c.Garden)
-	logger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
+	pubLogger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
 	err := c.mqttClient.Publish(
 		topic,
 		[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
 	)
 	if err != nil {
-		logger.Errorf("encountered error publishing: %v", err)
+		pubLogger.Errorf("encountered error publishing: %v", err)
 	}
 }
 
 // publishHealthData publishes an InfluxDB line to record that the controller is alive and active
 func (c *Controller) publishHealthData() {
 	topic := fmt.Sprintf("%s/data/health", c.Garden)
-	logger.Infof("publishing health data on topic %s", topic)
+	pubLogger.Infof("publishing health data on topic %s", topic)
 	err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
 	if err != nil {
-		logger.Errorf("encountered error publishing: %v", err)
+		pubLogger.Errorf("encountered error publishing: %v", err)
 	}
 }
 
@@ -181,13 +244,13 @@ func (c *Controller) publishWateringEvent(waterMsg pkg.WaterMessage, cmdTopic st
 	}
 	// Incoming topic is "{{.GardenName}}/command/water" but we need to publish on "{{.GardenName}}/data/water"
 	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
-	logger.Infof("publishing watering event for Plant on topic %s: %v", dataTopic, waterMsg)
+	pubLogger.Infof("publishing watering event for Plant on topic %s: %v", dataTopic, waterMsg)
 	err := c.mqttClient.Publish(
 		dataTopic,
 		[]byte(fmt.Sprintf("water,plant=%d millis=%d", waterMsg.PlantPosition, waterMsg.Duration)),
 	)
 	if err != nil {
-		logger.Errorf("encountered error publishing: %v", err)
+		pubLogger.Errorf("encountered error publishing: %v", err)
 	}
 }
 
@@ -200,9 +263,9 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 			var waterMsg pkg.WaterMessage
 			err := json.Unmarshal(msg.Payload(), &waterMsg)
 			if err != nil {
-				logger.Errorf("unable to unmarshal WaterMessage JSON: %s", err.Error())
+				subLogger.Errorf("unable to unmarshal WaterMessage JSON: %s", err.Error())
 			}
-			logger.WithFields(logrus.Fields{
+			subLogger.WithFields(logrus.Fields{
 				"topic":          msg.Topic(),
 				"plant_id":       waterMsg.PlantID,
 				"plant_position": waterMsg.PlantPosition,
@@ -212,13 +275,13 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 		})
 	case "stop":
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			logger.WithFields(logrus.Fields{
+			subLogger.WithFields(logrus.Fields{
 				"topic": msg.Topic(),
 			}).Info("received StopAction")
 		})
 	case "stop_all":
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			logger.WithFields(logrus.Fields{
+			subLogger.WithFields(logrus.Fields{
 				"topic": msg.Topic(),
 			}).Info("received StopAllAction")
 		})
@@ -227,16 +290,16 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 			var action pkg.LightAction
 			err := json.Unmarshal(msg.Payload(), &action)
 			if err != nil {
-				logger.Errorf("unable to unmarshal LightAction JSON: %s", err.Error())
+				subLogger.Errorf("unable to unmarshal LightAction JSON: %s", err.Error())
 			}
-			logger.WithFields(logrus.Fields{
+			subLogger.WithFields(logrus.Fields{
 				"topic": msg.Topic(),
 				"state": action.State,
 			}).Info("received LightAction")
 		})
 	default:
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			logger.WithFields(logrus.Fields{
+			subLogger.WithFields(logrus.Fields{
 				"topic": msg.Topic(),
 			}).Infof("received message on unexpected topic: %s", string(msg.Payload()))
 		})
