@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
@@ -49,7 +50,7 @@ func TestHealth(t *testing.T) {
 
 			g := Garden{Name: "garden"}
 
-			gardenHealth := g.Health(influxdbClient)
+			gardenHealth := g.Health(context.Background(), influxdbClient)
 			if gardenHealth.Status != tt.expectedStatus {
 				t.Errorf("Unexpected GardenHealth.Status: expected = %s, actual = %s", tt.expectedStatus, gardenHealth.Status)
 			}

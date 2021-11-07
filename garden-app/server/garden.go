@@ -264,7 +264,7 @@ func (gr GardensResource) getGardenHealth(w http.ResponseWriter, r *http.Request
 	defer gr.influxdbClient.Close()
 
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	health := garden.Health(gr.influxdbClient)
+	health := garden.Health(r.Context(), gr.influxdbClient)
 	if err := render.Render(w, r, GardenHealthResponse{health}); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}

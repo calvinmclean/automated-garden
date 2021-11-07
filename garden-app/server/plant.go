@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/go-co-op/gocron"
@@ -232,7 +231,7 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 	if !cached && plant.WateringStrategy.MinimumMoisture > 0 {
 		// I was doing this with a goroutine, but that made the call untestable. I don't think there was any benefit to
 		// using the goroutine because the result is already rendered
-		pr.getAndCacheMoisture(garden, plant)
+		pr.getAndCacheMoisture(r.Context(), garden, plant)
 	} else {
 		delete(pr.moistureCache, plant.ID)
 	}
@@ -379,7 +378,7 @@ func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	history, err := pr.getWateringHistory(plant, garden, timeRange, int(limit))
+	history, err := pr.getWateringHistory(r.Context(), plant, garden, timeRange, int(limit))
 	if err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -389,11 +388,8 @@ func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (pr PlantsResource) getAndCacheMoisture(g *pkg.Garden, p *pkg.Plant) {
+func (pr PlantsResource) getAndCacheMoisture(ctx context.Context, g *pkg.Garden, p *pkg.Plant) {
 	defer pr.influxdbClient.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
-	defer cancel()
 
 	moisture, err := pr.influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
 	if err != nil {
@@ -403,11 +399,8 @@ func (pr PlantsResource) getAndCacheMoisture(g *pkg.Garden, p *pkg.Plant) {
 }
 
 // getWateringHistory gets previous WateringEvents for this Plant from InfluxDB
-func (pr PlantsResource) getWateringHistory(plant *pkg.Plant, garden *pkg.Garden, timeRange time.Duration, limit int) (result []pkg.WateringHistory, err error) {
+func (pr PlantsResource) getWateringHistory(ctx context.Context, plant *pkg.Plant, garden *pkg.Garden, timeRange time.Duration, limit int) (result []pkg.WateringHistory, err error) {
 	defer pr.influxdbClient.Close()
-
-	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
-	defer cancel()
 
 	history, err := pr.influxdbClient.GetWateringHistory(ctx, plant.PlantPosition, garden.Name, timeRange)
 	if err != nil {

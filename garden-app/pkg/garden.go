@@ -43,10 +43,7 @@ type LightSchedule struct {
 }
 
 // Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time
-func (g *Garden) Health(influxdbClient influxdb.Client) GardenHealth {
-	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
-	defer cancel()
-
+func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) GardenHealth {
 	lastContact, err := influxdbClient.GetLastContact(ctx, g.Name)
 	if err != nil {
 		return GardenHealth{
