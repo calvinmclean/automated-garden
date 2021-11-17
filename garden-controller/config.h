@@ -87,7 +87,7 @@
 #define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
 #define DEFAULT_WATER_TIME 5000
 
-#define LIGHT_PIN GPIO_NUM_18 // TODO: figure out real pin
+#define LIGHT_PIN GPIO_NUM_32
 
 #define ENABLE_BUTTONS
 #ifdef ENABLE_BUTTONS
