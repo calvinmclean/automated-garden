@@ -282,7 +282,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Infof("Received request to perform action on Garden %s\n", garden.ID)
+	logger.Infof("Received request to perform action on Garden %s", garden.ID)
 	if err := action.Execute(garden, gr.mqttClient); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
