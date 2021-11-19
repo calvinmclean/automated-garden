@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -108,7 +109,46 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 		if g.LightSchedule.StartTime == "" {
 			return errors.New("missing required light_schedule.start_time field")
 		}
+		// Check that LightSchedule.StartTime is valid
+		_, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
+		if err != nil {
+			return fmt.Errorf("invalid time format for light_schedule.start_time: %s", g.LightSchedule.StartTime)
+		}
 	}
 
+	return nil
+}
+
+// UpdateGardenRequest wraps a GardenRequest to change how validation occurs
+type UpdateGardenRequest struct {
+	*pkg.Garden
+}
+
+// Bind is used to make this struct compatible with the go-chi webserver for reading incoming
+// JSON requests
+func (g *UpdateGardenRequest) Bind(r *http.Request) error {
+	if g == nil || g.Garden == nil {
+		return errors.New("missing required Garden fields")
+	}
+	illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
+	if illegalRegexp.MatchString(g.Name) {
+		return errors.New("one or more invalid characters in Garden name")
+	}
+	if len(g.Plants) > 0 {
+		return errors.New("cannot add or modify Plants with this request")
+	}
+	if g.EndDate != nil {
+		return errors.New("to end-date a Garden, please use the DELETE endpoint")
+	}
+
+	if g.LightSchedule != nil {
+		// Check that LightSchedule.StartTime is valid
+		if g.LightSchedule.StartTime != "" {
+			_, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
+			if err != nil {
+				return fmt.Errorf("invalid time format for light_schedule.start_time: %s", g.LightSchedule.StartTime)
+			}
+		}
+	}
 	return nil
 }

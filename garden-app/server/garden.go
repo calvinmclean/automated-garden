@@ -156,14 +156,6 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 
 	// Start lighting schedule (if applicable)
 	if garden.LightSchedule != nil {
-		// Check that LightSchedule.StartTime is valid
-		_, err := time.Parse(pkg.LightTimeFormat, garden.LightSchedule.StartTime)
-		if err != nil {
-			logger.Errorf("Invalid time format for LightSchedule.StartTime: %s", garden.LightSchedule.StartTime)
-			render.Render(w, r, ErrInvalidRequest(err))
-			return
-		}
-
 		if err := gr.addLightSchedule(garden); err != nil {
 			logger.Errorf("Unable to add lighting Job for Garden %v: %v", garden.ID, err)
 		}
@@ -230,8 +222,8 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 
 // updateGarden updates any fields in the existing Garden from the request
 func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
-	request := &GardenRequest{}
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	request := &UpdateGardenRequest{}
 
 	// Read the request body into existing garden to overwrite fields
 	if err := render.Bind(r, request); err != nil {
@@ -240,12 +232,40 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Manually update garden fields that are allowed to be changed
-	garden.Name = request.Name
+	if request.Name != "" {
+		garden.Name = request.Name
+	}
+	if request.LightSchedule != nil {
+		// If existing garden doesn't have a LightSchedule, it needs to be initialized first
+		if garden.LightSchedule == nil {
+			garden.LightSchedule = &pkg.LightSchedule{}
+		}
+		if request.LightSchedule.Duration != "" {
+			garden.LightSchedule.Duration = request.LightSchedule.Duration
+		}
+		if request.LightSchedule.StartTime != "" {
+			garden.LightSchedule.StartTime = request.LightSchedule.StartTime
+		}
+		// If LightSchedule is empty, make it nil (this is how a LightSchedule is removed because a nil LightSchedule is ignored)
+		// Also remove the scheduled Job
+		if request.LightSchedule.Duration == "" && request.LightSchedule.StartTime == "" {
+			garden.LightSchedule = nil
+			if err := gr.scheduler.RemoveByTag(garden.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+				render.Render(w, r, InternalServerError(err))
+				return
+			}
+		}
+	}
+	if request.CreatedAt != nil {
+		garden.CreatedAt = request.CreatedAt
+	}
 
-	// Update the lighting schedule for the Garden
-	if err := gr.resetLightingSchedule(garden); err != nil {
-		render.Render(w, r, InternalServerError(err))
-		return
+	// Update the lighting schedule for the Garden (if it exists)
+	if garden.LightSchedule != nil {
+		if err := gr.resetLightingSchedule(garden); err != nil {
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
 	}
 
 	// Save the Garden

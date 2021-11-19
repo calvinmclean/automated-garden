@@ -224,7 +224,7 @@ func TestCreateGarden(t *testing.T) {
 			"ErrorBadRequestInvalidStartTime",
 			func(storageClient *storage.MockClient) {},
 			`{"name":"test-garden","light_schedule":{"duration":"24h","start_time":"NOT A TIME"}}`,
-			`{"status":"Invalid request.","error":"parsing time \\"NOT A TIME\\" as \\"15:04:05-07:00\\": cannot parse \\"NOT A TIME\\" as \\"15\\""}`,
+			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
 			http.StatusBadRequest,
 		},
 	}
@@ -424,8 +424,12 @@ func TestEndDateGarden(t *testing.T) {
 }
 
 func TestUpdateGarden(t *testing.T) {
+	gardenWithoutLight := createExampleGarden()
+	gardenWithoutLight.LightSchedule = nil
+
 	tests := []struct {
 		name           string
+		garden         *pkg.Garden
 		setupMock      func(*storage.MockClient)
 		body           string
 		expectedRegexp string
@@ -433,15 +437,37 @@ func TestUpdateGarden(t *testing.T) {
 	}{
 		{
 			"Successful",
+			createExampleGarden(),
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
-			`{"name": "new name"}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			http.StatusOK,
+		},
+		{
+			"SuccessfullyRemoveLightSchedule",
+			createExampleGarden(),
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+			},
+			`{"name": "new name", "light_schedule": {}}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			http.StatusOK,
+		},
+		{
+			"SuccessfullyAddLightSchedule",
+			gardenWithoutLight,
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+			},
+			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"StorageClientError",
+			createExampleGarden(),
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
 			},
@@ -451,6 +477,7 @@ func TestUpdateGarden(t *testing.T) {
 		},
 		{
 			"ErrorInvalidRequestBody",
+			createExampleGarden(),
 			func(storageClient *storage.MockClient) {},
 			"{}",
 			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
@@ -467,9 +494,8 @@ func TestUpdateGarden(t *testing.T) {
 				config:        Config{},
 				scheduler:     gocron.NewScheduler(time.Local),
 			}
-			garden := createExampleGarden()
 
-			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
 			r := httptest.NewRequest("PATCH", "/garden", strings.NewReader(tt.body)).WithContext(ctx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()

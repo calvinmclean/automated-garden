@@ -3,6 +3,7 @@ package server
 import (
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -368,6 +369,137 @@ func TestGardenRequest(t *testing.T) {
 			err := tt.gr.Bind(r)
 			if err == nil {
 				t.Error("Expected error reading GardenRequest JSON, but none occurred")
+				return
+			}
+			if err.Error() != tt.err {
+				t.Errorf("Unexpected error string: %v", err)
+			}
+		})
+	}
+}
+
+func TestUpdateGardenRequest(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		name string
+		gr   *UpdateGardenRequest
+		err  string
+	}{
+		{
+			"EmptyRequestError",
+			nil,
+			"missing required Garden fields",
+		},
+		{
+			"EmptyGardenError",
+			&UpdateGardenRequest{},
+			"missing required Garden fields",
+		},
+		{
+			"InvalidNameErrorError$",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden$",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError#",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden#",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError*",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden*",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError>",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden>",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError+",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden+",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"InvalidNameErrorError/",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					Name: "garden/",
+				},
+			},
+			"one or more invalid characters in Garden name",
+		},
+		{
+			"CreatingPlantsNotAllowedError",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					Plants: map[xid.ID]*pkg.Plant{
+						xid.New(): {},
+					},
+				},
+			},
+			"cannot add or modify Plants with this request",
+		},
+		{
+			"InvalidLightScheduleStartTimeError",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					LightSchedule: &pkg.LightSchedule{
+						StartTime: "NOT A TIME",
+					},
+				},
+			},
+			"invalid time format for light_schedule.start_time: NOT A TIME",
+		},
+		{
+			"EndDateError",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					EndDate: &now,
+				},
+			},
+			"to end-date a Garden, please use the DELETE endpoint",
+		},
+	}
+
+	t.Run("Successful", func(t *testing.T) {
+		gr := &UpdateGardenRequest{
+			Garden: &pkg.Garden{
+				Name: "garden",
+			},
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := gr.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading UpdateGardenRequest JSON: %v", err)
+		}
+	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest("", "/", nil)
+			err := tt.gr.Bind(r)
+			if err == nil {
+				t.Error("Expected error reading UpdateGardenRequest JSON, but none occurred")
 				return
 			}
 			if err.Error() != tt.err {
