@@ -80,6 +80,9 @@ func (c *client) Connect() error {
 func (c *client) Publish(topic string, message []byte) error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
+	if len(topic) == 0 {
+		return fmt.Errorf("unable to publish with an empty topic")
+	}
 	if err := c.Connect(); err != nil {
 		return fmt.Errorf("unable to connect to MQTT broker: %v", err)
 	}
