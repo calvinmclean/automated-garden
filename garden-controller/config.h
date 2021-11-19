@@ -104,6 +104,7 @@
 #define MOISTURE_SENSOR_INTERVAL 5000
 #endif
 
+// Define these parameters to enable automated watering without relying on MQTT
 // #define ENABLE_WATERING_INTERVAL
 #ifdef ENABLE_WATERING_INTERVAL
 #define INTERVAL 86400000 // 24 hours
