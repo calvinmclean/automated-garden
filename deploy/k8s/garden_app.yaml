@@ -71,8 +71,8 @@ data:
       type: "ConfigMap"
       options:
         name: "garden-app-config"
-        key: "plants.yaml"
-  plants.yaml: |
+        key: "gardens.yaml"
+  gardens.yaml: |
     c22tmvucie6n6gdrpal0:
       name: test-garden
       id: c22tmvucie6n6gdrpal0

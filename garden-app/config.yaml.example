@@ -1,6 +1,5 @@
 web_server:
   port: 80
-  plants_filename: "plants.yaml"
 mqtt:
   broker: "localhost"
   port: 1883
@@ -13,4 +12,8 @@ influxdb:
   address: "http://localhost:8086"
   token: "my-token"
   org: "garden"
-  bucket: "water"
+  bucket: "garden"
+storage:
+  type: "YAML"
+  options:
+    filename: "gardens.yaml"

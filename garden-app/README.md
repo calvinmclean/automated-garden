@@ -1,34 +1,48 @@
 # Garden App
-
 This is a Go application with a CLI and web backend for working with the garden controller.
 
-
 ## Getting Started
-WIP
+1. Go to `/deploy/docker` directory and start up all services
+    ```shell
+    docker compose up
+    ```
+2. Create a `config.yaml` file from the provided example
+    ```shell
+    cp config.yaml.example config.yaml
+    ```
+3. Create a `gardens.yaml` file from the provided example
+    ```shell
+    cp gardens.yaml.example gardens.yaml
+    ```
+4. Run the server:
+    ```shell
+    go run main.go server --config config.yaml
+    ```
 
+To run this in a more long-term setup, I recommend using [K3s](https://k3s.io) and deploying the manifests from `/deploy/k8s`.
 
-### Watering Strategies
-Watering is configured in the `WateringStrategy` property of a `Plant`. This consists of an interval, watering amount, and optionally a minimum moisture. Whenever the interval time elapses, the plant will be watered for the configured time. If the minimum moisture is configured, the InfluxDB moisture data is checked and the plant will only be watered if the moisture is below the threshold. The moisture value will actually be the average over the last 15 minutes to avoid outlier data causing unnecessary watering.
-
-The moisture-based watering feature was designed to still use the interval rather than continuously reading from the stream of data because this offloads the complexity of data streaming to the Telegraf/InfluxDB setup. Additionally, this reduces the complexity of the `WateringStrategy` configuration by only adding a single optional field. It will also prevent the watering from being triggered by outlier data.
-
-YAML example:
-```yaml
-watering_strategy:
-    watering_amount: 10000
-    interval: 24h
-    minimum_moisture: 50
+Don't forget to update the `config.yaml` and `gardens.yaml` in the `ConfigMap`. Also, to use `ConfigMap` storage client you will have to enable the correct permissions in your cluster with this command:
+```shell
+kubectl create clusterrolebinding default --clusterrole=admin --serviceaccount=default:default
 ```
 
+## Additional Usage Details
 
-## Design Choices
+### Server
+The `server` command is the main program that runs the webserver backend for managing Gardens.
 
-### Code Organization
-The base of this project is a [Cobra](https://github.com/spf13/cobra) CLI application. It is used to start up a [`go-chi`](https://github.com/go-chi/chi) web application.
+#### Storage Clients
+The `storage` package defines a `Client` interface and multiple implementations of it. The `NewStorageClient` will create a client based on the configuration. The available clients are:
+- `YAMLClient`
+    - Writes objects to a YAML file on the local filesystem
+    - Requires a filename to use
+- `ConfigMapClient`
+    - Write objects to a YAML file in a Kubernetes `ConfigMap`
+    - Requires a `ConfigMap` name and key to access the data
+    - Additional setup may be required to enable the `garden-app` Pod to write to the `ConfigMap`:
+        ```shell
+        kubectl create clusterrolebinding default --clusterrole=admin --serviceaccount=default:default
+        ```
 
-Currently, this consists of 3 base packages:
-- `pkg`: contains models and other core code necessary for the application's functionality
-- `cmd`: contains Cobra commands for working with the other packages
-- `server`: contains most of the `go-chi` parts of the application for implementing the HTTP API
-
-This approach allows me to focus on the application's core functionality separate from how the user will interact with it through the CLI or HTTP API.
+### Controller
+The `controller` command behaves as a mock `garden-controller` that makes it easier to develop, test, and debug without using a standalone microcontroller. This has extensive options using flags to control different behaviors. In most cases, the defaults will work perfectly fine.
