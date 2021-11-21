@@ -288,6 +288,62 @@ paths:
                 $ref: "#/components/schemas/PlantResponse"
         "400":
           description: Bad Request
+  /gardens/{gardenID}/plants/{plantID}/action:
+    post:
+      tags:
+        - plants
+      summary: Execute action on a Plant
+      description: This endpoint allows executing certain actions on a Plant. This will actually interact with the `garden-controller` rather than just manipulating resources.
+      operationId: plantAction
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Execute action on a Plant
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlantAction"
+
+  /gardens/{gardenID}/plants/{plantID}/history:
+    post:
+      tags:
+        - plants
+      summary: Get Plant's watering history
+      description: This endpoint retrieves information about past watering events for this Plant
+      operationId: plantHistory
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/PlantID"
+        - name: range
+          in: query
+          description: duration describing the amount of time in the past to show events from (default=72h)
+          required: false
+          schema:
+            type: string
+            example: 72h
+        - name: limit
+          in: query
+          description: maximum number of events to include in response (default=5)
+          required: false
+          schema:
+            type: integer
+            example: 5
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantHistoryResponse"
+        "400":
+          description: Bad Request
 
 components:
   parameters:
@@ -325,6 +381,63 @@ components:
         href:
           type: string
           description: relative path for the specified resource
+
+    PlantHistoryResponse:
+      type: object
+      description: response containing a list of past watering events and some basic aggegrate details about them
+      properties:
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlantHistory"
+        count:
+          type: integer
+          description: number of watering events found in the range
+          example: 1
+        average:
+          type: string
+          description: average of `watering_amount` for all events found. Formatted as a float in Go duration format
+          example: 15s
+        total:
+          type: string
+          description: total of `watering_amount` for all events found. Formatted as a float in Go duration format
+          example: 15s
+
+    PlantHistory:
+      type: object
+      description: a
+      properties:
+        watering_amount:
+          type: integer
+          description: amount of time, in milliseconds, that Plant should be watered
+          example: 150000
+        record_time:
+          type: string
+          format: date-time
+          description: time that the watering event was recorded
+
+    PlantAction:
+      type: object
+      description: collects all the possible actions for a Plant into a single struct so these can easily be received as one request
+      properties:
+        water:
+          $ref: "#/components/schemas/WaterAction"
+      required:
+        - water
+
+    WaterAction:
+      type: object
+      description: waters a Plant for the specified amount of time
+      properties:
+        duration:
+          type: number
+          description: amount of time, in milliseconds, that Plant should be watered
+          example: 150000
+        ignore_moisture:
+          type: boolean
+          description: if Plant is configured with a `minimum_moisture` for watering, ignore it and force watering
+      required:
+        - duration
 
     UpdatePlantRequest:
       type: object
@@ -503,7 +616,7 @@ components:
 
     LightAction:
       type: object
-      description: turn a Garden's light on or off
+      description: turn a Garden's light on or off. If left blank or empty, it will toggle the current state
       properties:
         state:
           $ref: "#/components/schemas/LightState"
