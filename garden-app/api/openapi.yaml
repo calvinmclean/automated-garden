@@ -18,11 +18,11 @@ paths:
       tags:
         - gardens
       summary: Create a new Garden
-      description: Create a new Garden
+      description: Create a new Garden resource.
       operationId: createGarden
       responses:
-        "200":
-          description: Successful operation
+        "201":
+          description: Created
           content:
             application/json:
               schema:
@@ -35,22 +35,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/GardenRequest"
+              $ref: "#/components/schemas/CreateGardenRequest"
     get:
       tags:
         - gardens
       summary: Get all Gardens
-      description: Get all Gardens
+      description: Query for a list of all Gardens. Optionally include end-dated Gardens.
       operationId: getAllGardens
-      responses:
-        "200":
-          description: Successful operation
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/AllGardensResponse"
-        "400":
-          description: Bad Request
       parameters:
         - name: end_dated
           in: query
@@ -58,8 +49,145 @@ paths:
           required: false
           schema:
             type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllGardensResponse"
+        "400":
+          description: Bad Request
+  /gardens/{gardenID}:
+    get:
+      tags:
+        - gardens
+      summary: Get a Garden
+      description: Get details of a Garden.
+      operationId: getGarden
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GardenResponse"
+        "400":
+          description: Bad Request
+    patch:
+      tags:
+        - gardens
+      summary: Update/Edit a Garden
+      description: Update/Edit a Garden. Only certain fields of a Garden are editable.
+      operationId: updateGarden
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GardenResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Update/Edit a new Garden
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateGardenRequest"
+    delete:
+      tags:
+        - gardens
+      summary: End-date a Garden
+      description: End-date a Garden. This allows deleting without actually losing the resource data. Once a Garden is end-dated, certain resources will not be available such as health and action.
+      operationId: endDateGarden
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GardenResponse"
+        "400":
+          description: Bad Request
+  /gardens/{gardenID}/action:
+    post:
+      tags:
+        - gardens
+      summary: Execute action on a Garden
+      description: This endpoint allows executing certain actions on a Garden. This will actually interact with the `garden-controller` rather than just manipulating resources.
+      operationId: gardenAction
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Execute action on a Garden
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GardenAction"
+  /gardens/{gardenID}/health:
+    get:
+      tags:
+        - gardens
+      summary: Get Garden health
+      description: |
+        This allows getting information about a Garden's health status.
+        The `garden-controller` periodically reports that it is up by publishing to MQTT which writes a data point in InfluxDB via Telegraf.
+        A Garden is considered "UP" if it has reported within the last 5 minutes.
+      operationId: getGardenHealth
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GardenHealth"
+              examples:
+                UP:
+                  value:
+                    status: UP
+                    last_contact: "2021-11-21T02:13:53.539Z"
+                DOWN:
+                  value:
+                    status: DOWN
+                    details: last contact from Garden was 4h ago
+                    last_contact: "2021-11-21T02:13:53.539Z"
+                DOWN (no contact):
+                  value:
+                    status: DOWN
+                    details: no last contact time available
+                    last_contact: "2021-11-21T02:13:53.539Z"
+                N/A:
+                  value:
+                    status: N/A
+                    details: error connecting to InfluxDB
+        "400":
+          description: Bad Request
 
 components:
+  parameters:
+    GardenID:
+      name: gardenID
+      in: path
+      description: ID of Garden resource for this request
+      required: true
+      schema:
+        $ref: "#/components/schemas/xid"
   schemas:
     xid:
       type: string
@@ -80,11 +208,67 @@ components:
           type: string
           description: relative path for the specified resource
 
-    GardenRequest:
+    GardenHealth:
       type: object
-      description: This allows creating or updating a Garden resource
+      description: information about the Garden controller's health status
+      properties:
+        status:
+          type: string
+          description: current status of a Garden
+          enum: [UP, DOWN, N/A]
+        details:
+          type: string
+          description: additional details about the Garden's health. May contain error details if health status was unavailable
+        last_contact:
+          type: string
+          format: date-time
+          description: the last time the Garden reported its status
+
+    GardenAction:
+      type: object
+      description: collects all the possible actions for a Garden into a single struct so these can easily be received as one request
+      properties:
+        light:
+          $ref: "#/components/schemas/LightAction"
+        stop:
+          $ref: "#/components/schemas/StopAction"
+
+    LightAction:
+      type: object
+      description: turn a Garden's light on or off
+      properties:
+        state:
+          $ref: "#/components/schemas/LightState"
+
+    StopAction:
+      type: object
+      description: instruct a Garden to stop watering
+      properties:
+        all:
+          type: boolean
+          description: whether or not the Garden's watering queue should be cleared in addition to stopping current watering
+
+    LightState:
+      type: string
+      enum: [ON, OFF]
+      description: state that will be set by the next action
+
+    CreateGardenRequest:
+      type: object
+      description: This allows creating a Garden resource
       allOf:
         - $ref: "#/components/schemas/Garden"
+
+    UpdateGardenRequest:
+      type: object
+      description: This allows updating/editing a Garden resource
+      allOf:
+        - $ref: "#/components/schemas/Garden"
+        - properties:
+            created_at:
+              type: string
+              format: date-time
+              description: the date-time when the Garden was originally created
 
     GardenResponse:
       type: object
@@ -98,6 +282,10 @@ components:
               type: string
               format: date-time
               description: the date-time when the Garden was originally created
+            end_date:
+              type: string
+              format: date-time
+              description: the date-time when the Garden was deleted/removed
             next_light_action:
               type: object
               description: time and state for the next scheduled LightAction
@@ -107,9 +295,7 @@ components:
                   format: date-time
                   description: date-time of the next action
                 state:
-                  type: string
-                  enum: [ON, OFF]
-                  description: state that will be set by the next action
+                  $ref: "#/components/schemas/LightState"
             plants:
               description: link specifically for the collection of Plants
               allOf:
@@ -154,10 +340,6 @@ components:
           description: |
             A descriptive name for the Garden. This is used as the prefix of the MQTT topic for sending messages to the controller, so it is recommended to avoid spaces and the following characters are not allowed: `[$#*>+/]`
           example: garden
-        end_date:
-          type: string
-          format: date-time
-          description: the date-time when the Garden was deleted/removed
         light_schedule:
           type: object
           description: describes when to turn on a light and for how long to leave it on
