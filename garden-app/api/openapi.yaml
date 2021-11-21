@@ -178,6 +178,116 @@ paths:
                     details: error connecting to InfluxDB
         "400":
           description: Bad Request
+  /gardens/{gardenID}/plants:
+    post:
+      tags:
+        - plants
+      summary: Add a Plant
+      description: Adds a new Plant to this Garden.
+      operationId: addPlant
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Add a Plant
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatePlantRequest"
+    get:
+      tags:
+        - plants
+      summary: Get all Plants
+      description: Query for a list of all Plants. Optionally include end-dated Plants.
+      operationId: getAllPlants
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - name: end_dated
+          in: query
+          description: whether or not to include end-dated Plants in the response
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllPlantsResponse"
+        "400":
+          description: Bad Request
+  /gardens/{gardenID}/plants/{plantID}:
+    get:
+      tags:
+        - plants
+      summary: Get a Plant
+      description: Get details of a Plant.
+      operationId: getPlant
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "400":
+          description: Bad Request
+    patch:
+      tags:
+        - plants
+      summary: Update/Edit a Plant
+      description: Update/Edit a Plant. Only certain fields of a Plant are editable.
+      operationId: updatePlant
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Update/Edit a new Plant
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlantRequest"
+    delete:
+      tags:
+        - plants
+      summary: End-date a Plant
+      description: End-date a Plant. This allows deleting without actually losing the resource data. Once a Plant is end-dated, certain resources will not be available such as health and action.
+      operationId: endDatePlant
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "400":
+          description: Bad Request
 
 components:
   parameters:
@@ -188,6 +298,14 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/xid"
+    PlantID:
+      name: plantID
+      in: path
+      description: ID of Plant resource for this request
+      required: true
+      schema:
+        $ref: "#/components/schemas/xid"
+
   schemas:
     xid:
       type: string
@@ -199,7 +317,7 @@ components:
 
     link:
       type: object
-      description: used for JSON Hypermedia
+      description: used for JSON Hypermedia to link to additional resources
       properties:
         ref:
           type: string
@@ -207,6 +325,156 @@ components:
         href:
           type: string
           description: relative path for the specified resource
+
+    UpdatePlantRequest:
+      type: object
+      description: This allows updating/editing a Plant resource
+      allOf:
+        - $ref: "#/components/schemas/Plant"
+        - properties:
+            created_at:
+              type: string
+              format: date-time
+              description: the date-time when the Plant was originally created
+
+    AllPlantsResponse:
+      type: object
+      description: List of all Plants
+      properties:
+        plants:
+          type: array
+          items:
+            $ref: "#/components/schemas/PlantResponse"
+
+    CreatePlantRequest:
+      type: object
+      description: This allows creating a Plant resource
+      allOf:
+        - $ref: "#/components/schemas/Plant"
+      required:
+        - name
+        - plant_position
+        - watering_strategy
+
+    PlantResponse:
+      type: object
+      description: This is the response object for Plants that contains extra information only available on Plants that are created
+      allOf:
+        - $ref: "#/components/schemas/Plant"
+        - properties:
+            id:
+              $ref: "#/components/schemas/xid"
+            garden_id:
+              description: ID of the Garden this Plant is managed by
+              allOf:
+                - $ref: "#/components/schemas/xid"
+            created_at:
+              type: string
+              format: date-time
+              description: the date-time when the Plant was originally created
+            end_date:
+              type: string
+              format: date-time
+              description: the date-time when the Plant was deleted/removed
+            next_watering_time:
+              type: string
+              description: time of the next scheduled watering
+              format: date-time
+            moisture:
+              type: number
+              format: float
+              description: moisture percentage of a Plant with a soil moisture sensor
+            links:
+              type: array
+              items:
+                $ref: "#/components/schemas/link"
+              example:
+                - rel: self
+                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670
+                - rel: garden
+                  href: /gardens/c22tmvucie6n6gdrpal0
+                - rel: action
+                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/action
+                - rel: history
+                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/history
+      required:
+        - id
+        - created_at
+        - links
+        - garden_id
+        - name
+        - plant_position
+        - watering_strategy
+
+    Plant:
+      type: object
+      description: |
+        This represents a single Plant, or more generally a "watered resource," attached to the `garden-controller`.
+        It has a `plant_position` field to inform the `garden-controller` of which pump or valve to control for watering.
+      properties:
+        name:
+          type: string
+          description: this is the name of the Plant
+          example: lettuce
+        details:
+          type: object
+          description: this holds various additional information about a Plant that might be useful to remember, but is not related to core functionality of this application.
+          properties:
+            description:
+              type: string
+              description: a general description of a Plant
+              example: nutritious leafy green
+            notes:
+              type: string
+              description: general notes about the Plant
+              example: grown from seed and planted about 6 inches apart
+            time_to_harvest:
+              type: string
+              description: estimate of time it takes Plant to grow
+              example: 70 days
+            count:
+              type: integer
+              description: number of actual plants that would be managed
+              example: 6
+        plant_position:
+          type: integer
+          description: this is the position of this Plant in the Garden. It corresponds directly to the configuration of the `garden-controller` and is critical for watering the Plant
+          example: 0
+        skip_count:
+          type: integer
+          description: number of times the WaterAction should be skipped. This can be used to prevent overwatering
+          example: 0
+        watering_strategy:
+          type: object
+          description: |
+            Allows control over how/when the Plant is watered. The `interval` is used to control the amount of time the pump runs to water the Garden.
+            Specifying a `minimum_moisture` will instruct the server to consider moisture sensor data when executing the WaterAction.
+            To avoid falsely triggering watering and avoid the complexity if constantly checking moisture data, the moisture is only checked when executing a WaterAction.
+          properties:
+            watering_amount:
+              type: integer
+              description: amount of time, in milliseconds, that Plant should be watered
+              example: 150000
+            interval:
+              type: string
+              format: duration
+              description: amount of time, as a Duration string, to wait between scheduled watering
+              example: 72h
+            minimum_moisture:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: this is a percentage representing the threshold that the Plant's moisture must be below to enable a WaterAction
+              example: 50
+            start_time:
+              type: string
+              format: time
+              description: time that the watering interval should be started at
+              example: 23:00:00-07:00
+          required:
+            - watering_amount
+            - interval
+            - start_time
 
     GardenHealth:
       type: object
@@ -258,6 +526,8 @@ components:
       description: This allows creating a Garden resource
       allOf:
         - $ref: "#/components/schemas/Garden"
+      required:
+        - name
 
     UpdateGardenRequest:
       type: object
@@ -357,5 +627,3 @@ components:
           required:
             - duration
             - start_time
-      required:
-        - name
