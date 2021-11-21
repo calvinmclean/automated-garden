@@ -52,10 +52,11 @@ func NewMQTTClient(config Config, defaultHandler mqtt.MessageHandler, handlers .
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", config.Broker, config.Port))
 	opts.ClientID = config.ClientID
 	opts.AutoReconnect = true
+	opts.CleanSession = false
 	if len(handlers) > 0 {
 		opts.OnConnect = func(c mqtt.Client) {
 			for _, handler := range handlers {
-				if token := c.Subscribe(handler.Topic, byte(0), handler.Handler); token.Wait() && token.Error() != nil {
+				if token := c.Subscribe(handler.Topic, byte(1), handler.Handler); token.Wait() && token.Error() != nil {
 					// TODO: can I return an error instead of panicking (recover maybe?)
 					panic(token.Error())
 				}
@@ -86,7 +87,7 @@ func (c *client) Publish(topic string, message []byte) error {
 	if err := c.Connect(); err != nil {
 		return fmt.Errorf("unable to connect to MQTT broker: %v", err)
 	}
-	if token := c.Client.Publish(topic, byte(0), false, message); token.Wait() && token.Error() != nil {
+	if token := c.Client.Publish(topic, byte(1), false, message); token.Wait() && token.Error() != nil {
 		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
 	}
 	return nil

@@ -65,6 +65,7 @@ void waterPublisherTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
+#ifdef LIGHT_PIN
 /*
   lightPublisherTask reads from a queue to publish LightingEvents as an InfluxDB
   line protocol message to MQTT
@@ -86,6 +87,7 @@ void lightPublisherTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
+#endif
 
 /*
   healthPublisherTask runs every minute and publishes a message to MQTT to record a health check-in
@@ -114,13 +116,14 @@ void mqttConnectTask(void* parameters) {
         // Connect to MQTT server if not connected already
         if (!client.connected()) {
             printf("attempting MQTT connection...");
-            if (client.connect(MQTT_CLIENT_NAME)) {
+            // Connect with defaul arguments + cleanSession = false for persistent sessions
+            if (client.connect(MQTT_CLIENT_NAME, NULL, NULL, 0, 0, 0, 0, false)) {
                 printf("connected\n");
-                client.subscribe(waterCommandTopic);
-                client.subscribe(stopCommandTopic);
-                client.subscribe(stopAllCommandTopic);
+                client.subscribe(waterCommandTopic, 1);
+                client.subscribe(stopCommandTopic, 1);
+                client.subscribe(stopAllCommandTopic, 1);
 #ifdef LIGHT_PIN
-                client.subscribe(lightCommandTopic);
+                client.subscribe(lightCommandTopic, 1);
 #endif
             } else {
                 printf("failed, rc=%zu\n", client.state());
@@ -182,8 +185,10 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         LightingEvent le = {
             doc["state"] | ""
         };
+#ifdef LIGHT_PIN
         printf("received command to change state of the light: '%s'\n", le.state);
         changeLight(le);
+#endif
     }
 }
 

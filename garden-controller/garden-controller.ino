@@ -198,6 +198,7 @@ void waterPlant(WateringEvent we) {
     xQueueSend(wateringQueue, &we, portMAX_DELAY);
 }
 
+#ifdef LIGHT_PIN
 /*
   changeLight will use the state on the LightingEvent to change the state of the light. If the state
   is empty, this will toggle the current state.
@@ -221,3 +222,4 @@ void changeLight(LightingEvent le) {
     xQueueSend(lightPublisherQueue, &light_state, portMAX_DELAY);
 #endif
 }
+#endif
