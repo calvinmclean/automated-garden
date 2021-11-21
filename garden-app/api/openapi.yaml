@@ -12,6 +12,10 @@ tags:
     description: Operations related to Garden resources
   - name: plants
     description: Operations related to Plant resources
+  - name: backwards-compatible plants
+    description: |
+      Operations related to Plant resources that can be accessed without a Garden ID.
+      This preserves compatibility for before Gardens were added.
 paths:
   /gardens:
     post:
@@ -320,6 +324,143 @@ paths:
       operationId: plantHistory
       parameters:
         - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/PlantID"
+        - name: range
+          in: query
+          description: duration describing the amount of time in the past to show events from (default=72h)
+          required: false
+          schema:
+            type: string
+            example: 72h
+        - name: limit
+          in: query
+          description: maximum number of events to include in response (default=5)
+          required: false
+          schema:
+            type: integer
+            example: 5
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantHistoryResponse"
+        "400":
+          description: Bad Request
+
+  /plants:
+    get:
+      tags:
+        - backwards-compatible plants
+      summary: Get all Plants
+      description: Query for a list of all Plants. Optionally include end-dated Plants.
+      operationId: getAllPlantsBackwardsCompatible
+      parameters:
+        - name: end_dated
+          in: query
+          description: whether or not to include end-dated Plants in the response
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllPlantsResponse"
+        "400":
+          description: Bad Request
+  /plants/{plantID}:
+    get:
+      tags:
+        - backwards-compatible plants
+      summary: Get a Plant
+      description: Get details of a Plant.
+      operationId: getPlantBackwardsCompatible
+      parameters:
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "400":
+          description: Bad Request
+    patch:
+      tags:
+        - backwards-compatible plants
+      summary: Update/Edit a Plant
+      description: Update/Edit a Plant. Only certain fields of a Plant are editable.
+      operationId: updatePlantBackwardsCompatible
+      parameters:
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Update/Edit a new Plant
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdatePlantRequest"
+    delete:
+      tags:
+        - backwards-compatible plants
+      summary: End-date a Plant
+      description: End-date a Plant. This allows deleting without actually losing the resource data. Once a Plant is end-dated, certain resources will not be available such as health and action.
+      operationId: endDatePlantBackwardsCompatible
+      parameters:
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PlantResponse"
+        "400":
+          description: Bad Request
+  /plants/{plantID}/action:
+    post:
+      tags:
+        - backwards-compatible plants
+      summary: Execute action on a Plant
+      description: This endpoint allows executing certain actions on a Plant. This will actually interact with the `garden-controller` rather than just manipulating resources.
+      operationId: plantActionBackwardsCompatible
+      parameters:
+        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "202":
+          description: Accepted
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Execute action on a Plant
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PlantAction"
+
+  /plants/{plantID}/history:
+    post:
+      tags:
+        - backwards-compatible plants
+      summary: Get Plant's watering history
+      description: This endpoint retrieves information about past watering events for this Plant
+      operationId: plantHistoryBackwardsCompatible
+      parameters:
         - $ref: "#/components/parameters/PlantID"
         - name: range
           in: query
