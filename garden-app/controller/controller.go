@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-co-op/gocron"
@@ -25,16 +24,15 @@ var logger *logrus.Logger
 
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
-	InfluxDBConfig       influxdb.Config `mapstructure:"influxdb"`
-	MQTTConfig           mqtt.Config     `mapstructure:"mqtt"`
-	Garden               string          `mapstructure:"garden_name"`
-	NumPlants            int             `mapstructure:"num_plants"`
-	MoistureStrategy     string          `mapstructure:"moisture_strategy"`
-	MoistureValue        int             `mapstructure:"moisture_value"`
-	MoistureInterval     time.Duration   `mapstructure:"moisture_interval"`
-	PublishWateringEvent bool            `mapstructure:"publish_watering_event"`
-	PublishHealth        bool            `mapstructure:"publish_health"`
-	HealthInterval       time.Duration   `mapstructure:"health_interval"`
+	MQTTConfig           mqtt.Config   `mapstructure:"mqtt"`
+	Garden               string        `mapstructure:"garden_name"`
+	NumPlants            int           `mapstructure:"num_plants"`
+	MoistureStrategy     string        `mapstructure:"moisture_strategy"`
+	MoistureValue        int           `mapstructure:"moisture_value"`
+	MoistureInterval     time.Duration `mapstructure:"moisture_interval"`
+	PublishWateringEvent bool          `mapstructure:"publish_watering_event"`
+	PublishHealth        bool          `mapstructure:"publish_health"`
+	HealthInterval       time.Duration `mapstructure:"health_interval"`
 	LogLevel             logrus.Level
 }
 
