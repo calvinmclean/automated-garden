@@ -892,3 +892,40 @@ func TestWateringHistory(t *testing.T) {
 		})
 	}
 }
+
+func TestGetNextWateringTime(t *testing.T) {
+	tests := []struct {
+		name         string
+		skipCount    int
+		expectedDiff time.Duration
+	}{
+		{"ZeroSkip", 0, 0},
+		{"TwoSkip", 2, 24 * 2 * time.Hour},
+		{"30Skip", 30, 24 * 30 * time.Hour},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pr := PlantsResource{
+				GardensResource: GardensResource{
+					scheduler: gocron.NewScheduler(time.Local),
+				},
+			}
+			g := createExampleGarden()
+			p := createExamplePlant()
+
+			pr.addWateringSchedule(g, p)
+			pr.scheduler.StartAsync()
+			defer pr.scheduler.Stop()
+
+			nextWateringTime := pr.getNextWateringTime(p)
+			p.SkipCount = &tt.skipCount
+			nextWateringTimeWithSkip := pr.getNextWateringTime(p)
+
+			diff := nextWateringTimeWithSkip.Sub(*nextWateringTime)
+			if diff != tt.expectedDiff {
+				t.Errorf("Unexpected difference between next watering times: expected=%v, actual=%v", tt.expectedDiff, diff)
+			}
+		})
+	}
+}
