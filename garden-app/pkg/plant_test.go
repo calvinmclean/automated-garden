@@ -61,10 +61,6 @@ func TestPatch(t *testing.T) {
 			&Plant{CreatedAt: &now},
 		},
 		{
-			"PatchEndDate",
-			&Plant{EndDate: &now},
-		},
-		{
 			"PatchSkipCount",
 			&Plant{SkipCount: &zero},
 		},

@@ -167,6 +167,7 @@ func TestPlantRequest(t *testing.T) {
 
 func TestUpdatePlantRequest(t *testing.T) {
 	pp := 0
+	now := time.Now()
 	tests := []struct {
 		name string
 		pr   *UpdatePlantRequest
@@ -208,6 +209,15 @@ func TestUpdatePlantRequest(t *testing.T) {
 				},
 			},
 			"invalid time format for watering_strategy.start_time: NOT A TIME",
+		},
+		{
+			"EndDateError",
+			&UpdatePlantRequest{
+				Plant: &pkg.Plant{
+					EndDate: &now,
+				},
+			},
+			"to end-date a Plant, please use the DELETE endpoint",
 		},
 	}
 

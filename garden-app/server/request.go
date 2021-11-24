@@ -73,6 +73,9 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 	if p.GardenID != xid.NilID() {
 		return errors.New("updating garden ID is not allowed")
 	}
+	if p.EndDate != nil {
+		return errors.New("to end-date a Plant, please use the DELETE endpoint")
+	}
 
 	if p.Plant.WateringStrategy != nil && p.WateringStrategy.StartTime != "" {
 		// Check that water time is valid
