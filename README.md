@@ -8,6 +8,8 @@
 
 This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with multiple gardens.
 
+[See additional documentation here](https://calvinmclean.github.io/automated-garden).
+
 ![Garden](../assets/garden.jpeg?raw=true)
 
 This system is designed to be flexible for all types of gardening. Here are a few examples of different possible setups:

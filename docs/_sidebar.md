@@ -13,4 +13,3 @@
 * Examples
     * [Indoor Herb Garden](indoor_example.md)
     * [Indoor Hydroponics](hydroponics_example.md)
-    * [Standalone Controller](standalone_controller_example.md)
