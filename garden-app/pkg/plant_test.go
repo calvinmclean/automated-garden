@@ -41,7 +41,7 @@ func TestPlantEndDated(t *testing.T) {
 	}
 }
 
-func TestPatch(t *testing.T) {
+func TestPlantPatch(t *testing.T) {
 	zero := 0
 	now := time.Now()
 	tests := []struct {

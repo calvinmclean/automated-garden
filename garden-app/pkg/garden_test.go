@@ -80,3 +80,62 @@ func TestGardenEndDated(t *testing.T) {
 		})
 	}
 }
+
+func TestGardenPatch(t *testing.T) {
+	now := time.Now()
+	tests := []struct {
+		name      string
+		newGarden *Garden
+	}{
+		{
+			"PatchName",
+			&Garden{Name: "name"},
+		},
+		{
+			"PatchCreatedAt",
+			&Garden{CreatedAt: &now},
+		},
+		{
+			"PatchLightSchedule.Duration",
+			&Garden{LightSchedule: &LightSchedule{
+				Duration: "2h",
+			}},
+		},
+		{
+			"PatchLightSchedule.StartTime",
+			&Garden{LightSchedule: &LightSchedule{
+				StartTime: "start time",
+			}},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			g := &Garden{}
+			g.Patch(tt.newGarden)
+			if g.LightSchedule != nil && *g.LightSchedule != *tt.newGarden.LightSchedule {
+				t.Errorf("Unexpected result for LightSchedule: expected=%v, actual=%v", tt.newGarden.LightSchedule, g.LightSchedule)
+			}
+			if g.Name != tt.newGarden.Name {
+				t.Errorf("Unexpected result for Name: expected=%v, actual=%v", tt.newGarden.Name, g.Name)
+			}
+			if g.CreatedAt != tt.newGarden.CreatedAt {
+				t.Errorf("Unexpected result for CreatedAt: expected=%v, actual=%v", tt.newGarden.CreatedAt, g.CreatedAt)
+			}
+		})
+	}
+
+	t.Run("RemoveLightSchedule", func(t *testing.T) {
+		g := &Garden{
+			LightSchedule: &LightSchedule{
+				StartTime: "START TIME",
+				Duration:  "2h",
+			},
+		}
+		g.Patch(&Garden{LightSchedule: &LightSchedule{}})
+
+		if g.LightSchedule != nil {
+			t.Errorf("Expected nil LightSchedule, but got: %v", g.LightSchedule)
+		}
+	})
+}
