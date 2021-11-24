@@ -230,39 +230,11 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+	garden.Patch(request.Garden)
 
-	// Manually update garden fields that are allowed to be changed
-	if request.Name != "" {
-		garden.Name = request.Name
-	}
-	if request.LightSchedule != nil {
-		// If existing garden doesn't have a LightSchedule, it needs to be initialized first
-		if garden.LightSchedule == nil {
-			garden.LightSchedule = &pkg.LightSchedule{}
-		}
-		if request.LightSchedule.Duration != "" {
-			garden.LightSchedule.Duration = request.LightSchedule.Duration
-		}
-		if request.LightSchedule.StartTime != "" {
-			garden.LightSchedule.StartTime = request.LightSchedule.StartTime
-		}
-		// If LightSchedule is empty, make it nil (this is how a LightSchedule is removed because a nil LightSchedule is ignored)
-		// Also remove the scheduled Job
-		if request.LightSchedule.Duration == "" && request.LightSchedule.StartTime == "" {
-			garden.LightSchedule = nil
-			if err := gr.scheduler.RemoveByTag(garden.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
-				render.Render(w, r, InternalServerError(err))
-				return
-			}
-		}
-	}
-	if request.CreatedAt != nil {
-		garden.CreatedAt = request.CreatedAt
-	}
-
-	// Update the lighting schedule for the Garden (if it exists)
-	if garden.LightSchedule != nil {
-		if err := gr.resetLightingSchedule(garden); err != nil {
+	// If LightSchedule is empty, remove the scheduled Job
+	if garden.LightSchedule == nil {
+		if err := gr.scheduler.RemoveByTag(garden.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
@@ -272,6 +244,14 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 	if err := gr.storageClient.SaveGarden(garden); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
+	}
+
+	// Update the lighting schedule for the Garden (if it exists)
+	if garden.LightSchedule != nil {
+		if err := gr.resetLightingSchedule(garden); err != nil {
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
 	}
 
 	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {

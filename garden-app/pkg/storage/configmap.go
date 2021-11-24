@@ -3,7 +3,6 @@ package storage
 import (
 	"context"
 	"fmt"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -53,41 +52,41 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	client.k8sClient = clientset.CoreV1().ConfigMaps("default")
 
 	// Get the ConfigMap and read into map
-	configMap, err := client.k8sClient.Get(context.TODO(), client.configMapName, metav1.GetOptions{})
+	err = client.update()
 	if err != nil {
-		return nil, fmt.Errorf("unable to get ConfigMap '%s': %v", client.configMapName, err)
-	}
-	err = yaml.Unmarshal([]byte(configMap.Data[client.keyName]), &client.gardens)
-	if err != nil {
-		return nil, fmt.Errorf("unable to unmarshal YAML map of Plants: %v", err)
-	}
-
-	// Create start dates for Gardens and Plants if it is empty
-	for _, garden := range client.gardens {
-		now := time.Now().Add(1 * time.Minute)
-		if garden.CreatedAt == nil {
-			garden.CreatedAt = &now
-			client.Save()
-		}
-		for _, plant := range garden.Plants {
-			if plant.CreatedAt == nil {
-				now := time.Now().Add(1 * time.Minute)
-				plant.CreatedAt = &now
-				client.SavePlant(plant)
-			}
-		}
+		return client, err
 	}
 
 	return client, nil
 }
 
+func (c *ConfigMapClient) update() error {
+	configMap, err := c.k8sClient.Get(context.TODO(), c.configMapName, metav1.GetOptions{})
+	if err != nil {
+		return fmt.Errorf("unable to get ConfigMap '%s': %v", c.configMapName, err)
+	}
+	err = yaml.Unmarshal([]byte(configMap.Data[c.keyName]), &c.gardens)
+	if err != nil {
+		return fmt.Errorf("unable to unmarshal YAML map of Plants: %v", err)
+	}
+	return nil
+}
+
 // GetGarden returns the garden
 func (c *ConfigMapClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	return c.gardens[id], nil
 }
 
 // GetGardens returns all gardens
 func (c *ConfigMapClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	result := []*pkg.Garden{}
 	for _, g := range c.gardens {
 		if getEndDated || !g.EndDated() {
@@ -105,11 +104,19 @@ func (c *ConfigMapClient) SaveGarden(garden *pkg.Garden) error {
 
 // GetPlant just returns the request Plant from the map
 func (c *ConfigMapClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	return c.gardens[garden].Plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
 func (c *ConfigMapClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	result := []*pkg.Plant{}
 	for _, p := range c.gardens[garden].Plants {
 		if getEndDated || !p.EndDated() {

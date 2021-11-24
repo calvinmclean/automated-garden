@@ -50,7 +50,7 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 		defer cancel()
 
 		defer influxdbClient.Close()
-		moisture, err := influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
+		moisture, err := influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.Name)
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)
 		}
@@ -58,15 +58,15 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 			return fmt.Errorf("moisture value %.2f%% is above threshold %d%%", moisture, p.WateringStrategy.MinimumMoisture)
 		}
 	}
-	if p.SkipCount > 0 {
-		p.SkipCount--
+	if p.SkipCount != nil && *p.SkipCount > 0 {
+		*p.SkipCount--
 		return fmt.Errorf("plant %s is configured to skip watering", p.ID)
 	}
 
 	msg, err := json.Marshal(WaterMessage{
 		Duration:      action.Duration,
 		PlantID:       p.ID,
-		PlantPosition: p.PlantPosition,
+		PlantPosition: *p.PlantPosition,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %v", err)

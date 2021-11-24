@@ -79,3 +79,29 @@ func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) Gar
 func (g *Garden) EndDated() bool {
 	return g.EndDate != nil && g.EndDate.Before(time.Now())
 }
+
+// Patch allows for easily updating individual fields of a Garden by passing in a new Garden containing
+// the desired values
+func (g *Garden) Patch(newGarden *Garden) {
+	if newGarden.Name != "" {
+		g.Name = newGarden.Name
+	}
+	if newGarden.CreatedAt != nil {
+		g.CreatedAt = newGarden.CreatedAt
+	}
+	if newGarden.LightSchedule != nil {
+		// If existing garden doesn't have a LightSchedule, it needs to be initialized first
+		if g.LightSchedule == nil {
+			g.LightSchedule = &LightSchedule{}
+		}
+		if newGarden.LightSchedule.Duration != "" {
+			g.LightSchedule.Duration = newGarden.LightSchedule.Duration
+		}
+		if newGarden.LightSchedule.StartTime != "" {
+			g.LightSchedule.StartTime = newGarden.LightSchedule.StartTime
+		}
+		if newGarden.LightSchedule.Duration == "" && newGarden.LightSchedule.StartTime == "" {
+			g.LightSchedule = nil
+		}
+	}
+}

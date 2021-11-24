@@ -239,7 +239,8 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 
 // updatePlant will change any specified fields of the Plant and save it
 func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
-	request := &PlantRequest{r.Context().Value(plantCtxKey).(*pkg.Plant)}
+	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+	request := &UpdatePlantRequest{}
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
 	// Read the request body into existing plant to overwrite fields
@@ -247,16 +248,16 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	plant := request.Plant
+	plant.Patch(request.Plant)
 
-	// Update the watering schedule for the Plant
-	if err := pr.resetWateringSchedule(garden, plant); err != nil {
+	// Save the Plant
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
-	// Save the Plant
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	// Update the watering schedule for the Plant
+	if err := pr.resetWateringSchedule(garden, plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -316,14 +317,6 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	plant := request.Plant
 
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-
-	// Check that water time is valid
-	_, err := time.Parse(pkg.WaterTimeFormat, plant.WateringStrategy.StartTime)
-	if err != nil {
-		logger.Errorf("Invalid time format for WateringStrategy.StartTime: %s", plant.WateringStrategy.StartTime)
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
 
 	// Assign values to fields that may not be set in the request
 	plant.ID = xid.New()
@@ -391,7 +384,7 @@ func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request)
 func (pr PlantsResource) getAndCacheMoisture(ctx context.Context, g *pkg.Garden, p *pkg.Plant) {
 	defer pr.influxdbClient.Close()
 
-	moisture, err := pr.influxdbClient.GetMoisture(ctx, p.PlantPosition, g.Name)
+	moisture, err := pr.influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.Name)
 	if err != nil {
 		logger.Errorf("unable to get moisture of Plant %v: %v", p.ID, err)
 	}
@@ -402,7 +395,7 @@ func (pr PlantsResource) getAndCacheMoisture(ctx context.Context, g *pkg.Garden,
 func (pr PlantsResource) getWateringHistory(ctx context.Context, plant *pkg.Plant, garden *pkg.Garden, timeRange time.Duration, limit int) (result []pkg.WateringHistory, err error) {
 	defer pr.influxdbClient.Close()
 
-	history, err := pr.influxdbClient.GetWateringHistory(ctx, plant.PlantPosition, garden.Name, timeRange)
+	history, err := pr.influxdbClient.GetWateringHistory(ctx, *plant.PlantPosition, garden.Name, timeRange)
 	if err != nil {
 		return
 	}
