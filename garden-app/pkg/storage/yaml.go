@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -36,40 +35,41 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 	}
 
 	// If file exists, continue by reading its contents to the map
-	data, err := ioutil.ReadFile(client.filename)
+	err = client.update()
 	if err != nil {
 		return client, err
-	}
-	err = yaml.Unmarshal(data, &client.gardens)
-	if err != nil {
-		return client, err
-	}
-
-	// Create start dates for Gardens and Plants if it is empty
-	for _, garden := range client.gardens {
-		now := time.Now().Add(1 * time.Minute)
-		if garden.CreatedAt == nil {
-			garden.CreatedAt = &now
-			client.Save()
-		}
-		for _, plant := range garden.Plants {
-			if plant.CreatedAt == nil {
-				plant.CreatedAt = &now
-				client.SavePlant(plant)
-			}
-		}
 	}
 
 	return client, err
 }
 
+func (c *YAMLClient) update() error {
+	data, err := ioutil.ReadFile(c.filename)
+	if err != nil {
+		return err
+	}
+	err = yaml.Unmarshal(data, &c.gardens)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // GetGarden returns the garden
 func (c *YAMLClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	return c.gardens[id], nil
 }
 
 // GetGardens returns all the gardens
 func (c *YAMLClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	result := []*pkg.Garden{}
 	for _, g := range c.gardens {
 		if getEndDated || !g.EndDated() {
@@ -87,11 +87,19 @@ func (c *YAMLClient) SaveGarden(garden *pkg.Garden) error {
 
 // GetPlant just returns the request Plant from the map
 func (c *YAMLClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	return c.gardens[garden].Plants[id], nil
 }
 
 // GetPlants returns all plants from the map as a slice
 func (c *YAMLClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
 	result := []*pkg.Plant{}
 	for _, p := range c.gardens[garden].Plants {
 		if getEndDated || !p.EndDated() {
