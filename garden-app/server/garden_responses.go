@@ -13,6 +13,7 @@ import (
 type GardenResponse struct {
 	*pkg.Garden
 	NextLightAction *NextLightAction `json:"next_light_action,omitempty"`
+	NumPlants       int              `json:"num_plants"`
 	Plants          Link             `json:"plants"`
 	Links           []Link           `json:"links,omitempty"`
 }
@@ -27,8 +28,9 @@ type NextLightAction struct {
 func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
 	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)
 	response := &GardenResponse{
-		Garden: garden,
-		Plants: Link{"collection", plantsPath},
+		Garden:    garden,
+		NumPlants: garden.NumPlants(),
+		Plants:    Link{"collection", plantsPath},
 	}
 	response.Links = append(links,
 		Link{

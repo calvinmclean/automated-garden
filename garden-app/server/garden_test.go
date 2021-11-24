@@ -201,7 +201,7 @@ func TestCreateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "test-garden", "light_schedule": {"duration": "1m", "start_time": "22:00:01-07:00"}}`,
-			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -278,7 +278,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", false).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -287,7 +287,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", true).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -377,7 +377,7 @@ func TestEndDateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
-			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
+			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -442,7 +442,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -452,7 +452,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name", "light_schedule": {}}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -462,7 +462,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{

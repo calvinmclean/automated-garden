@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -138,4 +139,54 @@ func TestGardenPatch(t *testing.T) {
 			t.Errorf("Expected nil LightSchedule, but got: %v", g.LightSchedule)
 		}
 	})
+}
+
+func TestGardenNumPlants(t *testing.T) {
+	endDate := time.Now().Add(-1 * time.Minute)
+	tests := []struct {
+		name     string
+		garden   *Garden
+		expected int
+	}{
+		{
+			"NoPlants",
+			&Garden{},
+			0,
+		},
+		{
+			"NoActivePlants",
+			&Garden{
+				Plants: map[xid.ID]*Plant{
+					xid.New(): {EndDate: &endDate},
+				},
+			},
+			0,
+		},
+		{
+			"NoEndDatedPlants",
+			&Garden{
+				Plants: map[xid.ID]*Plant{
+					xid.New(): {},
+				},
+			},
+			1,
+		},
+		{
+			"EndDatedAndActivePlants",
+			&Garden{
+				Plants: map[xid.ID]*Plant{
+					xid.New(): {EndDate: &endDate},
+					xid.New(): {},
+				},
+			},
+			1,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if tt.garden.NumPlants() != tt.expected {
+				t.Errorf("Unexpected result: expected=%v, actual=%v", tt.expected, tt.garden.NumPlants())
+			}
+		})
+	}
 }

@@ -105,3 +105,14 @@ func (g *Garden) Patch(newGarden *Garden) {
 		}
 	}
 }
+
+// NumPlants returns the number of non-end-dated Plants that are part of this Garden
+func (g *Garden) NumPlants() int {
+	result := 0
+	for _, p := range g.Plants {
+		if !p.EndDated() {
+			result++
+		}
+	}
+	return result
+}
