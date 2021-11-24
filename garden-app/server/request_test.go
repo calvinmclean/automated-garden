@@ -206,12 +206,23 @@ func TestGardenActionRequest(t *testing.T) {
 		},
 	}
 
-	t.Run("Successful", func(t *testing.T) {
+	t.Run("SuccessfulLightAction", func(t *testing.T) {
 		ar := &GardenActionRequest{
 			GardenAction: &pkg.GardenAction{
 				Light: &pkg.LightAction{
 					State: pkg.StateOn,
 				},
+			},
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading GardenActionRequest JSON: %v", err)
+		}
+	})
+	t.Run("SuccessfulStopAction", func(t *testing.T) {
+		ar := &GardenActionRequest{
+			GardenAction: &pkg.GardenAction{
 				Stop: &pkg.StopAction{},
 			},
 		}

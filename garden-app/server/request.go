@@ -72,10 +72,12 @@ func (action *GardenActionRequest) Bind(r *http.Request) error {
 	if action == nil || action.GardenAction == nil || (action.Light == nil && action.Stop == nil) {
 		return errors.New("missing required action fields")
 	}
-	// Validate that action.Light.State is "", "ON", or "OFF" (case insensitive)
-	state := strings.ToUpper(action.Light.State)
-	if state != "" && state != pkg.StateOn && state != pkg.StateOff {
-		return fmt.Errorf("invalid \"state\" provided: \"%s\"", action.Light.State)
+	if action.Light != nil {
+		// Validate that action.Light.State is "", "ON", or "OFF" (case insensitive)
+		state := strings.ToUpper(action.Light.State)
+		if state != "" && state != pkg.StateOn && state != pkg.StateOff {
+			return fmt.Errorf("invalid \"state\" provided: \"%s\"", action.Light.State)
+		}
 	}
 	return nil
 }
