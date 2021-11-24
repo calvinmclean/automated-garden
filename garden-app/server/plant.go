@@ -250,14 +250,14 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 	plant.Patch(request.Plant)
 
-	// Update the watering schedule for the Plant
-	if err := pr.resetWateringSchedule(garden, plant); err != nil {
+	// Save the Plant
+	if err := pr.storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
-	// Save the Plant
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	// Update the watering schedule for the Plant
+	if err := pr.resetWateringSchedule(garden, plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
