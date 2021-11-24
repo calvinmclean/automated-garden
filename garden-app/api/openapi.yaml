@@ -820,6 +820,9 @@ components:
                   description: date-time of the next action
                 state:
                   $ref: "#/components/schemas/LightState"
+            num_plants:
+              type: integer
+              description: the number of active (not end-dated) Plants in this Garden
             plants:
               description: link specifically for the collection of Plants
               allOf:

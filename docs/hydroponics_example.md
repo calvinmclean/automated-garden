@@ -96,6 +96,7 @@ storage:
     "name": "aerogarden",
     "id": "c5ma39fphd1c514hk48g",
     "created_at": "2021-10-13T02:55:13.046499731Z",
+    "num_plants": 1,
     "plants": {
         "rel": "collection",
         "href": "/gardens/c5ma39fphd1c514hk48g/plants"

@@ -124,6 +124,7 @@ storage:
         "time": "2021-11-24T18:59:59.999998625Z",
         "state": "OFF"
     },
+    "num_plants": 3,
     "plants": {
         "rel": "collection",
         "href": "/gardens/c5ma3cvphd1c514hk490/plants"
