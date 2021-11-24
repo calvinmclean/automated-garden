@@ -203,18 +203,15 @@ func TestWaterActionExecute(t *testing.T) {
 			},
 		},
 		{
-			"ErrorWhenSkipGreaterThanZero",
+			"NoErrorWhenSkipGreaterThanZero",
 			&Plant{
 				SkipCount:        intPointer(1),
 				WateringStrategy: &WateringStrategy{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
 			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "plant 00000000000000000000 is configured to skip watering" {
-					t.Errorf("Unexpected error string: %v", err)
+				if err != nil {
+					t.Errorf("Unexpected error occurred when executing WaterAction: %v", err)
 				}
 			},
 		},

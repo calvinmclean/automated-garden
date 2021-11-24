@@ -60,7 +60,7 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 	}
 	if p.SkipCount != nil && *p.SkipCount > 0 {
 		*p.SkipCount--
-		return fmt.Errorf("plant %s is configured to skip watering", p.ID)
+		return nil
 	}
 
 	msg, err := json.Marshal(WaterMessage{
