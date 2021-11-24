@@ -70,7 +70,10 @@ func TestPlantAction(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			plant := &Plant{}
+			plant := &Plant{
+				PlantPosition:    intPointer(0),
+				WateringStrategy: &WateringStrategy{},
+			}
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
@@ -167,7 +170,10 @@ func TestWaterActionExecute(t *testing.T) {
 	}{
 		{
 			"Successful",
-			&Plant{},
+			&Plant{
+				PlantPosition:    intPointer(0),
+				WateringStrategy: &WateringStrategy{},
+			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
@@ -180,7 +186,10 @@ func TestWaterActionExecute(t *testing.T) {
 		},
 		{
 			"TopicTemplateError",
-			&Plant{},
+			&Plant{
+				PlantPosition:    intPointer(0),
+				WateringStrategy: &WateringStrategy{},
+			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("", errors.New("template error"))
 			},
@@ -195,7 +204,10 @@ func TestWaterActionExecute(t *testing.T) {
 		},
 		{
 			"ErrorWhenSkipGreaterThanZero",
-			&Plant{SkipCount: 1},
+			&Plant{
+				SkipCount:        intPointer(1),
+				WateringStrategy: &WateringStrategy{},
+			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
 			func(err error, t *testing.T) {
 				if err == nil {
@@ -209,7 +221,8 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"SuccessWhenMoistureLessThanMinimum",
 			&Plant{
-				WateringStrategy: WateringStrategy{
+				PlantPosition: intPointer(0),
+				WateringStrategy: &WateringStrategy{
 					MinimumMoisture: 50,
 				},
 			},
@@ -226,9 +239,10 @@ func TestWaterActionExecute(t *testing.T) {
 			},
 		},
 		{
-			"SuccessWhenMoistureLessThanMinimum",
+			"SuccessWhenMoistureGreaterThanMinimum",
 			&Plant{
-				WateringStrategy: WateringStrategy{
+				PlantPosition: intPointer(0),
+				WateringStrategy: &WateringStrategy{
 					MinimumMoisture: 50,
 				},
 			},
@@ -248,7 +262,8 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"ErrorInfluxDBClient",
 			&Plant{
-				WateringStrategy: WateringStrategy{
+				PlantPosition: intPointer(0),
+				WateringStrategy: &WateringStrategy{
 					MinimumMoisture: 50,
 				},
 			},
@@ -275,7 +290,7 @@ func TestWaterActionExecute(t *testing.T) {
 
 			err := action.Execute(garden, tt.plant, mqttClient, influxdbClient)
 			tt.assert(err, t)
-			if tt.plant.SkipCount != 0 {
+			if tt.plant.SkipCount != nil && *tt.plant.SkipCount != 0 {
 				t.Errorf("Plant.SkipCount expected to be 0 after watering, but was %d", tt.plant.SkipCount)
 			}
 			mqttClient.AssertExpectations(t)
@@ -428,4 +443,8 @@ func TestLightActionExecute(t *testing.T) {
 			influxdbClient.AssertExpectations(t)
 		})
 	}
+}
+
+func intPointer(n int) *int {
+	return &n
 }

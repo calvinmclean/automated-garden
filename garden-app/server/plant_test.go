@@ -26,11 +26,13 @@ import (
 func createExamplePlant() *pkg.Plant {
 	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
+	pp := 0
 	return &pkg.Plant{
-		Name:      "test plant",
-		ID:        id,
-		CreatedAt: &time,
-		WateringStrategy: pkg.WateringStrategy{
+		Name:          "test plant",
+		ID:            id,
+		CreatedAt:     &time,
+		PlantPosition: &pp,
+		WateringStrategy: &pkg.WateringStrategy{
 			WateringAmount: 1000,
 			Interval:       "24h",
 			StartTime:      "22:00:01-07:00",
@@ -360,7 +362,7 @@ func TestGetPlant(t *testing.T) {
 			"SuccessfulWithMoisture",
 			func() *pkg.Plant {
 				plant := createExamplePlant()
-				plant.WateringStrategy = pkg.WateringStrategy{MinimumMoisture: 1}
+				plant.WateringStrategy = &pkg.WateringStrategy{MinimumMoisture: 1}
 				return plant
 			},
 			func(influxdbClient *influxdb.MockClient) {
@@ -372,7 +374,7 @@ func TestGetPlant(t *testing.T) {
 			"ErrorGettingMoisture",
 			func() *pkg.Plant {
 				plant := createExamplePlant()
-				plant.WateringStrategy = pkg.WateringStrategy{MinimumMoisture: 1}
+				plant.WateringStrategy = &pkg.WateringStrategy{MinimumMoisture: 1}
 				return plant
 			},
 			func(influxdbClient *influxdb.MockClient) {
@@ -723,7 +725,7 @@ func TestCreatePlant(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SavePlant", mock.Anything).Return(nil)
 			},
-			`{"name":"test plant","watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
+			`{"name":"test plant","plant_position":0,"watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
 			`{"name":"test plant","id":"[0-9a-v]{20}","garden_id":"[0-9a-v]{20}","plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/history"}\]}`,
 			http.StatusCreated,
 		},
@@ -735,18 +737,11 @@ func TestCreatePlant(t *testing.T) {
 			http.StatusBadRequest,
 		},
 		{
-			"ErrorBadRequestInvalidStartTime",
-			func(storageClient *storage.MockClient) {},
-			`{"name":"test plant","watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"NOT A TIME"}}`,
-			`{"status":"Invalid request.","error":"parsing time \\"NOT A TIME\\" as \\"15:04:05-07:00\\": cannot parse \\"NOT A TIME\\" as \\"15\\""}`,
-			http.StatusBadRequest,
-		},
-		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
 			},
-			`{"name":"test plant","watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
+			`{"name":"test plant","plant_position":0,"watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
 			`{"status":"Server Error.","error":"storage error"}`,
 			http.StatusInternalServerError,
 		},

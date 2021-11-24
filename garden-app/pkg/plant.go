@@ -14,17 +14,18 @@ const (
 // Plant is the representation of the most important resource for this application, a Plant.
 // This includes some general information like name and unique ID, a start and end date to show when
 // the Plant was in the system, plus some information for watering like the duration to water for, how
-// often to water, and the PlantPosition field will tell the microcontroller which plant to water
+// often to water, and the PlantPosition field will tell the microcontroller which plant to water.
+// Some integers in this struct are pointers because it allows differentiating 0-value from empty.
 type Plant struct {
-	Name             string           `json:"name" yaml:"name,omitempty"`
-	Details          *Details         `json:"details,omitempty" yaml:"details,omitempty"`
-	ID               xid.ID           `json:"id" yaml:"id,omitempty"`
-	GardenID         xid.ID           `json:"garden_id" yaml:"garden_id,omitempty"`
-	PlantPosition    int              `json:"plant_position" yaml:"plant_position"`
-	CreatedAt        *time.Time       `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate          *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	SkipCount        int              `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
-	WateringStrategy WateringStrategy `json:"watering_strategy,omitempty" yaml:"watering_strategy,omitempty"`
+	Name             string            `json:"name" yaml:"name,omitempty"`
+	Details          *Details          `json:"details,omitempty" yaml:"details,omitempty"`
+	ID               xid.ID            `json:"id" yaml:"id,omitempty"`
+	GardenID         xid.ID            `json:"garden_id" yaml:"garden_id,omitempty"`
+	PlantPosition    *int              `json:"plant_position" yaml:"plant_position"`
+	CreatedAt        *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate          *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	SkipCount        *int              `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
+	WateringStrategy *WateringStrategy `json:"watering_strategy,omitempty" yaml:"watering_strategy,omitempty"`
 }
 
 // Details is a struct holding some additional details about a Plant that are primarily for user convenience
@@ -60,4 +61,62 @@ func (p *Plant) WateringAction() *WaterAction {
 // EndDated returns true if the Plant is end-dated
 func (p *Plant) EndDated() bool {
 	return p.EndDate != nil && p.EndDate.Before(time.Now())
+}
+
+// Patch allows for easily updating individual fields of a Plant by passing in a new Plant containing
+// the desired values
+func (p *Plant) Patch(newPlant *Plant) {
+	if newPlant.Name != "" {
+		p.Name = newPlant.Name
+	}
+	if newPlant.PlantPosition != nil {
+		p.PlantPosition = newPlant.PlantPosition
+	}
+	if newPlant.CreatedAt != nil {
+		p.CreatedAt = newPlant.CreatedAt
+	}
+	if newPlant.EndDate != nil {
+		p.EndDate = newPlant.EndDate
+	}
+	if newPlant.SkipCount != nil {
+		p.SkipCount = newPlant.SkipCount
+	}
+
+	if newPlant.WateringStrategy != nil {
+		// Initiate WateringStrategy if it is nil
+		if p.WateringStrategy == nil {
+			p.WateringStrategy = &WateringStrategy{}
+		}
+		if newPlant.WateringStrategy.WateringAmount != 0 {
+			p.WateringStrategy.WateringAmount = newPlant.WateringStrategy.WateringAmount
+		}
+		if newPlant.WateringStrategy.Interval != "" {
+			p.WateringStrategy.Interval = newPlant.WateringStrategy.Interval
+		}
+		if newPlant.WateringStrategy.MinimumMoisture != 0 {
+			p.WateringStrategy.MinimumMoisture = newPlant.WateringStrategy.MinimumMoisture
+		}
+		if newPlant.WateringStrategy.StartTime != "" {
+			p.WateringStrategy.StartTime = newPlant.WateringStrategy.StartTime
+		}
+	}
+
+	if newPlant.Details != nil {
+		// Initiate Details if it is nil
+		if p.Details == nil {
+			p.Details = &Details{}
+		}
+		if newPlant.Details.Description != "" {
+			p.Details.Description = newPlant.Details.Description
+		}
+		if newPlant.Details.Notes != "" {
+			p.Details.Notes = newPlant.Details.Notes
+		}
+		if newPlant.Details.TimeToHarvest != "" {
+			p.Details.TimeToHarvest = newPlant.Details.TimeToHarvest
+		}
+		if newPlant.Details.Count != 0 {
+			p.Details.Count = newPlant.Details.Count
+		}
+	}
 }
