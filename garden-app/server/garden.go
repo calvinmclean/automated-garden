@@ -203,7 +203,7 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 	now := time.Now()
 
 	// Permanently delete the Garden if it is already end-dated
-	if garden.EndDate != nil && garden.EndDate.Before(now) {
+	if garden.EndDated() {
 		if err := gr.storageClient.DeleteGarden(garden); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return

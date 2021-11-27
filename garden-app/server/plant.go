@@ -265,7 +265,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	// Permanently delete the Plant if it is already end-dated
-	if plant.EndDate != nil && plant.EndDate.Before(now) {
+	if plant.EndDated() {
 		if err := pr.storageClient.DeletePlant(plant); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
