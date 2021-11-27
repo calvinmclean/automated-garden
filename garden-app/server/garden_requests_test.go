@@ -87,6 +87,7 @@ func TestGardenActionRequest(t *testing.T) {
 }
 
 func TestGardenRequest(t *testing.T) {
+	one := 1
 	tests := []struct {
 		name string
 		gr   *GardenRequest
@@ -164,10 +165,20 @@ func TestGardenRequest(t *testing.T) {
 			"one or more invalid characters in Garden name",
 		},
 		{
-			"CreatingPlantsNotAllowedError",
+			"MissingMaxPlantsError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
 					Name: "garden",
+				},
+			},
+			"missing required max_plants field",
+		},
+		{
+			"CreatingPlantsNotAllowedError",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name:      "garden",
+					MaxPlants: &one,
 					Plants: map[xid.ID]*pkg.Plant{
 						xid.New(): {},
 					},
@@ -179,7 +190,8 @@ func TestGardenRequest(t *testing.T) {
 			"EmptyLightScheduleDurationError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden",
+					Name:      "garden",
+					MaxPlants: &one,
 					LightSchedule: &pkg.LightSchedule{
 						StartTime: "22:00:01-07:00",
 					},
@@ -191,7 +203,8 @@ func TestGardenRequest(t *testing.T) {
 			"EmptyLightScheduleStartTimeError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden",
+					Name:      "garden",
+					MaxPlants: &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration: "1m",
 					},
@@ -199,12 +212,27 @@ func TestGardenRequest(t *testing.T) {
 			},
 			"missing required light_schedule.start_time field",
 		},
+		{
+			"BadStartTimeError",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name:      "garden",
+					MaxPlants: &one,
+					LightSchedule: &pkg.LightSchedule{
+						Duration:  "1m",
+						StartTime: "NOT A TIME",
+					},
+				},
+			},
+			"invalid time format for light_schedule.start_time: NOT A TIME",
+		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
 		gr := &GardenRequest{
 			Garden: &pkg.Garden{
-				Name: "garden",
+				Name:      "garden",
+				MaxPlants: &one,
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)

@@ -29,10 +29,12 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 	if illegalRegexp.MatchString(g.Name) {
 		return errors.New("one or more invalid characters in Garden name")
 	}
+	if g.MaxPlants == nil {
+		return errors.New("missing required max_plants field")
+	}
 	if len(g.Plants) > 0 {
 		return errors.New("cannot add or modify Plants with this request")
 	}
-
 	if g.LightSchedule != nil {
 		if g.LightSchedule.Duration == "" {
 			return errors.New("missing required light_schedule.duration field")

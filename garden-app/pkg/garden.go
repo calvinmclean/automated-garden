@@ -23,6 +23,7 @@ type Garden struct {
 	Name          string            `json:"name" yaml:"name,omitempty"`
 	ID            xid.ID            `json:"id" yaml:"id,omitempty"`
 	Plants        map[xid.ID]*Plant `json:"plants" yaml:"plants,omitempty"`
+	MaxPlants     *int              `json:"max_plants" yaml:"max_plants"`
 	CreatedAt     *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate       *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	LightSchedule *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
@@ -85,6 +86,9 @@ func (g *Garden) EndDated() bool {
 func (g *Garden) Patch(newGarden *Garden) {
 	if newGarden.Name != "" {
 		g.Name = newGarden.Name
+	}
+	if newGarden.MaxPlants != nil {
+		g.MaxPlants = newGarden.MaxPlants
 	}
 	if newGarden.CreatedAt != nil {
 		g.CreatedAt = newGarden.CreatedAt

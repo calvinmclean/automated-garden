@@ -84,6 +84,7 @@ func TestGardenEndDated(t *testing.T) {
 
 func TestGardenPatch(t *testing.T) {
 	now := time.Now()
+	ten := 10
 	tests := []struct {
 		name      string
 		newGarden *Garden
@@ -91,6 +92,10 @@ func TestGardenPatch(t *testing.T) {
 		{
 			"PatchName",
 			&Garden{Name: "name"},
+		},
+		{
+			"PatchMaxPlants",
+			&Garden{MaxPlants: &ten},
 		},
 		{
 			"PatchCreatedAt",
