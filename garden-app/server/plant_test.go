@@ -572,9 +572,14 @@ func TestUpdatePlant(t *testing.T) {
 }
 
 func TestEndDatePlant(t *testing.T) {
+	now := time.Now()
+	endDatedPlant := createExamplePlant()
+	endDatedPlant.EndDate = &now
+
 	tests := []struct {
 		name           string
 		setupMock      func(*storage.MockClient)
+		plant          *pkg.Plant
 		expectedRegexp string
 		code           int
 	}{
@@ -583,14 +588,34 @@ func TestEndDatePlant(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SavePlant", mock.Anything).Return(nil)
 			},
+			createExamplePlant(),
 			`{"name":"test plant","id":"[0-9a-v]{20}","garden_id":null,"plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
+		},
+		{
+			"SuccessfullyDeletePlant",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("DeletePlant", mock.Anything).Return(nil)
+			},
+			endDatedPlant,
+			"",
+			http.StatusNoContent,
+		},
+		{
+			"DeletePlantError",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("DeletePlant", mock.Anything).Return(errors.New("storage error"))
+			},
+			endDatedPlant,
+			`{"status":"Server Error.","error":"storage error"}`,
+			http.StatusInternalServerError,
 		},
 		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
 			},
+			createExamplePlant(),
 			`{"status":"Server Error.","error":"storage error"}`,
 			http.StatusInternalServerError,
 		},
@@ -608,9 +633,8 @@ func TestEndDatePlant(t *testing.T) {
 				},
 				moistureCache: map[xid.ID]float64{},
 			}
-			plant := createExamplePlant()
 
-			plantCtx := context.WithValue(context.Background(), plantCtxKey, plant)
+			plantCtx := context.WithValue(context.Background(), plantCtxKey, tt.plant)
 			r := httptest.NewRequest("DELETE", "/plant", nil).WithContext(plantCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()

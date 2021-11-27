@@ -85,6 +85,12 @@ func (c *YAMLClient) SaveGarden(garden *pkg.Garden) error {
 	return c.Save()
 }
 
+// DeleteGarden permanently deletes a garden and removes it from the YAML file
+func (c *YAMLClient) DeleteGarden(garden *pkg.Garden) error {
+	delete(c.gardens, garden.ID)
+	return c.Save()
+}
+
 // GetPlant just returns the request Plant from the map
 func (c *YAMLClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 	err := c.update()
@@ -115,6 +121,12 @@ func (c *YAMLClient) SavePlant(plant *pkg.Plant) error {
 		c.gardens[plant.GardenID].Plants = map[xid.ID]*pkg.Plant{}
 	}
 	c.gardens[plant.GardenID].Plants[plant.ID] = plant
+	return c.Save()
+}
+
+// DeletePlant permanently deletes a plant and removes it from the YAML file
+func (c *YAMLClient) DeletePlant(plant *pkg.Plant) error {
+	delete(c.gardens[plant.GardenID].Plants, plant.ID)
 	return c.Save()
 }
 

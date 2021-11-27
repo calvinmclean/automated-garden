@@ -196,12 +196,24 @@ func (gr GardensResource) getGarden(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// endDatePlant will mark the Plant's end date as now and save it
+// endDatePlant will mark the Plant's end date as now and save it. If the Garden is already
+// end-dated, it will permanently delete it
 func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	now := time.Now()
+
+	// Permanently delete the Garden if it is already end-dated
+	if garden.EndDate != nil && garden.EndDate.Before(now) {
+		if err := gr.storageClient.DeleteGarden(garden); err != nil {
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte(""))
+		return
+	}
 
 	// Set end date of Garden and save
-	now := time.Now()
 	garden.EndDate = &now
 	if err := gr.storageClient.SaveGarden(garden); err != nil {
 		render.Render(w, r, InternalServerError(err))

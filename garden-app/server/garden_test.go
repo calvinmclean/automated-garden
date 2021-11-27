@@ -366,9 +366,14 @@ func TestGetGarden(t *testing.T) {
 }
 
 func TestEndDateGarden(t *testing.T) {
+	now := time.Now()
+	endDatedGarden := createExampleGarden()
+	endDatedGarden.EndDate = &now
+
 	tests := []struct {
 		name           string
 		setupMock      func(*storage.MockClient)
+		garden         *pkg.Garden
 		expectedRegexp string
 		status         int
 	}{
@@ -377,15 +382,35 @@ func TestEndDateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
+			createExampleGarden(),
 			`{"name":"test-garden","id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
 		},
 		{
+			"SuccessfullyDeleteGarden",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("DeleteGarden", mock.Anything).Return(nil)
+			},
+			endDatedGarden,
+			"",
+			http.StatusNoContent,
+		},
+		{
+			"DeleteGardenError",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("DeleteGarden", mock.Anything).Return(errors.New("storage error"))
+			},
+			endDatedGarden,
+			`{"status":"Server Error.","error":"storage error"}`,
+			http.StatusInternalServerError,
+		},
+		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
+				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage error"))
 			},
-			`{"status":"Server Error.","error":"storage client error"}`,
+			createExampleGarden(),
+			`{"status":"Server Error.","error":"storage error"}`,
 			http.StatusInternalServerError,
 		},
 	}
@@ -399,9 +424,8 @@ func TestEndDateGarden(t *testing.T) {
 				config:        Config{},
 				scheduler:     gocron.NewScheduler(time.Local),
 			}
-			garden := createExampleGarden()
 
-			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
 			r := httptest.NewRequest("DELETE", "/garden", nil).WithContext(ctx)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(gr.endDateGarden)

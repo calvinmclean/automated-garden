@@ -13,6 +13,34 @@ type MockClient struct {
 	mock.Mock
 }
 
+// DeleteGarden provides a mock function with given fields: _a0
+func (_m *MockClient) DeleteGarden(_a0 *pkg.Garden) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*pkg.Garden) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// DeletePlant provides a mock function with given fields: _a0
+func (_m *MockClient) DeletePlant(_a0 *pkg.Plant) error {
+	ret := _m.Called(_a0)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*pkg.Plant) error); ok {
+		r0 = rf(_a0)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetGarden provides a mock function with given fields: _a0
 func (_m *MockClient) GetGarden(_a0 xid.ID) (*pkg.Garden, error) {
 	ret := _m.Called(_a0)

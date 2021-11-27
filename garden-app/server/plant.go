@@ -262,9 +262,20 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 // endDatePlant will mark the Plant's end date as now and save it
 func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+	now := time.Now()
+
+	// Permanently delete the Plant if it is already end-dated
+	if plant.EndDate != nil && plant.EndDate.Before(now) {
+		if err := pr.storageClient.DeletePlant(plant); err != nil {
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
+		w.WriteHeader(http.StatusNoContent)
+		w.Write([]byte(""))
+		return
+	}
 
 	// Set end date of Plant and save
-	now := time.Now()
 	plant.EndDate = &now
 	if err := pr.storageClient.SavePlant(plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
