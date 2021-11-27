@@ -86,8 +86,8 @@ func (c *YAMLClient) SaveGarden(garden *pkg.Garden) error {
 }
 
 // DeleteGarden permanently deletes a garden and removes it from the YAML file
-func (c *YAMLClient) DeleteGarden(garden *pkg.Garden) error {
-	delete(c.gardens, garden.ID)
+func (c *YAMLClient) DeleteGarden(garden xid.ID) error {
+	delete(c.gardens, garden)
 	return c.Save()
 }
 
@@ -125,8 +125,8 @@ func (c *YAMLClient) SavePlant(plant *pkg.Plant) error {
 }
 
 // DeletePlant permanently deletes a plant and removes it from the YAML file
-func (c *YAMLClient) DeletePlant(plant *pkg.Plant) error {
-	delete(c.gardens[plant.GardenID].Plants, plant.ID)
+func (c *YAMLClient) DeletePlant(garden xid.ID, plant xid.ID) error {
+	delete(c.gardens[garden].Plants, plant)
 	return c.Save()
 }
 

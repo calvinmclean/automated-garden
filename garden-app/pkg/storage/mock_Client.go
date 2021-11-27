@@ -14,11 +14,11 @@ type MockClient struct {
 }
 
 // DeleteGarden provides a mock function with given fields: _a0
-func (_m *MockClient) DeleteGarden(_a0 *pkg.Garden) error {
+func (_m *MockClient) DeleteGarden(_a0 xid.ID) error {
 	ret := _m.Called(_a0)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden) error); ok {
+	if rf, ok := ret.Get(0).(func(xid.ID) error); ok {
 		r0 = rf(_a0)
 	} else {
 		r0 = ret.Error(0)
@@ -27,13 +27,13 @@ func (_m *MockClient) DeleteGarden(_a0 *pkg.Garden) error {
 	return r0
 }
 
-// DeletePlant provides a mock function with given fields: _a0
-func (_m *MockClient) DeletePlant(_a0 *pkg.Plant) error {
-	ret := _m.Called(_a0)
+// DeletePlant provides a mock function with given fields: _a0, _a1
+func (_m *MockClient) DeletePlant(_a0 xid.ID, _a1 xid.ID) error {
+	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Plant) error); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(xid.ID, xid.ID) error); ok {
+		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
 	}
