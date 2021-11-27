@@ -205,10 +205,14 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"NoErrorWhenSkipGreaterThanZero",
 			&Plant{
+				PlantPosition:    intPointer(0),
 				SkipCount:        intPointer(1),
 				WateringStrategy: &WateringStrategy{},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
+				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+			},
 			func(err error, t *testing.T) {
 				if err != nil {
 					t.Errorf("Unexpected error occurred when executing WaterAction: %v", err)
@@ -287,9 +291,6 @@ func TestWaterActionExecute(t *testing.T) {
 
 			err := action.Execute(garden, tt.plant, mqttClient, influxdbClient)
 			tt.assert(err, t)
-			if tt.plant.SkipCount != nil && *tt.plant.SkipCount != 0 {
-				t.Errorf("Plant.SkipCount expected to be 0 after watering, but was %d", tt.plant.SkipCount)
-			}
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
 		})

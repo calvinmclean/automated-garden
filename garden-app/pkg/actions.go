@@ -58,10 +58,6 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 			return fmt.Errorf("moisture value %.2f%% is above threshold %d%%", moisture, p.WateringStrategy.MinimumMoisture)
 		}
 	}
-	if p.SkipCount != nil && *p.SkipCount > 0 {
-		*p.SkipCount--
-		return nil
-	}
 
 	msg, err := json.Marshal(WaterMessage{
 		Duration:      action.Duration,

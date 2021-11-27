@@ -426,24 +426,23 @@ func TestGetPlant(t *testing.T) {
 func TestPlantAction(t *testing.T) {
 	tests := []struct {
 		name      string
-		setupMock func(*mqtt.MockClient, *storage.MockClient)
+		setupMock func(*mqtt.MockClient)
 		body      string
 		expected  string
 		status    int
 	}{
 		{
 			"BadRequest",
-			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {},
+			func(mqttClient *mqtt.MockClient) {},
 			"bad request",
 			`{"status":"Invalid request.","error":"invalid character 'b' looking for beginning of value"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"SuccessfulWaterAction",
-			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient) {
 				mqttClient.On("WateringTopic", "test-garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				storageClient.On("SavePlant", mock.Anything).Return(nil)
 			},
 			`{"water":{"duration":1000}}`,
 			"null",
@@ -451,22 +450,11 @@ func TestPlantAction(t *testing.T) {
 		},
 		{
 			"ExecuteErrorForWaterAction",
-			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient) {
 				mqttClient.On("WateringTopic", "test-garden").Return("", errors.New("template error"))
 			},
 			`{"water":{"duration":1000}}`,
 			`{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`,
-			http.StatusInternalServerError,
-		},
-		{
-			"StorageClientErrorForWaterAction",
-			func(mqttClient *mqtt.MockClient, storageClient *storage.MockClient) {
-				mqttClient.On("WateringTopic", "test-garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
-			},
-			`{"water":{"duration":1000}}`,
-			`{"status":"Server Error.","error":"storage error"}`,
 			http.StatusInternalServerError,
 		},
 	}
@@ -474,13 +462,11 @@ func TestPlantAction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mqttClient := new(mqtt.MockClient)
-			storageClient := new(storage.MockClient)
-			tt.setupMock(mqttClient, storageClient)
+			tt.setupMock(mqttClient)
 
 			pr := PlantsResource{
 				GardensResource: GardensResource{
-					storageClient: storageClient,
-					mqttClient:    mqttClient,
+					mqttClient: mqttClient,
 				},
 				moistureCache: map[xid.ID]float64{},
 			}
@@ -506,7 +492,6 @@ func TestPlantAction(t *testing.T) {
 			if actual != tt.expected {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
 			}
-			storageClient.AssertExpectations(t)
 			mqttClient.AssertExpectations(t)
 		})
 	}

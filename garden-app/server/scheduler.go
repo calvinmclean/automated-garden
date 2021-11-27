@@ -51,14 +51,20 @@ func (pr PlantsResource) addWateringSchedule(g *pkg.Garden, p *pkg.Plant) error 
 		Do(func() {
 			defer pr.influxdbClient.Close()
 
+			if p.SkipCount != nil && *p.SkipCount > 0 {
+				*p.SkipCount--
+
+				err = pr.storageClient.SavePlant(p)
+				if err != nil {
+					logger.Error("Error saving plant after watering: ", err)
+				}
+				return
+			}
+
 			logger.Infof("Executing WateringAction to water Plant %s for %d ms", p.ID.String(), action.Duration)
 			err = action.Execute(g, p, pr.mqttClient, pr.influxdbClient)
 			if err != nil {
 				logger.Error("Error executing scheduled plant watering action: ", err)
-			}
-			err = pr.storageClient.SavePlant(p)
-			if err != nil {
-				logger.Error("Error saving plant after watering: ", err)
 			}
 		})
 	return err
