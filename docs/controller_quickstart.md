@@ -1,14 +1,13 @@
 # Garden Controller
 The `garden-controller` is an Arduino/FreeRTOS firmware built for ESP32 to control a single real-world Garden.
 
-A majority of the functionality relies on a connection to MQTT to receive commands and publish data, but it is still usable as a standalone device.
+A majority of the functionality relies on a connection to MQTT to receive commands and publish data.
 
 ## Getting Started
 This is going to assume you have some familiarity with the ESP32 and Arduino IDE. If that is not true, please look at the [official repository for `arduino-esp32`](https://github.com/espressif/arduino-esp32) to get that setup.
 
 1. Make any necessary changes to `config.h` to fit your setup
     - Read comments in the file to see the different available configuration options or [see docs here](controller_advanced.md)
-    - To enable automated watering without using the Go `garden-app`, use `ENABLE_WATERING_INTERVAL` setting
     - You can also look at Examples in this documentation to see specific configs
 1. Copy `wifi_config.h.example` to `wifi_config.h` and configure your network access information
 1. Compile and upload to your ESP32 using Arduino IDE

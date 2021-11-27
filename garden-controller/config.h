@@ -67,15 +67,11 @@
  *   List of plant pins in this format: { {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN} }
  *   You can create multiple plants before creating the PLANTS list for improved readability (see example below)
  * DEFAULT_WATER_TIME
- *   Default time to water for if none is specified. This is used by button and interval watering
+ *   Default time to water for if none is specified. This is used by buttons
  * ENABLE_BUTTONS
  *   Configure if there are any hardware buttons corresponding to plants
  * STOP_BUTTON_PIN
  *   Pin used for the button that will stop all watering
- * ENABLE_WATERING_INTERVAL
- *   Determines if we should water the plant automatically
- * INTERVAL
- *   The time, in milliseconds, to wait between automatic watering. Only used if ENABLE_WATERING_INTERVAL is defined.
  * LIGHT_PIN
  *   The pin used to control a grow light relay
  */
@@ -102,12 +98,6 @@
 #define MOISTURE_SENSOR_AIR_VALUE 3415
 #define MOISTURE_SENSOR_WATER_VALUE 1362
 #define MOISTURE_SENSOR_INTERVAL 5000
-#endif
-
-// Define these parameters to enable automated watering without relying on MQTT
-// #define ENABLE_WATERING_INTERVAL
-#ifdef ENABLE_WATERING_INTERVAL
-#define INTERVAL 86400000 // 24 hours
 #endif
 
 #endif

@@ -7,7 +7,6 @@ This is an Arduino/FreeRTOS firmware application for controlling a home garden
 This is going to assume you have some familiarity with the ESP32 and Arduino IDE. 
 1. Make any necessary changes to `config.h` to fit your setup
     - Read comments in the file to see the different available configuration options
-    - To enable automated watering without using the Go `garden-app`, use `ENABLE_WATERING_INTERVAL` setting
 2. Copy `wifi_config.h.example` to `wifi_config.h` and configure your network access information
 3. Compile and upload to your ESP32 using Arduino IDE
 

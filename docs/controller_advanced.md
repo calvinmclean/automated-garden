@@ -83,7 +83,7 @@ These options are related to the actual pins and other necessary information for
 { {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN} }
 ```
 
-`DEFAULT_WATER_TIME`: The default amount of time to water for, in milliseconds, if one is not defined in the command. This is also used to determine how long button-presses and interval-based watering will water for
+`DEFAULT_WATER_TIME`: The default amount of time to water for, in milliseconds, if one is not defined in the command. This is also used to determine how long button-presses will water for
 
 `LIGHT_PIN`: Pin used to control grow light relay
 
@@ -106,10 +106,3 @@ These options allow optionally enabling moisture data publishing. WiFi + MQTT ar
 `MOISTURE_SENSOR_WATER_VALUE`: Value to use for a fully-submerged sensor
 
 `MOISTURE_SENSOR_INTERVAL`: Time, in milliseconds, to wait between sensor readings
-
-#### Interval Watering Options
-These options allow configuring automatic watering without having to rely on MQTT commands. This also relates to the `DEFAULT_WATER_TIME` configuration because that value is used to control watering time. Please note that this method for waiting a certain number of milliseconds is not reliable for long-terms due to microcontroller characteristics.
-
-`ENABLE_WATERING_INTERVAL`: Enables interval-based watering when defined
-
-`INTERVAL`: Time, in milliseconds, to wait between watering. `86400000` is the value for 24 hours.

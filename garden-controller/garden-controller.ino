@@ -26,12 +26,6 @@ typedef struct LightingEvent {
 /* plant/valve variables */
 gpio_num_t plants[NUM_PLANTS][4] = PLANTS;
 
-#ifdef ENABLE_WATERING_INTERVAL
-/* watering cycle variables */
-unsigned long previousMillis = -INTERVAL;
-TaskHandle_t waterIntervalTaskHandle;
-#endif
-
 /* FreeRTOS Queue and Task handlers */
 QueueHandle_t wateringQueue;
 TaskHandle_t waterPlantTaskHandle;
@@ -77,9 +71,6 @@ void setup() {
 
     // Start all tasks (currently using equal priorities)
     xTaskCreate(waterPlantTask, "WaterPlantTask", 2048, NULL, 1, &waterPlantTaskHandle);
-#ifdef ENABLE_WATERING_INTERVAL
-    xTaskCreate(waterIntervalTask, "WaterIntervalTask", 2048, NULL, 1, &waterIntervalTaskHandle);
-#endif
 
 #ifdef ENABLE_MQTT_LOGGING
     // Delay 1 second to allow MQTT to connect
@@ -93,27 +84,6 @@ void setup() {
 }
 
 void loop() {}
-
-#ifdef ENABLE_WATERING_INTERVAL
-/*
-  waterIntervalTask will queue up each plant to be watered fro the configured
-  default time. Then it will wait during the configured interval and then loop
-*/
-void waterIntervalTask(void* parameters) {
-    while (true) {
-        // Every 24 hours, start watering plant 1
-        unsigned long currentMillis = millis();
-        if (currentMillis - previousMillis >= INTERVAL) {
-            previousMillis = currentMillis;
-            for (int i = 0; i < NUM_PLANTS; i++) {
-                waterPlant(i, DEFAULT_WATER_TIME, "N/A");
-            }
-        }
-        vTaskDelay(INTERVAL / portTICK_PERIOD_MS);
-    }
-    vTaskDelete(NULL);
-}
-#endif
 
 /*
   waterPlantTask will wait for WateringEvents on a queue and will then open the
