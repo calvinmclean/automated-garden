@@ -75,6 +75,9 @@ func (p *Plant) Patch(newPlant *Plant) {
 	if newPlant.CreatedAt != nil {
 		p.CreatedAt = newPlant.CreatedAt
 	}
+	if p.EndDate != nil && newPlant.EndDate == nil {
+		p.EndDate = newPlant.EndDate
+	}
 	if newPlant.SkipCount != nil {
 		p.SkipCount = newPlant.SkipCount
 	}

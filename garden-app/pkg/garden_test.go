@@ -139,6 +139,30 @@ func TestGardenPatch(t *testing.T) {
 			t.Errorf("Expected nil LightSchedule, but got: %v", g.LightSchedule)
 		}
 	})
+
+	t.Run("PatchDoesNotAddEndDate", func(t *testing.T) {
+		now := time.Now()
+		g := &Garden{}
+
+		g.Patch(&Garden{EndDate: &now})
+
+		if g.EndDate != nil {
+			t.Errorf("Expected nil EndDate, but got: %v", g.EndDate)
+		}
+	})
+
+	t.Run("PatchRemoveEndDate", func(t *testing.T) {
+		now := time.Now()
+		g := &Garden{
+			EndDate: &now,
+		}
+
+		g.Patch(&Garden{})
+
+		if g.EndDate != nil {
+			t.Errorf("Expected nil EndDate, but got: %v", g.EndDate)
+		}
+	})
 }
 
 func TestGardenNumPlants(t *testing.T) {

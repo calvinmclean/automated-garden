@@ -89,6 +89,9 @@ func (g *Garden) Patch(newGarden *Garden) {
 	if newGarden.CreatedAt != nil {
 		g.CreatedAt = newGarden.CreatedAt
 	}
+	if g.EndDate != nil && newGarden.EndDate == nil {
+		g.EndDate = newGarden.EndDate
+	}
 	if newGarden.LightSchedule != nil {
 		// If existing garden doesn't have a LightSchedule, it needs to be initialized first
 		if g.LightSchedule == nil {

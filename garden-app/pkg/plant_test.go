@@ -133,4 +133,28 @@ func TestPlantPatch(t *testing.T) {
 			}
 		})
 	}
+
+	t.Run("PatchDoesNotAddEndDate", func(t *testing.T) {
+		now := time.Now()
+		p := &Plant{}
+
+		p.Patch(&Plant{EndDate: &now})
+
+		if p.EndDate != nil {
+			t.Errorf("Expected nil EndDate, but got: %v", p.EndDate)
+		}
+	})
+
+	t.Run("PatchRemoveEndDate", func(t *testing.T) {
+		now := time.Now()
+		p := &Plant{
+			EndDate: &now,
+		}
+
+		p.Patch(&Plant{})
+
+		if p.EndDate != nil {
+			t.Errorf("Expected nil EndDate, but got: %v", p.EndDate)
+		}
+	})
 }
