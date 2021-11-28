@@ -708,9 +708,9 @@ components:
             To avoid falsely triggering watering and avoid the complexity if constantly checking moisture data, the moisture is only checked when executing a WaterAction.
           properties:
             watering_amount:
-              type: integer
-              description: amount of time, in milliseconds, that Plant should be watered
-              example: 150000
+              type: string
+              description: amount of time, in Duration format, that Plant should be watered
+              example: 15000ms
             interval:
               type: string
               format: duration

@@ -308,7 +308,7 @@ resources:
         	},
         	"plant_position": 0,
         	"water_schedule": {
-        		"watering_amount": 15000,
+        		"watering_amount": "15000ms",
         		"interval": "72h",
         		"start_time": "22:00:00-07:00"
         	}

@@ -164,7 +164,7 @@ storage:
     "plant_position": 1,
     "created_at": "2021-10-17T22:40:32.474585191Z",
     "water_schedule": {
-        "watering_amount": 20000,
+        "watering_amount": "20s",
         "interval": "72h",
         "start_time": "22:00:00-07:00"
     },
