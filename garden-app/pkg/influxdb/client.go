@@ -37,7 +37,7 @@ const (
 type queryData struct {
 	Bucket        string
 	Start         time.Duration
-	PlantPosition int
+	PlantPosition uint
 	GardenName    string
 }
 
@@ -54,9 +54,9 @@ func (q queryData) String(queryTemplate string) (string, error) {
 
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
-	GetMoisture(context.Context, int, string) (float64, error)
+	GetMoisture(context.Context, uint, string) (float64, error)
 	GetLastContact(context.Context, string) (time.Time, error)
-	GetWateringHistory(context.Context, int, string, time.Duration) ([]map[string]interface{}, error)
+	GetWateringHistory(context.Context, uint, string, time.Duration) ([]map[string]interface{}, error)
 	influxdb2.Client
 }
 
@@ -83,7 +83,7 @@ func NewClient(config Config) Client {
 }
 
 // GetMoisture returns the plant's average soil moisture in the last 15 minutes
-func (client *client) GetMoisture(ctx context.Context, plantPosition int, gardenName string) (result float64, err error) {
+func (client *client) GetMoisture(ctx context.Context, plantPosition uint, gardenName string) (result float64, err error) {
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:        client.config.Bucket,
@@ -138,7 +138,7 @@ func (client *client) GetLastContact(ctx context.Context, gardenName string) (re
 }
 
 // GetWateringHistory gets recent watering events for a specific Plant
-func (client *client) GetWateringHistory(ctx context.Context, plantPosition int, gardenName string, timeRange time.Duration) ([]map[string]interface{}, error) {
+func (client *client) GetWateringHistory(ctx context.Context, plantPosition uint, gardenName string, timeRange time.Duration) ([]map[string]interface{}, error) {
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:        client.config.Bucket,

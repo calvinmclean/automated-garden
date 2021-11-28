@@ -21,10 +21,10 @@ type Plant struct {
 	Details       *Details       `json:"details,omitempty" yaml:"details,omitempty"`
 	ID            xid.ID         `json:"id" yaml:"id,omitempty"`
 	GardenID      xid.ID         `json:"garden_id" yaml:"garden_id,omitempty"`
-	PlantPosition *int           `json:"plant_position" yaml:"plant_position"`
+	PlantPosition *uint          `json:"plant_position" yaml:"plant_position"`
 	CreatedAt     *time.Time     `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate       *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	SkipCount     *int           `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
+	SkipCount     *uint          `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
 	WaterSchedule *WaterSchedule `json:"water_schedule,omitempty" yaml:"water_schedule,omitempty"`
 }
 

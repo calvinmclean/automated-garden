@@ -13,7 +13,7 @@ import (
 type GardenResponse struct {
 	*pkg.Garden
 	NextLightAction *NextLightAction `json:"next_light_action,omitempty"`
-	NumPlants       int              `json:"num_plants"`
+	NumPlants       uint             `json:"num_plants"`
 	Plants          Link             `json:"plants"`
 	Links           []Link           `json:"links,omitempty"`
 }

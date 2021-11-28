@@ -71,7 +71,7 @@ func TestPlantAction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			plant := &Plant{
-				PlantPosition: intPointer(0),
+				PlantPosition: uintPointer(0),
 				WaterSchedule: &WaterSchedule{},
 			}
 			mqttClient := new(mqtt.MockClient)
@@ -171,7 +171,7 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"Successful",
 			&Plant{
-				PlantPosition: intPointer(0),
+				PlantPosition: uintPointer(0),
 				WaterSchedule: &WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -187,7 +187,7 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"TopicTemplateError",
 			&Plant{
-				PlantPosition: intPointer(0),
+				PlantPosition: uintPointer(0),
 				WaterSchedule: &WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -205,8 +205,8 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"NoErrorWhenSkipGreaterThanZero",
 			&Plant{
-				PlantPosition: intPointer(0),
-				SkipCount:     intPointer(1),
+				PlantPosition: uintPointer(0),
+				SkipCount:     uintPointer(1),
 				WaterSchedule: &WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -222,7 +222,7 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"SuccessWhenMoistureLessThanMinimum",
 			&Plant{
-				PlantPosition: intPointer(0),
+				PlantPosition: uintPointer(0),
 				WaterSchedule: &WaterSchedule{
 					MinimumMoisture: 50,
 				},
@@ -230,7 +230,7 @@ func TestWaterActionExecute(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(0), nil)
+				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), nil)
 				influxdbClient.On("Close")
 			},
 			func(err error, t *testing.T) {
@@ -242,13 +242,13 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"SuccessWhenMoistureGreaterThanMinimum",
 			&Plant{
-				PlantPosition: intPointer(0),
+				PlantPosition: uintPointer(0),
 				WaterSchedule: &WaterSchedule{
 					MinimumMoisture: 50,
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(51), nil)
+				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(51), nil)
 				influxdbClient.On("Close")
 			},
 			func(err error, t *testing.T) {
@@ -263,13 +263,13 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"ErrorInfluxDBClient",
 			&Plant{
-				PlantPosition: intPointer(0),
+				PlantPosition: uintPointer(0),
 				WaterSchedule: &WaterSchedule{
 					MinimumMoisture: 50,
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetMoisture", mock.Anything, 0, garden.Name).Return(float64(0), errors.New("influxdb error"))
+				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
 			func(err error, t *testing.T) {
@@ -443,6 +443,7 @@ func TestLightActionExecute(t *testing.T) {
 	}
 }
 
-func intPointer(n int) *int {
-	return &n
+func uintPointer(n int) *uint {
+	uintn := uint(n)
+	return &uintn
 }

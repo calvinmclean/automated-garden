@@ -86,7 +86,7 @@ func (pr PlantsResource) getNextWateringTime(p *pkg.Plant) *time.Time {
 				result := job.NextRun()
 				if p.SkipCount != nil {
 					interval, _ := time.ParseDuration(p.WaterSchedule.Interval)
-					for i := 0; i < *p.SkipCount; i++ {
+					for i := uint(0); i < *p.SkipCount; i++ {
 						result = result.Add(interval)
 					}
 				}

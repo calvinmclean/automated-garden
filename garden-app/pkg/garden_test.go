@@ -84,7 +84,7 @@ func TestGardenEndDated(t *testing.T) {
 
 func TestGardenPatch(t *testing.T) {
 	now := time.Now()
-	ten := 10
+	ten := uint(10)
 	tests := []struct {
 		name      string
 		newGarden *Garden
@@ -175,7 +175,7 @@ func TestGardenNumPlants(t *testing.T) {
 	tests := []struct {
 		name     string
 		garden   *Garden
-		expected int
+		expected uint
 	}{
 		{
 			"NoPlants",

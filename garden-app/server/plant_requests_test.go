@@ -10,7 +10,7 @@ import (
 )
 
 func TestPlantRequest(t *testing.T) {
-	pp := 0
+	pp := uint(0)
 	tests := []struct {
 		name string
 		pr   *PlantRequest
@@ -166,7 +166,7 @@ func TestPlantRequest(t *testing.T) {
 }
 
 func TestUpdatePlantRequest(t *testing.T) {
-	pp := 0
+	pp := uint(0)
 	now := time.Now()
 	tests := []struct {
 		name string

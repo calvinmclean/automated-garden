@@ -87,8 +87,8 @@ func TestGardenActionRequest(t *testing.T) {
 }
 
 func TestGardenRequest(t *testing.T) {
-	zero := 0
-	one := 1
+	zero := uint(0)
+	one := uint(1)
 	tests := []struct {
 		name string
 		gr   *GardenRequest
@@ -269,7 +269,7 @@ func TestGardenRequest(t *testing.T) {
 
 func TestUpdateGardenRequest(t *testing.T) {
 	now := time.Now()
-	zero := 0
+	zero := uint(0)
 	tests := []struct {
 		name string
 		gr   *UpdateGardenRequest

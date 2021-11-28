@@ -98,18 +98,18 @@ func (_m *MockClient) GetLastContact(_a0 context.Context, _a1 string) (time.Time
 }
 
 // GetMoisture provides a mock function with given fields: _a0, _a1, _a2
-func (_m *MockClient) GetMoisture(_a0 context.Context, _a1 int, _a2 string) (float64, error) {
+func (_m *MockClient) GetMoisture(_a0 context.Context, _a1 uint, _a2 string) (float64, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	var r0 float64
-	if rf, ok := ret.Get(0).(func(context.Context, int, string) float64); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uint, string) float64); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Get(0).(float64)
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int, string) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uint, string) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)
@@ -119,11 +119,11 @@ func (_m *MockClient) GetMoisture(_a0 context.Context, _a1 int, _a2 string) (flo
 }
 
 // GetWateringHistory provides a mock function with given fields: _a0, _a1, _a2, _a3
-func (_m *MockClient) GetWateringHistory(_a0 context.Context, _a1 int, _a2 string, _a3 time.Duration) ([]map[string]interface{}, error) {
+func (_m *MockClient) GetWateringHistory(_a0 context.Context, _a1 uint, _a2 string, _a3 time.Duration) ([]map[string]interface{}, error) {
 	ret := _m.Called(_a0, _a1, _a2, _a3)
 
 	var r0 []map[string]interface{}
-	if rf, ok := ret.Get(0).(func(context.Context, int, string, time.Duration) []map[string]interface{}); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, uint, string, time.Duration) []map[string]interface{}); ok {
 		r0 = rf(_a0, _a1, _a2, _a3)
 	} else {
 		if ret.Get(0) != nil {
@@ -132,7 +132,7 @@ func (_m *MockClient) GetWateringHistory(_a0 context.Context, _a1 int, _a2 strin
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(context.Context, int, string, time.Duration) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, uint, string, time.Duration) error); ok {
 		r1 = rf(_a0, _a1, _a2, _a3)
 	} else {
 		r1 = ret.Error(1)

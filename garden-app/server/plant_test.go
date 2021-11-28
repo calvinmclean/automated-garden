@@ -26,7 +26,7 @@ import (
 func createExamplePlant() *pkg.Plant {
 	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
-	pp := 0
+	pp := uint(0)
 	return &pkg.Plant{
 		Name:          "test plant",
 		ID:            id,
@@ -744,6 +744,22 @@ func TestCreatePlant(t *testing.T) {
 			http.StatusCreated,
 		},
 		{
+			"ErrorNegativePlantPosition",
+			func(storageClient *storage.MockClient) {},
+			createExampleGarden(),
+			`{"name":"test plant","plant_position":-1,"water_schedule":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
+			`{"status":"Invalid request.","error":"json: cannot unmarshal number -1 into Go struct field PlantRequest.plant_position of type uint"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorNegativeSkipCount",
+			func(storageClient *storage.MockClient) {},
+			createExampleGarden(),
+			`{"name":"test plant","plant_position":0,"skip_count":-1,"water_schedule":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
+			`{"status":"Invalid request.","error":"json: cannot unmarshal number -1 into Go struct field PlantRequest.skip_count of type uint"}`,
+			http.StatusBadRequest,
+		},
+		{
 			"ErrorMaxPlantsExceeded",
 			func(storageClient *storage.MockClient) {},
 			gardenWithPlant,
@@ -842,7 +858,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistoryEmpty",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).Return([]map[string]interface{}{}, nil)
+				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72).Return([]map[string]interface{}{}, nil)
 				influxdbClient.On("Close")
 			},
 			"",
@@ -852,7 +868,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistory",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).
+				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72).
 					Return([]map[string]interface{}{{"WateringAmount": 3000, "RecordTime": recordTime}}, nil)
 				influxdbClient.On("Close")
 			},
@@ -863,7 +879,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistoryWithLimit",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).
+				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72).
 					Return([]map[string]interface{}{
 						{"WateringAmount": 3000, "RecordTime": recordTime},
 						{"WateringAmount": 3000, "RecordTime": recordTime.Add(1 * time.Hour)},
@@ -877,7 +893,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"InfluxDBClientError",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, 0, "test-garden", time.Hour*72).
+				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72).
 					Return([]map[string]interface{}{}, errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
@@ -927,7 +943,7 @@ func TestWateringHistory(t *testing.T) {
 func TestGetNextWateringTime(t *testing.T) {
 	tests := []struct {
 		name         string
-		skipCount    int
+		skipCount    uint
 		expectedDiff time.Duration
 	}{
 		{"ZeroSkip", 0, 0},
