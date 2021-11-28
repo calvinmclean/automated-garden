@@ -862,7 +862,7 @@ func TestWateringHistory(t *testing.T) {
 				influxdbClient.On("Close")
 			},
 			"",
-			`{"history":null,"count":0,"average":"-1ns","total":"0s"}`,
+			`{"history":null,"count":0,"average":"0s","total":"0s"}`,
 			http.StatusOK,
 		},
 		{
@@ -873,7 +873,7 @@ func TestWateringHistory(t *testing.T) {
 				influxdbClient.On("Close")
 			},
 			"",
-			`{"history":[{"watering_amount":3000,"record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"watering_amount":"3s","record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
 			http.StatusOK,
 		},
 		{
@@ -887,7 +887,7 @@ func TestWateringHistory(t *testing.T) {
 				influxdbClient.On("Close")
 			},
 			"?limit=1",
-			`{"history":[{"watering_amount":3000,"record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"watering_amount":"3s","record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
 			http.StatusOK,
 		},
 		{

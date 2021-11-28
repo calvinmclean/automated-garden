@@ -549,9 +549,9 @@ components:
       description: a
       properties:
         watering_amount:
-          type: integer
-          description: amount of time, in milliseconds, that Plant should be watered
-          example: 150000
+          type: string
+          description: amount of time, in Duration format, that Plant should be watered
+          example: 15000ms
         record_time:
           type: string
           format: date-time

@@ -49,7 +49,7 @@ type WaterSchedule struct {
 
 // WateringHistory holds information about a WateringEvent that occurred in the past
 type WateringHistory struct {
-	WateringAmount int       `json:"watering_amount"`
+	WateringAmount string    `json:"watering_amount"`
 	RecordTime     time.Time `json:"record_time"`
 }
 

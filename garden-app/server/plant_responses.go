@@ -85,20 +85,21 @@ type PlantWateringHistoryResponse struct {
 
 // NewPlantWateringHistoryResponse creates a response by creating some basic statistics about a list of history events
 func NewPlantWateringHistoryResponse(history []pkg.WateringHistory) PlantWateringHistoryResponse {
-	total := 0
+	total := time.Duration(0)
 	for _, h := range history {
-		total += h.WateringAmount
+		amountDuration, _ := time.ParseDuration(h.WateringAmount)
+		total += amountDuration
 	}
-	// The average needs to be parsed as a string because I do not want to convert to int and lose precision
-	average, err := time.ParseDuration(fmt.Sprintf("%fms", float64(total)/float64(len(history))))
-	if err != nil {
-		average = -1
+	count := len(history)
+	average := time.Duration(0)
+	if count != 0 {
+		average = time.Duration(int(total) / len(history))
 	}
 	return PlantWateringHistoryResponse{
 		History: history,
-		Count:   len(history),
+		Count:   count,
 		Average: average.String(),
-		Total:   time.Duration(total * int(time.Millisecond)).String(),
+		Total:   time.Duration(total).String(),
 	}
 }
 
