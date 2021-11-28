@@ -694,10 +694,12 @@ components:
           type: integer
           description: this is the position of this Plant in the Garden. It corresponds directly to the configuration of the `garden-controller` and is critical for watering the Plant
           example: 0
+          minimum: 0
         skip_count:
           type: integer
           description: number of times the scheduled WaterAction should be skipped. This can be used to prevent overwatering. It only applies to scheduled WaterActions, not ad-hoc actions
           example: 0
+          minimum: 0
         water_schedule:
           type: object
           description: |
@@ -823,6 +825,8 @@ components:
             num_plants:
               type: integer
               description: the number of active (not end-dated) Plants in this Garden
+              example: 1
+              minimum: 0
             plants:
               description: link specifically for the collection of Plants
               allOf:
@@ -867,6 +871,11 @@ components:
           description: |
             A descriptive name for the Garden. This is used as the prefix of the MQTT topic for sending messages to the controller, so it is recommended to avoid spaces and the following characters are not allowed: `[$#*>+/]`
           example: garden
+        max_plants:
+          type: integer
+          description: used to help with validation and avoid errors. This represents the maximum number of Plants that this Garden is able to water
+          example: 3
+          minimum: 0
         light_schedule:
           type: object
           description: describes when to turn on a light and for how long to leave it on
@@ -884,3 +893,5 @@ components:
           required:
             - duration
             - start_time
+      required:
+        - max_plants
