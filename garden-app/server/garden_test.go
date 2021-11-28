@@ -372,6 +372,9 @@ func TestEndDateGarden(t *testing.T) {
 	endDatedGarden := createExampleGarden()
 	endDatedGarden.EndDate = &now
 
+	gardenWithPlant := createExampleGarden()
+	gardenWithPlant.Plants[xid.New()] = &pkg.Plant{}
+
 	tests := []struct {
 		name           string
 		setupMock      func(*storage.MockClient)
@@ -396,6 +399,13 @@ func TestEndDateGarden(t *testing.T) {
 			endDatedGarden,
 			"",
 			http.StatusNoContent,
+		},
+		{
+			"ErrorEndDatingGardenWithPlants",
+			func(storageClient *storage.MockClient) {},
+			gardenWithPlant,
+			`{"status":"Invalid request.","error":"unable to end-date Garden with active Plants"}`,
+			http.StatusBadRequest,
 		},
 		{
 			"DeleteGardenError",

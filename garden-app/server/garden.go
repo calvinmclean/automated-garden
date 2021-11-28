@@ -202,6 +202,12 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	now := time.Now()
 
+	// Don't allow end-dating a Garden with active Plants
+	if garden.NumPlants() > 0 {
+		render.Render(w, r, ErrInvalidRequest(errors.New("unable to end-date Garden with active Plants")))
+		return
+	}
+
 	// Permanently delete the Garden if it is already end-dated
 	if garden.EndDated() {
 		if err := gr.storageClient.DeleteGarden(garden.ID); err != nil {
