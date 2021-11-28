@@ -307,7 +307,7 @@ resources:
         		"count": 25
         	},
         	"plant_position": 0,
-        	"watering_strategy": {
+        	"water_schedule": {
         		"watering_amount": 15000,
         		"interval": "72h",
         		"start_time": "22:00:00-07:00"
@@ -415,7 +415,7 @@ resources:
       mimeType: application/json
       text: |-
         {
-        	"watering_strategy": {
+        	"water_schedule": {
         		"start_time": "22:00:00-07:00"
         	}
         }

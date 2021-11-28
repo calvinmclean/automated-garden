@@ -13,24 +13,24 @@ const (
 )
 
 // addWateringSchedule will schedule watering actions for the Plant based off the CreatedAt date,
-// WateringStrategy time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
+// WaterSchedule time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
 // easily be removed
 func (pr PlantsResource) addWateringSchedule(g *pkg.Garden, p *pkg.Plant) error {
 	logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
 	// Read Plant's Interval string into a Duration
-	duration, err := time.ParseDuration(p.WateringStrategy.Interval)
+	duration, err := time.ParseDuration(p.WaterSchedule.Interval)
 	if err != nil {
 		return err
 	}
 
-	// Parse Plant's WateringStrategy.Time (has no "date")
-	waterTime, err := time.Parse(pkg.WaterTimeFormat, p.WateringStrategy.StartTime)
+	// Parse Plant's WaterSchedule.Time (has no "date")
+	waterTime, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
 	if err != nil {
 		return err
 	}
 
-	// Create startDate using the CreatedAt date with the WateringStrategy's timestamp
+	// Create startDate using the CreatedAt date with the WaterSchedule's timestamp
 	startDate := time.Date(
 		p.CreatedAt.Year(),
 		p.CreatedAt.Month(),
@@ -85,7 +85,7 @@ func (pr PlantsResource) getNextWateringTime(p *pkg.Plant) *time.Time {
 			if tag == p.ID.String() {
 				result := job.NextRun()
 				if p.SkipCount != nil {
-					interval, _ := time.ParseDuration(p.WateringStrategy.Interval)
+					interval, _ := time.ParseDuration(p.WaterSchedule.Interval)
 					for i := 0; i < *p.SkipCount; i++ {
 						result = result.Add(interval)
 					}
@@ -136,7 +136,7 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 		return err
 	}
 
-	// Create startDate using the CreatedAt date with the WateringStrategy's timestamp
+	// Create startDate using the CreatedAt date with the WaterSchedule's timestamp
 	startDate := time.Date(
 		g.CreatedAt.Year(),
 		g.CreatedAt.Month(),

@@ -7,7 +7,7 @@ import (
 
 func TestWateringEvent(t *testing.T) {
 	plant := Plant{
-		WateringStrategy: &WateringStrategy{
+		WaterSchedule: &WaterSchedule{
 			WateringAmount: 15000,
 			Interval:       "24h",
 		},
@@ -65,26 +65,26 @@ func TestPlantPatch(t *testing.T) {
 			&Plant{SkipCount: &zero},
 		},
 		{
-			"PatchWateringStrategy.WateringAmount",
-			&Plant{WateringStrategy: &WateringStrategy{
+			"PatchWaterSchedule.WateringAmount",
+			&Plant{WaterSchedule: &WaterSchedule{
 				WateringAmount: 1000,
 			}},
 		},
 		{
-			"PatchWateringStrategy.Interval",
-			&Plant{WateringStrategy: &WateringStrategy{
+			"PatchWaterSchedule.Interval",
+			&Plant{WaterSchedule: &WaterSchedule{
 				Interval: "2h",
 			}},
 		},
 		{
-			"PatchWateringStrategy.MinimumMoisture",
-			&Plant{WateringStrategy: &WateringStrategy{
+			"PatchWaterSchedule.MinimumMoisture",
+			&Plant{WaterSchedule: &WaterSchedule{
 				MinimumMoisture: 1,
 			}},
 		},
 		{
-			"PatchWateringStrategy.StartTime",
-			&Plant{WateringStrategy: &WateringStrategy{
+			"PatchWaterSchedule.StartTime",
+			&Plant{WaterSchedule: &WaterSchedule{
 				StartTime: "start time",
 			}},
 		},
@@ -118,11 +118,11 @@ func TestPlantPatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &Plant{}
 			p.Patch(tt.newPlant)
-			if p.WateringStrategy != nil && *p.WateringStrategy != *tt.newPlant.WateringStrategy {
-				t.Errorf("Unexpected result for WateringStrategy: expected=%v, actual=%v", tt.newPlant, p)
+			if p.WaterSchedule != nil && *p.WaterSchedule != *tt.newPlant.WaterSchedule {
+				t.Errorf("Unexpected result for WaterSchedule: expected=%v, actual=%v", tt.newPlant, p)
 			}
-			p.WateringStrategy = nil
-			tt.newPlant.WateringStrategy = nil
+			p.WaterSchedule = nil
+			tt.newPlant.WaterSchedule = nil
 			if p.Details != nil && *p.Details != *tt.newPlant.Details {
 				t.Errorf("Unexpected result for Details: expected=%v, actual=%v", tt.newPlant, p)
 			}

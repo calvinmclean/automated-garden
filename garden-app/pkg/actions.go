@@ -45,7 +45,7 @@ type WaterMessage struct {
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
 func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
-	if p.WateringStrategy.MinimumMoisture > 0 && !action.IgnoreMoisture {
+	if p.WaterSchedule.MinimumMoisture > 0 && !action.IgnoreMoisture {
 		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 		defer cancel()
 
@@ -54,8 +54,8 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)
 		}
-		if moisture > float64(p.WateringStrategy.MinimumMoisture) {
-			return fmt.Errorf("moisture value %.2f%% is above threshold %d%%", moisture, p.WateringStrategy.MinimumMoisture)
+		if moisture > float64(p.WaterSchedule.MinimumMoisture) {
+			return fmt.Errorf("moisture value %.2f%% is above threshold %d%%", moisture, p.WaterSchedule.MinimumMoisture)
 		}
 	}
 

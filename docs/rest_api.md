@@ -87,15 +87,15 @@ A `Garden` represents a garden in the physical world and should correspond one-t
 ### Plants
 A `Plant` represents a resource that can be watered. In many cases, this will represent a plant in the physical world, but it isn't necessarily always one-to-one. For example, a simple deep water culture hydroponics system might have multiple plants, but only controls watering by circulating water with a single pump. A Plant provides the following functionalities:
   - Accessed at `/gardens/{GardenID}/plants/{PlantID}`
-  - Scheduled control of watering using a `watering_strategy`:
+  - Scheduled control of watering using a `water_schedule`:
     ```json
-    "watering_strategy": {
+    "water_schedule": {
         "watering_amount": 20000,
         "interval": "72h",
         "start_time": "23:00:00-07:00"
     }
     ```
-  - Control of watering based on moisture using `minimum_moisture` in the `watering_strategy`. This sets the moisture percentage the plant's soil must drop below to enable watering
+  - Control of watering based on moisture using `minimum_moisture` in the `water_schedule`. This sets the moisture percentage the plant's soil must drop below to enable watering
   - On-demand control of watering using a `WaterAction` to the `/action` endpoint
   - Access to a Plant's watering history from InfluxDB using `/history` endpoint
 
@@ -117,7 +117,7 @@ It is important to note that, although this doesn't necessarily correspond to on
   "garden_id": "c22tmvucie6n6gdrpal0",
   "plant_position": 0,
   "created_at": "2021-07-24T19:44:08.014997-07:00",
-  "watering_strategy": {
+  "water_schedule": {
     "watering_amount": 300000,
     "interval": "24h",
     "start_time": "19:00:00-07:00"
@@ -159,7 +159,7 @@ It is important to note that, although this doesn't necessarily correspond to on
   "plant_position": 0,
   "created_at": "2021-07-24T19:44:08.014997-07:00",
   "end_date": "2021-11-22T16:11:53.010698-07:00",
-  "watering_strategy": {
+  "water_schedule": {
     "watering_amount": 300000,
     "interval": "24h",
     "start_time": "19:00:00-07:00"

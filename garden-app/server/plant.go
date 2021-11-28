@@ -220,7 +220,7 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 
 	// If moisture was not already cached (and plant has moisture sensor), get it and cache it
 	// Otherwise, clear cache
-	if !cached && plant.WateringStrategy.MinimumMoisture > 0 {
+	if !cached && plant.WaterSchedule.MinimumMoisture > 0 {
 		// I was doing this with a goroutine, but that made the call untestable. I don't think there was any benefit to
 		// using the goroutine because the result is already rendered
 		pr.getAndCacheMoisture(r.Context(), garden, plant)

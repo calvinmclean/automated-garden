@@ -25,22 +25,22 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if p.PlantPosition == nil {
 		return errors.New("missing required plant_position field")
 	}
-	if p.WateringStrategy == nil {
-		return errors.New("missing required watering_strategy field")
+	if p.WaterSchedule == nil {
+		return errors.New("missing required water_schedule field")
 	}
-	if p.WateringStrategy.Interval == "" {
-		return errors.New("missing required watering_strategy.interval field")
+	if p.WaterSchedule.Interval == "" {
+		return errors.New("missing required water_schedule.interval field")
 	}
-	if p.WateringStrategy.WateringAmount == 0 {
-		return errors.New("missing required watering_strategy.watering_amount field")
+	if p.WaterSchedule.WateringAmount == 0 {
+		return errors.New("missing required water_schedule.watering_amount field")
 	}
-	if p.WateringStrategy.StartTime == "" {
-		return errors.New("missing required watering_strategy.start_time field")
+	if p.WaterSchedule.StartTime == "" {
+		return errors.New("missing required water_schedule.start_time field")
 	}
 	// Check that water time is valid
-	_, err := time.Parse(pkg.WaterTimeFormat, p.WateringStrategy.StartTime)
+	_, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
 	if err != nil {
-		return fmt.Errorf("invalid time format for watering_strategy.start_time: %s", p.WateringStrategy.StartTime)
+		return fmt.Errorf("invalid time format for water_schedule.start_time: %s", p.WaterSchedule.StartTime)
 	}
 	if p.Name == "" {
 		return errors.New("missing required name field")
@@ -75,11 +75,11 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 		return errors.New("to end-date a Plant, please use the DELETE endpoint")
 	}
 
-	if p.Plant.WateringStrategy != nil && p.WateringStrategy.StartTime != "" {
+	if p.Plant.WaterSchedule != nil && p.WaterSchedule.StartTime != "" {
 		// Check that water time is valid
-		_, err := time.Parse(pkg.WaterTimeFormat, p.WateringStrategy.StartTime)
+		_, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
 		if err != nil {
-			return fmt.Errorf("invalid time format for watering_strategy.start_time: %s", p.WateringStrategy.StartTime)
+			return fmt.Errorf("invalid time format for water_schedule.start_time: %s", p.WaterSchedule.StartTime)
 		}
 	}
 

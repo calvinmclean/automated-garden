@@ -608,7 +608,7 @@ components:
       required:
         - name
         - plant_position
-        - watering_strategy
+        - water_schedule
 
     PlantResponse:
       type: object
@@ -658,7 +658,7 @@ components:
         - garden_id
         - name
         - plant_position
-        - watering_strategy
+        - water_schedule
 
     Plant:
       type: object
@@ -698,7 +698,7 @@ components:
           type: integer
           description: number of times the scheduled WaterAction should be skipped. This can be used to prevent overwatering. It only applies to scheduled WaterActions, not ad-hoc actions
           example: 0
-        watering_strategy:
+        water_schedule:
           type: object
           description: |
             Allows control over how/when the Plant is watered. The `interval` is used to control the amount of time the pump runs to water the Garden.

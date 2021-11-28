@@ -36,76 +36,76 @@ func TestPlantRequest(t *testing.T) {
 			"missing required plant_position field",
 		},
 		{
-			"EmptyWateringStrategyError",
+			"EmptyWaterScheduleError",
 			&PlantRequest{
 				Plant: &pkg.Plant{
 					Name:          "plant",
 					PlantPosition: &pp,
 				},
 			},
-			"missing required watering_strategy field",
+			"missing required water_schedule field",
 		},
 		{
-			"EmptyWateringStrategyIntervalError",
+			"EmptyWaterScheduleIntervalError",
 			&PlantRequest{
 				Plant: &pkg.Plant{
 					Name:          "plant",
 					PlantPosition: &pp,
-					WateringStrategy: &pkg.WateringStrategy{
+					WaterSchedule: &pkg.WaterSchedule{
 						WateringAmount: 1000,
 					},
 				},
 			},
-			"missing required watering_strategy.interval field",
+			"missing required water_schedule.interval field",
 		},
 		{
-			"EmptyWateringStrategyWateringAmountError",
+			"EmptyWaterScheduleWateringAmountError",
 			&PlantRequest{
 				Plant: &pkg.Plant{
 					Name:          "plant",
 					PlantPosition: &pp,
-					WateringStrategy: &pkg.WateringStrategy{
+					WaterSchedule: &pkg.WaterSchedule{
 						Interval: "24h",
 					},
 				},
 			},
-			"missing required watering_strategy.watering_amount field",
+			"missing required water_schedule.watering_amount field",
 		},
 		{
-			"EmptyWateringStrategyStartTimeError",
+			"EmptyWaterScheduleStartTimeError",
 			&PlantRequest{
 				Plant: &pkg.Plant{
 					Name:          "plant",
 					PlantPosition: &pp,
-					WateringStrategy: &pkg.WateringStrategy{
+					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
 						WateringAmount: 1000,
 					},
 				},
 			},
-			"missing required watering_strategy.start_time field",
+			"missing required water_schedule.start_time field",
 		},
 		{
-			"InvalidWateringStrategyStartTimeError",
+			"InvalidWaterScheduleStartTimeError",
 			&PlantRequest{
 				Plant: &pkg.Plant{
 					Name:          "plant",
 					PlantPosition: &pp,
-					WateringStrategy: &pkg.WateringStrategy{
+					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
 						WateringAmount: 1000,
 						StartTime:      "NOT A TIME",
 					},
 				},
 			},
-			"invalid time format for watering_strategy.start_time: NOT A TIME",
+			"invalid time format for water_schedule.start_time: NOT A TIME",
 		},
 		{
 			"EmptyNameError",
 			&PlantRequest{
 				Plant: &pkg.Plant{
 					PlantPosition: &pp,
-					WateringStrategy: &pkg.WateringStrategy{
+					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
 						WateringAmount: 1000,
 						StartTime:      "19:00:00-07:00",
@@ -121,7 +121,7 @@ func TestPlantRequest(t *testing.T) {
 					Name:          "garden",
 					PlantPosition: &pp,
 					GardenID:      xid.New(),
-					WateringStrategy: &pkg.WateringStrategy{
+					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
 						WateringAmount: 1000,
 						StartTime:      "19:00:00-07:00",
@@ -137,7 +137,7 @@ func TestPlantRequest(t *testing.T) {
 			Plant: &pkg.Plant{
 				Name:          "plant",
 				PlantPosition: &pp,
-				WateringStrategy: &pkg.WateringStrategy{
+				WaterSchedule: &pkg.WaterSchedule{
 					WateringAmount: 1000,
 					Interval:       "24h",
 					StartTime:      "19:00:00-07:00",
@@ -200,15 +200,15 @@ func TestUpdatePlantRequest(t *testing.T) {
 			"updating ID is not allowed",
 		},
 		{
-			"InvalidWateringStrategyStartTimeError",
+			"InvalidWaterScheduleStartTimeError",
 			&UpdatePlantRequest{
 				Plant: &pkg.Plant{
-					WateringStrategy: &pkg.WateringStrategy{
+					WaterSchedule: &pkg.WaterSchedule{
 						StartTime: "NOT A TIME",
 					},
 				},
 			},
-			"invalid time format for watering_strategy.start_time: NOT A TIME",
+			"invalid time format for water_schedule.start_time: NOT A TIME",
 		},
 		{
 			"EndDateError",

@@ -95,6 +95,7 @@ storage:
 {
     "name": "aerogarden",
     "id": "c5ma39fphd1c514hk48g",
+    "max_plants": 1,
     "created_at": "2021-10-13T02:55:13.046499731Z",
     "num_plants": 1,
     "plants": {
@@ -136,7 +137,7 @@ storage:
     "garden_id": "c5ma39fphd1c514hk48g",
     "plant_position": 0,
     "created_at": "2021-10-17T22:35:35.205085596Z",
-    "watering_strategy": {
+    "water_schedule": {
         "watering_amount": 300000,
         "interval": "1h",
         "start_time": "12:00:00-07:00"

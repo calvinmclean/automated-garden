@@ -115,6 +115,7 @@ storage:
 {
     "name": "garden",
     "id": "c5ma3cvphd1c514hk490",
+    "max_plants": 3,
     "created_at": "2021-10-13T02:55:13.025436541Z",
     "light_schedule": {
         "duration": "13h",
@@ -162,7 +163,7 @@ storage:
     "garden_id": "c5ma3cvphd1c514hk490",
     "plant_position": 1,
     "created_at": "2021-10-17T22:40:32.474585191Z",
-    "watering_strategy": {
+    "water_schedule": {
         "watering_amount": 20000,
         "interval": "72h",
         "start_time": "22:00:00-07:00"

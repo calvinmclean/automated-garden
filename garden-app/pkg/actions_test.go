@@ -71,8 +71,8 @@ func TestPlantAction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			plant := &Plant{
-				PlantPosition:    intPointer(0),
-				WateringStrategy: &WateringStrategy{},
+				PlantPosition: intPointer(0),
+				WaterSchedule: &WaterSchedule{},
 			}
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
@@ -171,8 +171,8 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"Successful",
 			&Plant{
-				PlantPosition:    intPointer(0),
-				WateringStrategy: &WateringStrategy{},
+				PlantPosition: intPointer(0),
+				WaterSchedule: &WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
@@ -187,8 +187,8 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"TopicTemplateError",
 			&Plant{
-				PlantPosition:    intPointer(0),
-				WateringStrategy: &WateringStrategy{},
+				PlantPosition: intPointer(0),
+				WaterSchedule: &WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("", errors.New("template error"))
@@ -205,9 +205,9 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"NoErrorWhenSkipGreaterThanZero",
 			&Plant{
-				PlantPosition:    intPointer(0),
-				SkipCount:        intPointer(1),
-				WateringStrategy: &WateringStrategy{},
+				PlantPosition: intPointer(0),
+				SkipCount:     intPointer(1),
+				WaterSchedule: &WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
@@ -223,7 +223,7 @@ func TestWaterActionExecute(t *testing.T) {
 			"SuccessWhenMoistureLessThanMinimum",
 			&Plant{
 				PlantPosition: intPointer(0),
-				WateringStrategy: &WateringStrategy{
+				WaterSchedule: &WaterSchedule{
 					MinimumMoisture: 50,
 				},
 			},
@@ -243,7 +243,7 @@ func TestWaterActionExecute(t *testing.T) {
 			"SuccessWhenMoistureGreaterThanMinimum",
 			&Plant{
 				PlantPosition: intPointer(0),
-				WateringStrategy: &WateringStrategy{
+				WaterSchedule: &WaterSchedule{
 					MinimumMoisture: 50,
 				},
 			},
@@ -264,7 +264,7 @@ func TestWaterActionExecute(t *testing.T) {
 			"ErrorInfluxDBClient",
 			&Plant{
 				PlantPosition: intPointer(0),
-				WateringStrategy: &WateringStrategy{
+				WaterSchedule: &WaterSchedule{
 					MinimumMoisture: 50,
 				},
 			},
