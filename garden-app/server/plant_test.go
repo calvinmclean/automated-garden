@@ -595,7 +595,7 @@ func TestEndDatePlant(t *testing.T) {
 		{
 			"SuccessfullyDeletePlant",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("DeletePlant", mock.Anything).Return(nil)
+				storageClient.On("DeletePlant", mock.Anything, mock.Anything).Return(nil)
 			},
 			endDatedPlant,
 			"",
@@ -604,7 +604,7 @@ func TestEndDatePlant(t *testing.T) {
 		{
 			"DeletePlantError",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("DeletePlant", mock.Anything).Return(errors.New("storage error"))
+				storageClient.On("DeletePlant", mock.Anything, mock.Anything).Return(errors.New("storage error"))
 			},
 			endDatedPlant,
 			`{"status":"Server Error.","error":"storage error"}`,
