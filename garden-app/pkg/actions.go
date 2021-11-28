@@ -30,13 +30,13 @@ func (action *PlantAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 
 // WaterAction is an action for watering a Plant for the specified amount of time
 type WaterAction struct {
-	Duration       int  `json:"duration"`
-	IgnoreMoisture bool `json:"ignore_moisture"`
+	Duration       int64 `json:"duration"`
+	IgnoreMoisture bool  `json:"ignore_moisture"`
 }
 
 // WaterMessage is the message being sent over MQTT to the embedded garden controller
 type WaterMessage struct {
-	Duration      int    `json:"duration"`
+	Duration      int64  `json:"duration"`
 	PlantID       xid.ID `json:"id"`
 	PlantPosition uint   `json:"plant_position"`
 }

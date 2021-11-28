@@ -52,7 +52,7 @@ func TestPlantRequest(t *testing.T) {
 					Name:          "plant",
 					PlantPosition: &pp,
 					WaterSchedule: &pkg.WaterSchedule{
-						WateringAmount: 1000,
+						WateringAmount: "1000ms",
 					},
 				},
 			},
@@ -79,7 +79,7 @@ func TestPlantRequest(t *testing.T) {
 					PlantPosition: &pp,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
-						WateringAmount: 1000,
+						WateringAmount: "1000ms",
 					},
 				},
 			},
@@ -93,12 +93,27 @@ func TestPlantRequest(t *testing.T) {
 					PlantPosition: &pp,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
-						WateringAmount: 1000,
+						WateringAmount: "1000ms",
 						StartTime:      "NOT A TIME",
 					},
 				},
 			},
 			"invalid time format for water_schedule.start_time: NOT A TIME",
+		},
+		{
+			"InvalidWateringAmountStringError",
+			&PlantRequest{
+				Plant: &pkg.Plant{
+					Name:          "plant",
+					PlantPosition: &pp,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:       "24h",
+						WateringAmount: "NOT A DURATION",
+						StartTime:      "19:00:00-07:00",
+					},
+				},
+			},
+			"invalid duration format for water_schedule.watering_amount: NOT A DURATION",
 		},
 		{
 			"EmptyNameError",
@@ -107,7 +122,7 @@ func TestPlantRequest(t *testing.T) {
 					PlantPosition: &pp,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
-						WateringAmount: 1000,
+						WateringAmount: "1000ms",
 						StartTime:      "19:00:00-07:00",
 					},
 				},
@@ -123,7 +138,7 @@ func TestPlantRequest(t *testing.T) {
 					GardenID:      xid.New(),
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:       "24h",
-						WateringAmount: 1000,
+						WateringAmount: "1000ms",
 						StartTime:      "19:00:00-07:00",
 					},
 				},
@@ -138,7 +153,7 @@ func TestPlantRequest(t *testing.T) {
 				Name:          "plant",
 				PlantPosition: &pp,
 				WaterSchedule: &pkg.WaterSchedule{
-					WateringAmount: 1000,
+					WateringAmount: "1000ms",
 					Interval:       "24h",
 					StartTime:      "19:00:00-07:00",
 				},
@@ -198,6 +213,17 @@ func TestUpdatePlantRequest(t *testing.T) {
 				Plant: &pkg.Plant{ID: xid.New()},
 			},
 			"updating ID is not allowed",
+		},
+		{
+			"InvalidWaterScheduleStartTimeError",
+			&UpdatePlantRequest{
+				Plant: &pkg.Plant{
+					WaterSchedule: &pkg.WaterSchedule{
+						WateringAmount: "NOT A DURATION",
+					},
+				},
+			},
+			"invalid duration format for water_schedule.watering_amount: NOT A DURATION",
 		},
 		{
 			"InvalidWaterScheduleStartTimeError",

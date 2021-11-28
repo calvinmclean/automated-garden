@@ -31,15 +31,18 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if p.WaterSchedule.Interval == "" {
 		return errors.New("missing required water_schedule.interval field")
 	}
-	if p.WaterSchedule.WateringAmount == 0 {
+	if p.WaterSchedule.WateringAmount == "" {
 		return errors.New("missing required water_schedule.watering_amount field")
+	}
+	// Check that WateringAmount is valid Duration
+	if _, err := time.ParseDuration(p.WaterSchedule.WateringAmount); err != nil {
+		return fmt.Errorf("invalid duration format for water_schedule.watering_amount: %s", p.WaterSchedule.WateringAmount)
 	}
 	if p.WaterSchedule.StartTime == "" {
 		return errors.New("missing required water_schedule.start_time field")
 	}
-	// Check that water time is valid
-	_, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
-	if err != nil {
+	// Check that water StartTime is valid
+	if _, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime); err != nil {
 		return fmt.Errorf("invalid time format for water_schedule.start_time: %s", p.WaterSchedule.StartTime)
 	}
 	if p.Name == "" {
@@ -75,11 +78,19 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 		return errors.New("to end-date a Plant, please use the DELETE endpoint")
 	}
 
-	if p.Plant.WaterSchedule != nil && p.WaterSchedule.StartTime != "" {
-		// Check that water time is valid
-		_, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
-		if err != nil {
-			return fmt.Errorf("invalid time format for water_schedule.start_time: %s", p.WaterSchedule.StartTime)
+	if p.Plant.WaterSchedule != nil {
+		// Check that WateringAmount is valid Duration
+		if p.WaterSchedule.WateringAmount != "" {
+			if _, err := time.ParseDuration(p.WaterSchedule.WateringAmount); err != nil {
+				return fmt.Errorf("invalid duration format for water_schedule.watering_amount: %s", p.WaterSchedule.WateringAmount)
+			}
+		}
+		// Check that StartTime is valid
+		if p.WaterSchedule.StartTime != "" {
+			_, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
+			if err != nil {
+				return fmt.Errorf("invalid time format for water_schedule.start_time: %s", p.WaterSchedule.StartTime)
+			}
 		}
 	}
 
