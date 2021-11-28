@@ -29,12 +29,12 @@ func init() {
 }
 
 func createExampleGarden() *pkg.Garden {
-	one := 1
+	two := 2
 	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	return &pkg.Garden{
 		Name:      "test-garden",
-		MaxPlants: &one,
+		MaxPlants: &two,
 		ID:        id,
 		Plants:    map[xid.ID]*pkg.Plant{},
 		CreatedAt: &time,
@@ -202,8 +202,8 @@ func TestCreateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
-			`{"name": "test-garden", "max_plants": 1, "light_schedule": {"duration": "1m", "start_time": "22:00:01-07:00"}}`,
-			`{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":1,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name": "test-garden", "max_plants":2, "light_schedule": {"duration": "1m", "start_time": "22:00:01-07:00"}}`,
+			`{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -218,7 +218,7 @@ func TestCreateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
 			},
-			`{"name": "test-garden","max_plants":1}`,
+			`{"name": "test-garden","max_plants":2}`,
 			`{"status":"Server Error.","error":"storage client error"}`,
 			http.StatusInternalServerError,
 		},
@@ -280,7 +280,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", false).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":1,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -289,7 +289,7 @@ func TestGetAllGardens(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetGardens", true).Return(gardens, nil)
 			},
-			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":1,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -385,7 +385,7 @@ func TestEndDateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			createExampleGarden(),
-			`{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":1,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
+			`{"name":"test-garden","id":"[0-9a-v]{20}","max_plants":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"1m","start_time":"22:00:01-07:00"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -453,6 +453,10 @@ func TestUpdateGarden(t *testing.T) {
 	gardenWithoutLight := createExampleGarden()
 	gardenWithoutLight.LightSchedule = nil
 
+	gardenWithPlant := createExampleGarden()
+	gardenWithPlant.Plants[xid.New()] = &pkg.Plant{}
+	gardenWithPlant.Plants[xid.New()] = &pkg.Plant{}
+
 	tests := []struct {
 		name           string
 		garden         *pkg.Garden
@@ -468,7 +472,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","max_plants":1,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","max_plants":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -478,7 +482,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name","light_schedule": {}}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","max_plants":1,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","max_plants":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -488,7 +492,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","id":"[0-9a-v]{20}","max_plants":1,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","id":"[0-9a-v]{20}","max_plants":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -507,6 +511,14 @@ func TestUpdateGarden(t *testing.T) {
 			func(storageClient *storage.MockClient) {},
 			"{}",
 			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorReducingMaxPlants",
+			gardenWithPlant,
+			func(storageClient *storage.MockClient) {},
+			`{"max_plants": 1}`,
+			`{"status":"Invalid request.","error":"unable to set max_plants less than current num_plants=2"}`,
 			http.StatusBadRequest,
 		},
 	}

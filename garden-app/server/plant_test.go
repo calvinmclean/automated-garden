@@ -724,6 +724,7 @@ func TestGetAllPlants(t *testing.T) {
 func TestCreatePlant(t *testing.T) {
 	gardenWithPlant := createExampleGarden()
 	gardenWithPlant.Plants[xid.New()] = &pkg.Plant{}
+	gardenWithPlant.Plants[xid.New()] = &pkg.Plant{}
 	tests := []struct {
 		name           string
 		setupMock      func(*storage.MockClient)
@@ -747,15 +748,15 @@ func TestCreatePlant(t *testing.T) {
 			func(storageClient *storage.MockClient) {},
 			gardenWithPlant,
 			`{"name":"test plant","plant_position":0,"watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
-			`{"status":"Invalid request.","error":"adding a Plant would exceed Garden's max_plants=1"}`,
+			`{"status":"Invalid request.","error":"adding a Plant would exceed Garden's max_plants=2"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorInvalidPlantPosition",
 			func(storageClient *storage.MockClient) {},
 			createExampleGarden(),
-			`{"name":"test plant","plant_position":1,"watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
-			`{"status":"Invalid request.","error":"plant_position invalid for Garden with max_plants=1"}`,
+			`{"name":"test plant","plant_position":2,"watering_strategy":{"watering_amount":1000,"interval":"24h","start_time":"22:00:01-07:00"}}`,
+			`{"status":"Invalid request.","error":"plant_position invalid for Garden with max_plants=2"}`,
 			http.StatusBadRequest,
 		},
 		{

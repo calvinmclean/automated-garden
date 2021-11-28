@@ -242,6 +242,13 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
+	// Validate that new MaxPlants (if defined) is not less than NumPlants
+	if request.Garden.MaxPlants != nil && *request.Garden.MaxPlants < garden.NumPlants() {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to set max_plants less than current num_plants=%d", garden.NumPlants())))
+		return
+	}
+
 	garden.Patch(request.Garden)
 
 	// If LightSchedule is empty, remove the scheduled Job
