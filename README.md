@@ -10,7 +10,7 @@ This project is a monorepo containing code for an ESP32-based microcontroller pr
 
 [See additional documentation here](https://calvinmclean.github.io/automated-garden).
 
-![Garden](../assets/garden.jpeg?raw=true)
+![Garden](docs/_images/garden.jpeg?raw=true)
 
 This system is designed to be flexible for all types of gardening. Here are a few examples of different possible setups:
   - Indoor garden with a pump and multiple valves to control watering plants, plus a grow light
@@ -21,7 +21,7 @@ This system is designed to be flexible for all types of gardening. Here are a fe
 ## Components
 This project consists of two main components and supporting services. A centralized Go server is used to control a distributed system of microcontrollers, each representing a Garden with one or more plants.
 
-![Garden](../assets/FlowDiagram.png?raw=true)
+![Garden](docs/_images/FlowDiagram.png?raw=true)
 
 ### Garden App
 This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements the following features:
