@@ -90,7 +90,7 @@ A `Plant` represents a resource that can be watered. In many cases, this will re
   - Scheduled control of watering using a `water_schedule`:
     ```json
     "water_schedule": {
-        "watering_amount": "20s",
+        "duration": "20s",
         "interval": "72h",
         "start_time": "23:00:00-07:00"
     }
@@ -118,7 +118,7 @@ It is important to note that, although this doesn't necessarily correspond to on
   "plant_position": 0,
   "created_at": "2021-07-24T19:44:08.014997-07:00",
   "water_schedule": {
-    "watering_amount": "5m",
+    "duration": "5m",
     "interval": "24h",
     "start_time": "19:00:00-07:00"
   },
@@ -160,7 +160,7 @@ It is important to note that, although this doesn't necessarily correspond to on
   "created_at": "2021-07-24T19:44:08.014997-07:00",
   "end_date": "2021-11-22T16:11:53.010698-07:00",
   "water_schedule": {
-    "watering_amount": 300000,
+    "duration": 300000,
     "interval": "24h",
     "start_time": "19:00:00-07:00"
   },

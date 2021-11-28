@@ -14,7 +14,7 @@ c22tmvucie6n6gdrpal0:
             plant_position: 0
             created_at: 2021-07-24T19:44:08.014997-07:00
             water_schedule:
-                watering_amount: 300000
+                duration: 5m
                 interval: 30m
                 start_time: 19:00:00-07:00
     created_at: 2021-08-03T19:53:14.816332-07:00

@@ -31,12 +31,12 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if p.WaterSchedule.Interval == "" {
 		return errors.New("missing required water_schedule.interval field")
 	}
-	if p.WaterSchedule.WateringAmount == "" {
-		return errors.New("missing required water_schedule.watering_amount field")
+	if p.WaterSchedule.Duration == "" {
+		return errors.New("missing required water_schedule.duration field")
 	}
-	// Check that WateringAmount is valid Duration
-	if _, err := time.ParseDuration(p.WaterSchedule.WateringAmount); err != nil {
-		return fmt.Errorf("invalid duration format for water_schedule.watering_amount: %s", p.WaterSchedule.WateringAmount)
+	// Check that Duration is valid Duration
+	if _, err := time.ParseDuration(p.WaterSchedule.Duration); err != nil {
+		return fmt.Errorf("invalid duration format for water_schedule.duration: %s", p.WaterSchedule.Duration)
 	}
 	if p.WaterSchedule.StartTime == "" {
 		return errors.New("missing required water_schedule.start_time field")
@@ -79,10 +79,10 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 	}
 
 	if p.Plant.WaterSchedule != nil {
-		// Check that WateringAmount is valid Duration
-		if p.WaterSchedule.WateringAmount != "" {
-			if _, err := time.ParseDuration(p.WaterSchedule.WateringAmount); err != nil {
-				return fmt.Errorf("invalid duration format for water_schedule.watering_amount: %s", p.WaterSchedule.WateringAmount)
+		// Check that Duration is valid Duration
+		if p.WaterSchedule.Duration != "" {
+			if _, err := time.ParseDuration(p.WaterSchedule.Duration); err != nil {
+				return fmt.Errorf("invalid duration format for water_schedule.duration: %s", p.WaterSchedule.Duration)
 			}
 		}
 		// Check that StartTime is valid

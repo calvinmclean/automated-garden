@@ -419,8 +419,8 @@ func (pr PlantsResource) getWateringHistory(ctx context.Context, plant *pkg.Plan
 			break
 		}
 		result = append(result, pkg.WateringHistory{
-			WateringAmount: (time.Duration(h["WateringAmount"].(int)) * time.Millisecond).String(),
-			RecordTime:     h["RecordTime"].(time.Time),
+			Duration:   (time.Duration(h["Duration"].(int)) * time.Millisecond).String(),
+			RecordTime: h["RecordTime"].(time.Time),
 		})
 	}
 	return

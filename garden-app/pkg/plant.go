@@ -41,7 +41,7 @@ type Details struct {
 // and optional MinimumMoisture which acts as the threshold the Plant's soil should be above
 // "Time" should be in the format of WaterTimeFormat constant ("15:04:05-07:00")
 type WaterSchedule struct {
-	WateringAmount  string `json:"watering_amount" yaml:"watering_amount"`
+	Duration        string `json:"duration" yaml:"duration"`
 	Interval        string `json:"interval" yaml:"interval"`
 	MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
 	StartTime       string `json:"start_time" yaml:"start_time"`
@@ -49,13 +49,13 @@ type WaterSchedule struct {
 
 // WateringHistory holds information about a WateringEvent that occurred in the past
 type WateringHistory struct {
-	WateringAmount string    `json:"watering_amount"`
-	RecordTime     time.Time `json:"record_time"`
+	Duration   string    `json:"duration"`
+	RecordTime time.Time `json:"record_time"`
 }
 
 // WateringAction creates the default/basic WateringAction for this Plant
 func (p *Plant) WateringAction() *WaterAction {
-	wateringDuration, _ := time.ParseDuration(p.WaterSchedule.WateringAmount)
+	wateringDuration, _ := time.ParseDuration(p.WaterSchedule.Duration)
 	return &WaterAction{Duration: wateringDuration.Milliseconds()}
 }
 
@@ -88,8 +88,8 @@ func (p *Plant) Patch(newPlant *Plant) {
 		if p.WaterSchedule == nil {
 			p.WaterSchedule = &WaterSchedule{}
 		}
-		if newPlant.WaterSchedule.WateringAmount != "" {
-			p.WaterSchedule.WateringAmount = newPlant.WaterSchedule.WateringAmount
+		if newPlant.WaterSchedule.Duration != "" {
+			p.WaterSchedule.Duration = newPlant.WaterSchedule.Duration
 		}
 		if newPlant.WaterSchedule.Interval != "" {
 			p.WaterSchedule.Interval = newPlant.WaterSchedule.Interval

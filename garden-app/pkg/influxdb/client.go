@@ -161,8 +161,8 @@ func (client *client) GetWateringHistory(ctx context.Context, plantPosition uint
 	result := []map[string]interface{}{}
 	for queryResult.Next() {
 		result = append(result, map[string]interface{}{
-			"WateringAmount": int(queryResult.Record().Value().(float64)),
-			"RecordTime":     queryResult.Record().Time(),
+			"Duration":   int(queryResult.Record().Value().(float64)),
+			"RecordTime": queryResult.Record().Time(),
 		})
 	}
 	return result, queryResult.Err()

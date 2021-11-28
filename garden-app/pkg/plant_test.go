@@ -8,8 +8,8 @@ import (
 func TestWateringEvent(t *testing.T) {
 	plant := Plant{
 		WaterSchedule: &WaterSchedule{
-			WateringAmount: "15000ms",
-			Interval:       "24h",
+			Duration: "15000ms",
+			Interval: "24h",
 		},
 	}
 	action := plant.WateringAction()
@@ -65,9 +65,9 @@ func TestPlantPatch(t *testing.T) {
 			&Plant{SkipCount: &zero},
 		},
 		{
-			"PatchWaterSchedule.WateringAmount",
+			"PatchWaterSchedule.Duration",
 			&Plant{WaterSchedule: &WaterSchedule{
-				WateringAmount: "1000ms",
+				Duration: "1000ms",
 			}},
 		},
 		{

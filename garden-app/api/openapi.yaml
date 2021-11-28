@@ -537,18 +537,18 @@ components:
           example: 1
         average:
           type: string
-          description: average of `watering_amount` for all events found. Formatted as a float in Go duration format
+          description: average of `duration` for all events found. Formatted as a float in Go duration format
           example: 15s
         total:
           type: string
-          description: total of `watering_amount` for all events found. Formatted as a float in Go duration format
+          description: total of `duration` for all events found. Formatted as a float in Go duration format
           example: 15s
 
     PlantHistory:
       type: object
       description: a
       properties:
-        watering_amount:
+        duration:
           type: string
           description: amount of time, in Duration format, that Plant should be watered
           example: 15000ms
@@ -707,7 +707,7 @@ components:
             Specifying a `minimum_moisture` will instruct the server to consider moisture sensor data when executing the WaterAction.
             To avoid falsely triggering watering and avoid the complexity if constantly checking moisture data, the moisture is only checked when executing a WaterAction.
           properties:
-            watering_amount:
+            duration:
               type: string
               description: amount of time, in Duration format, that Plant should be watered
               example: 15000ms
@@ -728,7 +728,7 @@ components:
               description: time that the watering interval should be started at
               example: 23:00:00-07:00
           required:
-            - watering_amount
+            - duration
             - interval
             - start_time
 

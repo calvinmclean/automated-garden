@@ -87,7 +87,7 @@ type PlantWateringHistoryResponse struct {
 func NewPlantWateringHistoryResponse(history []pkg.WateringHistory) PlantWateringHistoryResponse {
 	total := time.Duration(0)
 	for _, h := range history {
-		amountDuration, _ := time.ParseDuration(h.WateringAmount)
+		amountDuration, _ := time.ParseDuration(h.Duration)
 		total += amountDuration
 	}
 	count := len(history)
