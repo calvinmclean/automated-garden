@@ -87,6 +87,7 @@ func TestGardenActionRequest(t *testing.T) {
 }
 
 func TestGardenRequest(t *testing.T) {
+	zero := 0
 	one := 1
 	tests := []struct {
 		name string
@@ -174,6 +175,16 @@ func TestGardenRequest(t *testing.T) {
 			"missing required max_plants field",
 		},
 		{
+			"MaxPlantsZeroError",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name:      "garden",
+					MaxPlants: &zero,
+				},
+			},
+			"max_plants must not be 0",
+		},
+		{
 			"CreatingPlantsNotAllowedError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
@@ -258,6 +269,7 @@ func TestGardenRequest(t *testing.T) {
 
 func TestUpdateGardenRequest(t *testing.T) {
 	now := time.Now()
+	zero := 0
 	tests := []struct {
 		name string
 		gr   *UpdateGardenRequest
@@ -357,6 +369,15 @@ func TestUpdateGardenRequest(t *testing.T) {
 				},
 			},
 			"to end-date a Garden, please use the DELETE endpoint",
+		},
+		{
+			"MaxPlantsZeroError",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					MaxPlants: &zero,
+				},
+			},
+			"max_plants must not be 0",
 		},
 	}
 
