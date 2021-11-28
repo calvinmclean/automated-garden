@@ -321,6 +321,17 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
+	// Validate that adding a Plant does not exceed Garden.MaxPlants
+	if garden.NumPlants()+1 > *garden.MaxPlants {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("adding a Plant would exceed Garden's max_plants=%d", *garden.MaxPlants)))
+		return
+	}
+	// Validate that PlantPosition works for a Garden with MaxPlants (remember PlantPosition is zero-indexed)
+	if *plant.PlantPosition >= *garden.MaxPlants {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("plant_position invalid for Garden with max_plants=%d", *garden.MaxPlants)))
+		return
+	}
+
 	// Assign values to fields that may not be set in the request
 	plant.ID = xid.New()
 	if plant.CreatedAt == nil {
