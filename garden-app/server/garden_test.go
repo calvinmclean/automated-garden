@@ -232,7 +232,7 @@ func TestCreateGarden(t *testing.T) {
 		{
 			"ErrorBadRequestInvalidStartTime",
 			func(storageClient *storage.MockClient) {},
-			`{"name":"test-garden","max_plants": 1,"light_schedule":{"duration":"24h","start_time":"NOT A TIME"}}`,
+			`{"name":"test-garden","max_plants": 1,"light_schedule":{"duration":"1h","start_time":"NOT A TIME"}}`,
 			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
 			http.StatusBadRequest,
 		},

@@ -224,6 +224,32 @@ func TestGardenRequest(t *testing.T) {
 			"missing required light_schedule.start_time field",
 		},
 		{
+			"BadDurationError",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name:      "garden",
+					MaxPlants: &one,
+					LightSchedule: &pkg.LightSchedule{
+						Duration: "NOT A DURATION",
+					},
+				},
+			},
+			"invalid duration format for light_schedule.duration: NOT A DURATION",
+		},
+		{
+			"DurationGreaterThanOrEqualTo24HoursError",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name:      "garden",
+					MaxPlants: &one,
+					LightSchedule: &pkg.LightSchedule{
+						Duration: "25h",
+					},
+				},
+			},
+			"invalid light_schedule.duration >= 24 hours: 25h",
+		},
+		{
 			"BadStartTimeError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
@@ -349,6 +375,28 @@ func TestUpdateGardenRequest(t *testing.T) {
 				},
 			},
 			"cannot add or modify Plants with this request",
+		},
+		{
+			"BadDurationError",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					LightSchedule: &pkg.LightSchedule{
+						Duration: "NOT A DURATION",
+					},
+				},
+			},
+			"invalid duration format for light_schedule.duration: NOT A DURATION",
+		},
+		{
+			"DurationGreaterThanOrEqualTo24HoursError",
+			&UpdateGardenRequest{
+				Garden: &pkg.Garden{
+					LightSchedule: &pkg.LightSchedule{
+						Duration: "25h",
+					},
+				},
+			},
+			"invalid light_schedule.duration >= 24 hours: 25h",
 		},
 		{
 			"InvalidLightScheduleStartTimeError",

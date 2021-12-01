@@ -41,6 +41,16 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 		if g.LightSchedule.Duration == "" {
 			return errors.New("missing required light_schedule.duration field")
 		}
+		// Check that Duration is valid Duration
+		if g.LightSchedule.Duration != "" {
+			d, err := time.ParseDuration(g.LightSchedule.Duration)
+			if err != nil {
+				return fmt.Errorf("invalid duration format for light_schedule.duration: %s", g.LightSchedule.Duration)
+			}
+			if d >= 24*time.Hour {
+				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
+			}
+		}
 		if g.LightSchedule.StartTime == "" {
 			return errors.New("missing required light_schedule.start_time field")
 		}
@@ -80,6 +90,16 @@ func (g *UpdateGardenRequest) Bind(r *http.Request) error {
 	}
 
 	if g.LightSchedule != nil {
+		// Check that Duration is valid Duration
+		if g.LightSchedule.Duration != "" {
+			d, err := time.ParseDuration(g.LightSchedule.Duration)
+			if err != nil {
+				return fmt.Errorf("invalid duration format for light_schedule.duration: %s", g.LightSchedule.Duration)
+			}
+			if d >= 24*time.Hour {
+				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
+			}
+		}
 		// Check that LightSchedule.StartTime is valid
 		if g.LightSchedule.StartTime != "" {
 			_, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)

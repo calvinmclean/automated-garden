@@ -6,11 +6,6 @@ import (
 	"github.com/rs/xid"
 )
 
-const (
-	// WaterTimeFormat is used to control format of time fields
-	WaterTimeFormat = "15:04:05-07:00"
-)
-
 // Plant is the representation of the most important resource for this application, a Plant.
 // This includes some general information like name and unique ID, a start and end date to show when
 // the Plant was in the system, plus some information for watering like the duration to water for, how
