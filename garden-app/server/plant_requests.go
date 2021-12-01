@@ -81,6 +81,10 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 				return fmt.Errorf("invalid duration format for water_schedule.duration: %s", p.WaterSchedule.Duration)
 			}
 		}
+		// Check that StartTime is in the future
+		if p.WaterSchedule.StartTime != nil && time.Since(*p.WaterSchedule.StartTime) > 0 {
+			return fmt.Errorf("unable to set water_schedule.start_time to time in the past")
+		}
 	}
 
 	return nil

@@ -169,6 +169,7 @@ func TestPlantRequest(t *testing.T) {
 func TestUpdatePlantRequest(t *testing.T) {
 	pp := uint(0)
 	now := time.Now()
+	past := now.Add(-1 * time.Hour)
 	tests := []struct {
 		name string
 		pr   *UpdatePlantRequest
@@ -201,7 +202,7 @@ func TestUpdatePlantRequest(t *testing.T) {
 			"updating ID is not allowed",
 		},
 		{
-			"InvalidWaterScheduleStartTimeError",
+			"InvalidWaterScheduleDurationError",
 			&UpdatePlantRequest{
 				Plant: &pkg.Plant{
 					WaterSchedule: &pkg.WaterSchedule{
@@ -210,6 +211,17 @@ func TestUpdatePlantRequest(t *testing.T) {
 				},
 			},
 			"invalid duration format for water_schedule.duration: NOT A DURATION",
+		},
+		{
+			"StartTimeInPastError",
+			&UpdatePlantRequest{
+				Plant: &pkg.Plant{
+					WaterSchedule: &pkg.WaterSchedule{
+						StartTime: &past,
+					},
+				},
+			},
+			"unable to set water_schedule.start_time to time in the past",
 		},
 		{
 			"EndDateError",
