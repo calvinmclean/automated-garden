@@ -38,12 +38,8 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if _, err := time.ParseDuration(p.WaterSchedule.Duration); err != nil {
 		return fmt.Errorf("invalid duration format for water_schedule.duration: %s", p.WaterSchedule.Duration)
 	}
-	if p.WaterSchedule.StartTime == "" {
+	if p.WaterSchedule.StartTime == nil {
 		return errors.New("missing required water_schedule.start_time field")
-	}
-	// Check that water StartTime is valid
-	if _, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime); err != nil {
-		return fmt.Errorf("invalid time format for water_schedule.start_time: %s", p.WaterSchedule.StartTime)
 	}
 	if p.Name == "" {
 		return errors.New("missing required name field")
@@ -83,13 +79,6 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 		if p.WaterSchedule.Duration != "" {
 			if _, err := time.ParseDuration(p.WaterSchedule.Duration); err != nil {
 				return fmt.Errorf("invalid duration format for water_schedule.duration: %s", p.WaterSchedule.Duration)
-			}
-		}
-		// Check that StartTime is valid
-		if p.WaterSchedule.StartTime != "" {
-			_, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
-			if err != nil {
-				return fmt.Errorf("invalid time format for water_schedule.start_time: %s", p.WaterSchedule.StartTime)
 			}
 		}
 	}

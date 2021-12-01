@@ -24,29 +24,11 @@ func (pr PlantsResource) addWateringSchedule(g *pkg.Garden, p *pkg.Plant) error 
 		return err
 	}
 
-	// Parse Plant's WaterSchedule.Time (has no "date")
-	waterTime, err := time.Parse(pkg.WaterTimeFormat, p.WaterSchedule.StartTime)
-	if err != nil {
-		return err
-	}
-
-	// Create startDate using the CreatedAt date with the WaterSchedule's timestamp
-	startDate := time.Date(
-		p.CreatedAt.Year(),
-		p.CreatedAt.Month(),
-		p.CreatedAt.Day(),
-		waterTime.Hour(),
-		waterTime.Minute(),
-		waterTime.Second(),
-		0,
-		waterTime.Location(),
-	)
-
 	// Schedule the WaterAction execution
 	action := p.WateringAction()
 	_, err = pr.scheduler.
 		Every(duration).
-		StartAt(startDate).
+		StartAt(*p.WaterSchedule.StartTime).
 		Tag(p.ID.String()).
 		Do(func() {
 			defer pr.influxdbClient.Close()

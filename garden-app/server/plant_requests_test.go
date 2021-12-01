@@ -11,6 +11,7 @@ import (
 
 func TestPlantRequest(t *testing.T) {
 	pp := uint(0)
+	now := time.Now()
 	tests := []struct {
 		name string
 		pr   *PlantRequest
@@ -86,21 +87,6 @@ func TestPlantRequest(t *testing.T) {
 			"missing required water_schedule.start_time field",
 		},
 		{
-			"InvalidWaterScheduleStartTimeError",
-			&PlantRequest{
-				Plant: &pkg.Plant{
-					Name:          "plant",
-					PlantPosition: &pp,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
-						Duration:  "1000ms",
-						StartTime: "NOT A TIME",
-					},
-				},
-			},
-			"invalid time format for water_schedule.start_time: NOT A TIME",
-		},
-		{
 			"InvalidDurationStringError",
 			&PlantRequest{
 				Plant: &pkg.Plant{
@@ -109,7 +95,7 @@ func TestPlantRequest(t *testing.T) {
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
 						Duration:  "NOT A DURATION",
-						StartTime: "19:00:00-07:00",
+						StartTime: &now,
 					},
 				},
 			},
@@ -123,7 +109,7 @@ func TestPlantRequest(t *testing.T) {
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
 						Duration:  "1000ms",
-						StartTime: "19:00:00-07:00",
+						StartTime: &now,
 					},
 				},
 			},
@@ -139,7 +125,7 @@ func TestPlantRequest(t *testing.T) {
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
 						Duration:  "1000ms",
-						StartTime: "19:00:00-07:00",
+						StartTime: &now,
 					},
 				},
 			},
@@ -155,7 +141,7 @@ func TestPlantRequest(t *testing.T) {
 				WaterSchedule: &pkg.WaterSchedule{
 					Duration:  "1000ms",
 					Interval:  "24h",
-					StartTime: "19:00:00-07:00",
+					StartTime: &now,
 				},
 			},
 		}
@@ -224,17 +210,6 @@ func TestUpdatePlantRequest(t *testing.T) {
 				},
 			},
 			"invalid duration format for water_schedule.duration: NOT A DURATION",
-		},
-		{
-			"InvalidWaterScheduleStartTimeError",
-			&UpdatePlantRequest{
-				Plant: &pkg.Plant{
-					WaterSchedule: &pkg.WaterSchedule{
-						StartTime: "NOT A TIME",
-					},
-				},
-			},
-			"invalid time format for water_schedule.start_time: NOT A TIME",
 		},
 		{
 			"EndDateError",

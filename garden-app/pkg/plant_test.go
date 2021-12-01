@@ -85,7 +85,7 @@ func TestPlantPatch(t *testing.T) {
 		{
 			"PatchWaterSchedule.StartTime",
 			&Plant{WaterSchedule: &WaterSchedule{
-				StartTime: "start time",
+				StartTime: &now,
 			}},
 		},
 		{

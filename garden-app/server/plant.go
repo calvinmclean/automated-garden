@@ -249,9 +249,11 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Update the watering schedule for the Plant
-	if err := pr.resetWateringSchedule(garden, plant); err != nil {
-		render.Render(w, r, InternalServerError(err))
-		return
+	if request.Plant.WaterSchedule != nil {
+		if err := pr.resetWateringSchedule(garden, plant); err != nil {
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
 	}
 
 	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {

@@ -38,13 +38,13 @@ type Details struct {
 }
 
 // WaterSchedule allows the user to have more control over how the Plant is watered using an Interval
-// and optional MinimumMoisture which acts as the threshold the Plant's soil should be above
-// "Time" should be in the format of WaterTimeFormat constant ("15:04:05-07:00")
+// and optional MinimumMoisture which acts as the threshold the Plant's soil should be above.
+// StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
-	Duration        string `json:"duration" yaml:"duration"`
-	Interval        string `json:"interval" yaml:"interval"`
-	MinimumMoisture int    `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
-	StartTime       string `json:"start_time" yaml:"start_time"`
+	Duration        string     `json:"duration" yaml:"duration"`
+	Interval        string     `json:"interval" yaml:"interval"`
+	MinimumMoisture int        `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
+	StartTime       *time.Time `json:"start_time" yaml:"start_time"`
 }
 
 // WateringHistory holds information about a WateringEvent that occurred in the past
@@ -97,7 +97,7 @@ func (p *Plant) Patch(newPlant *Plant) {
 		if newPlant.WaterSchedule.MinimumMoisture != 0 {
 			p.WaterSchedule.MinimumMoisture = newPlant.WaterSchedule.MinimumMoisture
 		}
-		if newPlant.WaterSchedule.StartTime != "" {
+		if newPlant.WaterSchedule.StartTime != nil {
 			p.WaterSchedule.StartTime = newPlant.WaterSchedule.StartTime
 		}
 	}
