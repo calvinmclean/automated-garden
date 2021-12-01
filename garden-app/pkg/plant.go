@@ -24,7 +24,6 @@ type Plant struct {
 	PlantPosition *uint          `json:"plant_position" yaml:"plant_position"`
 	CreatedAt     *time.Time     `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate       *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	SkipCount     *uint          `json:"skip_count,omitempty" yaml:"skip_count,omitempty"`
 	WaterSchedule *WaterSchedule `json:"water_schedule,omitempty" yaml:"water_schedule,omitempty"`
 }
 
@@ -78,9 +77,6 @@ func (p *Plant) Patch(newPlant *Plant) {
 	}
 	if p.EndDate != nil && newPlant.EndDate == nil {
 		p.EndDate = newPlant.EndDate
-	}
-	if newPlant.SkipCount != nil {
-		p.SkipCount = newPlant.SkipCount
 	}
 
 	if newPlant.WaterSchedule != nil {

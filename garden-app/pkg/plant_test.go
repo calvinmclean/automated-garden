@@ -61,10 +61,6 @@ func TestPlantPatch(t *testing.T) {
 			&Plant{CreatedAt: &now},
 		},
 		{
-			"PatchSkipCount",
-			&Plant{SkipCount: &zero},
-		},
-		{
 			"PatchWaterSchedule.Duration",
 			&Plant{WaterSchedule: &WaterSchedule{
 				Duration: "1000ms",

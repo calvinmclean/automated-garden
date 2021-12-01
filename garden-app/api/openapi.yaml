@@ -695,11 +695,6 @@ components:
           description: this is the position of this Plant in the Garden. It corresponds directly to the configuration of the `garden-controller` and is critical for watering the Plant
           example: 0
           minimum: 0
-        skip_count:
-          type: integer
-          description: number of times the scheduled WaterAction should be skipped. This can be used to prevent overwatering. It only applies to scheduled WaterActions, not ad-hoc actions
-          example: 0
-          minimum: 0
         water_schedule:
           type: object
           description: |

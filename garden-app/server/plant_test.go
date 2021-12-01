@@ -752,14 +752,6 @@ func TestCreatePlant(t *testing.T) {
 			http.StatusBadRequest,
 		},
 		{
-			"ErrorNegativeSkipCount",
-			func(storageClient *storage.MockClient) {},
-			createExampleGarden(),
-			`{"name":"test plant","plant_position":0,"skip_count":-1,"water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
-			`{"status":"Invalid request.","error":"json: cannot unmarshal number -1 into Go struct field PlantRequest.skip_count of type uint"}`,
-			http.StatusBadRequest,
-		},
-		{
 			"ErrorMaxPlantsExceeded",
 			func(storageClient *storage.MockClient) {},
 			gardenWithPlant,
@@ -943,12 +935,9 @@ func TestWateringHistory(t *testing.T) {
 func TestGetNextWateringTime(t *testing.T) {
 	tests := []struct {
 		name         string
-		skipCount    uint
 		expectedDiff time.Duration
 	}{
-		{"ZeroSkip", 0, 0},
-		{"TwoSkip", 2, 24 * 2 * time.Hour},
-		{"30Skip", 30, 24 * 30 * time.Hour},
+		{"ZeroSkip", 0},
 	}
 
 	for _, tt := range tests {
@@ -966,7 +955,6 @@ func TestGetNextWateringTime(t *testing.T) {
 			defer pr.scheduler.Stop()
 
 			nextWateringTime := pr.getNextWateringTime(p)
-			p.SkipCount = &tt.skipCount
 			nextWateringTimeWithSkip := pr.getNextWateringTime(p)
 
 			diff := nextWateringTimeWithSkip.Sub(*nextWateringTime)

@@ -74,7 +74,6 @@ mqtt:
   port: 1883
   client_id: "garden-app"
   watering_topic: "{{.Garden}}/command/water"
-  skip_topic: "{{.Garden}}/command/skip"
   stop_topic: "{{.Garden}}/command/stop"
   stop_all_topic: "{{.Garden}}/command/stop_all"
   light_topic: "{{.Garden}}/command/light"
