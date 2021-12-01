@@ -92,7 +92,7 @@ A `Plant` represents a resource that can be watered. In many cases, this will re
     "water_schedule": {
         "duration": "20s",
         "interval": "72h",
-        "start_time": "23:00:00-07:00"
+        "start_time": "2021-07-24T19:00:00-07:00"
     }
     ```
   - Control of watering based on moisture using `minimum_moisture` in the `water_schedule`. This sets the moisture percentage the plant's soil must drop below to enable watering
@@ -120,7 +120,7 @@ It is important to note that, although this doesn't necessarily correspond to on
   "water_schedule": {
     "duration": "5m",
     "interval": "24h",
-    "start_time": "19:00:00-07:00"
+    "start_time": "2021-07-24T19:00:00-07:00"
   },
   "next_watering_time": "2021-11-22T18:59:59.999998-07:00",
   "links": [
@@ -162,7 +162,7 @@ It is important to note that, although this doesn't necessarily correspond to on
   "water_schedule": {
     "duration": 300000,
     "interval": "24h",
-    "start_time": "19:00:00-07:00"
+    "start_time": "2021-07-24T19:00:00-07:00"
   },
   "links": [
     {

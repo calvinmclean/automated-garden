@@ -724,9 +724,8 @@ components:
               example: 50
             start_time:
               type: string
-              format: time
+              format: date-time
               description: time that the watering interval should be started at
-              example: 23:00:00-07:00
           required:
             - duration
             - interval

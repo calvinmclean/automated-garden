@@ -166,7 +166,7 @@ storage:
     "water_schedule": {
         "duration": "20s",
         "interval": "72h",
-        "start_time": "22:00:00-07:00"
+        "start_time": "2021-07-24T19:00:00-07:00"
     },
     "next_watering_time": "2021-11-26T04:59:59.99999675Z",
     "links": [
