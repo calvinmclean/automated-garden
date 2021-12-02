@@ -313,6 +313,15 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// If this is a LightAction with specified duration, additional steps are necessary
+	if action.Light != nil && action.Light.ForDuration != "" {
+		// Delete existing ON schedule
+
+		// Add new ON schedule with action.Light.ForDuration that executes once
+
+		// Add new regular ON schedule starting 24 hours from today's Date + g.LightSchedule.StartTime
+	}
+
 	render.Status(r, http.StatusAccepted)
 	render.DefaultResponder(w, r, nil)
 }

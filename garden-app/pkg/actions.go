@@ -103,7 +103,8 @@ func (action *GardenAction) Execute(g *Garden, mqttClient mqtt.Client) error {
 // LightAction is an action for turning on or off a light for the Garden. The State field is optional and it will just toggle
 // the current state if left empty.
 type LightAction struct {
-	State string `json:"state"`
+	State       string `json:"state"`
+	ForDuration string `json:"for_duration"`
 }
 
 // Execute sends an MQTT message to the garden controller to change the state of the light
