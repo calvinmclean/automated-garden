@@ -69,6 +69,8 @@ These options are used for enabled/configuring publishing of health check-ins to
 ### Plant Options
 These options are related to the actual pins and other necessary information for watering plants.
 
+`DISABLE_WATERING`: Allows disabling Pump/Valve pins and doesn't listen on relevant MQTT topics. This allows a sensor-only Garden. If you are running this alongside a separate `garden-controller` that handles watering, please remember to change the `MQTT_CLIENT_NAME` to be different
+
 `NUM_PLANTS`: Number of plants connected to this Garden
 
 `PUMP_PIN`: Optional configuration that makes organization better if you use the same pump for all plants
