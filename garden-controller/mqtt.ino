@@ -1,5 +1,3 @@
-#ifdef ENABLE_WIFI
-
 void setupMQTT() {
     // Connect to MQTT
     client.setServer(MQTT_ADDRESS, MQTT_PORT);
@@ -89,6 +87,7 @@ void lightPublisherTask(void* parameters) {
 }
 #endif
 
+#ifdef ENABLE_MQTT_HEALTH
 /*
   healthPublisherTask runs every minute and publishes a message to MQTT to record a health check-in
 */
@@ -107,6 +106,7 @@ void healthPublisherTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
+#endif
 
 /*
   mqttConnectTask will periodically attempt to reconnect to MQTT if needed
@@ -119,9 +119,11 @@ void mqttConnectTask(void* parameters) {
             // Connect with defaul arguments + cleanSession = false for persistent sessions
             if (client.connect(MQTT_CLIENT_NAME, NULL, NULL, 0, 0, 0, 0, false)) {
                 printf("connected\n");
+#ifndef DISABLE_WATERING
                 client.subscribe(waterCommandTopic, 1);
                 client.subscribe(stopCommandTopic, 1);
                 client.subscribe(stopAllCommandTopic, 1);
+#endif
 #ifdef LIGHT_PIN
                 client.subscribe(lightCommandTopic, 1);
 #endif
@@ -191,5 +193,3 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
 #endif
     }
 }
-
-#endif

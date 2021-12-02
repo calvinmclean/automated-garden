@@ -3,9 +3,7 @@
 
 /* include other files for this program */
 #include "config.h"
-#ifdef ENABLE_WIFI
 #include "mqtt.h"
-#endif
 #ifdef ENABLE_BUTTONS
 #include "buttons.h"
 #endif
@@ -34,6 +32,7 @@ TaskHandle_t waterPlantTaskHandle;
 int light_state;
 
 void setup() {
+#ifndef DISABLE_WATERING
     // Prepare pins
     for (int i = 0; i < NUM_PLANTS; i++) {
         // Setup valve pins
@@ -44,6 +43,7 @@ void setup() {
         gpio_reset_pin(plants[i][0]);
         gpio_set_direction(plants[i][0], GPIO_MODE_OUTPUT);
     }
+#endif
 
 #ifdef LIGHT_PIN
     gpio_reset_pin(LIGHT_PIN);
@@ -51,12 +51,10 @@ void setup() {
     light_state = 0;
 #endif
 
-#ifdef ENABLE_WIFI
     setupWifi();
     setupMQTT();
 #ifdef ENABLE_MOISTURE_SENSORS
     setupMoistureSensors();
-#endif
 #endif
 
 #ifdef ENABLE_BUTTONS
@@ -111,9 +109,7 @@ void waterPlantTask(void* parameters) {
             unsigned long stop = millis();
             plantOff(we.plant_position);
             we.duration = stop - start;
-#ifdef ENABLE_WIFI
             xQueueSend(waterPublisherQueue, &we, portMAX_DELAY);
-#endif
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
@@ -188,8 +184,6 @@ void changeLight(LightingEvent le) {
     gpio_set_level(LIGHT_PIN, light_state);
 
     // Log data to MQTT if enabled
-#ifdef ENABLE_WIFI
     xQueueSend(lightPublisherQueue, &light_state, portMAX_DELAY);
-#endif
 }
 #endif

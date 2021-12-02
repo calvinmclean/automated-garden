@@ -10,8 +10,6 @@
  * Wifi and MQTT Configurations
  *   NOTE: Use "wifi_config.h" for Wifi SSID and password (ignored by git)
  *
- * ENABLE_WIFI
- *   Should Wifi and MQTT features be used
  * MQTT_ADDRESS
  *   IP address or hostname for MQTT broker
  * MQTT_PORT
@@ -31,8 +29,6 @@
  * MQTT_WATER_DATA_TOPIC
  *   Topic to publish watering metrics on
  */
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "192.168.0.107"
 #define MQTT_PORT 30002
 #define MQTT_CLIENT_NAME GARDEN_NAME
@@ -56,11 +52,12 @@
 
 // Size of JSON object calculated using Arduino JSON Assistant
 #define JSON_CAPACITY 48
-#endif
 
 /**
  * Garden Configurations
  *
+ * DISABLE_WATERING
+ *   Allows disabling Pump/Valve pins and doesn't listen on relevant MQTT topics. This allows a sensor-only Garden
  * NUM_PLANTS
  *   Number of plants in the PLANTS list
  * PLANTS
@@ -75,6 +72,7 @@
  * LIGHT_PIN
  *   The pin used to control a grow light relay
  */
+// #define DISABLE_WATERING
 #define NUM_PLANTS 3
 #define PUMP_PIN GPIO_NUM_18
 #define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
@@ -90,10 +88,9 @@
 #define STOP_BUTTON_PIN GPIO_NUM_23
 #endif
 
-// Currently, moisture sensing requires Wifi and MQTT because the logic for
-// handling this data lives in the garden-app
+// Currently, moisture sensing requires  MQTT because the logic for handling this data lives in the garden-app
 // #define ENABLE_MOISTURE_SENSORS
-#ifdef ENABLE_MOISTURE_SENSORS AND ENABLE_WIFI
+#ifdef ENABLE_MOISTURE_SENSORS
 #define MQTT_MOISTURE_DATA_TOPIC GARDEN_NAME"/data/moisture"
 #define MOISTURE_SENSOR_AIR_VALUE 3415
 #define MOISTURE_SENSOR_WATER_VALUE 1362
