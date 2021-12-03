@@ -25,14 +25,12 @@ const (
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
 	GardensResource
-	moistureCache map[xid.ID]float64
 }
 
 // NewPlantsResource creates a new PlantsResource
 func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 	pr := PlantsResource{
 		GardensResource: gr,
-		moistureCache:   map[xid.ID]float64{},
 	}
 
 	// Initialize watering Jobs for each Plant from the storage client
@@ -212,20 +210,18 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
-	moisture, cached := pr.moistureCache[plant.ID]
+	moisture := 0.0
+	var err error
+	if plant.WaterSchedule.MinimumMoisture > 0 {
+		moisture, err = pr.getMoisture(r.Context(), garden, plant)
+		if err != nil {
+			// Log moisture error but do not return an error since this isn't critical information
+			logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
+		}
+	}
 	plantResponse := pr.NewPlantResponse(plant, moisture)
 	if err := render.Render(w, r, plantResponse); err != nil {
 		render.Render(w, r, ErrRender(err))
-	}
-
-	// If moisture was not already cached (and plant has moisture sensor), get it and cache it
-	// Otherwise, clear cache
-	if !cached && plant.WaterSchedule.MinimumMoisture > 0 {
-		// I was doing this with a goroutine, but that made the call untestable. I don't think there was any benefit to
-		// using the goroutine because the result is already rendered
-		pr.getAndCacheMoisture(r.Context(), garden, plant)
-	} else {
-		delete(pr.moistureCache, plant.ID)
 	}
 }
 
@@ -397,14 +393,14 @@ func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-func (pr PlantsResource) getAndCacheMoisture(ctx context.Context, g *pkg.Garden, p *pkg.Plant) {
+func (pr PlantsResource) getMoisture(ctx context.Context, g *pkg.Garden, p *pkg.Plant) (float64, error) {
 	defer pr.influxdbClient.Close()
 
 	moisture, err := pr.influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.Name)
 	if err != nil {
-		logger.Errorf("unable to get moisture of Plant %v: %v", p.ID, err)
+		return 0, err
 	}
-	pr.moistureCache[p.ID] = moisture
+	return moisture, err
 }
 
 // getWateringHistory gets previous WateringEvents for this Plant from InfluxDB

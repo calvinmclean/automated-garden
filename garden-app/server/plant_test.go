@@ -352,11 +352,13 @@ func TestGetPlant(t *testing.T) {
 		name      string
 		plant     func() *pkg.Plant
 		setupMock func(*influxdb.MockClient)
+		expected  string
 	}{
 		{
 			"Successful",
 			func() *pkg.Plant { return createExamplePlant() },
 			func(*influxdb.MockClient) {},
+			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"SuccessfulWithMoisture",
@@ -369,6 +371,7 @@ func TestGetPlant(t *testing.T) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), nil)
 				influxdbClient.On("Close")
 			},
+			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"","minimum_moisture":1,"start_time":null},"moisture":2,"links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"ErrorGettingMoisture",
@@ -381,6 +384,7 @@ func TestGetPlant(t *testing.T) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
+			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"","minimum_moisture":1,"start_time":null},"links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 	}
 
@@ -392,7 +396,6 @@ func TestGetPlant(t *testing.T) {
 					influxdbClient: influxdbClient,
 					scheduler:      gocron.NewScheduler(time.Local),
 				},
-				moistureCache: map[xid.ID]float64{},
 			}
 			garden := createExampleGarden()
 
@@ -412,11 +415,11 @@ func TestGetPlant(t *testing.T) {
 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 			}
 
-			plantJSON, _ := json.Marshal(pr.NewPlantResponse(plant, 0))
+			// plantJSON, _ := json.Marshal(pr.NewPlantResponse(plant, 0))
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())
-			if actual != string(plantJSON) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(plantJSON))
+			if actual != tt.expected {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
 			}
 			influxdbClient.AssertExpectations(t)
 		})
@@ -468,7 +471,6 @@ func TestPlantAction(t *testing.T) {
 				GardensResource: GardensResource{
 					mqttClient: mqttClient,
 				},
-				moistureCache: map[xid.ID]float64{},
 			}
 			garden := createExampleGarden()
 			plant := createExamplePlant()
@@ -542,7 +544,6 @@ func TestUpdatePlant(t *testing.T) {
 					storageClient: storageClient,
 					scheduler:     gocron.NewScheduler(time.Local),
 				},
-				moistureCache: map[xid.ID]float64{},
 			}
 			garden := createExampleGarden()
 			plant := createExamplePlant()
@@ -631,7 +632,6 @@ func TestEndDatePlant(t *testing.T) {
 					storageClient: storageClient,
 					scheduler:     gocron.NewScheduler(time.Local),
 				},
-				moistureCache: map[xid.ID]float64{},
 			}
 
 			plantCtx := context.WithValue(context.Background(), plantCtxKey, tt.plant)
@@ -660,7 +660,6 @@ func TestEndDatePlant(t *testing.T) {
 
 func TestGetAllPlants(t *testing.T) {
 	pr := PlantsResource{
-		moistureCache: map[xid.ID]float64{},
 		GardensResource: GardensResource{
 			scheduler: gocron.NewScheduler(time.Local),
 		},
@@ -797,7 +796,6 @@ func TestCreatePlant(t *testing.T) {
 					storageClient: storageClient,
 					scheduler:     gocron.NewScheduler(time.Local),
 				},
-				moistureCache: map[xid.ID]float64{},
 			}
 
 			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -904,7 +902,6 @@ func TestWateringHistory(t *testing.T) {
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
 				},
-				moistureCache: map[xid.ID]float64{},
 			}
 			garden := createExampleGarden()
 			plant := createExamplePlant()
