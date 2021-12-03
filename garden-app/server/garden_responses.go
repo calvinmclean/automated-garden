@@ -70,6 +70,16 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 						State: pkg.StateOff,
 					}
 				}
+			} else if nextOnTime != nil {
+				response.NextLightAction = &NextLightAction{
+					Time:  nextOnTime,
+					State: pkg.StateOn,
+				}
+			} else if nextOffTime != nil {
+				response.NextLightAction = &NextLightAction{
+					Time:  nextOffTime,
+					State: pkg.StateOff,
+				}
 			}
 		}
 	}

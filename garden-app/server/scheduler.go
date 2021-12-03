@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -72,7 +73,7 @@ func (gr GardensResource) getNextLightTime(g *pkg.Garden, state string) *time.Ti
 			if tag == g.ID.String() {
 				matchedID = true
 			}
-			if tag == state {
+			if tag == fmt.Sprintf("%s-%s", g.ID.String(), state) {
 				matchedState = true
 			}
 		}
@@ -128,13 +129,82 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate).
-		Tag(g.ID.String(), pkg.StateOn).
+		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)).
 		Do(executeLightAction, onAction)
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate.Add(duration)).
-		Tag(g.ID.String(), pkg.StateOff).
+		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOff)).
 		Do(executeLightAction, offAction)
+	return err
+}
+
+func (gr GardensResource) addOneTimeLightOnSchedule(g *pkg.Garden, baseStartTime *time.Time, delay string) error {
+	logger.Infof("Creating one-time scheduled Job for lighting Garden %s", g.ID.String())
+
+	// Read delay Duration string into a time.Duration
+	delayDuration, err := time.ParseDuration(delay)
+	if err != nil {
+		return err
+	}
+
+	startTime := baseStartTime.Add(delayDuration)
+
+	executeLightAction := func(action *pkg.LightAction) {
+		logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
+		err = action.Execute(g, gr.mqttClient)
+		if err != nil {
+			logger.Error("Error executing scheduled LightAction: ", err)
+		}
+	}
+
+	// Schedule the LightAction execution for ON and OFF
+	onAction := &pkg.LightAction{State: pkg.StateOn}
+	_, err = gr.scheduler.
+		LimitRunsTo(1).
+		StartAt(startTime).
+		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)).
+		Do(executeLightAction, onAction)
+	return err
+}
+
+func (gr GardensResource) addNewLightOnSchedule(g *pkg.Garden) error {
+	logger.Infof("Creating new scheduled Jobs for turning ON Garden %s", g.ID.String())
+
+	// Parse Gardens's LightSchedule.Time (has no "date")
+	lightTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
+	if err != nil {
+		return err
+	}
+
+	// Create startDate using 24 hours from today with the WaterSchedule's timestamp
+	now := time.Now().Add(24 * time.Hour)
+	startDate := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		lightTime.Hour(),
+		lightTime.Minute(),
+		lightTime.Second(),
+		0,
+		lightTime.Location(),
+	)
+
+	executeLightAction := func(action *pkg.LightAction) {
+		logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
+		err = action.Execute(g, gr.mqttClient)
+		if err != nil {
+			logger.Error("Error executing scheduled LightAction: ", err)
+		}
+	}
+
+	// Schedule the LightAction execution for ON and OFF
+	onAction := &pkg.LightAction{State: pkg.StateOn}
+	_, err = gr.scheduler.
+		Every(lightingInterval).
+		StartAt(startDate).
+		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)).
+		Do(executeLightAction, onAction)
 	return err
 }
 

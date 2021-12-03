@@ -315,11 +315,40 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 
 	// If this is a LightAction with specified duration, additional steps are necessary
 	if action.Light != nil && action.Light.ForDuration != "" {
-		// Delete existing ON schedule
+		nextOnTime := gr.getNextLightTime(garden, pkg.StateOn)
+		nextOffTime := gr.getNextLightTime(garden, pkg.StateOff)
+		now := time.Now()
+		// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on. No need to delete any schedules
+		if nextOffTime.Before(*nextOnTime) {
+			// Add new ON schedule with action.Light.ForDuration that executes once
+			err := gr.addOneTimeLightOnSchedule(garden, &now, action.Light.ForDuration)
+			if err != nil {
+				render.Render(w, r, InternalServerError(err))
+				return
+			}
+		} else {
+			// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time
+			// Delete existing ON schedule
+			if err := gr.scheduler.RemoveByTag(fmt.Sprintf("%s-%s", garden.ID.String(), pkg.StateOn)); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+				render.Render(w, r, InternalServerError(err))
+				return
+			}
 
-		// Add new ON schedule with action.Light.ForDuration that executes once
+			// Add new ON schedule with action.Light.ForDuration that executes once
+			err := gr.addOneTimeLightOnSchedule(garden, nextOnTime, action.Light.ForDuration)
+			if err != nil {
+				render.Render(w, r, InternalServerError(err))
+				return
+			}
 
-		// Add new regular ON schedule starting 24 hours from today's Date + g.LightSchedule.StartTime
+			// Add new regular ON schedule starting 24 hours from today's Date + g.LightSchedule.StartTime
+			err = gr.addNewLightOnSchedule(garden)
+			if err != nil {
+				render.Render(w, r, InternalServerError(err))
+				return
+			}
+		}
+
 	}
 
 	render.Status(r, http.StatusAccepted)
