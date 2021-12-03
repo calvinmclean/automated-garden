@@ -19,6 +19,8 @@ This has a very basic setup since it just consists of the ESP32 and moisture sen
 
 ## Configurations
 Only the `garden-controller` config is shown here because this is intended to be in addition to an existing Garden setup and won't require any additional changes to the `garden-app` setup.
+
+Notice that in this example, `GPIO_NUM_MAX` is used as the moisture sensor pin on a few of the Plants. This instructs the controller to skip moisture measuring for these Plants so you can have one controller per sensor without losing the correct `plant_position` in the data.
 <!-- tabs:start -->
 #### **`garden-controller/config.h`**
 ```c
@@ -38,8 +40,8 @@ Only the `garden-controller` config is shown here because this is intended to be
 #define DISABLE_WATERING
 #define NUM_PLANTS 3
 #define PUMP_PIN GPIO_NUM_18
-#define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
-#define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
+#define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_MAX }
+#define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_MAX }
 #define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
 #define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
 #define DEFAULT_WATER_TIME 5000

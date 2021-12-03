@@ -84,6 +84,7 @@ These options are related to the actual pins and other necessary information for
 ```
 { {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN} }
 ```
+**note**: Use `GPIO_NUM_MAX` to disable moisture sensing for only certain Plants.
 
 `DEFAULT_WATER_TIME`: The default amount of time to water for, in milliseconds, if one is not defined in the command. This is also used to determine how long button-presses will water for
 

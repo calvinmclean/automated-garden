@@ -2,6 +2,9 @@
 
 void setupMoistureSensors() {
     for (int i = 0; i < NUM_PLANTS; i++) {
+        if (plants[i][3] == GPIO_NUM_MAX) {
+            continue;
+        }
         gpio_reset_pin(plants[i][3]);
         gpio_set_direction(plants[i][3], GPIO_MODE_INPUT);
     }
@@ -25,6 +28,9 @@ int readMoisturePercentage(int position) {
 void moistureSensorTask(void* parameters) {
     while (true) {
         for (int plant = 0; plant < NUM_PLANTS; plant++) {
+            if (plants[plant][3] == GPIO_NUM_MAX) {
+                continue;
+            }
             int percentage = readMoisturePercentage(plant);
             char message[50];
             sprintf(message, "moisture,plant=%d value=%d", plant, percentage);
