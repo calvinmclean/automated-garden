@@ -210,16 +210,7 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 
-	moisture := 0.0
-	var err error
-	if plant.WaterSchedule.MinimumMoisture > 0 {
-		moisture, err = pr.getMoisture(r.Context(), garden, plant)
-		if err != nil {
-			// Log moisture error but do not return an error since this isn't critical information
-			logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
-		}
-	}
-	plantResponse := pr.NewPlantResponse(plant, moisture)
+	plantResponse := pr.NewPlantResponse(r.Context(), garden, plant)
 	if err := render.Render(w, r, plantResponse); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
@@ -252,7 +243,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {
+	if err := render.Render(w, r, pr.NewPlantResponse(r.Context(), garden, plant)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -287,7 +278,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {
+	if err := render.Render(w, r, pr.NewPlantResponse(r.Context(), nil, plant)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -302,7 +293,7 @@ func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 			plants = append(plants, p)
 		}
 	}
-	if err := render.Render(w, r, pr.NewAllPlantsResponse(plants)); err != nil {
+	if err := render.Render(w, r, pr.NewAllPlantsResponse(r.Context(), plants, garden)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -351,7 +342,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, pr.NewPlantResponse(plant, 0)); err != nil {
+	if err := render.Render(w, r, pr.NewPlantResponse(r.Context(), garden, plant)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }

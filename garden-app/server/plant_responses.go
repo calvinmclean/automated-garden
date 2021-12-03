@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -14,10 +15,10 @@ type AllPlantsResponse struct {
 }
 
 // NewAllPlantsResponse will create an AllPlantsResponse from a list of Plants
-func (pr PlantsResource) NewAllPlantsResponse(plants []*pkg.Plant) *AllPlantsResponse {
+func (pr PlantsResource) NewAllPlantsResponse(ctx context.Context, plants []*pkg.Plant, garden *pkg.Garden) *AllPlantsResponse {
 	plantResponses := []*PlantResponse{}
 	for _, p := range plants {
-		plantResponses = append(plantResponses, pr.NewPlantResponse(p, 0))
+		plantResponses = append(plantResponses, pr.NewPlantResponse(ctx, garden, p))
 	}
 	return &AllPlantsResponse{plantResponses}
 }
@@ -37,7 +38,7 @@ type PlantResponse struct {
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
-func (pr PlantsResource) NewPlantResponse(plant *pkg.Plant, moisture float64, links ...Link) *PlantResponse {
+func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garden, plant *pkg.Plant, links ...Link) *PlantResponse {
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, plant.GardenID)
 	links = append(links,
 		Link{
@@ -60,6 +61,15 @@ func (pr PlantsResource) NewPlantResponse(plant *pkg.Plant, moisture float64, li
 				fmt.Sprintf("%s%s/%s/history", gardenPath, plantBasePath, plant.ID),
 			},
 		)
+	}
+	moisture := 0.0
+	var err error
+	if plant.WaterSchedule.MinimumMoisture > 0 && garden != nil {
+		moisture, err = pr.getMoisture(ctx, garden, plant)
+		if err != nil {
+			// Log moisture error but do not return an error since this isn't critical information
+			logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
+		}
 	}
 	return &PlantResponse{
 		plant,

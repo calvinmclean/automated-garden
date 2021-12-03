@@ -705,11 +705,11 @@ func TestGetAllPlants(t *testing.T) {
 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 			}
 
-			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(tt.expected))
+			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(context.Background(), tt.expected, &pkg.Garden{}))
 			// When the expected result contains more than one Plant, on some occassions it might be out of order
 			var reversePlantJSON []byte
 			if len(tt.expected) > 1 {
-				reversePlantJSON, _ = json.Marshal(pr.NewAllPlantsResponse([]*pkg.Plant{tt.expected[1], tt.expected[0]}))
+				reversePlantJSON, _ = json.Marshal(pr.NewAllPlantsResponse(context.Background(), []*pkg.Plant{tt.expected[1], tt.expected[0]}, &pkg.Garden{}))
 			}
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())
