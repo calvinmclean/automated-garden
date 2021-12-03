@@ -235,8 +235,8 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the watering schedule for the Plant
-	if request.Plant.WaterSchedule != nil {
+	// Update the watering schedule for the Plant if it was changed or EndDate is removed
+	if request.Plant.WaterSchedule != nil || request.Plant.EndDate == nil {
 		if err := pr.resetWateringSchedule(garden, plant); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
