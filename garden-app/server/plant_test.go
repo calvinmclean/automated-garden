@@ -513,7 +513,7 @@ func TestUpdatePlant(t *testing.T) {
 				storageClient.On("SavePlant", mock.Anything).Return(nil)
 			},
 			`{"name":"new name"}`,
-			`{"name":"new name","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"new name","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 			http.StatusOK,
 		},
 		{
