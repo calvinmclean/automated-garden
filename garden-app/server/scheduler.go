@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -64,8 +65,9 @@ func (pr PlantsResource) getNextWateringTime(p *pkg.Plant) *time.Time {
 	return nil
 }
 
-// getNextLightOnTime returns the next time that the Garden's light will be turned to the specified state
+// getNextLightTime returns the next time that the Garden's light will be turned to the specified state
 func (gr GardensResource) getNextLightTime(g *pkg.Garden, state string) *time.Time {
+	sort.Sort(gr.scheduler)
 	for _, job := range gr.scheduler.Jobs() {
 		matchedID := false
 		matchedState := false
@@ -131,6 +133,9 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 		StartAt(startDate).
 		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)).
 		Do(executeLightAction, onAction)
+	if err != nil {
+		return err
+	}
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate.Add(duration)).
@@ -139,20 +144,12 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 	return err
 }
 
-func (gr GardensResource) addOneTimeLightOnSchedule(g *pkg.Garden, baseStartTime *time.Time, delay string) error {
+func (gr GardensResource) addOneTimeLightOnSchedule(g *pkg.Garden, startTime time.Time) error {
 	logger.Infof("Creating one-time scheduled Job for lighting Garden %s", g.ID.String())
-
-	// Read delay Duration string into a time.Duration
-	delayDuration, err := time.ParseDuration(delay)
-	if err != nil {
-		return err
-	}
-
-	startTime := baseStartTime.Add(delayDuration)
 
 	executeLightAction := func(action *pkg.LightAction) {
 		logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err = action.Execute(g, gr.mqttClient)
+		err := action.Execute(g, gr.mqttClient)
 		if err != nil {
 			logger.Error("Error executing scheduled LightAction: ", err)
 		}
@@ -160,11 +157,14 @@ func (gr GardensResource) addOneTimeLightOnSchedule(g *pkg.Garden, baseStartTime
 
 	// Schedule the LightAction execution for ON and OFF
 	onAction := &pkg.LightAction{State: pkg.StateOn}
-	_, err = gr.scheduler.
+	_, err := gr.scheduler.
+		Every("1m").
 		LimitRunsTo(1).
 		StartAt(startTime).
-		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)).
+		WaitForSchedule().
+		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn), "ADHOC").
 		Do(executeLightAction, onAction)
+
 	return err
 }
 
@@ -178,11 +178,11 @@ func (gr GardensResource) addNewLightOnSchedule(g *pkg.Garden) error {
 	}
 
 	// Create startDate using 24 hours from today with the WaterSchedule's timestamp
-	now := time.Now().Add(24 * time.Hour)
+	now := time.Now()
 	startDate := time.Date(
 		now.Year(),
 		now.Month(),
-		now.Day(),
+		now.Day()+1,
 		lightTime.Hour(),
 		lightTime.Minute(),
 		lightTime.Second(),
