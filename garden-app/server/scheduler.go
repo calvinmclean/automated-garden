@@ -87,10 +87,10 @@ func (gr GardensResource) getNextLightTime(g *pkg.Garden, state string) *time.Ti
 	return nil
 }
 
-// addLightSchedule will schedule LightActions to turn the light on and off based off the CreatedAt date,
+// scheduleLightActions will schedule LightActions to turn the light on and off based off the CreatedAt date,
 // LightingSchedule time, and Interval. The scheduled Jobs are tagged with the Garden's ID so they can
 // easily be removed
-func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
+func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 	logger.Infof("Creating scheduled Jobs for lighting Garden %s", g.ID.String())
 
 	// Read Garden's Duration string into a time.Duration
@@ -141,10 +141,39 @@ func (gr GardensResource) addLightSchedule(g *pkg.Garden) error {
 		StartAt(startDate.Add(duration)).
 		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOff)).
 		Do(executeLightAction, offAction)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// If AdhocOnTime is defined (and is in the future), schedule it
+	if g.LightSchedule.AdhocOnTime != nil {
+		// If AdhocOnTime is in the past, reset it and return
+		if g.LightSchedule.AdhocOnTime.Before(time.Now()) {
+			g.LightSchedule.AdhocOnTime = nil
+			return gr.storageClient.SaveGarden(g)
+		}
+
+		// If nextOnTime is before AdhocOnTime, remove it
+		nextOnTime := gr.getNextLightTime(g, pkg.StateOn)
+		if nextOnTime.Before(*g.LightSchedule.AdhocOnTime) {
+			if err := gr.scheduler.RemoveByTag(fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+				return err
+			}
+		}
+
+		// Schedule one-time watering
+		if err = gr.scheduleAdhocLightAction(g); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (gr GardensResource) addOneTimeLightOnSchedule(g *pkg.Garden, startTime time.Time) error {
+// scheduleAdhocLightAction schedules a one-time action to turn a light on based on the LightSchedule.AdhocOnTime
+func (gr GardensResource) scheduleAdhocLightAction(g *pkg.Garden) error {
+	if g.LightSchedule.AdhocOnTime == nil {
+		return errors.New("unable to schedule adhoc light schedule without LightSchedule.AdhocOnTime")
+	}
 	logger.Infof("Creating one-time scheduled Job for lighting Garden %s", g.ID.String())
 
 	executeLightAction := func(action *pkg.LightAction) {
@@ -153,14 +182,20 @@ func (gr GardensResource) addOneTimeLightOnSchedule(g *pkg.Garden, startTime tim
 		if err != nil {
 			logger.Error("Error executing scheduled LightAction: ", err)
 		}
+		// Now set AdhocOnTime to nil and save
+		g.LightSchedule.AdhocOnTime = nil
+		err = gr.storageClient.SaveGarden(g)
+		if err != nil {
+			logger.Error("Error saving Garden after removing AdhocOnTime: ", err)
+		}
 	}
 
 	// Schedule the LightAction execution for ON and OFF
 	onAction := &pkg.LightAction{State: pkg.StateOn}
 	_, err := gr.scheduler.
-		Every("1m").
+		Every("1m"). // Every is required even though it's not needed for this Job
 		LimitRunsTo(1).
-		StartAt(startTime).
+		StartAt(*g.LightSchedule.AdhocOnTime).
 		WaitForSchedule().
 		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn), "ADHOC").
 		Do(executeLightAction, onAction)
@@ -168,7 +203,8 @@ func (gr GardensResource) addOneTimeLightOnSchedule(g *pkg.Garden, startTime tim
 	return err
 }
 
-func (gr GardensResource) addNewLightOnSchedule(g *pkg.Garden) error {
+// rescheduleLightOnAction is used to reschedule only the ON action after it is removed as part of adhoc light delay
+func (gr GardensResource) rescheduleLightOnAction(g *pkg.Garden) error {
 	logger.Infof("Creating new scheduled Jobs for turning ON Garden %s", g.ID.String())
 
 	// Parse Gardens's LightSchedule.Time (has no "date")
@@ -213,5 +249,5 @@ func (gr GardensResource) resetLightingSchedule(g *pkg.Garden) error {
 	if err := gr.scheduler.RemoveByTag(g.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
-	return gr.addLightSchedule(g)
+	return gr.scheduleLightActions(g)
 }

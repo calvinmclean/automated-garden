@@ -39,8 +39,9 @@ type GardenHealth struct {
 // LightSchedule allows the user to control when the Garden light is turned on and off
 // "Time" should be in the format of LightTimeFormat constant ("15:04:05-07:00")
 type LightSchedule struct {
-	Duration  string `json:"duration" yaml:"duration"`
-	StartTime string `json:"start_time" yaml:"start_time"`
+	Duration    string     `json:"duration" yaml:"duration"`
+	StartTime   string     `json:"start_time" yaml:"start_time"`
+	AdhocOnTime *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
 }
 
 // Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time

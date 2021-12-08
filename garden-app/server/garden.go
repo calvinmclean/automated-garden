@@ -65,7 +65,7 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 	}
 	for _, g := range allGardens {
 		if g.LightSchedule != nil {
-			if err = gr.addLightSchedule(g); err != nil {
+			if err = gr.scheduleLightActions(g); err != nil {
 				err = fmt.Errorf("unable to add lighting Job for Garden %v: %v", g.ID, err)
 				return gr, err
 			}
@@ -156,7 +156,7 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 
 	// Start lighting schedule (if applicable)
 	if garden.LightSchedule != nil {
-		if err := gr.addLightSchedule(garden); err != nil {
+		if err := gr.scheduleLightActions(garden); err != nil {
 			logger.Errorf("Unable to add lighting Job for Garden %v: %v", garden.ID, err)
 		}
 	}
@@ -344,7 +344,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 			adhocTime = nextOnTime.Add(delayDuration)
 
 			// Add new regular ON schedule starting 24 hours from today's Date + g.LightSchedule.StartTime
-			err = gr.addNewLightOnSchedule(garden)
+			err = gr.rescheduleLightOnAction(garden)
 			if err != nil {
 				render.Render(w, r, InternalServerError(err))
 				return
@@ -352,9 +352,15 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Add new lightSchedule with AdhocTime and Save Garden
-		err = gr.addOneTimeLightOnSchedule(garden, adhocTime)
+		garden.LightSchedule.AdhocOnTime = &adhocTime
+		err = gr.scheduleAdhocLightAction(garden)
 		if err != nil {
 			logger.Errorf("Error adding adhoc schedule: %v", err)
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
+		err = gr.storageClient.SaveGarden(garden)
+		if err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
