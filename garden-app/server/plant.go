@@ -374,7 +374,7 @@ func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	history, err := pr.getWateringHistory(r.Context(), plant, garden, timeRange, int(limit))
+	history, err := pr.getWateringHistory(r.Context(), plant, garden, timeRange, limit)
 	if err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -395,18 +395,15 @@ func (pr PlantsResource) getMoisture(ctx context.Context, g *pkg.Garden, p *pkg.
 }
 
 // getWateringHistory gets previous WateringEvents for this Plant from InfluxDB
-func (pr PlantsResource) getWateringHistory(ctx context.Context, plant *pkg.Plant, garden *pkg.Garden, timeRange time.Duration, limit int) (result []pkg.WateringHistory, err error) {
+func (pr PlantsResource) getWateringHistory(ctx context.Context, plant *pkg.Plant, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WateringHistory, err error) {
 	defer pr.influxdbClient.Close()
 
-	history, err := pr.influxdbClient.GetWateringHistory(ctx, *plant.PlantPosition, garden.Name, timeRange)
+	history, err := pr.influxdbClient.GetWateringHistory(ctx, *plant.PlantPosition, garden.Name, timeRange, limit)
 	if err != nil {
 		return
 	}
 
 	for _, h := range history {
-		if len(result) >= limit {
-			break
-		}
 		result = append(result, pkg.WateringHistory{
 			Duration:   (time.Duration(h["Duration"].(int)) * time.Millisecond).String(),
 			RecordTime: h["RecordTime"].(time.Time),
