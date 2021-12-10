@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -11,7 +10,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
 )
 
@@ -272,7 +270,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove scheduled watering Job
-	if err := pr.scheduler.RemoveByTag(plant.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+	if err := pr.removeJobsByID(plant.ID); err != nil {
 		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
 		render.Render(w, r, InternalServerError(err))
 		return

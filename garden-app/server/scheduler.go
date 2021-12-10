@@ -2,12 +2,12 @@ package server
 
 import (
 	"errors"
-	"fmt"
 	"sort"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/go-co-op/gocron"
+	"github.com/rs/xid"
 )
 
 const (
@@ -75,7 +75,7 @@ func (gr GardensResource) getNextLightTime(g *pkg.Garden, state string) *time.Ti
 			if tag == g.ID.String() {
 				matchedID = true
 			}
-			if tag == fmt.Sprintf("%s-%s", g.ID.String(), state) {
+			if tag == state {
 				matchedState = true
 			}
 		}
@@ -131,7 +131,8 @@ func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate).
-		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)).
+		Tag(g.ID.String()).
+		Tag(pkg.StateOn).
 		Do(executeLightAction, onAction)
 	if err != nil {
 		return err
@@ -139,7 +140,8 @@ func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate.Add(duration)).
-		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOff)).
+		Tag(g.ID.String()).
+		Tag(pkg.StateOff).
 		Do(executeLightAction, offAction)
 	if err != nil {
 		return err
@@ -156,7 +158,7 @@ func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 		// If nextOnTime is before AdhocOnTime, remove it
 		nextOnTime := gr.getNextLightTime(g, pkg.StateOn)
 		if nextOnTime.Before(*g.LightSchedule.AdhocOnTime) {
-			if err := gr.scheduler.RemoveByTag(fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+			if err := gr.removeLightScheduleWithState(g, pkg.StateOn); err != nil {
 				return err
 			}
 		}
@@ -197,7 +199,9 @@ func (gr GardensResource) scheduleAdhocLightAction(g *pkg.Garden) error {
 		LimitRunsTo(1).
 		StartAt(*g.LightSchedule.AdhocOnTime).
 		WaitForSchedule().
-		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn), "ADHOC").
+		Tag(g.ID.String()).
+		Tag(pkg.StateOn).
+		Tag("ADHOC").
 		Do(executeLightAction, onAction)
 
 	return err
@@ -239,7 +243,8 @@ func (gr GardensResource) rescheduleLightOnAction(g *pkg.Garden) error {
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate).
-		Tag(g.ID.String(), fmt.Sprintf("%s-%s", g.ID.String(), pkg.StateOn)).
+		Tag(g.ID.String()).
+		Tag(pkg.StateOn).
 		Do(executeLightAction, onAction)
 	return err
 }
@@ -250,4 +255,18 @@ func (gr GardensResource) resetLightingSchedule(g *pkg.Garden) error {
 		return err
 	}
 	return gr.scheduleLightActions(g)
+}
+
+func (gr GardensResource) removeJobsByID(id xid.ID) error {
+	if err := gr.scheduler.RemoveByTags(id.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+		return err
+	}
+	return nil
+}
+
+func (gr GardensResource) removeLightScheduleWithState(g *pkg.Garden, state string) error {
+	if err := gr.scheduler.RemoveByTags(g.ID.String(), state); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+		return err
+	}
+	return nil
 }

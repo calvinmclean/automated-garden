@@ -227,7 +227,7 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 	}
 
 	// Remove scheduled lighting actions
-	if err := gr.scheduler.RemoveByTag(garden.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+	if err := gr.removeJobsByID(garden.ID); err != nil {
 		logger.Errorf("Unable to remove watering Job for Garden %s: %v", garden.ID.String(), err)
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -259,7 +259,7 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 
 	// If LightSchedule is empty, remove the scheduled Job
 	if garden.LightSchedule == nil {
-		if err := gr.scheduler.RemoveByTag(garden.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+		if err := gr.removeJobsByID(garden.ID); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
@@ -335,7 +335,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time
 			// Delete existing ON schedule
-			if err := gr.scheduler.RemoveByTag(fmt.Sprintf("%s-%s", garden.ID.String(), pkg.StateOn)); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+			if err := gr.removeLightScheduleWithState(garden, pkg.StateOn); err != nil {
 				render.Render(w, r, InternalServerError(err))
 				return
 			}
