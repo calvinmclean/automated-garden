@@ -3,17 +3,18 @@ package gocron
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 
 	"golang.org/x/sync/semaphore"
 )
 
 const (
-	// default is that if a limit on maximum concurrent jobs is set
-	// and the limit is reached, a job will skip it's run and try
-	// again on the next occurrence in the schedule
+	// RescheduleMode - the default is that if a limit on maximum
+	// concurrent jobs is set and the limit is reached, a job will
+	// skip it's run and try again on the next occurrence in the schedule
 	RescheduleMode limitMode = iota
 
-	// in wait mode if a limit on maximum concurrent jobs is set
+	// WaitMode - if a limit on maximum concurrent jobs is set
 	// and the limit is reached, a job will wait to try and run
 	// until a spot in the limit is freed up.
 	//
@@ -26,7 +27,7 @@ const (
 
 type executor struct {
 	jobFunctions   chan jobFunction
-	stop           chan struct{}
+	stopCh         chan struct{}
 	limitMode      limitMode
 	maxRunningJobs *semaphore.Weighted
 }
@@ -34,20 +35,20 @@ type executor struct {
 func newExecutor() executor {
 	return executor{
 		jobFunctions: make(chan jobFunction, 1),
-		stop:         make(chan struct{}, 1),
+		stopCh:       make(chan struct{}, 1),
 	}
 }
 
 func (e *executor) start() {
-	wg := sync.WaitGroup{}
 	stopCtx, cancel := context.WithCancel(context.Background())
+	runningJobsWg := sync.WaitGroup{}
 
 	for {
 		select {
 		case f := <-e.jobFunctions:
-			wg.Add(1)
+			runningJobsWg.Add(1)
 			go func() {
-				defer wg.Done()
+				defer runningJobsWg.Done()
 
 				if e.maxRunningJobs != nil {
 					if !e.maxRunningJobs.TryAcquire(1) {
@@ -77,7 +78,9 @@ func (e *executor) start() {
 
 				switch f.runConfig.mode {
 				case defaultMode:
+					atomic.AddInt64(f.runState, 1)
 					callJobFuncWithParams(f.function, f.parameters)
+					atomic.AddInt64(f.runState, -1)
 				case singletonMode:
 					_, _, _ = f.limiter.Do("main", func() (interface{}, error) {
 						select {
@@ -87,15 +90,23 @@ func (e *executor) start() {
 							return nil, nil
 						default:
 						}
+						atomic.AddInt64(f.runState, 1)
 						callJobFuncWithParams(f.function, f.parameters)
+						atomic.AddInt64(f.runState, -1)
 						return nil, nil
 					})
 				}
 			}()
-		case <-e.stop:
+		case <-e.stopCh:
 			cancel()
-			wg.Wait()
+			runningJobsWg.Wait()
+			e.stopCh <- struct{}{}
 			return
 		}
 	}
+}
+
+func (e *executor) stop() {
+	e.stopCh <- struct{}{}
+	<-e.stopCh
 }

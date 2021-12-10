@@ -1,12 +1,12 @@
 # gocron: A Golang Job Scheduling Package.
 
-[![CI State](https://github.com/go-co-op/gocron/workflows/Go%20Test/badge.svg)](https://github.com/go-co-op/gocron/actions?query=workflow%3A"Go+Test") ![Go Report Card](https://goreportcard.com/badge/github.com/go-co-op/gocron) [![Go Doc](https://godoc.org/github.com/go-co-op/gocron?status.svg)](https://pkg.go.dev/github.com/go-co-op/gocron)
+[![CI State](https://github.com/go-co-op/gocron/workflows/Go%20Test/badge.svg)](https://github.com/go-co-op/gocron/actions?query=workflow%3A"lint") ![Go Report Card](https://goreportcard.com/badge/github.com/go-co-op/gocron) [![Go Doc](https://godoc.org/github.com/go-co-op/gocron?status.svg)](https://pkg.go.dev/github.com/go-co-op/gocron)
 
-gocron is a Golang job scheduling package which lets you run Go functions periodically at pre-determined interval using a simple, human-friendly syntax.
+gocron is a job scheduling package which lets you run Go functions at pre-determined intervals using a simple, human-friendly syntax.
 
-gocron is a Golang implementation of the Ruby module [clockwork](https://github.com/tomykaira/clockwork) and the Python job scheduling package [schedule](https://github.com/dbader/schedule).
+gocron is a Golang scheduler implementation similar to the Ruby module [clockwork](https://github.com/tomykaira/clockwork) and the Python job scheduling package [schedule](https://github.com/dbader/schedule).
 
-See also these two great articles:
+See also these two great articles that were used for design input:
 
 - [Rethinking Cron](http://adam.herokuapp.com/past/2010/4/13/rethinking_cron/)
 - [Replace Cron with Clockwork](http://adam.herokuapp.com/past/2010/6/30/replace_cron_with_clockwork/)
@@ -31,13 +31,21 @@ s.Every("5m").Do(func(){ ... })
 
 s.Every(5).Days().Do(func(){ ... })
 
+s.Every(1).Month(1, 2, 3).Do(func(){ ... })
+
+// Schedule each last day of the month
+s.Every(1).MonthLastDay().Do(func(){ ... })
+
+// Or each last day of every other month
+s.Every(2).MonthLastDay().Do(func(){ ... })
+
 // cron expressions supported
 s.Cron("*/1 * * * *").Do(task) // every minute
 
 // you can start running the scheduler in two different ways:
 // starts the scheduler asynchronously
 s.StartAsync()
-// starts the scheduler and blocks current execution path 
+// starts the scheduler and blocks current execution path
 s.StartBlocking()
 ```
 
@@ -45,24 +53,24 @@ For more examples, take a look in our [go docs](https://pkg.go.dev/github.com/go
 
 ## Options
 
-Interval | Supported schedule options
--- | --
-sub-second | `StartAt()`
-milliseconds | `StartAt()`
-seconds | `StartAt()`
-minutes | `StartAt()`
-hours | `StartAt()`
-days | `StartAt()`, `At()`
-weeks | `StartAt()`, `At()`, `Weekday()` (and all week day named functions)
-months | `StartAt()`, `At()`
+| Interval     | Supported schedule options                                          |
+| ------------ | ------------------------------------------------------------------- |
+| sub-second   | `StartAt()`                                                         |
+| milliseconds | `StartAt()`                                                         |
+| seconds      | `StartAt()`                                                         |
+| minutes      | `StartAt()`                                                         |
+| hours        | `StartAt()`                                                         |
+| days         | `StartAt()`, `At()`                                                 |
+| weeks        | `StartAt()`, `At()`, `Weekday()` (and all week day named functions) |
+| months       | `StartAt()`, `At()`                                                 |
 
 There are several options available to restrict how jobs run:
 
-Mode | Function | Behavior
--- | -- | --
-Default |  | jobs are rescheduled at every interval
-Job singleton | `SingletonMode()` | a long running job will not be rescheduled until the current run is completed
-Scheduler limit | `SetMaxConcurrentJobs()` | set a collective maximum number of concurrent jobs running across the scheduler
+| Mode            | Function                 | Behavior                                                                        |
+| --------------- | ------------------------ | ------------------------------------------------------------------------------- |
+| Default         |                          | jobs are rescheduled at every interval                                          |
+| Job singleton   | `SingletonMode()`        | a long running job will not be rescheduled until the current run is completed   |
+| Scheduler limit | `SetMaxConcurrentJobs()` | set a collective maximum number of concurrent jobs running across the scheduler |
 
 ## Tags
 
@@ -88,22 +96,25 @@ s.RunByTag("tag")
 
 ## FAQ
 
-* Q: I'm running multiple pods on a distributed environment. How can I make a job not run once per pod causing duplication?
-* A: We recommend using your own lock solution within the jobs themselves (you could use [Redis](https://redis.io/topics/distlock), for example)
+- Q: I'm running multiple pods on a distributed environment. How can I make a job not run once per pod causing duplication?
+  - A: We recommend using your own lock solution within the jobs themselves (you could use [Redis](https://redis.io/topics/distlock), for example)
 
-* Q: I've removed my job from the scheduler, but how can I stop a long-running job that has already been triggered?
-* A: We recommend using a means of canceling your job, e.g. a `context.WithCancel()`.
+- Q: I've removed my job from the scheduler, but how can I stop a long-running job that has already been triggered?
+  - A: We recommend using a means of canceling your job, e.g. a `context.WithCancel()`.
 
---- 
+---
+
 Looking to contribute? Try to follow these guidelines:
-* Use issues for everything
-* For a small change, just send a PR!
-* For bigger changes, please open an issue for discussion before sending a PR.
-* PRs should have: tests, documentation and examples (if it makes sense)
-* You can also contribute by:
-  * Reporting issues
-  * Suggesting new features or enhancements
-  * Improving/fixing documentation
+
+- Use issues for everything
+- For a small change, just send a PR!
+- For bigger changes, please open an issue for discussion before sending a PR.
+- PRs should have: tests, documentation and examples (if it makes sense)
+- You can also contribute by:
+  - Reporting issues
+  - Suggesting new features or enhancements
+  - Improving/fixing documentation
+
 ---
 
 ## Design

@@ -1,5 +1,3 @@
-# github.com/Azure/go-autorest v11.1.2+incompatible
-## explicit
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/deepmap/oapi-codegen v1.3.13
@@ -10,10 +8,7 @@ github.com/deepmap/oapi-codegen/pkg/types
 github.com/eclipse/paho.mqtt.golang
 github.com/eclipse/paho.mqtt.golang/packets
 # github.com/fsnotify/fsnotify v1.4.9
-## explicit
 github.com/fsnotify/fsnotify
-# github.com/go-chi/chi v4.0.2+incompatible
-## explicit
 # github.com/go-chi/chi/v5 v5.0.2
 ## explicit
 github.com/go-chi/chi/v5
@@ -21,7 +16,7 @@ github.com/go-chi/chi/v5/middleware
 # github.com/go-chi/render v1.0.1
 ## explicit
 github.com/go-chi/render
-# github.com/go-co-op/gocron v1.6.2
+# github.com/go-co-op/gocron v1.11.0
 ## explicit
 github.com/go-co-op/gocron
 # github.com/go-logr/logr v0.2.0
@@ -41,8 +36,6 @@ github.com/google/gofuzz
 github.com/googleapis/gnostic/compiler
 github.com/googleapis/gnostic/extensions
 github.com/googleapis/gnostic/openapiv2
-# github.com/gophercloud/gophercloud v0.0.0-20190126172459-c818fa66e4c8
-## explicit
 # github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00
 ## explicit
 # github.com/gorilla/websocket v1.4.2
@@ -149,7 +142,6 @@ golang.org/x/net/publicsuffix
 golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
-## explicit
 golang.org/x/sync/semaphore
 golang.org/x/sync/singleflight
 # golang.org/x/sys v0.0.0-20210423082822-04245dca01da
@@ -355,8 +347,6 @@ k8s.io/client-go/util/connrotation
 k8s.io/client-go/util/flowcontrol
 k8s.io/client-go/util/keyutil
 k8s.io/client-go/util/workqueue
-# k8s.io/klog v0.3.1
-## explicit
 # k8s.io/klog/v2 v2.2.0
 k8s.io/klog/v2
 # k8s.io/utils v0.0.0-20200729134348-d5654de09c73
