@@ -17,7 +17,7 @@ const (
 // addWateringSchedule will schedule watering actions for the Plant based off the CreatedAt date,
 // WaterSchedule time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
 // easily be removed
-func (pr PlantsResource) addWateringSchedule(g *pkg.Garden, p *pkg.Plant) error {
+func (pr PlantsResource) scheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
 	logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
 	// Read Plant's Interval string into a Duration
@@ -49,7 +49,7 @@ func (pr PlantsResource) resetWateringSchedule(g *pkg.Garden, p *pkg.Plant) erro
 	if err := pr.scheduler.RemoveByTag(p.ID.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
-	return pr.addWateringSchedule(g, p)
+	return pr.scheduleWateringAction(g, p)
 }
 
 // getNextWateringTime determines the next scheduled watering time for a given Plant using tags
@@ -158,7 +158,7 @@ func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 		// If nextOnTime is before AdhocOnTime, remove it
 		nextOnTime := gr.getNextLightTime(g, pkg.StateOn)
 		if nextOnTime.Before(*g.LightSchedule.AdhocOnTime) {
-			if err := gr.removeLightScheduleWithState(g, pkg.StateOn); err != nil {
+			if err := gr.removeLightScheduleByState(g, pkg.StateOn); err != nil {
 				return err
 			}
 		}
@@ -264,7 +264,7 @@ func (gr GardensResource) removeJobsByID(id xid.ID) error {
 	return nil
 }
 
-func (gr GardensResource) removeLightScheduleWithState(g *pkg.Garden, state string) error {
+func (gr GardensResource) removeLightScheduleByState(g *pkg.Garden, state string) error {
 	if err := gr.scheduler.RemoveByTags(g.ID.String(), state); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}

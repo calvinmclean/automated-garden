@@ -335,7 +335,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 		} else {
 			// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time
 			// Delete existing ON schedule
-			if err := gr.removeLightScheduleWithState(garden, pkg.StateOn); err != nil {
+			if err := gr.removeLightScheduleByState(garden, pkg.StateOn); err != nil {
 				render.Render(w, r, InternalServerError(err))
 				return
 			}

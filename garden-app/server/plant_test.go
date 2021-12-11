@@ -946,7 +946,7 @@ func TestGetNextWateringTime(t *testing.T) {
 			g := createExampleGarden()
 			p := createExamplePlant()
 
-			pr.addWateringSchedule(g, p)
+			pr.scheduleWateringAction(g, p)
 			pr.scheduler.StartAsync()
 			defer pr.scheduler.Stop()
 

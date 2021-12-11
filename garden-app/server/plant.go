@@ -42,7 +42,7 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 			return pr, err
 		}
 		for _, p := range allPlants {
-			if err = pr.addWateringSchedule(g, p); err != nil {
+			if err = pr.scheduleWateringAction(g, p); err != nil {
 				err = fmt.Errorf("unable to add watering Job for Plant %v: %v", p.ID, err)
 				return pr, err
 			}
@@ -328,7 +328,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	plant.GardenID = garden.ID
 
 	// Start watering schedule
-	if err := pr.addWateringSchedule(garden, plant); err != nil {
+	if err := pr.scheduleWateringAction(garden, plant); err != nil {
 		logger.Errorf("Unable to add watering Job for Plant %v: %v", plant.ID, err)
 	}
 
