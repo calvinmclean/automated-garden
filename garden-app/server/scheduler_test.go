@@ -183,7 +183,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 			var expected time.Time
 			if tt.on {
-				expected = now.Add(tt.expectedDelay).Truncate(time.Millisecond)
+				expected = now.Add(tt.expectedDelay).Truncate(time.Second)
 			} else {
 				lightTime, _ := time.Parse(pkg.LightTimeFormat, tt.garden.LightSchedule.StartTime)
 				expected = time.Date(
@@ -195,10 +195,10 @@ func TestScheduleLightDelay(t *testing.T) {
 					lightTime.Second(),
 					0,
 					lightTime.Location(),
-				).Add(tt.expectedDelay).Truncate(time.Millisecond)
+				).Add(tt.expectedDelay).Truncate(time.Second)
 			}
 
-			nextOnTime := gr.getNextLightTime(tt.garden, pkg.StateOn).Truncate(time.Millisecond)
+			nextOnTime := gr.getNextLightTime(tt.garden, pkg.StateOn).Truncate(time.Second)
 			if nextOnTime.UnixNano() != expected.UnixNano() {
 				t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 			}
