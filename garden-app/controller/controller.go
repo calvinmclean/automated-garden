@@ -172,6 +172,10 @@ func (c *Controller) setupUI() *tview.Application {
 	header := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
 		SetText(c.Garden)
+	tview.ANSIWriter(header).Write([]byte(fmt.Sprintf(
+		"\n%d Plants\nPublishWateringEvent: %t, PublishHealth: %t, MoistureStrategy: %s",
+		c.NumPlants, c.PublishWateringEvent, c.PublishHealth, c.MoistureStrategy),
+	))
 
 	grid := tview.NewGrid().
 		SetRows(3, 0).
