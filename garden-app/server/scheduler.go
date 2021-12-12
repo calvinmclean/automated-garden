@@ -270,3 +270,46 @@ func (gr GardensResource) removeLightScheduleByState(g *pkg.Garden, state string
 	}
 	return nil
 }
+
+// Handles a GardenAction that requests delaying turning a light on
+func (gr GardensResource) scheduleLightDelay(garden *pkg.Garden, action *pkg.LightAction) error {
+	// Read delay Duration string into a time.Duration
+	delayDuration, err := time.ParseDuration(action.ForDuration)
+	if err != nil {
+		return err
+	}
+
+	nextOnTime := gr.getNextLightTime(garden, pkg.StateOn)
+	nextOffTime := gr.getNextLightTime(garden, pkg.StateOff)
+
+	var adhocTime time.Time
+
+	// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on. No need to delete any schedules
+	if nextOffTime.Before(*nextOnTime) {
+		now := time.Now()
+		adhocTime = now.Add(delayDuration)
+	} else {
+		// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time
+		// Delete existing ON schedule
+		if err := gr.removeLightScheduleByState(garden, pkg.StateOn); err != nil {
+			return err
+		}
+
+		// Add new ON schedule with action.Light.ForDuration that executes once
+		adhocTime = nextOnTime.Add(delayDuration)
+
+		// Add new regular ON schedule starting 24 hours from today's Date + g.LightSchedule.StartTime
+		err = gr.rescheduleLightOnAction(garden)
+		if err != nil {
+			return err
+		}
+	}
+
+	// Add new lightSchedule with AdhocTime and Save Garden
+	garden.LightSchedule.AdhocOnTime = &adhocTime
+	err = gr.scheduleAdhocLightAction(garden)
+	if err != nil {
+		return err
+	}
+	return gr.storageClient.SaveGarden(garden)
+}

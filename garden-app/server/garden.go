@@ -316,50 +316,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 	// If this is a LightAction with specified duration, additional steps are necessary
 	if action.Light != nil && action.Light.ForDuration != "" {
 		logger.Infof("LightAction requests delay for %s", action.Light.ForDuration)
-		// Read delay Duration string into a time.Duration
-		delayDuration, err := time.ParseDuration(action.Light.ForDuration)
-		if err != nil {
-			render.Render(w, r, InternalServerError(err))
-			return
-		}
-
-		nextOnTime := gr.getNextLightTime(garden, pkg.StateOn)
-		nextOffTime := gr.getNextLightTime(garden, pkg.StateOff)
-
-		var adhocTime time.Time
-
-		// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on. No need to delete any schedules
-		if nextOffTime.Before(*nextOnTime) {
-			now := time.Now()
-			adhocTime = now.Add(delayDuration)
-		} else {
-			// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time
-			// Delete existing ON schedule
-			if err := gr.removeLightScheduleByState(garden, pkg.StateOn); err != nil {
-				render.Render(w, r, InternalServerError(err))
-				return
-			}
-
-			// Add new ON schedule with action.Light.ForDuration that executes once
-			adhocTime = nextOnTime.Add(delayDuration)
-
-			// Add new regular ON schedule starting 24 hours from today's Date + g.LightSchedule.StartTime
-			err = gr.rescheduleLightOnAction(garden)
-			if err != nil {
-				render.Render(w, r, InternalServerError(err))
-				return
-			}
-		}
-
-		// Add new lightSchedule with AdhocTime and Save Garden
-		garden.LightSchedule.AdhocOnTime = &adhocTime
-		err = gr.scheduleAdhocLightAction(garden)
-		if err != nil {
-			logger.Errorf("Error adding adhoc schedule: %v", err)
-			render.Render(w, r, InternalServerError(err))
-			return
-		}
-		err = gr.storageClient.SaveGarden(garden)
+		err := gr.scheduleLightDelay(garden, action.Light)
 		if err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
