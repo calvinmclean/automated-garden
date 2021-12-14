@@ -287,6 +287,12 @@ func (gr GardensResource) scheduleLightDelay(garden *pkg.Garden, action *pkg.Lig
 	// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on. No need to delete any schedules
 	if nextOffTime.Before(*nextOnTime) {
 		now := time.Now()
+
+		// Don't allow a delayDuration that will occur after nextOffTime
+		if nextOffTime.Before(now.Add(delayDuration)) {
+			return errors.New("unable to schedule delay that extends past the light turning back on")
+		}
+
 		adhocTime = now.Add(delayDuration)
 	} else {
 		// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time

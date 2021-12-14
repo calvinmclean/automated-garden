@@ -88,7 +88,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOn,
+					State:       pkg.StateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -105,11 +105,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOn,
+					State:       pkg.StateOff,
 					ForDuration: "30m",
 				},
 				{
-					State:       pkg.StateOn,
+					State:       pkg.StateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -126,7 +126,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOn,
+					State:       pkg.StateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -143,11 +143,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOn,
+					State:       pkg.StateOff,
 					ForDuration: "30m",
 				},
 				{
-					State:       pkg.StateOn,
+					State:       pkg.StateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -205,4 +205,38 @@ func TestScheduleLightDelay(t *testing.T) {
 			storageClient.AssertExpectations(t)
 		})
 	}
+
+	t.Run("ErrorDelayingPastNextOffTime", func(t *testing.T) {
+		storageClient := new(storage.MockClient)
+		gr := GardensResource{
+			storageClient: storageClient,
+			scheduler:     gocron.NewScheduler(time.Local),
+		}
+		gr.scheduler.StartAsync()
+		defer gr.scheduler.Stop()
+
+		g := createExampleGarden()
+		// Set StartTime and Duration so NextOffTime is soon
+		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(pkg.LightTimeFormat)
+		g.LightSchedule.Duration = "1h2m"
+
+		err := gr.scheduleLightActions(g)
+		if err != nil {
+			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+		}
+
+		// Now request delay
+		err = gr.scheduleLightDelay(g, &pkg.LightAction{
+			State:       pkg.StateOff,
+			ForDuration: "30m",
+		})
+		if err == nil {
+			t.Errorf("Expected error but got nil")
+		}
+		if err.Error() != "unable to schedule delay that extends past the light turning back on" {
+			t.Errorf("Unexpected error string: %v", err)
+		}
+
+		storageClient.AssertExpectations(t)
+	})
 }
