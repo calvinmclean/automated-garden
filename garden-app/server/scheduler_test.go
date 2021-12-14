@@ -239,4 +239,35 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		storageClient.AssertExpectations(t)
 	})
+
+	t.Run("ErrorDelayingLongerThanLightDuration", func(t *testing.T) {
+		storageClient := new(storage.MockClient)
+		gr := GardensResource{
+			storageClient: storageClient,
+			scheduler:     gocron.NewScheduler(time.Local),
+		}
+		gr.scheduler.StartAsync()
+		defer gr.scheduler.Stop()
+
+		g := createExampleGarden()
+
+		err := gr.scheduleLightActions(g)
+		if err != nil {
+			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+		}
+
+		// Now request delay
+		err = gr.scheduleLightDelay(g, &pkg.LightAction{
+			State:       pkg.StateOff,
+			ForDuration: "16h",
+		})
+		if err == nil {
+			t.Errorf("Expected error but got nil")
+		}
+		if err.Error() != "unable to execute delay that lasts longer than light_schedule" {
+			t.Errorf("Unexpected error string: %v", err)
+		}
+
+		storageClient.AssertExpectations(t)
+	})
 }

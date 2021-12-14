@@ -279,6 +279,16 @@ func (gr GardensResource) scheduleLightDelay(garden *pkg.Garden, action *pkg.Lig
 		return err
 	}
 
+	lightScheduleDuration, err := time.ParseDuration(garden.LightSchedule.Duration)
+	if err != nil {
+		return err
+	}
+
+	// Don't allow delaying longer than LightSchedule.Duration
+	if delayDuration > lightScheduleDuration {
+		return errors.New("unable to execute delay that lasts longer than light_schedule")
+	}
+
 	nextOnTime := gr.getNextLightTime(garden, pkg.StateOn)
 	nextOffTime := gr.getNextLightTime(garden, pkg.StateOff)
 
