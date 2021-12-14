@@ -108,6 +108,10 @@ func (g *Garden) Patch(newGarden *Garden) {
 		if newGarden.LightSchedule.StartTime != "" {
 			g.LightSchedule.StartTime = newGarden.LightSchedule.StartTime
 		}
+		if newGarden.LightSchedule.AdhocOnTime == nil {
+			g.LightSchedule.AdhocOnTime = newGarden.LightSchedule.AdhocOnTime
+		}
+		// If both Duration and StartTime are empty, remove the schedule
 		if newGarden.LightSchedule.Duration == "" && newGarden.LightSchedule.StartTime == "" {
 			g.LightSchedule = nil
 		}

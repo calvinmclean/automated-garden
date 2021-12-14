@@ -113,6 +113,12 @@ func TestGardenPatch(t *testing.T) {
 				StartTime: "start time",
 			}},
 		},
+		{
+			"PatchLightSchedule.AdhocOnTime",
+			&Garden{LightSchedule: &LightSchedule{
+				AdhocOnTime: nil,
+			}},
+		},
 	}
 
 	for _, tt := range tests {
