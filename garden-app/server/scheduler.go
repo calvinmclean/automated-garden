@@ -273,6 +273,11 @@ func (gr GardensResource) removeLightScheduleByState(g *pkg.Garden, state string
 
 // Handles a GardenAction that requests delaying turning a light on
 func (gr GardensResource) scheduleLightDelay(garden *pkg.Garden, action *pkg.LightAction) error {
+	// Only allow when action state is OFF
+	if action.State != pkg.StateOff {
+		return errors.New("unable to use delay when state is not OFF")
+	}
+
 	// Read delay Duration string into a time.Duration
 	delayDuration, err := time.ParseDuration(action.ForDuration)
 	if err != nil {
