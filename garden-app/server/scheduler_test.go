@@ -49,22 +49,29 @@ func TestScheduleLightActions(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
 		}
+		if g.LightSchedule.AdhocOnTime != nil {
+			t.Errorf("Expected nil AdhocOnTime but got: %v", g.LightSchedule.AdhocOnTime)
+		}
 
 		lightTime, _ := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
 		expected := time.Date(
-			now.Year(),
-			now.Month(),
-			now.Day(),
+			now.In(lightTime.Location()).Year(),
+			now.In(lightTime.Location()).Month(),
+			now.In(lightTime.Location()).Day(),
 			lightTime.Hour(),
 			lightTime.Minute(),
 			lightTime.Second(),
 			0,
 			lightTime.Location(),
 		)
+		// If expected time is before now, it will be tomorrow
+		if expected.Before(now) {
+			expected = expected.Add(lightingInterval)
+		}
 
 		nextOnTime := gr.getNextLightTime(g, pkg.StateOn)
 		if nextOnTime.UnixNano() != expected.UnixNano() {
-			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected.UnixNano(), nextOnTime.UnixNano())
+			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 		}
 		storageClient.AssertExpectations(t)
 	})
