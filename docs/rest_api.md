@@ -20,6 +20,7 @@ A `Garden` represents a garden in the physical world and should correspond one-t
     }
     ```
   - On-demand control of a light using a `LightAction` to the `/action` endpoint
+    - Using the `for_duration` field of the action with `state=OFF` allows turning a light off or delaying the light from turning on for a specific duration. This is useful if an indoor garden's light turning on would be disruptive
   - Stop watering by sending a `StopAction` to the `/action` endpoint
   - Access to a controller's health status using the `/health` endpoint to see if the controller has recently checked-in
   - Storage of a collection of Plants

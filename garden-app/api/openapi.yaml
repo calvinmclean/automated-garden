@@ -757,6 +757,11 @@ components:
       properties:
         state:
           $ref: "#/components/schemas/LightState"
+        for_duration:
+          type: string
+          format: duration
+          description: duration string to determine how long to delay turning the light on. Only allowed to be used with state=OFF
+          example: 14h
 
     StopAction:
       type: object
@@ -884,6 +889,10 @@ components:
               format: time
               description: time that the light should be turned on
               example: 23:00:00-07:00
+            adhoc_on_time:
+              type: string
+              format: date-time
+              description: if a light delay was used, this persists the time that the light needs to turn back on
           required:
             - duration
             - start_time
