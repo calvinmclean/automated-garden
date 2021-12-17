@@ -1,10 +1,10 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -13,7 +13,7 @@ var (
 	// Used for flags.
 	configFilename string
 	logLevel       string
-	parsedLogLevel logrus.Level
+	parsedLogLevel log.Level
 
 	rootCommand = &cobra.Command{
 		Use:   "garden-app",
@@ -35,7 +35,7 @@ func init() {
 	rootCommand.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "level of logging to display")
 	rootCommand.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
 		var levels []string
-		for _, l := range logrus.AllLevels {
+		for _, l := range log.AllLevels {
 			levels = append(levels, l.String())
 		}
 		return levels, cobra.ShellCompDirectiveDefault
@@ -50,7 +50,7 @@ func initConfig() {
 	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		log.Println("Using config file:", viper.ConfigFileUsed())
 	}
 }
 
@@ -58,7 +58,7 @@ func parseLogLevel() {
 	var err error
 	parsedLogLevel, err = logrus.ParseLevel(logLevel)
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 		os.Exit(1)
 	}
 }
