@@ -2,7 +2,9 @@ package pkg
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -12,11 +14,49 @@ import (
 const (
 	// LightTimeFormat is used to control format of time fields
 	LightTimeFormat = "15:04:05-07:00"
-	// StateOn is the string used to turn on a light
-	StateOn = "ON"
-	// StateOff is the string used to turn off a light
-	StateOff = "OFF"
 )
+
+const (
+	// LightStateOff is the value used to turn off a light
+	LightStateOff LightState = iota
+	// LightStateOn is the value used to turn on a light
+	LightStateOn
+)
+
+var (
+	stateToString = []string{"OFF", "ON"}
+	stringToState = map[string]LightState{
+		`"OFF"`: LightStateOff,
+		`"ON"`:  LightStateOn,
+	}
+)
+
+// LightState is an enum representing the state of a Light (ON or OFF)
+type LightState int
+
+// Return the string representation of this LightState
+func (l LightState) String() string {
+	return stateToString[l]
+}
+
+// MarshalJSON will convert LightState into it's JSON string representation
+func (l LightState) MarshalJSON() ([]byte, error) {
+	if int(l) >= len(stateToString) {
+		return []byte{}, fmt.Errorf("cannot convert %d to %T", int(l), l)
+	}
+	return json.Marshal(stateToString[l])
+}
+
+// UnmarshalJSON with convert LightState's JSON string representation, ignoring case, into a LightState
+func (l *LightState) UnmarshalJSON(data []byte) error {
+	upper := strings.ToUpper(string(data))
+	var ok bool
+	*l, ok = stringToState[upper]
+	if !ok {
+		return fmt.Errorf("cannot unmarshal %s into Go value of type %T", string(data), l)
+	}
+	return nil
+}
 
 // Garden is the representation of a single garden-controller device. It is the container for Plants
 type Garden struct {

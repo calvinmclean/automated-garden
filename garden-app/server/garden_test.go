@@ -675,6 +675,13 @@ func TestGardenAction(t *testing.T) {
 			`{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`,
 			http.StatusInternalServerError,
 		},
+		{
+			"ErrorInvalidLightState",
+			func(mqttClient *mqtt.MockClient) {},
+			`{"light":{"state":"BAD"}}`,
+			`{"status":"Invalid request.","error":"cannot unmarshal \"BAD\" into Go value of type *pkg.LightState"}`,
+			http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {

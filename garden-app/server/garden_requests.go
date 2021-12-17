@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
-	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -124,11 +123,11 @@ func (action *GardenActionRequest) Bind(r *http.Request) error {
 	if action == nil || action.GardenAction == nil || (action.Light == nil && action.Stop == nil) {
 		return errors.New("missing required action fields")
 	}
-	if action.Light != nil {
-		// Validate that action.Light.State is "", "ON", or "OFF" (case insensitive)
-		state := strings.ToUpper(action.Light.State)
-		if state != "" && state != pkg.StateOn && state != pkg.StateOff {
-			return fmt.Errorf("invalid \"state\" provided: \"%s\"", action.Light.State)
+	if action.Light != nil && len(action.Light.ForDuration) > 0 {
+		// Read delay Duration string into a time.Duration
+		_, err := time.ParseDuration(action.Light.ForDuration)
+		if err != nil {
+			return fmt.Errorf("invalid duration format for action.light.for_duration: %s", action.Light.ForDuration)
 		}
 	}
 	return nil

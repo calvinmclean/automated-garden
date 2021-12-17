@@ -20,8 +20,8 @@ type GardenResponse struct {
 
 // NextLightAction contains the time and state for the next scheduled LightAction
 type NextLightAction struct {
-	Time  *time.Time `json:"time"`
-	State string     `json:"state"`
+	Time  *time.Time     `json:"time"`
+	State pkg.LightState `json:"state"`
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
@@ -55,30 +55,30 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 		)
 
 		if garden.LightSchedule != nil {
-			nextOnTime := gr.getNextLightTime(garden, pkg.StateOn)
-			nextOffTime := gr.getNextLightTime(garden, pkg.StateOff)
+			nextOnTime := gr.getNextLightTime(garden, pkg.LightStateOn)
+			nextOffTime := gr.getNextLightTime(garden, pkg.LightStateOff)
 			if nextOnTime != nil && nextOffTime != nil {
 				// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
 				if nextOnTime.Before(*nextOffTime) {
 					response.NextLightAction = &NextLightAction{
 						Time:  nextOnTime,
-						State: pkg.StateOn,
+						State: pkg.LightStateOn,
 					}
 				} else {
 					response.NextLightAction = &NextLightAction{
 						Time:  nextOffTime,
-						State: pkg.StateOff,
+						State: pkg.LightStateOff,
 					}
 				}
 			} else if nextOnTime != nil {
 				response.NextLightAction = &NextLightAction{
 					Time:  nextOnTime,
-					State: pkg.StateOn,
+					State: pkg.LightStateOn,
 				}
 			} else if nextOffTime != nil {
 				response.NextLightAction = &NextLightAction{
 					Time:  nextOffTime,
-					State: pkg.StateOff,
+					State: pkg.LightStateOff,
 				}
 			}
 		}

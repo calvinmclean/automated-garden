@@ -66,7 +66,7 @@ func (pr PlantsResource) getNextWateringTime(p *pkg.Plant) *time.Time {
 }
 
 // getNextLightTime returns the next time that the Garden's light will be turned to the specified state
-func (gr GardensResource) getNextLightTime(g *pkg.Garden, state string) *time.Time {
+func (gr GardensResource) getNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Time {
 	sort.Sort(gr.scheduler)
 	for _, job := range gr.scheduler.Jobs() {
 		matchedID := false
@@ -75,7 +75,7 @@ func (gr GardensResource) getNextLightTime(g *pkg.Garden, state string) *time.Ti
 			if tag == g.ID.String() {
 				matchedID = true
 			}
-			if tag == state {
+			if tag == state.String() {
 				matchedState = true
 			}
 		}
@@ -126,13 +126,13 @@ func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 	}
 
 	// Schedule the LightAction execution for ON and OFF
-	onAction := &pkg.LightAction{State: pkg.StateOn}
-	offAction := &pkg.LightAction{State: pkg.StateOff}
+	onAction := &pkg.LightAction{State: pkg.LightStateOn}
+	offAction := &pkg.LightAction{State: pkg.LightStateOff}
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate).
 		Tag(g.ID.String()).
-		Tag(pkg.StateOn).
+		Tag(pkg.LightStateOn.String()).
 		Do(executeLightAction, onAction)
 	if err != nil {
 		return err
@@ -141,7 +141,7 @@ func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 		Every(lightingInterval).
 		StartAt(startDate.Add(duration)).
 		Tag(g.ID.String()).
-		Tag(pkg.StateOff).
+		Tag(pkg.LightStateOff.String()).
 		Do(executeLightAction, offAction)
 	if err != nil {
 		return err
@@ -156,9 +156,9 @@ func (gr GardensResource) scheduleLightActions(g *pkg.Garden) error {
 		}
 
 		// If nextOnTime is before AdhocOnTime, remove it
-		nextOnTime := gr.getNextLightTime(g, pkg.StateOn)
+		nextOnTime := gr.getNextLightTime(g, pkg.LightStateOn)
 		if nextOnTime.Before(*g.LightSchedule.AdhocOnTime) {
-			if err := gr.removeLightScheduleByState(g, pkg.StateOn); err != nil {
+			if err := gr.removeLightScheduleByState(g, pkg.LightStateOn.String()); err != nil {
 				return err
 			}
 		}
@@ -193,14 +193,14 @@ func (gr GardensResource) scheduleAdhocLightAction(g *pkg.Garden) error {
 	}
 
 	// Schedule the LightAction execution for ON and OFF
-	onAction := &pkg.LightAction{State: pkg.StateOn}
+	onAction := &pkg.LightAction{State: pkg.LightStateOn}
 	_, err := gr.scheduler.
 		Every("1m"). // Every is required even though it's not needed for this Job
 		LimitRunsTo(1).
 		StartAt(*g.LightSchedule.AdhocOnTime).
 		WaitForSchedule().
 		Tag(g.ID.String()).
-		Tag(pkg.StateOn).
+		Tag(pkg.LightStateOn.String()).
 		Tag("ADHOC").
 		Do(executeLightAction, onAction)
 
@@ -239,12 +239,12 @@ func (gr GardensResource) rescheduleLightOnAction(g *pkg.Garden) error {
 	}
 
 	// Schedule the LightAction execution for ON and OFF
-	onAction := &pkg.LightAction{State: pkg.StateOn}
+	onAction := &pkg.LightAction{State: pkg.LightStateOn}
 	_, err = gr.scheduler.
 		Every(lightingInterval).
 		StartAt(startDate).
 		Tag(g.ID.String()).
-		Tag(pkg.StateOn).
+		Tag(pkg.LightStateOn.String()).
 		Do(executeLightAction, onAction)
 	return err
 }
@@ -274,7 +274,7 @@ func (gr GardensResource) removeLightScheduleByState(g *pkg.Garden, state string
 // Handles a GardenAction that requests delaying turning a light on
 func (gr GardensResource) scheduleLightDelay(garden *pkg.Garden, action *pkg.LightAction) error {
 	// Only allow when action state is OFF
-	if action.State != pkg.StateOff {
+	if action.State != pkg.LightStateOff {
 		return errors.New("unable to use delay when state is not OFF")
 	}
 
@@ -294,8 +294,8 @@ func (gr GardensResource) scheduleLightDelay(garden *pkg.Garden, action *pkg.Lig
 		return errors.New("unable to execute delay that lasts longer than light_schedule")
 	}
 
-	nextOnTime := gr.getNextLightTime(garden, pkg.StateOn)
-	nextOffTime := gr.getNextLightTime(garden, pkg.StateOff)
+	nextOnTime := gr.getNextLightTime(garden, pkg.LightStateOn)
+	nextOffTime := gr.getNextLightTime(garden, pkg.LightStateOff)
 
 	var adhocTime time.Time
 
@@ -312,7 +312,7 @@ func (gr GardensResource) scheduleLightDelay(garden *pkg.Garden, action *pkg.Lig
 	} else {
 		// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time
 		// Delete existing ON schedule
-		if err := gr.removeLightScheduleByState(garden, pkg.StateOn); err != nil {
+		if err := gr.removeLightScheduleByState(garden, pkg.LightStateOn.String()); err != nil {
 			return err
 		}
 

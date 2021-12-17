@@ -33,15 +33,15 @@ func TestGardenActionRequest(t *testing.T) {
 			"missing required action fields",
 		},
 		{
-			"InvalidLightActionState",
+			"InvalidLightActionDuration",
 			&GardenActionRequest{
 				GardenAction: &pkg.GardenAction{
 					Light: &pkg.LightAction{
-						State: "WOW",
+						ForDuration: "WOW",
 					},
 				},
 			},
-			`invalid "state" provided: "WOW"`,
+			`invalid duration format for action.light.for_duration: WOW`,
 		},
 	}
 
@@ -49,7 +49,7 @@ func TestGardenActionRequest(t *testing.T) {
 		ar := &GardenActionRequest{
 			GardenAction: &pkg.GardenAction{
 				Light: &pkg.LightAction{
-					State: pkg.StateOn,
+					State: pkg.LightStateOn,
 				},
 			},
 		}

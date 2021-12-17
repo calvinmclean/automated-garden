@@ -26,7 +26,7 @@ func TestScheduleLightActions(t *testing.T) {
 			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
 		}
 
-		nextOnTime := gr.getNextLightTime(g, pkg.StateOn)
+		nextOnTime := gr.getNextLightTime(g, pkg.LightStateOn)
 		if *nextOnTime != later {
 			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", later, *nextOnTime)
 		}
@@ -69,7 +69,7 @@ func TestScheduleLightActions(t *testing.T) {
 			expected = expected.Add(lightingInterval)
 		}
 
-		nextOnTime := gr.getNextLightTime(g, pkg.StateOn)
+		nextOnTime := gr.getNextLightTime(g, pkg.LightStateOn)
 		if nextOnTime.UnixNano() != expected.UnixNano() {
 			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 		}
@@ -95,7 +95,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -112,11 +112,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 				{
-					State:       pkg.StateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -133,7 +133,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -150,11 +150,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			}(),
 			[]*pkg.LightAction{
 				{
-					State:       pkg.StateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 				{
-					State:       pkg.StateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -205,7 +205,7 @@ func TestScheduleLightDelay(t *testing.T) {
 				).Add(tt.expectedDelay).Truncate(time.Second)
 			}
 
-			nextOnTime := gr.getNextLightTime(tt.garden, pkg.StateOn).Truncate(time.Second)
+			nextOnTime := gr.getNextLightTime(tt.garden, pkg.LightStateOn).Truncate(time.Second)
 			if nextOnTime.UnixNano() != expected.UnixNano() {
 				t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 			}
@@ -234,7 +234,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		// Now request delay
 		err = gr.scheduleLightDelay(g, &pkg.LightAction{
-			State:       pkg.StateOff,
+			State:       pkg.LightStateOff,
 			ForDuration: "30m",
 		})
 		if err == nil {
@@ -265,7 +265,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		// Now request delay
 		err = gr.scheduleLightDelay(g, &pkg.LightAction{
-			State:       pkg.StateOff,
+			State:       pkg.LightStateOff,
 			ForDuration: "16h",
 		})
 		if err == nil {
@@ -296,7 +296,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		// Now request delay
 		err = gr.scheduleLightDelay(g, &pkg.LightAction{
-			State:       pkg.StateOn,
+			State:       pkg.LightStateOn,
 			ForDuration: "30m",
 		})
 		if err == nil {
