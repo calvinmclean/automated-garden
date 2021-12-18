@@ -69,9 +69,5 @@ func Run(config Config) {
 	}
 	r.Mount(gardenBasePath, gardenResource.routes(plantsResource))
 
-	// Backwards-compatible routes allow interacting with existing Plants without needing to
-	// know about the concept of Gardens in the paths
-	r.Mount(plantBasePath, plantsResource.backwardCompatibleRoutes())
-
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), r)
 }
