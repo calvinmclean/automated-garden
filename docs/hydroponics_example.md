@@ -28,7 +28,7 @@ This has a very basic setup since it just consists of the ESP32 and a single rel
 #ifndef config_h
 #define config_h
 
-#define GARDEN_NAME "aerogarden"
+#define TOPIC_PREFIX "aerogarden"
 
 #define QUEUE_SIZE 10
 
@@ -36,23 +36,23 @@ This has a very basic setup since it just consists of the ESP32 and a single rel
 #ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "192.168.0.107"
 #define MQTT_PORT 30002
-#define MQTT_CLIENT_NAME GARDEN_NAME
-#define MQTT_WATER_TOPIC GARDEN_NAME"/command/water"
-#define MQTT_STOP_TOPIC GARDEN_NAME"/command/stop"
-#define MQTT_STOP_ALL_TOPIC GARDEN_NAME"/command/stop_all"
-#define MQTT_LIGHT_TOPIC GARDEN_NAME"/command/light"
-#define MQTT_LIGHT_DATA_TOPIC GARDEN_NAME"/data/light"
-#define MQTT_WATER_DATA_TOPIC GARDEN_NAME"/data/water"
+#define MQTT_CLIENT_NAME TOPIC_PREFIX
+#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
+#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
+#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
+#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
+#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
+#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
 
 #define ENABLE_MQTT_HEALTH
 #ifdef ENABLE_MQTT_HEALTH
-#define MQTT_HEALTH_DATA_TOPIC GARDEN_NAME"/data/health"
+#define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
 #define HEALTH_PUBLISH_INTERVAL 60000
 #endif
 
 #define ENABLE_MQTT_LOGGING
 #ifdef ENABLE_MQTT_LOGGING
-#define MQTT_LOGGING_TOPIC GARDEN_NAME"/data/logs"
+#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
 #endif
 
 #define JSON_CAPACITY 48

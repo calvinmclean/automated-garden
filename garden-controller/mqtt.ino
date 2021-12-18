@@ -27,9 +27,9 @@ void setupMQTT() {
 
 void setupWifi() {
     delay(10);
-    printf("Connecting to "SSID" as "GARDEN_NAME"-controller\n");
+    printf("Connecting to "SSID" as "TOPIC_PREFIX"-controller\n");
 
-    WiFi.setHostname(GARDEN_NAME"-controller");
+    WiFi.setHostname(TOPIC_PREFIX"-controller");
 
     WiFi.begin(SSID, PASSWORD);
 
@@ -73,7 +73,7 @@ void lightPublisherTask(void* parameters) {
     while (true) {
         if (xQueueReceive(lightPublisherQueue, &state, portMAX_DELAY)) {
             char message[50];
-            sprintf(message, "light,garden=\"%s\" state=%d", GARDEN_NAME, state);
+            sprintf(message, "light,garden=\"%s\" state=%d", TOPIC_PREFIX, state);
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", lightDataTopic, message);
                 client.publish(lightDataTopic, message);
@@ -95,7 +95,7 @@ void healthPublisherTask(void* parameters) {
     WateringEvent we;
     while (true) {
         char message[50];
-        sprintf(message, "health garden=\"%s\"", GARDEN_NAME);
+        sprintf(message, "health garden=\"%s\"", TOPIC_PREFIX);
         if (client.connected()) {
             printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", healthDataTopic, message);
             client.publish(healthDataTopic, message);

@@ -1,7 +1,7 @@
 #ifndef config_h
 #define config_h
 
-#define GARDEN_NAME "garden"
+#define TOPIC_PREFIX "garden"
 
 // Size of FreeRTOS queues
 #define QUEUE_SIZE 10
@@ -15,7 +15,7 @@
  * MQTT_PORT
  *   Port for MQTT broker
  * MQTT_CLIENT_NAME
- *   Name to use when connecting to MQTT broker. By default this is GARDEN_NAME
+ *   Name to use when connecting to MQTT broker. By default this is TOPIC_PREFIX
  * MQTT_WATER_TOPIC
  *   Topic to subscribe to for incoming commands to water a plant
  * MQTT_STOP_TOPIC
@@ -31,23 +31,23 @@
  */
 #define MQTT_ADDRESS "192.168.0.107"
 #define MQTT_PORT 30002
-#define MQTT_CLIENT_NAME GARDEN_NAME
-#define MQTT_WATER_TOPIC GARDEN_NAME"/command/water"
-#define MQTT_STOP_TOPIC GARDEN_NAME"/command/stop"
-#define MQTT_STOP_ALL_TOPIC GARDEN_NAME"/command/stop_all"
-#define MQTT_LIGHT_TOPIC GARDEN_NAME"/command/light"
-#define MQTT_LIGHT_DATA_TOPIC GARDEN_NAME"/data/light"
-#define MQTT_WATER_DATA_TOPIC GARDEN_NAME"/data/water"
+#define MQTT_CLIENT_NAME TOPIC_PREFIX
+#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
+#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
+#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
+#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
+#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
+#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
 
 #define ENABLE_MQTT_HEALTH
 #ifdef ENABLE_MQTT_HEALTH
-#define MQTT_HEALTH_DATA_TOPIC GARDEN_NAME"/data/health"
+#define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
 #define HEALTH_PUBLISH_INTERVAL 60000
 #endif
 
 #define ENABLE_MQTT_LOGGING
 #ifdef ENABLE_MQTT_LOGGING
-#define MQTT_LOGGING_TOPIC GARDEN_NAME"/data/logs"
+#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
 #endif
 
 // Size of JSON object calculated using Arduino JSON Assistant
@@ -91,7 +91,7 @@
 // Currently, moisture sensing requires  MQTT because the logic for handling this data lives in the garden-app
 // #define ENABLE_MOISTURE_SENSORS
 #ifdef ENABLE_MOISTURE_SENSORS
-#define MQTT_MOISTURE_DATA_TOPIC GARDEN_NAME"/data/moisture"
+#define MQTT_MOISTURE_DATA_TOPIC TOPIC_PREFIX"/data/moisture"
 #define MOISTURE_SENSOR_AIR_VALUE 3415
 #define MOISTURE_SENSOR_WATER_VALUE 1362
 #define MOISTURE_SENSOR_INTERVAL 5000

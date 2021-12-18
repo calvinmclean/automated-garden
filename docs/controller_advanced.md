@@ -21,7 +21,7 @@ This project is designed to be highly-configurable for all of your use-cases. Al
 ### Basic Options
 These are the basic options that are required and do not fit in specific categories.
 
-`GARDEN_NAME`: this is the name of the Garden and will be used for MQTT topics so it is critical that this matches the Garden's name in `garden-app`
+`TOPIC_PREFIX`: this is used as the prefix for MQTT topics so it is critical that this matches the Garden's `TopicPrefix` in `garden-app`
 
 `QUEUE_SIZE`: maximum number of messages that can be queued in FreeRTOS queues. 10 is a sensible default that should never overflow unless you have a large number of Plants
 
@@ -43,7 +43,7 @@ These are all the configurations for setting up MQTT publish/subscribe.
 #### Additional MQTT Options
 The following options should be left as defaults, unless you have a good reason to change them.
 
-`MQTT_CLIENT_NAME`: Name to use when connecting to MQTT broker. By default this is `GARDEN_NAME`. It is important that this is unique
+`MQTT_CLIENT_NAME`: Name to use when connecting to MQTT broker. By default this is `TOPIC_PREFIX`. It is important that this is unique
 
 `MQTT_WATER_TOPIC`: Topic to subscribe to for incoming commands to water a plant
 

@@ -27,13 +27,13 @@ Notice that in this example, `GPIO_NUM_MAX` is used as the moisture sensor pin o
 #ifndef config_h
 #define config_h
 
-#define GARDEN_NAME "garden"
+#define TOPIC_PREFIX "garden"
 
 #define QUEUE_SIZE 10
 
 #define MQTT_ADDRESS "192.168.0.107"
 #define MQTT_PORT 30002
-#define MQTT_CLIENT_NAME GARDEN_NAME"-sensors"
+#define MQTT_CLIENT_NAME TOPIC_PREFIX"-sensors"
 
 #define JSON_CAPACITY 48
 
@@ -48,7 +48,7 @@ Notice that in this example, `GPIO_NUM_MAX` is used as the moisture sensor pin o
 
 #define ENABLE_MOISTURE_SENSORS
 #ifdef ENABLE_MOISTURE_SENSORS
-#define MQTT_MOISTURE_DATA_TOPIC GARDEN_NAME"/data/moisture"
+#define MQTT_MOISTURE_DATA_TOPIC TOPIC_PREFIX"/data/moisture"
 #define MOISTURE_SENSOR_AIR_VALUE 3415
 #define MOISTURE_SENSOR_WATER_VALUE 1362
 #define MOISTURE_SENSOR_INTERVAL 5000
