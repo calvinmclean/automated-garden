@@ -117,7 +117,6 @@ It is important to note that, although this doesn't necessarily correspond to on
     "count": 6
   },
   "id": "c3ucvu06n88pt1dom670",
-  "garden_id": "c22tmvucie6n6gdrpal0",
   "plant_position": 0,
   "created_at": "2021-07-24T19:44:08.014997-07:00",
   "water_schedule": {
@@ -158,7 +157,6 @@ It is important to note that, although this doesn't necessarily correspond to on
     "count": 6
   },
   "id": "c3ucvu06n88pt1dom670",
-  "garden_id": "c22tmvucie6n6gdrpal0",
   "plant_position": 0,
   "created_at": "2021-07-24T19:44:08.014997-07:00",
   "end_date": "2021-11-22T16:11:53.010698-07:00",

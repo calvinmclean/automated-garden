@@ -161,7 +161,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	plant.Patch(request.Plant)
 
 	// Save the Plant
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(garden.ID, plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -182,11 +182,12 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 // endDatePlant will mark the Plant's end date as now and save it
 func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	now := time.Now()
 
 	// Permanently delete the Plant if it is already end-dated
 	if plant.EndDated() {
-		if err := pr.storageClient.DeletePlant(plant.GardenID, plant.ID); err != nil {
+		if err := pr.storageClient.DeletePlant(garden.ID, plant.ID); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
@@ -197,7 +198,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 
 	// Set end date of Plant and save
 	plant.EndDate = &now
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(garden.ID, plant); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -209,7 +210,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, pr.NewPlantResponse(r.Context(), nil, plant)); err != nil {
+	if err := render.Render(w, r, pr.NewPlantResponse(r.Context(), garden, plant)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -258,7 +259,6 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 		now := time.Now()
 		plant.CreatedAt = &now
 	}
-	plant.GardenID = garden.ID
 
 	// Start watering schedule
 	if err := pr.scheduleWateringAction(garden, plant); err != nil {
@@ -266,7 +266,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Save the Plant
-	if err := pr.storageClient.SavePlant(plant); err != nil {
+	if err := pr.storageClient.SavePlant(garden.ID, plant); err != nil {
 		logger.Error("Error saving plant: ", err)
 		render.Render(w, r, InternalServerError(err))
 		return

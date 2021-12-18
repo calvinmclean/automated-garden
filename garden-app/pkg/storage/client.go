@@ -22,7 +22,7 @@ type Client interface {
 
 	GetPlant(xid.ID, xid.ID) (*pkg.Plant, error)
 	GetPlants(xid.ID, bool) ([]*pkg.Plant, error)
-	SavePlant(*pkg.Plant) error
+	SavePlant(xid.ID, *pkg.Plant) error
 	DeletePlant(xid.ID, xid.ID) error
 
 	Save() error

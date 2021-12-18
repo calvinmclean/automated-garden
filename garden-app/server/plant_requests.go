@@ -44,9 +44,6 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if p.Name == "" {
 		return errors.New("missing required name field")
 	}
-	if p.GardenID != xid.NilID() {
-		return errors.New("manual specification of garden ID is not allowed")
-	}
 
 	return nil
 }
@@ -66,9 +63,6 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 
 	if p.ID != xid.NilID() {
 		return errors.New("updating ID is not allowed")
-	}
-	if p.GardenID != xid.NilID() {
-		return errors.New("updating garden ID is not allowed")
 	}
 	if p.EndDate != nil {
 		return errors.New("to end-date a Plant, please use the DELETE endpoint")

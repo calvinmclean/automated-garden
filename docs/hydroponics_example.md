@@ -134,7 +134,6 @@ storage:
         "count": 2
     },
     "id": "c5maadvphd1ftefa6ok0",
-    "garden_id": "c5ma39fphd1c514hk48g",
     "plant_position": 0,
     "created_at": "2021-10-17T22:35:35.205085596Z",
     "water_schedule": {

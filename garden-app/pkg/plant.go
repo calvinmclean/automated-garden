@@ -15,7 +15,6 @@ type Plant struct {
 	Name          string         `json:"name" yaml:"name,omitempty"`
 	Details       *Details       `json:"details,omitempty" yaml:"details,omitempty"`
 	ID            xid.ID         `json:"id" yaml:"id,omitempty"`
-	GardenID      xid.ID         `json:"garden_id" yaml:"garden_id,omitempty"`
 	PlantPosition *uint          `json:"plant_position" yaml:"plant_position"`
 	CreatedAt     *time.Time     `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate       *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`

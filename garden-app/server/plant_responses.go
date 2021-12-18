@@ -39,7 +39,7 @@ type PlantResponse struct {
 
 // NewPlantResponse creates a self-referencing PlantResponse
 func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garden, plant *pkg.Plant, links ...Link) *PlantResponse {
-	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, plant.GardenID)
+	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	links = append(links,
 		Link{
 			"self",

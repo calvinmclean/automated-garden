@@ -1,5 +1,6 @@
 c22tmvucie6n6gdrpal0:
     name: test-garden
+    topic_prefix: test-garden
     id: c22tmvucie6n6gdrpal0
     plants:
         c3ucvu06n88pt1dom670:
@@ -10,7 +11,6 @@ c22tmvucie6n6gdrpal0:
                 time_to_harvest: 70 days
                 count: 6
             id: c3ucvu06n88pt1dom670
-            garden_id: c22tmvucie6n6gdrpal0
             plant_position: 0
             created_at: 2021-07-24T19:44:08.014997-07:00
             water_schedule:

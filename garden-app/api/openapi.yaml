@@ -477,10 +477,6 @@ components:
         - properties:
             id:
               $ref: "#/components/schemas/xid"
-            garden_id:
-              description: ID of the Garden this Plant is managed by
-              allOf:
-                - $ref: "#/components/schemas/xid"
             created_at:
               type: string
               format: date-time
@@ -514,7 +510,6 @@ components:
         - id
         - created_at
         - links
-        - garden_id
         - name
         - plant_position
         - water_schedule

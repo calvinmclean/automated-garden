@@ -182,7 +182,7 @@ func TestGetPlant(t *testing.T) {
 			"Successful",
 			func() *pkg.Plant { return createExamplePlant() },
 			func(*influxdb.MockClient) {},
-			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"SuccessfulWithMoisture",
@@ -195,7 +195,7 @@ func TestGetPlant(t *testing.T) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), nil)
 				influxdbClient.On("Close")
 			},
-			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"","minimum_moisture":1,"start_time":null},"moisture":2,"links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"","minimum_moisture":1,"start_time":null},"moisture":2,"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"ErrorGettingMoisture",
@@ -208,7 +208,7 @@ func TestGetPlant(t *testing.T) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
-			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"","minimum_moisture":1,"start_time":null},"links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"test plant","id":"c5cvhpcbcv45e8bp16dg","plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"","minimum_moisture":1,"start_time":null},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 	}
 
@@ -334,10 +334,10 @@ func TestUpdatePlant(t *testing.T) {
 		{
 			"Successful",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("SavePlant", mock.Anything).Return(nil)
+				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(nil)
 			},
 			`{"name":"new name"}`,
-			`{"name":"new name","id":"c5cvhpcbcv45e8bp16dg","garden_id":null,"plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":[{"rel":"self","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/00000000000000000000"},{"rel":"action","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/00000000000000000000/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"new name","id":"c5cvhpcbcv45e8bp16dg","plant_position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg/history"}]}`,
 			http.StatusOK,
 		},
 		{
@@ -350,7 +350,7 @@ func TestUpdatePlant(t *testing.T) {
 		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
+				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(errors.New("storage error"))
 			},
 			`{"name":"new name"}`,
 			`{"status":"Server Error.","error":"storage error"}`,
@@ -411,10 +411,10 @@ func TestEndDatePlant(t *testing.T) {
 		{
 			"Successful",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("SavePlant", mock.Anything).Return(nil)
+				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(nil)
 			},
 			createExamplePlant(),
-			`{"name":"test plant","id":"[0-9a-v]{20}","garden_id":null,"plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"}\]}`,
+			`{"name":"test plant","id":"[0-9a-v]{20}","plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -438,7 +438,7 @@ func TestEndDatePlant(t *testing.T) {
 		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
+				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(errors.New("storage error"))
 			},
 			createExamplePlant(),
 			`{"status":"Server Error.","error":"storage error"}`,
@@ -458,7 +458,9 @@ func TestEndDatePlant(t *testing.T) {
 				},
 			}
 
-			plantCtx := context.WithValue(context.Background(), plantCtxKey, tt.plant)
+			garden := createExampleGarden()
+			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			plantCtx := context.WithValue(gardenCtx, plantCtxKey, tt.plant)
 			r := httptest.NewRequest("DELETE", "/plant", nil).WithContext(plantCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -529,7 +531,7 @@ func TestGetAllPlants(t *testing.T) {
 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 			}
 
-			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(context.Background(), tt.expected, &pkg.Garden{}))
+			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(context.Background(), tt.expected, garden))
 			// When the expected result contains more than one Plant, on some occassions it might be out of order
 			var reversePlantJSON []byte
 			if len(tt.expected) > 1 {
@@ -559,11 +561,11 @@ func TestCreatePlant(t *testing.T) {
 		{
 			"Successful",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("SavePlant", mock.Anything).Return(nil)
+				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(nil)
 			},
 			createExampleGarden(),
 			`{"name":"test plant","plant_position":0,"water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
-			`{"name":"test plant","id":"[0-9a-v]{20}","garden_id":"[0-9a-v]{20}","plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/history"}\]}`,
+			`{"name":"test plant","id":"[0-9a-v]{20}","plant_position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}/history"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -601,7 +603,7 @@ func TestCreatePlant(t *testing.T) {
 		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
-				storageClient.On("SavePlant", mock.Anything).Return(errors.New("storage error"))
+				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(errors.New("storage error"))
 			},
 			createExampleGarden(),
 			`{"name":"test plant","plant_position":0,"water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"}}`,

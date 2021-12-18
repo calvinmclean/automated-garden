@@ -115,22 +115,6 @@ func TestPlantRequest(t *testing.T) {
 			},
 			"missing required name field",
 		},
-		{
-			"ManualSpecificationOfGardenIDError",
-			&PlantRequest{
-				Plant: &pkg.Plant{
-					Name:          "garden",
-					PlantPosition: &pp,
-					GardenID:      xid.New(),
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
-						Duration:  "1000ms",
-						StartTime: &now,
-					},
-				},
-			},
-			"manual specification of garden ID is not allowed",
-		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
@@ -184,15 +168,6 @@ func TestUpdatePlantRequest(t *testing.T) {
 			"EmptyPlantError",
 			&UpdatePlantRequest{},
 			"missing required Plant fields",
-		},
-		{
-			"ManualSpecificationOfGardenIDError",
-			&UpdatePlantRequest{
-				Plant: &pkg.Plant{
-					GardenID: xid.New(),
-				},
-			},
-			"updating garden ID is not allowed",
 		},
 		{
 			"ManualSpecificationOfIDError",
