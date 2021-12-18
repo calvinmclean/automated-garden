@@ -3,7 +3,6 @@ package cmd
 import (
 	"os"
 
-	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -56,7 +55,7 @@ func initConfig() {
 
 func parseLogLevel() {
 	var err error
-	parsedLogLevel, err = logrus.ParseLevel(logLevel)
+	parsedLogLevel, err = log.ParseLevel(logLevel)
 	if err != nil {
 		log.Println(err)
 		os.Exit(1)
