@@ -50,7 +50,7 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 		defer cancel()
 
 		defer influxdbClient.Close()
-		moisture, err := influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.Name)
+		moisture, err := influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.TopicPrefix)
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)
 		}
@@ -68,7 +68,7 @@ func (action *WaterAction) Execute(g *Garden, p *Plant, mqttClient mqtt.Client, 
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %v", err)
 	}
 
-	topic, err := mqttClient.WateringTopic(g.Name)
+	topic, err := mqttClient.WateringTopic(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
@@ -114,7 +114,7 @@ func (action *LightAction) Execute(g *Garden, mqttClient mqtt.Client) error {
 		return fmt.Errorf("unable to marshal LightAction to JSON: %v", err)
 	}
 
-	topic, err := mqttClient.LightTopic(g.Name)
+	topic, err := mqttClient.LightTopic(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
@@ -134,7 +134,7 @@ func (action *StopAction) Execute(g *Garden, mqttClient mqtt.Client) error {
 	if action.All {
 		topicFunc = mqttClient.StopAllTopic
 	}
-	topic, err := topicFunc(g.Name)
+	topic, err := topicFunc(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}

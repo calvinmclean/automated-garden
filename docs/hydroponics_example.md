@@ -92,7 +92,8 @@ storage:
 #### **Garden JSON**
 ```json
 {
-    "name": "aerogarden",
+    "name": "Aerogarden",
+    "topic_prefix": "aerogarden",
     "id": "c5ma39fphd1c514hk48g",
     "max_plants": 1,
     "created_at": "2021-10-13T02:55:13.046499731Z",

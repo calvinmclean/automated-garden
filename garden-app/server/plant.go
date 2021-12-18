@@ -385,7 +385,7 @@ func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request)
 func (pr PlantsResource) getMoisture(ctx context.Context, g *pkg.Garden, p *pkg.Plant) (float64, error) {
 	defer pr.influxdbClient.Close()
 
-	moisture, err := pr.influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.Name)
+	moisture, err := pr.influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.TopicPrefix)
 	if err != nil {
 		return 0, err
 	}
@@ -396,7 +396,7 @@ func (pr PlantsResource) getMoisture(ctx context.Context, g *pkg.Garden, p *pkg.
 func (pr PlantsResource) getWateringHistory(ctx context.Context, plant *pkg.Plant, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WateringHistory, err error) {
 	defer pr.influxdbClient.Close()
 
-	history, err := pr.influxdbClient.GetWateringHistory(ctx, *plant.PlantPosition, garden.Name, timeRange, limit)
+	history, err := pr.influxdbClient.GetWateringHistory(ctx, *plant.PlantPosition, garden.TopicPrefix, timeRange, limit)
 	if err != nil {
 		return
 	}

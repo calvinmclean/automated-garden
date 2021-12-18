@@ -42,9 +42,9 @@ This guide assumes you already completed the preceding section to run the `garde
     ```shell
     go install .
     ```
-1. Run the mock controller with the name `test-garden`
+1. Run the mock controller with the topic prefix `test-garden`
     ```shell
-    garden-app controller --name test-garden
+    garden-app controller --topic test-garden
     ```
 1. Water the Plant to see output in the mock controller
     ```shell

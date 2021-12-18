@@ -94,30 +94,30 @@ func (c *client) Publish(topic string, message []byte) error {
 }
 
 // WateringTopic returns the topic string for watering a plant
-func (c *client) WateringTopic(gardenName string) (string, error) {
-	return c.executeTopicTemplate(c.WateringTopicTemplate, gardenName)
+func (c *Config) WateringTopic(topicPrefix string) (string, error) {
+	return c.executeTopicTemplate(c.WateringTopicTemplate, topicPrefix)
 }
 
 // StopTopic returns the topic string for stopping watering a single plant
-func (c *client) StopTopic(gardenName string) (string, error) {
-	return c.executeTopicTemplate(c.StopTopicTemplate, gardenName)
+func (c *Config) StopTopic(topicPrefix string) (string, error) {
+	return c.executeTopicTemplate(c.StopTopicTemplate, topicPrefix)
 }
 
 // StopAllTopic returns the topic string for stopping watering all plants in a garden
-func (c *client) StopAllTopic(gardenName string) (string, error) {
-	return c.executeTopicTemplate(c.StopAllTopicTemplate, gardenName)
+func (c *Config) StopAllTopic(topicPrefix string) (string, error) {
+	return c.executeTopicTemplate(c.StopAllTopicTemplate, topicPrefix)
 }
 
 // LightTopic returns the topic string for changing the lighting state in a Garden
-func (c *client) LightTopic(gardenName string) (string, error) {
-	return c.executeTopicTemplate(c.LightTopicTemplate, gardenName)
+func (c *Config) LightTopic(topicPrefix string) (string, error) {
+	return c.executeTopicTemplate(c.LightTopicTemplate, topicPrefix)
 }
 
 // executeTopicTemplate is a helper function used by all the exported topic evaluation functions
-func (c *client) executeTopicTemplate(templateString string, gardenName string) (string, error) {
+func (c *Config) executeTopicTemplate(templateString string, topicPrefix string) (string, error) {
 	t := template.Must(template.New("topic").Parse(templateString))
 	var result bytes.Buffer
-	data := map[string]string{"Garden": gardenName}
+	data := map[string]string{"Garden": topicPrefix}
 	err := t.Execute(&result, data)
 	return result.String(), err
 }

@@ -112,7 +112,8 @@ storage:
 #### **Garden JSON**
 ```json
 {
-    "name": "garden",
+    "name": "Garden",
+    "topic_prefix": "garden",
     "id": "c5ma3cvphd1c514hk490",
     "max_plants": 3,
     "created_at": "2021-10-13T02:55:13.025436541Z",

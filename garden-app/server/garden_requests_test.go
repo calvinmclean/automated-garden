@@ -112,64 +112,80 @@ func TestGardenRequest(t *testing.T) {
 			"missing required name field",
 		},
 		{
-			"InvalidNameErrorError$",
+			"MissingTopicPrefixErrorError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden$",
+					Name: "garden",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"missing required topic_prefix field",
 		},
 		{
-			"InvalidNameErrorError#",
+			"InvalidTopicPrefixError$",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden#",
+					Name:        "garden",
+					TopicPrefix: "garden$",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError*",
+			"InvalidTopicPrefixError#",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden*",
+					Name:        "garden",
+					TopicPrefix: "garden#",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError>",
+			"InvalidTopicPrefixError*",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden>",
+					Name:        "garden",
+					TopicPrefix: "garden*",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError+",
+			"InvalidTopicPrefixError>",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden+",
+					Name:        "garden",
+					TopicPrefix: "garden>",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError/",
+			"InvalidTopicPrefixError+",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden/",
+					Name:        "garden",
+					TopicPrefix: "garden+",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError/",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name:        "garden",
+					TopicPrefix: "garden/",
+				},
+			},
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
 			"MissingMaxPlantsError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden",
+					Name:        "garden",
+					TopicPrefix: "garden",
 				},
 			},
 			"missing required max_plants field",
@@ -178,8 +194,9 @@ func TestGardenRequest(t *testing.T) {
 			"MaxPlantsZeroError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name:      "garden",
-					MaxPlants: &zero,
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxPlants:   &zero,
 				},
 			},
 			"max_plants must not be 0",
@@ -188,8 +205,9 @@ func TestGardenRequest(t *testing.T) {
 			"CreatingPlantsNotAllowedError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name:      "garden",
-					MaxPlants: &one,
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxPlants:   &one,
 					Plants: map[xid.ID]*pkg.Plant{
 						xid.New(): {},
 					},
@@ -201,8 +219,9 @@ func TestGardenRequest(t *testing.T) {
 			"EmptyLightScheduleDurationError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name:      "garden",
-					MaxPlants: &one,
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxPlants:   &one,
 					LightSchedule: &pkg.LightSchedule{
 						StartTime: "22:00:01-07:00",
 					},
@@ -214,8 +233,9 @@ func TestGardenRequest(t *testing.T) {
 			"EmptyLightScheduleStartTimeError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name:      "garden",
-					MaxPlants: &one,
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxPlants:   &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration: "1m",
 					},
@@ -227,8 +247,9 @@ func TestGardenRequest(t *testing.T) {
 			"BadDurationError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name:      "garden",
-					MaxPlants: &one,
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxPlants:   &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration: "NOT A DURATION",
 					},
@@ -240,8 +261,9 @@ func TestGardenRequest(t *testing.T) {
 			"DurationGreaterThanOrEqualTo24HoursError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name:      "garden",
-					MaxPlants: &one,
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxPlants:   &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration: "25h",
 					},
@@ -253,8 +275,9 @@ func TestGardenRequest(t *testing.T) {
 			"BadStartTimeError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
-					Name:      "garden",
-					MaxPlants: &one,
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxPlants:   &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration:  "1m",
 						StartTime: "NOT A TIME",
@@ -268,8 +291,9 @@ func TestGardenRequest(t *testing.T) {
 	t.Run("Successful", func(t *testing.T) {
 		gr := &GardenRequest{
 			Garden: &pkg.Garden{
-				Name:      "garden",
-				MaxPlants: &one,
+				TopicPrefix: "garden",
+				Name:        "garden",
+				MaxPlants:   &one,
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)
@@ -312,58 +336,58 @@ func TestUpdateGardenRequest(t *testing.T) {
 			"missing required Garden fields",
 		},
 		{
-			"InvalidNameErrorError$",
+			"InvalidTopicPrefixError$",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden$",
+					TopicPrefix: "garden$",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError#",
+			"InvalidTopicPrefixError#",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden#",
+					TopicPrefix: "garden#",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError*",
+			"InvalidTopicPrefixError*",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden*",
+					TopicPrefix: "garden*",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError>",
+			"InvalidTopicPrefixError>",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden>",
+					TopicPrefix: "garden>",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError+",
+			"InvalidTopicPrefixError+",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden+",
+					TopicPrefix: "garden+",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"InvalidNameErrorError/",
+			"InvalidTopicPrefixError/",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
-					Name: "garden/",
+					TopicPrefix: "garden/",
 				},
 			},
-			"one or more invalid characters in Garden name",
+			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
 			"CreatingPlantsNotAllowedError",

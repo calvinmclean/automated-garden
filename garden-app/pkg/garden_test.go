@@ -50,7 +50,7 @@ func TestHealth(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "garden").Return(tt.lastContactTime, tt.err)
 
-			g := Garden{Name: "garden"}
+			g := Garden{TopicPrefix: "garden"}
 
 			gardenHealth := g.Health(context.Background(), influxdbClient)
 			if gardenHealth.Status != tt.expectedStatus {
@@ -93,6 +93,10 @@ func TestGardenPatch(t *testing.T) {
 		{
 			"PatchName",
 			&Garden{Name: "name"},
+		},
+		{
+			"PatchTopicPrefix",
+			&Garden{TopicPrefix: "topic"},
 		},
 		{
 			"PatchMaxPlants",

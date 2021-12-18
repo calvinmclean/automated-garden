@@ -17,18 +17,18 @@ const (
 |> filter(fn: (r) => r["_measurement"] == "moisture")
 |> filter(fn: (r) => r["_field"] == "value")
 |> filter(fn: (r) => r["plant"] == "{{.PlantPosition}}")
-|> filter(fn: (r) => r["topic"] == "{{.GardenName}}/data/moisture")
+|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/moisture")
 |> mean()`
 	healthQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "health")
 |> filter(fn: (r) => r["_field"] == "garden")
-|> filter(fn: (r) => r["_value"] == "{{.GardenName}}")
+|> filter(fn: (r) => r["_value"] == "{{.TopicPrefix}}")
 |> last()`
 	wateringHistoryQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "water")
-|> filter(fn: (r) => r["topic"] == "{{.GardenName}}/data/water")
+|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
 |> filter(fn: (r) => r["plant"] == "{{.PlantPosition}}")
 |> sort(columns: ["_time"], desc: true)
 |> limit(n: {{.Limit}})
@@ -40,7 +40,7 @@ type queryData struct {
 	Bucket        string
 	Start         time.Duration
 	PlantPosition uint
-	GardenName    string
+	TopicPrefix   string
 	Limit         uint64
 }
 
@@ -86,13 +86,13 @@ func NewClient(config Config) Client {
 }
 
 // GetMoisture returns the plant's average soil moisture in the last 15 minutes
-func (client *client) GetMoisture(ctx context.Context, plantPosition uint, gardenName string) (result float64, err error) {
+func (client *client) GetMoisture(ctx context.Context, plantPosition uint, topicPrefix string) (result float64, err error) {
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:        client.config.Bucket,
 		Start:         time.Minute * 15,
 		PlantPosition: plantPosition,
-		GardenName:    gardenName,
+		TopicPrefix:   topicPrefix,
 	}.String(moistureQueryTemplate)
 	if err != nil {
 		return
@@ -113,12 +113,12 @@ func (client *client) GetMoisture(ctx context.Context, plantPosition uint, garde
 	return
 }
 
-func (client *client) GetLastContact(ctx context.Context, gardenName string) (result time.Time, err error) {
+func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (result time.Time, err error) {
 	// Prepare query
 	queryString, err := queryData{
-		Bucket:     client.config.Bucket,
-		Start:      time.Minute * 15,
-		GardenName: gardenName,
+		Bucket:      client.config.Bucket,
+		Start:       time.Minute * 15,
+		TopicPrefix: topicPrefix,
 	}.String(healthQueryTemplate)
 	if err != nil {
 		return
@@ -141,12 +141,12 @@ func (client *client) GetLastContact(ctx context.Context, gardenName string) (re
 }
 
 // GetWateringHistory gets recent watering events for a specific Plant
-func (client *client) GetWateringHistory(ctx context.Context, plantPosition uint, gardenName string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
+func (client *client) GetWateringHistory(ctx context.Context, plantPosition uint, topicPrefix string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:        client.config.Bucket,
 		Start:         timeRange,
-		GardenName:    gardenName,
+		TopicPrefix:   topicPrefix,
 		PlantPosition: plantPosition,
 		Limit:         limit,
 	}.String(wateringHistoryQueryTemplate)

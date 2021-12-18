@@ -11,7 +11,8 @@ import (
 
 func TestPlantAction(t *testing.T) {
 	garden := &Garden{
-		Name: "garden",
+		Name:        "garden",
+		TopicPrefix: "garden",
 	}
 
 	tests := []struct {
@@ -88,7 +89,8 @@ func TestPlantAction(t *testing.T) {
 
 func TestStopActionExecute(t *testing.T) {
 	garden := &Garden{
-		Name: "garden",
+		Name:        "garden",
+		TopicPrefix: "garden",
 	}
 
 	tests := []struct {
@@ -156,7 +158,8 @@ func TestStopActionExecute(t *testing.T) {
 
 func TestWaterActionExecute(t *testing.T) {
 	garden := &Garden{
-		Name: "garden",
+		Name:        "garden",
+		TopicPrefix: "garden",
 	}
 	action := &WaterAction{
 		Duration: 1000,
@@ -282,7 +285,8 @@ func TestWaterActionExecute(t *testing.T) {
 
 func TestGardenAction(t *testing.T) {
 	garden := &Garden{
-		Name: "garden",
+		Name:        "garden",
+		TopicPrefix: "garden",
 	}
 
 	tests := []struct {
@@ -373,7 +377,8 @@ func TestGardenAction(t *testing.T) {
 
 func TestLightActionExecute(t *testing.T) {
 	garden := &Garden{
-		Name: "garden",
+		Name:        "garden",
+		TopicPrefix: "garden",
 	}
 
 	tests := []struct {

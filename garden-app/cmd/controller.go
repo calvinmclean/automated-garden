@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	gardenName           string
+	topicPrefix          string
 	numPlants            int
 	moistureStrategy     string
 	moistureValue        int
@@ -28,8 +28,8 @@ var (
 )
 
 func init() {
-	controllerCommand.Flags().StringVarP(&gardenName, "name", "n", "garden", "Name of the garden-controller (helps determine which MQTT topic to subscribe to)")
-	viper.BindPFlag("garden_name", controllerCommand.Flags().Lookup("name"))
+	controllerCommand.Flags().StringVarP(&topicPrefix, "topic", "t", "test-garden", "MQTT topic prefix of the garden-controller")
+	viper.BindPFlag("topic_prefix", controllerCommand.Flags().Lookup("topic"))
 
 	controllerCommand.Flags().IntVarP(&numPlants, "plants", "p", 0, "Number of Plants for which moisture data should be emulated")
 	viper.BindPFlag("num_plants", controllerCommand.Flags().Lookup("plants"))

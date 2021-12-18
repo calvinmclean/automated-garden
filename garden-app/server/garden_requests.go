@@ -24,9 +24,12 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 	if g.Name == "" {
 		return errors.New("missing required name field")
 	}
+	if g.TopicPrefix == "" {
+		return errors.New("missing required topic_prefix field")
+	}
 	illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
-	if illegalRegexp.MatchString(g.Name) {
-		return errors.New("one or more invalid characters in Garden name")
+	if illegalRegexp.MatchString(g.TopicPrefix) {
+		return errors.New("one or more invalid characters in Garden topic_prefix")
 	}
 	if g.MaxPlants == nil {
 		return errors.New("missing required max_plants field")
@@ -75,8 +78,8 @@ func (g *UpdateGardenRequest) Bind(r *http.Request) error {
 		return errors.New("missing required Garden fields")
 	}
 	illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
-	if illegalRegexp.MatchString(g.Name) {
-		return errors.New("one or more invalid characters in Garden name")
+	if illegalRegexp.MatchString(g.TopicPrefix) {
+		return errors.New("one or more invalid characters in Garden topic_prefix")
 	}
 	if len(g.Plants) > 0 {
 		return errors.New("cannot add or modify Plants with this request")

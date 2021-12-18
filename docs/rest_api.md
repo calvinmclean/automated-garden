@@ -30,7 +30,8 @@ A `Garden` represents a garden in the physical world and should correspond one-t
 #### **Garden JSON**
 ```json
 {
-  "name": "test-garden",
+  "name": "Test Garden",
+  "topic_prefix": "test-garden",
   "id": "c22tmvucie6n6gdrpal0",
   "created_at": "2021-08-03T19:53:14.816332-07:00",
   "num_plants": 3,
@@ -67,6 +68,7 @@ A `Garden` represents a garden in the physical world and should correspond one-t
 ```json
 {
   "name": "test-garden",
+  "topic_prefix": "test-garden",
   "id": "c22tmvucie6n6gdrpal0",
   "created_at": "2021-08-03T19:53:14.816332-07:00",
   "end_date": "2021-11-22T16:10:03.104226-07:00",

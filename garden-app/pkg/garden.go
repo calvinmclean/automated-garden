@@ -61,6 +61,7 @@ func (l *LightState) UnmarshalJSON(data []byte) error {
 // Garden is the representation of a single garden-controller device. It is the container for Plants
 type Garden struct {
 	Name          string            `json:"name" yaml:"name,omitempty"`
+	TopicPrefix   string            `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
 	ID            xid.ID            `json:"id" yaml:"id,omitempty"`
 	Plants        map[xid.ID]*Plant `json:"plants" yaml:"plants,omitempty"`
 	MaxPlants     *uint             `json:"max_plants" yaml:"max_plants"`
@@ -86,7 +87,7 @@ type LightSchedule struct {
 
 // Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time
 func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) GardenHealth {
-	lastContact, err := influxdbClient.GetLastContact(ctx, g.Name)
+	lastContact, err := influxdbClient.GetLastContact(ctx, g.TopicPrefix)
 	if err != nil {
 		return GardenHealth{
 			Status:  "N/A",
@@ -127,6 +128,9 @@ func (g *Garden) EndDated() bool {
 func (g *Garden) Patch(newGarden *Garden) {
 	if newGarden.Name != "" {
 		g.Name = newGarden.Name
+	}
+	if newGarden.TopicPrefix != "" {
+		g.TopicPrefix = newGarden.TopicPrefix
 	}
 	if newGarden.MaxPlants != nil {
 		g.MaxPlants = newGarden.MaxPlants

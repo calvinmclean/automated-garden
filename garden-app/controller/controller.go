@@ -1,10 +1,8 @@
 package controller
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"html/template"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -29,7 +27,7 @@ var subLogger *logrus.Logger
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
 	MQTTConfig           mqtt.Config   `mapstructure:"mqtt"`
-	Garden               string        `mapstructure:"garden_name"`
+	TopicPrefix          string        `mapstructure:"topic_prefix"`
 	NumPlants            int           `mapstructure:"num_plants"`
 	MoistureStrategy     string        `mapstructure:"moisture_strategy"`
 	MoistureValue        int           `mapstructure:"moisture_value"`
@@ -61,7 +59,7 @@ func Start(config Config) {
 		app = controller.setupUI()
 	}
 
-	logger.Infof("starting controller '%s'\n", controller.Garden)
+	logger.Infof("starting controller '%s'\n", controller.TopicPrefix)
 
 	if config.NumPlants > 0 {
 		pubLogger.Infof("publishing moisture data for %d Plants", config.NumPlants)
@@ -89,8 +87,8 @@ func Start(config Config) {
 			"topic": msg.Topic(),
 		}).Infof("default handler called with message: %s", string(msg.Payload()))
 	})
-	// Override configured ClientID with the GardenName from command flags
-	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.Garden)
+	// Override configured ClientID with the TopicPrefix from command flags
+	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.TopicPrefix)
 	controller.mqttClient, err = mqtt.NewMQTTClient(controller.MQTTConfig, defaultHandler, handlers...)
 	if err != nil {
 		logger.Errorf("unable to initialize MQTT client: %v", err)
@@ -171,7 +169,7 @@ func (c *Controller) setupUI() *tview.Application {
 
 	header := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
-		SetText(c.Garden)
+		SetText(c.TopicPrefix)
 	tview.ANSIWriter(header).Write([]byte(fmt.Sprintf(
 		"\n%d Plants\nPublishWateringEvent: %t, PublishHealth: %t, MoistureStrategy: %s",
 		c.NumPlants, c.PublishWateringEvent, c.PublishHealth, c.MoistureStrategy),
@@ -195,7 +193,7 @@ func (c *Controller) setupUI() *tview.Application {
 // publishMoistureData publishes an InfluxDB line containing moisture data for a Plant
 func (c *Controller) publishMoistureData(plant int) {
 	moisture := c.createMoistureData()
-	topic := fmt.Sprintf("%s/data/moisture", c.Garden)
+	topic := fmt.Sprintf("%s/data/moisture", c.TopicPrefix)
 	pubLogger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
 	err := c.mqttClient.Publish(
 		topic,
@@ -208,9 +206,9 @@ func (c *Controller) publishMoistureData(plant int) {
 
 // publishHealthData publishes an InfluxDB line to record that the controller is alive and active
 func (c *Controller) publishHealthData() {
-	topic := fmt.Sprintf("%s/data/health", c.Garden)
+	topic := fmt.Sprintf("%s/data/health", c.TopicPrefix)
 	pubLogger.Infof("publishing health data on topic %s", topic)
-	err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.Garden)))
+	err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.TopicPrefix)))
 	if err != nil {
 		pubLogger.Errorf("encountered error publishing: %v", err)
 	}
@@ -246,7 +244,7 @@ func (c *Controller) publishWateringEvent(waterMsg pkg.WaterMessage, cmdTopic st
 	if !c.PublishWateringEvent {
 		return
 	}
-	// Incoming topic is "{{.GardenName}}/command/water" but we need to publish on "{{.GardenName}}/data/water"
+	// Incoming topic is "{{.TopicPrefix}}/command/water" but we need to publish on "{{.TopicPrefix}}/data/water"
 	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
 	pubLogger.Infof("publishing watering event for Plant on topic %s: %v", dataTopic, waterMsg)
 	err := c.mqttClient.Publish(
@@ -310,23 +308,21 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 	}
 }
 
-// topics returns a list of topics based on the Config values and provided GardenName
+// topics returns a list of topics based on the Config values and provided TopicPrefix
 func (c *Controller) topics() ([]string, error) {
 	topics := []string{}
-	templates := []string{
-		c.Config.MQTTConfig.WateringTopicTemplate,
-		c.Config.MQTTConfig.StopTopicTemplate,
-		c.Config.MQTTConfig.StopAllTopicTemplate,
-		c.Config.MQTTConfig.LightTopicTemplate,
+	templateFuncs := []func(string) (string, error){
+		c.MQTTConfig.WateringTopic,
+		c.MQTTConfig.StopTopic,
+		c.MQTTConfig.StopAllTopic,
+		c.MQTTConfig.LightTopic,
 	}
-	for _, topicTemplate := range templates {
-		t := template.Must(template.New("topic").Parse(topicTemplate))
-		var topic bytes.Buffer
-		err := t.Execute(&topic, c.Config)
+	for _, templateFunc := range templateFuncs {
+		topic, err := templateFunc(c.TopicPrefix)
 		if err != nil {
 			return topics, err
 		}
-		topics = append(topics, topic.String())
+		topics = append(topics, topic)
 	}
 	return topics, nil
 }

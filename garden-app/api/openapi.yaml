@@ -867,8 +867,12 @@ components:
       properties:
         name:
           type: string
+          description: A descriptive name for the Garden
+          example: Garden
+        topic_prefix:
+          type: string
           description: |
-            A descriptive name for the Garden. This is used as the prefix of the MQTT topic for sending messages to the controller, so it is recommended to avoid spaces and the following characters are not allowed: `[$#*>+/]`
+            This is the prefix of the MQTT topic for sending messages to the controller, so it is recommended to avoid spaces and the following characters are not allowed: `[$#*>+/]`
           example: garden
         max_plants:
           type: integer
