@@ -55,8 +55,8 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 		)
 
 		if garden.LightSchedule != nil {
-			nextOnTime := gr.getNextLightTime(garden, pkg.LightStateOn)
-			nextOffTime := gr.getNextLightTime(garden, pkg.LightStateOff)
+			nextOnTime := gr.scheduler.GetNextLightTime(garden, pkg.LightStateOn)
+			nextOffTime := gr.scheduler.GetNextLightTime(garden, pkg.LightStateOff)
 			if nextOnTime != nil && nextOffTime != nil {
 				// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
 				if nextOnTime.Before(*nextOffTime) {

@@ -86,14 +86,14 @@ type GardenAction struct {
 // Execute is responsible for performing the actual individual actions in this GardenAction.
 // The actions are executed in a deliberate order to be most intuitive for a user that wants
 // to perform multiple actions with one request
-func (action *GardenAction) Execute(g *Garden, mqttClient mqtt.Client) error {
+func (action *GardenAction) Execute(g *Garden, mqttClient mqtt.Client, scheduler *Scheduler) error {
 	if action.Stop != nil {
-		if err := action.Stop.Execute(g, mqttClient); err != nil {
+		if err := action.Stop.Execute(g, mqttClient, scheduler); err != nil {
 			return err
 		}
 	}
 	if action.Light != nil {
-		if err := action.Light.Execute(g, mqttClient); err != nil {
+		if err := action.Light.Execute(g, mqttClient, scheduler); err != nil {
 			return err
 		}
 	}
@@ -108,7 +108,7 @@ type LightAction struct {
 }
 
 // Execute sends an MQTT message to the garden controller to change the state of the light
-func (action *LightAction) Execute(g *Garden, mqttClient mqtt.Client) error {
+func (action *LightAction) Execute(g *Garden, mqttClient mqtt.Client, scheduler *Scheduler) error {
 	msg, err := json.Marshal(action)
 	if err != nil {
 		return fmt.Errorf("unable to marshal LightAction to JSON: %v", err)
@@ -119,7 +119,19 @@ func (action *LightAction) Execute(g *Garden, mqttClient mqtt.Client) error {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	return mqttClient.Publish(topic, msg)
+	err = mqttClient.Publish(topic, msg)
+	if err != nil {
+		return fmt.Errorf("unable to publish LightAction: %v", err)
+	}
+
+	// If this is a LightAction with specified duration, additional steps are necessary
+	if action != nil && action.ForDuration != "" {
+		err := scheduler.ScheduleLightDelay(g, action)
+		if err != nil {
+			return fmt.Errorf("unable to handle light delay: %v", err)
+		}
+	}
+	return nil
 }
 
 // StopAction is an action for stopping watering of a Plant. It doesn't stop watering a specific Plant, only what is
@@ -129,7 +141,7 @@ type StopAction struct {
 }
 
 // Execute sends the message over MQTT to the embedded garden controller
-func (action *StopAction) Execute(g *Garden, mqttClient mqtt.Client) error {
+func (action *StopAction) Execute(g *Garden, mqttClient mqtt.Client, scheduler *Scheduler) error {
 	topicFunc := mqttClient.StopTopic
 	if action.All {
 		topicFunc = mqttClient.StopAllTopic

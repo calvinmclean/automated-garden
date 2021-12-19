@@ -18,7 +18,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
@@ -246,7 +245,7 @@ func TestCreateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     gocron.NewScheduler(time.Local),
+				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
 			}
 
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
@@ -317,7 +316,7 @@ func TestGetAllGardens(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     gocron.NewScheduler(time.Local),
+				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
 			}
 			tt.setupMock(storageClient)
 
@@ -349,7 +348,7 @@ func TestGetGarden(t *testing.T) {
 		gr := GardensResource{
 			storageClient: storageClient,
 			config:        Config{},
-			scheduler:     gocron.NewScheduler(time.Local),
+			scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
 		}
 		garden := createExampleGarden()
 
@@ -442,7 +441,7 @@ func TestEndDateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     gocron.NewScheduler(time.Local),
+				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -548,7 +547,7 @@ func TestUpdateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     gocron.NewScheduler(time.Local),
+				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)

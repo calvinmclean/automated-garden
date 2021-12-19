@@ -42,7 +42,7 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 			return pr, err
 		}
 		for _, p := range allPlants {
-			if err = pr.scheduleWateringAction(g, p); err != nil {
+			if err = pr.scheduler.ScheduleWateringAction(g, p); err != nil {
 				err = fmt.Errorf("unable to add watering Job for Plant %v: %v", p.ID, err)
 				return pr, err
 			}
@@ -168,7 +168,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 
 	// Update the watering schedule for the Plant if it was changed or EndDate is removed
 	if request.Plant.WaterSchedule != nil || request.Plant.EndDate == nil {
-		if err := pr.resetWateringSchedule(garden, plant); err != nil {
+		if err := pr.scheduler.ResetWateringSchedule(garden, plant); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
@@ -204,7 +204,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Remove scheduled watering Job
-	if err := pr.removeJobsByID(plant.ID); err != nil {
+	if err := pr.scheduler.RemoveJobsByID(plant.ID); err != nil {
 		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -261,7 +261,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Start watering schedule
-	if err := pr.scheduleWateringAction(garden, plant); err != nil {
+	if err := pr.scheduler.ScheduleWateringAction(garden, plant); err != nil {
 		logger.Errorf("Unable to add watering Job for Plant %v: %v", plant.ID, err)
 	}
 

@@ -74,7 +74,7 @@ func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garde
 	return &PlantResponse{
 		plant,
 		moisture,
-		pr.getNextWateringTime(plant),
+		pr.scheduler.GetNextWateringTime(plant),
 		links,
 	}
 }

@@ -18,7 +18,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/mock"
 )
@@ -218,7 +217,7 @@ func TestGetPlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					scheduler:      gocron.NewScheduler(time.Local),
+					scheduler:      pkg.NewScheduler(influxdbClient, nil, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -366,7 +365,7 @@ func TestUpdatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     gocron.NewScheduler(time.Local),
+					scheduler:     pkg.NewScheduler(nil, nil, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -454,7 +453,7 @@ func TestEndDatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     gocron.NewScheduler(time.Local),
+					scheduler:     pkg.NewScheduler(nil, nil, nil),
 				},
 			}
 
@@ -487,7 +486,7 @@ func TestEndDatePlant(t *testing.T) {
 func TestGetAllPlants(t *testing.T) {
 	pr := PlantsResource{
 		GardensResource: GardensResource{
-			scheduler: gocron.NewScheduler(time.Local),
+			scheduler: pkg.NewScheduler(nil, nil, nil),
 		},
 	}
 	garden := createExampleGarden()
@@ -620,7 +619,7 @@ func TestCreatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     gocron.NewScheduler(time.Local),
+					scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
 				},
 			}
 
@@ -766,18 +765,18 @@ func TestGetNextWateringTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
-					scheduler: gocron.NewScheduler(time.Local),
+					scheduler: pkg.NewScheduler(nil, nil, nil),
 				},
 			}
 			g := createExampleGarden()
 			p := createExamplePlant()
 
-			pr.scheduleWateringAction(g, p)
+			pr.scheduler.ScheduleWateringAction(g, p)
 			pr.scheduler.StartAsync()
 			defer pr.scheduler.Stop()
 
-			nextWateringTime := pr.getNextWateringTime(p)
-			nextWateringTimeWithSkip := pr.getNextWateringTime(p)
+			nextWateringTime := pr.scheduler.GetNextWateringTime(p)
+			nextWateringTimeWithSkip := pr.scheduler.GetNextWateringTime(p)
 
 			diff := nextWateringTimeWithSkip.Sub(*nextWateringTime)
 			if diff != tt.expectedDiff {
