@@ -13,12 +13,14 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -217,7 +219,7 @@ func TestGetPlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					scheduler:      pkg.NewScheduler(influxdbClient, nil, nil),
+					scheduler:      action.NewScheduler(nil, influxdbClient, nil, logrus.StandardLogger()),
 				},
 			}
 			garden := createExampleGarden()
@@ -365,7 +367,7 @@ func TestUpdatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     pkg.NewScheduler(nil, nil, nil),
+					scheduler:     action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
 				},
 			}
 			garden := createExampleGarden()
@@ -453,7 +455,7 @@ func TestEndDatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     pkg.NewScheduler(nil, nil, nil),
+					scheduler:     action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
 				},
 			}
 
@@ -486,7 +488,7 @@ func TestEndDatePlant(t *testing.T) {
 func TestGetAllPlants(t *testing.T) {
 	pr := PlantsResource{
 		GardensResource: GardensResource{
-			scheduler: pkg.NewScheduler(nil, nil, nil),
+			scheduler: action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
 		},
 	}
 	garden := createExampleGarden()
@@ -619,7 +621,7 @@ func TestCreatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
+					scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
 				},
 			}
 
@@ -765,7 +767,7 @@ func TestGetNextWateringTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
-					scheduler: pkg.NewScheduler(nil, nil, nil),
+					scheduler: action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
 				},
 			}
 			g := createExampleGarden()

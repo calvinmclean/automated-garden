@@ -11,7 +11,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-co-op/gocron"
@@ -240,7 +240,7 @@ func (c *Controller) createMoistureData() int {
 }
 
 // publishWateringEvent logs moisture data to InfluxDB via Telegraf and MQTT
-func (c *Controller) publishWateringEvent(waterMsg pkg.WaterMessage, cmdTopic string) {
+func (c *Controller) publishWateringEvent(waterMsg action.WaterMessage, cmdTopic string) {
 	if !c.PublishWateringEvent {
 		return
 	}
@@ -262,7 +262,7 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 	switch t := strings.Split(topic, "/")[2]; t {
 	case "water":
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			var waterMsg pkg.WaterMessage
+			var waterMsg action.WaterMessage
 			err := json.Unmarshal(msg.Payload(), &waterMsg)
 			if err != nil {
 				subLogger.Errorf("unable to unmarshal WaterMessage JSON: %s", err.Error())
@@ -289,7 +289,7 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 		})
 	case "light":
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			var action pkg.LightAction
+			var action action.LightAction
 			err := json.Unmarshal(msg.Payload(), &action)
 			if err != nil {
 				subLogger.Errorf("unable to unmarshal LightAction JSON: %s", err.Error())

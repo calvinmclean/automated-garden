@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/rs/xid"
 )
 
@@ -28,15 +29,15 @@ func TestGardenActionRequest(t *testing.T) {
 		{
 			"EmptyGardenActionError",
 			&GardenActionRequest{
-				GardenAction: &pkg.GardenAction{},
+				GardenAction: &action.GardenAction{},
 			},
 			"missing required action fields",
 		},
 		{
 			"InvalidLightActionDuration",
 			&GardenActionRequest{
-				GardenAction: &pkg.GardenAction{
-					Light: &pkg.LightAction{
+				GardenAction: &action.GardenAction{
+					Light: &action.LightAction{
 						ForDuration: "WOW",
 					},
 				},
@@ -47,8 +48,8 @@ func TestGardenActionRequest(t *testing.T) {
 
 	t.Run("SuccessfulLightAction", func(t *testing.T) {
 		ar := &GardenActionRequest{
-			GardenAction: &pkg.GardenAction{
-				Light: &pkg.LightAction{
+			GardenAction: &action.GardenAction{
+				Light: &action.LightAction{
 					State: pkg.LightStateOn,
 				},
 			},
@@ -61,8 +62,8 @@ func TestGardenActionRequest(t *testing.T) {
 	})
 	t.Run("SuccessfulStopAction", func(t *testing.T) {
 		ar := &GardenActionRequest{
-			GardenAction: &pkg.GardenAction{
-				Stop: &pkg.StopAction{},
+			GardenAction: &action.GardenAction{
+				Stop: &action.StopAction{},
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -28,7 +29,7 @@ type GardensResource struct {
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
 	mqttClient     mqtt.Client
-	scheduler      *pkg.Scheduler
+	scheduler      *action.Scheduler
 	config         Config
 }
 
@@ -37,7 +38,6 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 	gr = GardensResource{
 		config: config,
 	}
-	gr.scheduler.StartAsync()
 
 	// Initialize MQTT Client
 	gr.mqttClient, err = mqtt.NewMQTTClient(gr.config.MQTTConfig, nil)
@@ -57,7 +57,8 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 	gr.influxdbClient = influxdb.NewClient(gr.config.InfluxDBConfig)
 
 	// Initialize Scheduler
-	gr.scheduler = pkg.NewScheduler(gr.influxdbClient, gr.mqttClient, gr.storageClient.SaveGarden)
+	gr.scheduler = action.NewScheduler(gr.storageClient, gr.influxdbClient, gr.mqttClient, logger)
+	gr.scheduler.StartAsync()
 
 	// Initialize lighting schedules for all Gardens
 	allGardens, err := gr.storageClient.GetGardens(false)

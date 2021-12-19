@@ -46,12 +46,6 @@ type WateringHistory struct {
 	RecordTime time.Time `json:"record_time"`
 }
 
-// WateringAction creates the default/basic WateringAction for this Plant
-func (p *Plant) WateringAction() *WaterAction {
-	wateringDuration, _ := time.ParseDuration(p.WaterSchedule.Duration)
-	return &WaterAction{Duration: wateringDuration.Milliseconds()}
-}
-
 // EndDated returns true if the Plant is end-dated
 func (p *Plant) EndDated() bool {
 	return p.EndDate != nil && p.EndDate.Before(time.Now())

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/rs/xid"
 )
 
@@ -86,7 +87,7 @@ func (p *UpdatePlantRequest) Bind(r *http.Request) error {
 
 // PlantActionRequest wraps a PlantAction into a request so we can handle Bind/Render in this package
 type PlantActionRequest struct {
-	*pkg.PlantAction
+	*action.PlantAction
 }
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.

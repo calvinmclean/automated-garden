@@ -1,24 +1,27 @@
-package pkg
+package action
 
 import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/rs/xid"
+	"github.com/sirupsen/logrus"
 )
 
-func createExampleGarden() *Garden {
+func createExampleGarden() *pkg.Garden {
 	two := uint(2)
 	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
-	return &Garden{
+	return &pkg.Garden{
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
 		MaxPlants:   &two,
 		ID:          id,
-		Plants:      map[xid.ID]*Plant{},
+		Plants:      map[xid.ID]*pkg.Plant{},
 		CreatedAt:   &time,
-		LightSchedule: &LightSchedule{
+		LightSchedule: &pkg.LightSchedule{
 			Duration:  "15h",
 			StartTime: "22:00:01-07:00",
 		},
@@ -27,7 +30,7 @@ func createExampleGarden() *Garden {
 
 func TestScheduleLightActions(t *testing.T) {
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
-		scheduler := NewScheduler(nil, nil, func(g *Garden) error { return nil })
+		scheduler := NewScheduler(nil, nil, nil, logrus.StandardLogger())
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -40,13 +43,14 @@ func TestScheduleLightActions(t *testing.T) {
 			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
 		}
 
-		nextOnTime := scheduler.GetNextLightTime(g, LightStateOn)
+		nextOnTime := scheduler.GetNextLightTime(g, pkg.LightStateOn)
 		if *nextOnTime != later {
 			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", later, *nextOnTime)
 		}
 	})
 	t.Run("AdhocOnTimeInPastIsNotUsed", func(t *testing.T) {
-		scheduler := NewScheduler(nil, nil, func(g *Garden) error { return nil })
+		storageClient := new(storage.MockClient)
+		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -54,6 +58,7 @@ func TestScheduleLightActions(t *testing.T) {
 		past := now.Add(-1 * time.Hour)
 		g := createExampleGarden()
 		g.LightSchedule.AdhocOnTime = &past
+		storageClient.On("SaveGarden", g).Return(nil)
 		err := scheduler.ScheduleLightActions(g)
 		if err != nil {
 			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
@@ -62,7 +67,7 @@ func TestScheduleLightActions(t *testing.T) {
 			t.Errorf("Expected nil AdhocOnTime but got: %v", g.LightSchedule.AdhocOnTime)
 		}
 
-		lightTime, _ := time.Parse(LightTimeFormat, g.LightSchedule.StartTime)
+		lightTime, _ := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
 		expected := time.Date(
 			now.In(lightTime.Location()).Year(),
 			now.In(lightTime.Location()).Month(),
@@ -78,32 +83,33 @@ func TestScheduleLightActions(t *testing.T) {
 			expected = expected.Add(lightingInterval)
 		}
 
-		nextOnTime := scheduler.GetNextLightTime(g, LightStateOn)
+		nextOnTime := scheduler.GetNextLightTime(g, pkg.LightStateOn)
 		if nextOnTime.UnixNano() != expected.UnixNano() {
 			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 		}
+		storageClient.AssertExpectations(t)
 	})
 }
 
 func TestScheduleLightDelay(t *testing.T) {
 	tests := []struct {
 		name          string
-		garden        *Garden
+		garden        *pkg.Garden
 		actions       []*LightAction
 		on            bool
 		expectedDelay time.Duration
 	}{
 		{
 			"LightAlreadyOn",
-			func() *Garden {
+			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to a bit ago so the light is considered to be ON
-				g.LightSchedule.StartTime = time.Now().Add(-1 * time.Minute).Format(LightTimeFormat)
+				g.LightSchedule.StartTime = time.Now().Add(-1 * time.Minute).Format(pkg.LightTimeFormat)
 				return g
 			}(),
 			[]*LightAction{
 				{
-					State:       LightStateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -112,19 +118,19 @@ func TestScheduleLightDelay(t *testing.T) {
 		},
 		{
 			"LightAlreadyOnRunTwiceAppends",
-			func() *Garden {
+			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to a bit ago so the light is considered to be ON
-				g.LightSchedule.StartTime = time.Now().Add(-1 * time.Minute).Format(LightTimeFormat)
+				g.LightSchedule.StartTime = time.Now().Add(-1 * time.Minute).Format(pkg.LightTimeFormat)
 				return g
 			}(),
 			[]*LightAction{
 				{
-					State:       LightStateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 				{
-					State:       LightStateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -133,15 +139,15 @@ func TestScheduleLightDelay(t *testing.T) {
 		},
 		{
 			"LightStillOff",
-			func() *Garden {
+			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to the future so the light is considered to be OFF
-				g.LightSchedule.StartTime = time.Now().Add(5 * time.Minute).Format(LightTimeFormat)
+				g.LightSchedule.StartTime = time.Now().Add(5 * time.Minute).Format(pkg.LightTimeFormat)
 				return g
 			}(),
 			[]*LightAction{
 				{
-					State:       LightStateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -150,19 +156,19 @@ func TestScheduleLightDelay(t *testing.T) {
 		},
 		{
 			"LightStillOffRunTwiceAppends",
-			func() *Garden {
+			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to the future so the light is considered to be OFF
-				g.LightSchedule.StartTime = time.Now().Add(5 * time.Minute).Format(LightTimeFormat)
+				g.LightSchedule.StartTime = time.Now().Add(5 * time.Minute).Format(pkg.LightTimeFormat)
 				return g
 			}(),
 			[]*LightAction{
 				{
-					State:       LightStateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 				{
-					State:       LightStateOff,
+					State:       pkg.LightStateOff,
 					ForDuration: "30m",
 				},
 			},
@@ -173,10 +179,12 @@ func TestScheduleLightDelay(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			scheduler := NewScheduler(nil, nil, func(g *Garden) error { return nil })
+			storageClient := new(storage.MockClient)
+			scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
 			scheduler.StartAsync()
 			defer scheduler.Stop()
 
+			storageClient.On("SaveGarden", tt.garden).Return(nil)
 			err := scheduler.ScheduleLightActions(tt.garden)
 			if err != nil {
 				t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
@@ -195,7 +203,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			if tt.on {
 				expected = now.Add(tt.expectedDelay).Truncate(time.Second)
 			} else {
-				lightTime, _ := time.Parse(LightTimeFormat, tt.garden.LightSchedule.StartTime)
+				lightTime, _ := time.Parse(pkg.LightTimeFormat, tt.garden.LightSchedule.StartTime)
 				expected = time.Date(
 					now.Year(),
 					now.Month(),
@@ -208,21 +216,23 @@ func TestScheduleLightDelay(t *testing.T) {
 				).Add(tt.expectedDelay).Truncate(time.Second)
 			}
 
-			nextOnTime := scheduler.GetNextLightTime(tt.garden, LightStateOn).Truncate(time.Second)
+			nextOnTime := scheduler.GetNextLightTime(tt.garden, pkg.LightStateOn).Truncate(time.Second)
 			if nextOnTime.UnixNano() != expected.UnixNano() {
 				t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 			}
+			storageClient.AssertExpectations(t)
 		})
 	}
 
 	t.Run("ErrorDelayingPastNextOffTime", func(t *testing.T) {
-		scheduler := NewScheduler(nil, nil, func(g *Garden) error { return nil })
+		storageClient := new(storage.MockClient)
+		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
 		g := createExampleGarden()
 		// Set StartTime and Duration so NextOffTime is soon
-		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(LightTimeFormat)
+		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(pkg.LightTimeFormat)
 		g.LightSchedule.Duration = "1h2m"
 
 		err := scheduler.ScheduleLightActions(g)
@@ -232,7 +242,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		// Now request delay
 		err = scheduler.ScheduleLightDelay(g, &LightAction{
-			State:       LightStateOff,
+			State:       pkg.LightStateOff,
 			ForDuration: "30m",
 		})
 		if err == nil {
@@ -241,10 +251,12 @@ func TestScheduleLightDelay(t *testing.T) {
 		if err.Error() != "unable to schedule delay that extends past the light turning back on" {
 			t.Errorf("Unexpected error string: %v", err)
 		}
+		storageClient.AssertExpectations(t)
 	})
 
 	t.Run("ErrorDelayingLongerThanLightDuration", func(t *testing.T) {
-		scheduler := NewScheduler(nil, nil, func(g *Garden) error { return nil })
+		storageClient := new(storage.MockClient)
+		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -257,7 +269,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		// Now request delay
 		err = scheduler.ScheduleLightDelay(g, &LightAction{
-			State:       LightStateOff,
+			State:       pkg.LightStateOff,
 			ForDuration: "16h",
 		})
 		if err == nil {
@@ -266,10 +278,12 @@ func TestScheduleLightDelay(t *testing.T) {
 		if err.Error() != "unable to execute delay that lasts longer than light_schedule" {
 			t.Errorf("Unexpected error string: %v", err)
 		}
+		storageClient.AssertExpectations(t)
 	})
 
 	t.Run("ErrorSettingDelayWithoutOFFState", func(t *testing.T) {
-		scheduler := NewScheduler(nil, nil, func(g *Garden) error { return nil })
+		storageClient := new(storage.MockClient)
+		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -282,7 +296,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		// Now request delay
 		err = scheduler.ScheduleLightDelay(g, &LightAction{
-			State:       LightStateOn,
+			State:       pkg.LightStateOn,
 			ForDuration: "30m",
 		})
 		if err == nil {
@@ -291,5 +305,6 @@ func TestScheduleLightDelay(t *testing.T) {
 		if err.Error() != "unable to use delay when state is not OFF" {
 			t.Errorf("Unexpected error string: %v", err)
 		}
+		storageClient.AssertExpectations(t)
 	})
 }

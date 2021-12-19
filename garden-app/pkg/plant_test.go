@@ -5,19 +5,6 @@ import (
 	"time"
 )
 
-func TestWateringEvent(t *testing.T) {
-	plant := Plant{
-		WaterSchedule: &WaterSchedule{
-			Duration: "15000ms",
-			Interval: "24h",
-		},
-	}
-	action := plant.WateringAction()
-	if action.Duration != 15000 {
-		t.Errorf("Unexpected Duration in WaterAction: Expected: %v, Actual: %v", 15000, action.Duration)
-	}
-}
-
 func TestPlantEndDated(t *testing.T) {
 	pastDate := time.Now().Add(-1 * time.Minute)
 	futureDate := time.Now().Add(time.Minute)

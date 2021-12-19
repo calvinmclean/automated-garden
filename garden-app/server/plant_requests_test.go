@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/rs/xid"
 )
 
@@ -256,7 +257,7 @@ func TestPlantActionRequest(t *testing.T) {
 		{
 			"EmptyPlantActionError",
 			&PlantActionRequest{
-				PlantAction: &pkg.PlantAction{},
+				PlantAction: &action.PlantAction{},
 			},
 			"missing required action fields",
 		},
@@ -264,8 +265,8 @@ func TestPlantActionRequest(t *testing.T) {
 
 	t.Run("Successful", func(t *testing.T) {
 		ar := &PlantActionRequest{
-			PlantAction: &pkg.PlantAction{
-				Water: &pkg.WaterAction{},
+			PlantAction: &action.PlantAction{
+				Water: &action.WaterAction{},
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -245,7 +246,7 @@ func TestCreateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
 			}
 
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
@@ -316,7 +317,7 @@ func TestGetAllGardens(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
 			}
 			tt.setupMock(storageClient)
 
@@ -348,7 +349,7 @@ func TestGetGarden(t *testing.T) {
 		gr := GardensResource{
 			storageClient: storageClient,
 			config:        Config{},
-			scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
+			scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
 		}
 		garden := createExampleGarden()
 
@@ -441,7 +442,7 @@ func TestEndDateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -547,7 +548,7 @@ func TestUpdateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     pkg.NewScheduler(nil, nil, storageClient.SaveGarden),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
