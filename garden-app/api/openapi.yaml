@@ -330,7 +330,7 @@ paths:
             example: 72h
         - name: limit
           in: query
-          description: maximum number of events to include in response (default=5)
+          description: maximum number of events to include in response (default=0/no limit)
           required: false
           schema:
             type: integer

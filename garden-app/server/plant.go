@@ -290,7 +290,7 @@ func (pr PlantsResource) wateringHistory(w http.ResponseWriter, r *http.Request)
 	}
 	limitString := r.URL.Query().Get("limit")
 	if len(limitString) == 0 {
-		limitString = "5"
+		limitString = "0"
 	}
 
 	// Parse query parameter strings into correct types

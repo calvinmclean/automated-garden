@@ -31,7 +31,9 @@ const (
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
 |> filter(fn: (r) => r["plant"] == "{{.PlantPosition}}")
 |> sort(columns: ["_time"], desc: true)
+{{- if .Limit }}
 |> limit(n: {{.Limit}})
+{{- end }}
 |> yield(name: "last")`
 )
 
@@ -44,8 +46,8 @@ type queryData struct {
 	Limit         uint64
 }
 
-// String executes the specified template with the queryData to create a string
-func (q queryData) String(queryTemplate string) (string, error) {
+// Render executes the specified template with the queryData to create a string
+func (q queryData) Render(queryTemplate string) (string, error) {
 	t := template.Must(template.New("query").Parse(queryTemplate))
 	var queryBytes bytes.Buffer
 	err := t.Execute(&queryBytes, q)
@@ -93,7 +95,7 @@ func (client *client) GetMoisture(ctx context.Context, plantPosition uint, topic
 		Start:         time.Minute * 15,
 		PlantPosition: plantPosition,
 		TopicPrefix:   topicPrefix,
-	}.String(moistureQueryTemplate)
+	}.Render(moistureQueryTemplate)
 	if err != nil {
 		return
 	}
@@ -119,7 +121,7 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (r
 		Bucket:      client.config.Bucket,
 		Start:       time.Minute * 15,
 		TopicPrefix: topicPrefix,
-	}.String(healthQueryTemplate)
+	}.Render(healthQueryTemplate)
 	if err != nil {
 		return
 	}
@@ -149,7 +151,7 @@ func (client *client) GetWateringHistory(ctx context.Context, plantPosition uint
 		TopicPrefix:   topicPrefix,
 		PlantPosition: plantPosition,
 		Limit:         limit,
-	}.String(wateringHistoryQueryTemplate)
+	}.Render(wateringHistoryQueryTemplate)
 	if err != nil {
 		return nil, err
 	}
