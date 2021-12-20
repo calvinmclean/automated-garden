@@ -18,8 +18,31 @@ const (
 	lightingInterval = 24 * time.Hour
 )
 
-// Scheduler is capable of executing actions at predetermined times and intervals
-type Scheduler struct {
+// Scheduler exposes scheduling functionality that allows executing actions at predetermined times and intervals
+type Scheduler interface {
+	ScheduleWateringAction(*pkg.Garden, *pkg.Plant) error
+	ResetWateringSchedule(*pkg.Garden, *pkg.Plant) error
+	GetNextWateringTime(*pkg.Plant) *time.Time
+
+	ScheduleLightActions(*pkg.Garden) error
+	ResetLightingSchedule(*pkg.Garden) error
+	GetNextLightTime(*pkg.Garden, pkg.LightState) *time.Time
+	ScheduleLightDelay(*pkg.Garden, *LightAction) error
+
+	RemoveJobsByID(xid.ID) error
+
+	// Client accessors
+	StorageClient() storage.Client
+	InfluxDBClient() influxdb.Client
+	MQTTClient() mqtt.Client
+
+	// Functions from the gocron Scheduler
+	StartAsync()
+	Stop()
+}
+
+// scheduler is capable of executing actions at predetermined times and intervals
+type scheduler struct {
 	*gocron.Scheduler
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
@@ -28,8 +51,8 @@ type Scheduler struct {
 }
 
 // NewScheduler creates a Scheduler from the
-func NewScheduler(storageClient storage.Client, influxdbClient influxdb.Client, mqttClient mqtt.Client, logger *logrus.Logger) *Scheduler {
-	return &Scheduler{
+func NewScheduler(storageClient storage.Client, influxdbClient influxdb.Client, mqttClient mqtt.Client, logger *logrus.Logger) Scheduler {
+	return &scheduler{
 		Scheduler:      gocron.NewScheduler(time.Local),
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
@@ -38,10 +61,20 @@ func NewScheduler(storageClient storage.Client, influxdbClient influxdb.Client, 
 	}
 }
 
+func (s *scheduler) StorageClient() storage.Client {
+	return s.storageClient
+}
+func (s *scheduler) InfluxDBClient() influxdb.Client {
+	return s.influxdbClient
+}
+func (s *scheduler) MQTTClient() mqtt.Client {
+	return s.mqttClient
+}
+
 // ScheduleWateringAction will schedule watering actions for the Plant based off the CreatedAt date,
 // WaterSchedule time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
 // easily be removed
-func (s *Scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
+func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
 	s.logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
 	// Read Plant's Interval string into a Duration
@@ -69,7 +102,7 @@ func (s *Scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
 }
 
 // ResetWateringSchedule will simply remove the existing Job and create a new one
-func (s *Scheduler) ResetWateringSchedule(g *pkg.Garden, p *pkg.Plant) error {
+func (s *scheduler) ResetWateringSchedule(g *pkg.Garden, p *pkg.Plant) error {
 	if err := s.RemoveJobsByID(g.ID); err != nil {
 		return err
 	}
@@ -77,7 +110,7 @@ func (s *Scheduler) ResetWateringSchedule(g *pkg.Garden, p *pkg.Plant) error {
 }
 
 // GetNextWateringTime determines the next scheduled watering time for a given Plant using tags
-func (s *Scheduler) GetNextWateringTime(p *pkg.Plant) *time.Time {
+func (s *scheduler) GetNextWateringTime(p *pkg.Plant) *time.Time {
 	for _, job := range s.Scheduler.Jobs() {
 		for _, tag := range job.Tags() {
 			if tag == p.ID.String() {
@@ -92,7 +125,7 @@ func (s *Scheduler) GetNextWateringTime(p *pkg.Plant) *time.Time {
 // ScheduleLightActions will schedule LightActions to turn the light on and off based off the CreatedAt date,
 // LightingSchedule time, and Interval. The scheduled Jobs are tagged with the Garden's ID so they can
 // easily be removed
-func (s *Scheduler) ScheduleLightActions(g *pkg.Garden) error {
+func (s *scheduler) ScheduleLightActions(g *pkg.Garden) error {
 	s.logger.Infof("Creating scheduled Jobs for lighting Garden %s", g.ID.String())
 
 	// Read Garden's Duration string into a time.Duration
@@ -121,7 +154,7 @@ func (s *Scheduler) ScheduleLightActions(g *pkg.Garden) error {
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err = action.Execute(g, s.mqttClient, s)
+		err = action.Execute(g, s)
 		if err != nil {
 			s.logger.Error("Error executing scheduled LightAction: ", err)
 		}
@@ -174,7 +207,7 @@ func (s *Scheduler) ScheduleLightActions(g *pkg.Garden) error {
 }
 
 // ResetLightingSchedule will simply remove the existing Job and create a new one
-func (s *Scheduler) ResetLightingSchedule(g *pkg.Garden) error {
+func (s *scheduler) ResetLightingSchedule(g *pkg.Garden) error {
 	if err := s.RemoveJobsByID(g.ID); err != nil {
 		return err
 	}
@@ -182,7 +215,7 @@ func (s *Scheduler) ResetLightingSchedule(g *pkg.Garden) error {
 }
 
 // GetNextLightTime returns the next time that the Garden's light will be turned to the specified state
-func (s *Scheduler) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Time {
+func (s *scheduler) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Time {
 	sort.Sort(s.Scheduler)
 	for _, job := range s.Scheduler.Jobs() {
 		matchedID := false
@@ -204,7 +237,7 @@ func (s *Scheduler) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.
 }
 
 // ScheduleLightDelay handles a LightAction that requests delaying turning a light on
-func (s *Scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error {
+func (s *scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error {
 	// Only allow when action state is OFF
 	if action.State != pkg.LightStateOff {
 		return errors.New("unable to use delay when state is not OFF")
@@ -268,7 +301,7 @@ func (s *Scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error
 }
 
 // RemoveJobsByID will remove Jobs tagged with the specific xid
-func (s *Scheduler) RemoveJobsByID(id xid.ID) error {
+func (s *scheduler) RemoveJobsByID(id xid.ID) error {
 	if err := s.Scheduler.RemoveByTags(id.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
@@ -276,7 +309,7 @@ func (s *Scheduler) RemoveJobsByID(id xid.ID) error {
 }
 
 // scheduleAdhocLightAction schedules a one-time action to turn a light on based on the LightSchedule.AdhocOnTime
-func (s *Scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
+func (s *scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
 	if g.LightSchedule.AdhocOnTime == nil {
 		return errors.New("unable to schedule adhoc light schedule without LightSchedule.AdhocOnTime")
 	}
@@ -284,7 +317,7 @@ func (s *Scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err := action.Execute(g, s.mqttClient, s)
+		err := action.Execute(g, s)
 		if err != nil {
 			s.logger.Error("Error executing scheduled LightAction: ", err)
 		}
@@ -312,7 +345,7 @@ func (s *Scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
 }
 
 // rescheduleLightOnAction is used to reschedule only the ON action after it is removed as part of adhoc light delay
-func (s *Scheduler) rescheduleLightOnAction(g *pkg.Garden) error {
+func (s *scheduler) rescheduleLightOnAction(g *pkg.Garden) error {
 	s.logger.Infof("Creating new scheduled Jobs for turning ON Garden %s", g.ID.String())
 
 	// Parse Gardens's LightSchedule.Time (has no "date")
@@ -336,7 +369,7 @@ func (s *Scheduler) rescheduleLightOnAction(g *pkg.Garden) error {
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err = action.Execute(g, s.mqttClient, s)
+		err = action.Execute(g, s)
 		if err != nil {
 			s.logger.Error("Error executing scheduled LightAction: ", err)
 		}
@@ -353,7 +386,7 @@ func (s *Scheduler) rescheduleLightOnAction(g *pkg.Garden) error {
 	return err
 }
 
-func (s *Scheduler) removeLightScheduleByState(g *pkg.Garden, state string) error {
+func (s *scheduler) removeLightScheduleByState(g *pkg.Garden, state string) error {
 	if err := s.Scheduler.RemoveByTags(g.ID.String(), state); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}

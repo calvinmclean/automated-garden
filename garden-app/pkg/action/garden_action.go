@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 )
 
 // GardenAction collects all the possible actions for a Garden into a single struct so these can easily be
@@ -18,14 +17,14 @@ type GardenAction struct {
 // Execute is responsible for performing the actual individual actions in this GardenAction.
 // The actions are executed in a deliberate order to be most intuitive for a user that wants
 // to perform multiple actions with one request
-func (action *GardenAction) Execute(g *pkg.Garden, mqttClient mqtt.Client, scheduler *Scheduler) error {
+func (action *GardenAction) Execute(g *pkg.Garden, scheduler Scheduler) error {
 	if action.Stop != nil {
-		if err := action.Stop.Execute(g, mqttClient, scheduler); err != nil {
+		if err := action.Stop.Execute(g, scheduler); err != nil {
 			return err
 		}
 	}
 	if action.Light != nil {
-		if err := action.Light.Execute(g, mqttClient, scheduler); err != nil {
+		if err := action.Light.Execute(g, scheduler); err != nil {
 			return err
 		}
 	}
@@ -40,18 +39,18 @@ type LightAction struct {
 }
 
 // Execute sends an MQTT message to the garden controller to change the state of the light
-func (action *LightAction) Execute(g *pkg.Garden, mqttClient mqtt.Client, scheduler *Scheduler) error {
+func (action *LightAction) Execute(g *pkg.Garden, scheduler Scheduler) error {
 	msg, err := json.Marshal(action)
 	if err != nil {
 		return fmt.Errorf("unable to marshal LightAction to JSON: %v", err)
 	}
 
-	topic, err := mqttClient.LightTopic(g.TopicPrefix)
+	topic, err := scheduler.MQTTClient().LightTopic(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	err = mqttClient.Publish(topic, msg)
+	err = scheduler.MQTTClient().Publish(topic, msg)
 	if err != nil {
 		return fmt.Errorf("unable to publish LightAction: %v", err)
 	}
@@ -73,15 +72,15 @@ type StopAction struct {
 }
 
 // Execute sends the message over MQTT to the embedded garden controller
-func (action *StopAction) Execute(g *pkg.Garden, mqttClient mqtt.Client, scheduler *Scheduler) error {
-	topicFunc := mqttClient.StopTopic
+func (action *StopAction) Execute(g *pkg.Garden, scheduler Scheduler) error {
+	topicFunc := scheduler.MQTTClient().StopTopic
 	if action.All {
-		topicFunc = mqttClient.StopAllTopic
+		topicFunc = scheduler.MQTTClient().StopAllTopic
 	}
 	topic, err := topicFunc(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	return mqttClient.Publish(topic, []byte("no message"))
+	return scheduler.MQTTClient().Publish(topic, []byte("no message"))
 }

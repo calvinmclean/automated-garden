@@ -29,7 +29,7 @@ type GardensResource struct {
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
 	mqttClient     mqtt.Client
-	scheduler      *action.Scheduler
+	scheduler      action.Scheduler
 	config         Config
 }
 
@@ -310,7 +310,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Garden %s", garden.ID)
-	if err := action.Execute(garden, gr.mqttClient, gr.scheduler); err != nil {
+	if err := action.Execute(garden, gr.scheduler); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}

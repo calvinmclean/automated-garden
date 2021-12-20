@@ -692,6 +692,7 @@ func TestGardenAction(t *testing.T) {
 
 			gr := GardensResource{
 				mqttClient: mqttClient,
+				scheduler:  action.NewScheduler(nil, nil, mqttClient, logrus.StandardLogger()),
 			}
 			garden := createExampleGarden()
 

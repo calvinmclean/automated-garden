@@ -95,7 +95,7 @@ func TestGardenAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, mqttClient, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
+			err := tt.action.Execute(garden, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -151,7 +151,7 @@ func TestLightActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, mqttClient, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
+			err := tt.action.Execute(garden, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -220,7 +220,7 @@ func TestStopActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, mqttClient, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
+			err := tt.action.Execute(garden, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
