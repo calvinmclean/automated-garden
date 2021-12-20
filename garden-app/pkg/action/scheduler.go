@@ -93,7 +93,7 @@ func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
 			defer s.influxdbClient.Close()
 
 			s.logger.Infof("Executing WateringAction to water Plant %s for %d ms", p.ID.String(), action.Duration)
-			err = action.Execute(g, p, s.mqttClient, s.influxdbClient)
+			err = action.Execute(g, p, s)
 			if err != nil {
 				s.logger.Error("Error executing scheduled plant watering action: ", err)
 			}
@@ -154,7 +154,7 @@ func (s *scheduler) ScheduleLightActions(g *pkg.Garden) error {
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err = action.Execute(g, s)
+		err = action.Execute(g, nil, s)
 		if err != nil {
 			s.logger.Error("Error executing scheduled LightAction: ", err)
 		}
@@ -317,7 +317,7 @@ func (s *scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err := action.Execute(g, s)
+		err := action.Execute(g, nil, s)
 		if err != nil {
 			s.logger.Error("Error executing scheduled LightAction: ", err)
 		}
@@ -369,7 +369,7 @@ func (s *scheduler) rescheduleLightOnAction(g *pkg.Garden) error {
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err = action.Execute(g, s)
+		err = action.Execute(g, nil, s)
 		if err != nil {
 			s.logger.Error("Error executing scheduled LightAction: ", err)
 		}

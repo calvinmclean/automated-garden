@@ -7,6 +7,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -80,7 +81,7 @@ func TestPlantAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, plant, mqttClient, influxdbClient)
+			err := tt.action.Execute(garden, plant, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -207,7 +208,7 @@ func TestWaterActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := action.Execute(garden, tt.plant, mqttClient, influxdbClient)
+			err := action.Execute(garden, tt.plant, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)

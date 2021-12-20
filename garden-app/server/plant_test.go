@@ -294,7 +294,7 @@ func TestPlantAction(t *testing.T) {
 
 			pr := PlantsResource{
 				GardensResource: GardensResource{
-					mqttClient: mqttClient,
+					scheduler: action.NewScheduler(nil, nil, mqttClient, logrus.StandardLogger()),
 				},
 			}
 			garden := createExampleGarden()

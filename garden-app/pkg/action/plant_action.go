@@ -7,7 +7,6 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/rs/xid"
 )
 
@@ -20,9 +19,9 @@ type PlantAction struct {
 // Execute is responsible for performing the actual individual actions in this PlantAction.
 // The actions are executed in a deliberate order to be most intuitive for a user that wants
 // to perform multiple actions with one request
-func (action *PlantAction) Execute(g *pkg.Garden, p *pkg.Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
+func (action *PlantAction) Execute(g *pkg.Garden, p *pkg.Plant, scheduler Scheduler) error {
 	if action.Water != nil {
-		if err := action.Water.Execute(g, p, mqttClient, influxdbClient); err != nil {
+		if err := action.Water.Execute(g, p, scheduler); err != nil {
 			return err
 		}
 	}
@@ -45,13 +44,13 @@ type WaterMessage struct {
 // Execute sends the message over MQTT to the embedded garden controller. Before doing this, it
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
-func (action *WaterAction) Execute(g *pkg.Garden, p *pkg.Plant, mqttClient mqtt.Client, influxdbClient influxdb.Client) error {
+func (action *WaterAction) Execute(g *pkg.Garden, p *pkg.Plant, scheduler Scheduler) error {
 	if p.WaterSchedule.MinimumMoisture > 0 && !action.IgnoreMoisture {
 		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 		defer cancel()
 
-		defer influxdbClient.Close()
-		moisture, err := influxdbClient.GetMoisture(ctx, *p.PlantPosition, g.TopicPrefix)
+		defer scheduler.InfluxDBClient().Close()
+		moisture, err := scheduler.InfluxDBClient().GetMoisture(ctx, *p.PlantPosition, g.TopicPrefix)
 		if err != nil {
 			return fmt.Errorf("error getting Plant's moisture data: %v", err)
 		}
@@ -69,10 +68,10 @@ func (action *WaterAction) Execute(g *pkg.Garden, p *pkg.Plant, mqttClient mqtt.
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %v", err)
 	}
 
-	topic, err := mqttClient.WateringTopic(g.TopicPrefix)
+	topic, err := scheduler.MQTTClient().WateringTopic(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	return mqttClient.Publish(topic, msg)
+	return scheduler.MQTTClient().Publish(topic, msg)
 }

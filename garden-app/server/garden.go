@@ -310,7 +310,7 @@ func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 	}
 
 	logger.Infof("Received request to perform action on Garden %s", garden.ID)
-	if err := action.Execute(garden, gr.scheduler); err != nil {
+	if err := action.Execute(garden, nil, gr.scheduler); err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
