@@ -260,7 +260,13 @@ func (s *scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error
 	}
 
 	nextOnTime := s.GetNextLightTime(g, pkg.LightStateOn)
+	if nextOnTime == nil {
+		return errors.New("unable to get next light-on time")
+	}
 	nextOffTime := s.GetNextLightTime(g, pkg.LightStateOff)
+	if nextOffTime == nil {
+		return errors.New("unable to get next light-off time")
+	}
 
 	var adhocTime time.Time
 

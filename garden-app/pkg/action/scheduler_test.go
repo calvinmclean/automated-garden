@@ -5,9 +5,12 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/mock"
 )
 
 func createExampleGarden() *pkg.Garden {
@@ -28,6 +31,121 @@ func createExampleGarden() *pkg.Garden {
 	}
 }
 
+func createExamplePlant() *pkg.Plant {
+	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
+	pp := uint(0)
+	return &pkg.Plant{
+		Name:          "test plant",
+		ID:            id,
+		CreatedAt:     &time,
+		PlantPosition: &pp,
+		WaterSchedule: &pkg.WaterSchedule{
+			Duration:  "1000ms",
+			Interval:  "24h",
+			StartTime: &time,
+		},
+	}
+}
+
+func TestScheduleWateringAction(t *testing.T) {
+	storageClient := new(storage.MockClient)
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+
+	mqttClient.On("WateringTopic", mock.Anything).Return("test-garden/action/water", nil)
+	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
+	influxdbClient.On("Close").Return()
+
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler.StartAsync()
+	defer scheduler.Stop()
+
+	g := createExampleGarden()
+	p := createExamplePlant()
+	// Set Plant's WaterSchedule.StartTime to the near future
+	startTime := time.Now().Add(250 * time.Millisecond)
+	p.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, p)
+	if err != nil {
+		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+	}
+
+	time.Sleep(1000 * time.Millisecond)
+
+	storageClient.AssertExpectations(t)
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
+func TestResetNextWateringTime(t *testing.T) {
+	storageClient := new(storage.MockClient)
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler.StartAsync()
+	defer scheduler.Stop()
+
+	g := createExampleGarden()
+	p := createExamplePlant()
+	// Set Plant's WaterSchedule.StartTime to a time that won't cause it to run
+	startTime := time.Now().Add(-1 * time.Hour)
+	p.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, p)
+	if err != nil {
+		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+	}
+
+	// Change WaterSchedule and restart
+	newTime := startTime.Add(-30 * time.Minute)
+	p.WaterSchedule.StartTime = &newTime
+	err = scheduler.ResetWateringSchedule(g, p)
+	if err != nil {
+		t.Errorf("Unexpected error when resetting WateringAction: %v", err)
+	}
+
+	nextWaterTime := scheduler.GetNextWateringTime(p)
+	expected := startTime.Add(-30 * time.Minute).Add(24 * time.Hour)
+	if *nextWaterTime != expected {
+		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
+	}
+
+	storageClient.AssertExpectations(t)
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
+func TestGetNextWateringTime(t *testing.T) {
+	storageClient := new(storage.MockClient)
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler.StartAsync()
+	defer scheduler.Stop()
+
+	g := createExampleGarden()
+	p := createExamplePlant()
+	// Set Plant's WaterSchedule.StartTime to a time that won't cause it to run
+	startTime := time.Now().Add(-1 * time.Hour)
+	p.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, p)
+	if err != nil {
+		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+	}
+
+	nextWaterTime := scheduler.GetNextWateringTime(p)
+	expected := startTime.Add(24 * time.Hour)
+	if *nextWaterTime != expected {
+		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
+	}
+
+	storageClient.AssertExpectations(t)
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
 func TestScheduleLightActions(t *testing.T) {
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
 		scheduler := NewScheduler(nil, nil, nil, logrus.StandardLogger())
@@ -40,7 +158,7 @@ func TestScheduleLightActions(t *testing.T) {
 		g.LightSchedule.AdhocOnTime = &later
 		err := scheduler.ScheduleLightActions(g)
 		if err != nil {
-			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
 		nextOnTime := scheduler.GetNextLightTime(g, pkg.LightStateOn)
@@ -61,7 +179,7 @@ func TestScheduleLightActions(t *testing.T) {
 		storageClient.On("SaveGarden", g).Return(nil)
 		err := scheduler.ScheduleLightActions(g)
 		if err != nil {
-			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 		if g.LightSchedule.AdhocOnTime != nil {
 			t.Errorf("Expected nil AdhocOnTime but got: %v", g.LightSchedule.AdhocOnTime)
@@ -187,7 +305,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			storageClient.On("SaveGarden", tt.garden).Return(nil)
 			err := scheduler.ScheduleLightActions(tt.garden)
 			if err != nil {
-				t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+				t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 			}
 
 			// Now request delay
@@ -237,7 +355,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		err := scheduler.ScheduleLightActions(g)
 		if err != nil {
-			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
 		// Now request delay
@@ -264,7 +382,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		err := scheduler.ScheduleLightActions(g)
 		if err != nil {
-			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
 		// Now request delay
@@ -291,7 +409,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		err := scheduler.ScheduleLightActions(g)
 		if err != nil {
-			t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
 		// Now request delay
@@ -307,4 +425,39 @@ func TestScheduleLightDelay(t *testing.T) {
 		}
 		storageClient.AssertExpectations(t)
 	})
+}
+
+func TestRemoveJobsByID(t *testing.T) {
+	storageClient := new(storage.MockClient)
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler.StartAsync()
+	defer scheduler.Stop()
+
+	g := createExampleGarden()
+	p := createExamplePlant()
+	// Set Plant's WaterSchedule.StartTime to a time that won't cause it to run
+	startTime := time.Now().Add(-1 * time.Hour)
+	p.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, p)
+	if err != nil {
+		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+	}
+
+	err = scheduler.RemoveJobsByID(p.ID)
+	if err != nil {
+		t.Errorf("Unexpected error when removing jobs: %v", err)
+	}
+
+	// This also gets coverage for GetNextWateringTime when no Job exists
+	nextWaterTime := scheduler.GetNextWateringTime(p)
+	if nextWaterTime != nil {
+		t.Errorf("Expected nil but got: %v", nextWaterTime)
+	}
+
+	storageClient.AssertExpectations(t)
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
 }
