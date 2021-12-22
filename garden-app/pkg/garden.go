@@ -21,13 +21,16 @@ const (
 	LightStateOff LightState = iota
 	// LightStateOn is the value used to turn on a light
 	LightStateOn
+	// LightStateToggle is the empty value that results in toggling
+	LightStateToggle
 )
 
 var (
-	stateToString = []string{"OFF", "ON"}
+	stateToString = []string{"OFF", "ON", ""}
 	stringToState = map[string]LightState{
 		`"OFF"`: LightStateOff,
 		`"ON"`:  LightStateOn,
+		`""`:    LightStateToggle,
 	}
 )
 

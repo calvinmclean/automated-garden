@@ -247,6 +247,11 @@ func TestLightStateString(t *testing.T) {
 			LightStateOff,
 			"OFF",
 		},
+		{
+			"Toggle",
+			LightStateToggle,
+			"",
+		},
 	}
 
 	for _, tt := range tests {
@@ -283,6 +288,11 @@ func TestLightStateUnmarshalJSON(t *testing.T) {
 			"off",
 			`"off"`,
 			LightStateOff,
+		},
+		{
+			"Toggle",
+			`""`,
+			LightStateToggle,
 		},
 	}
 
