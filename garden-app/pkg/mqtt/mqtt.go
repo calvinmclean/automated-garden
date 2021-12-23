@@ -45,10 +45,10 @@ type TopicHandler struct {
 	Handler mqtt.MessageHandler
 }
 
-// NewMQTTClient is used to create and return a MQTTClient. The handlers argument enables the subscriber
+// NewClient is used to create and return a MQTTClient. The handlers argument enables the subscriber
 // using the supplied functions to handle incoming messages. It really should be used with only one function,
 // but I wanted to make it an optional argument, which required using the variadic function argument
-func NewMQTTClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...TopicHandler) (Client, error) {
+func NewClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...TopicHandler) (Client, error) {
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", config.Broker, config.Port))
 	opts.ClientID = config.ClientID
 	opts.AutoReconnect = true

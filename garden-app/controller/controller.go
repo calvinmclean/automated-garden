@@ -89,7 +89,7 @@ func Start(config Config) {
 	})
 	// Override configured ClientID with the TopicPrefix from command flags
 	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.TopicPrefix)
-	controller.mqttClient, err = mqtt.NewMQTTClient(controller.MQTTConfig, defaultHandler, handlers...)
+	controller.mqttClient, err = mqtt.NewClient(controller.MQTTConfig, defaultHandler, handlers...)
 	if err != nil {
 		logger.Errorf("unable to initialize MQTT client: %v", err)
 		return
