@@ -78,7 +78,13 @@ func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
 	s.logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
 
 	// Read Plant's Interval string into a Duration
-	duration, err := time.ParseDuration(p.WaterSchedule.Interval)
+	interval, err := time.ParseDuration(p.WaterSchedule.Interval)
+	if err != nil {
+		return err
+	}
+
+	// Read Plant's Interval string into a Duration
+	duration, err := time.ParseDuration(p.WaterSchedule.Duration)
 	if err != nil {
 		return err
 	}
@@ -86,7 +92,7 @@ func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
 	// Schedule the WaterAction execution
 	action := WaterAction{Duration: duration.Milliseconds()}
 	_, err = s.Scheduler.
-		Every(duration).
+		Every(interval).
 		StartAt(*p.WaterSchedule.StartTime).
 		Tag(p.ID.String()).
 		Do(func() {
