@@ -67,7 +67,12 @@ func Run(config Config) {
 		logger.Errorf("Error initializing '%s' endpoint: %v", plantBasePath, err)
 		os.Exit(1)
 	}
-	r.Mount(gardenBasePath, gardenResource.routes(plantsResource))
+	zonesResource, err := NewZonesResource(gardenResource)
+	if err != nil {
+		logger.Errorf("Error initializing '%s' endpoint: %v", zoneBasePath, err)
+		os.Exit(1)
+	}
+	r.Mount(gardenBasePath, gardenResource.routes(plantsResource, zonesResource))
 
 	http.ListenAndServe(fmt.Sprintf(":%d", config.Port), r)
 }

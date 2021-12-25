@@ -32,9 +32,7 @@ func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) erro
 // and hypermedia Links fields
 type PlantResponse struct {
 	*pkg.Plant
-	Moisture         float64    `json:"moisture,omitempty"`
-	NextWateringTime *time.Time `json:"next_watering_time,omitempty"`
-	Links            []Link     `json:"links,omitempty"`
+	Links []Link `json:"links,omitempty"`
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
@@ -50,31 +48,8 @@ func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garde
 			gardenPath,
 		},
 	)
-	if !plant.EndDated() {
-		links = append(links,
-			Link{
-				"action",
-				fmt.Sprintf("%s%s/%s/action", gardenPath, plantBasePath, plant.ID),
-			},
-			Link{
-				"history",
-				fmt.Sprintf("%s%s/%s/history", gardenPath, plantBasePath, plant.ID),
-			},
-		)
-	}
-	moisture := 0.0
-	var err error
-	if plant.WaterSchedule.MinimumMoisture > 0 && garden != nil {
-		moisture, err = pr.getMoisture(ctx, garden, plant)
-		if err != nil {
-			// Log moisture error but do not return an error since this isn't critical information
-			logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
-		}
-	}
 	return &PlantResponse{
 		plant,
-		moisture,
-		pr.scheduler.GetNextWateringTime(plant),
 		links,
 	}
 }

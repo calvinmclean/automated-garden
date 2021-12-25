@@ -39,11 +39,11 @@ func (_m *MockScheduler) GetNextLightTime(_a0 *pkg.Garden, _a1 pkg.LightState) *
 }
 
 // GetNextWateringTime provides a mock function with given fields: _a0
-func (_m *MockScheduler) GetNextWateringTime(_a0 *pkg.Plant) *time.Time {
+func (_m *MockScheduler) GetNextWateringTime(_a0 *pkg.Zone) *time.Time {
 	ret := _m.Called(_a0)
 
 	var r0 *time.Time
-	if rf, ok := ret.Get(0).(func(*pkg.Plant) *time.Time); ok {
+	if rf, ok := ret.Get(0).(func(*pkg.Zone) *time.Time); ok {
 		r0 = rf(_a0)
 	} else {
 		if ret.Get(0) != nil {
@@ -115,11 +115,11 @@ func (_m *MockScheduler) ResetLightingSchedule(_a0 *pkg.Garden) error {
 }
 
 // ResetWateringSchedule provides a mock function with given fields: _a0, _a1
-func (_m *MockScheduler) ResetWateringSchedule(_a0 *pkg.Garden, _a1 *pkg.Plant) error {
+func (_m *MockScheduler) ResetWateringSchedule(_a0 *pkg.Garden, _a1 *pkg.Zone) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden, *pkg.Plant) error); ok {
+	if rf, ok := ret.Get(0).(func(*pkg.Garden, *pkg.Zone) error); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
@@ -157,11 +157,11 @@ func (_m *MockScheduler) ScheduleLightDelay(_a0 *pkg.Garden, _a1 *LightAction) e
 }
 
 // ScheduleWateringAction provides a mock function with given fields: _a0, _a1
-func (_m *MockScheduler) ScheduleWateringAction(_a0 *pkg.Garden, _a1 *pkg.Plant) error {
+func (_m *MockScheduler) ScheduleWateringAction(_a0 *pkg.Garden, _a1 *pkg.Zone) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden, *pkg.Plant) error); ok {
+	if rf, ok := ret.Get(0).(func(*pkg.Garden, *pkg.Zone) error); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)

@@ -32,10 +32,10 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 	if illegalRegexp.MatchString(g.TopicPrefix) {
 		return errors.New("one or more invalid characters in Garden topic_prefix")
 	}
-	if g.MaxPlants == nil {
-		return errors.New("missing required max_plants field")
-	} else if *g.MaxPlants == 0 {
-		return errors.New("max_plants must not be 0")
+	if g.MaxZones == nil {
+		return errors.New("missing required max_zones field")
+	} else if *g.MaxZones == 0 {
+		return errors.New("max_zones must not be 0")
 	}
 	if len(g.Plants) > 0 {
 		return errors.New("cannot add or modify Plants with this request")
@@ -88,7 +88,7 @@ func (g *UpdateGardenRequest) Bind(r *http.Request) error {
 	if g.EndDate != nil {
 		return errors.New("to end-date a Garden, please use the DELETE endpoint")
 	}
-	if g.MaxPlants != nil && *g.MaxPlants == 0 {
+	if g.MaxZones != nil && *g.MaxZones == 0 {
 		return errors.New("max_plants must not be 0")
 	}
 

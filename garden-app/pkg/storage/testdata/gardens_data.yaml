@@ -11,11 +11,6 @@ c22tmvucie6n6gdrpal0:
                 time_to_harvest: 70 days
                 count: 6
             id: c3ucvu06n88pt1dom670
-            plant_position: 0
             created_at: 2021-07-24T19:44:08.014997-07:00
-            water_schedule:
-                duration: 5m
-                interval: 30m
-                start_time: 2021-07-24T19:44:08.014997-07:00
-    max_plants: null
+    max_zones: null
     created_at: 2021-08-03T19:53:14.816332-07:00

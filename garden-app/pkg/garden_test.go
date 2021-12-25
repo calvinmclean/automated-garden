@@ -100,7 +100,7 @@ func TestGardenPatch(t *testing.T) {
 		},
 		{
 			"PatchMaxPlants",
-			&Garden{MaxPlants: &ten},
+			&Garden{MaxZones: &ten},
 		},
 		{
 			"PatchCreatedAt",

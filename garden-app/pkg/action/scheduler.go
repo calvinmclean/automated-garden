@@ -20,9 +20,9 @@ const (
 
 // Scheduler exposes scheduling functionality that allows executing actions at predetermined times and intervals
 type Scheduler interface {
-	ScheduleWateringAction(*pkg.Garden, *pkg.Plant) error
-	ResetWateringSchedule(*pkg.Garden, *pkg.Plant) error
-	GetNextWateringTime(*pkg.Plant) *time.Time
+	ScheduleWateringAction(*pkg.Garden, *pkg.Zone) error
+	ResetWateringSchedule(*pkg.Garden, *pkg.Zone) error
+	GetNextWateringTime(*pkg.Zone) *time.Time
 
 	ScheduleLightActions(*pkg.Garden) error
 	ResetLightingSchedule(*pkg.Garden) error
@@ -71,20 +71,20 @@ func (s *scheduler) MQTTClient() mqtt.Client {
 	return s.mqttClient
 }
 
-// ScheduleWateringAction will schedule watering actions for the Plant based off the CreatedAt date,
-// WaterSchedule time, and Interval. The scheduled Job is tagged with the Plant's ID so it can
+// ScheduleWateringAction will schedule watering actions for the Zone based off the CreatedAt date,
+// WaterSchedule time, and Interval. The scheduled Job is tagged with the Zone's ID so it can
 // easily be removed
-func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
-	s.logger.Infof("Creating scheduled Job for watering Plant %s", p.ID.String())
+func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, z *pkg.Zone) error {
+	s.logger.Infof("Creating scheduled Job for watering Zone %s", z.ID.String())
 
-	// Read Plant's Interval string into a Duration
-	interval, err := time.ParseDuration(p.WaterSchedule.Interval)
+	// Read Zone's Interval string into a Duration
+	interval, err := time.ParseDuration(z.WaterSchedule.Interval)
 	if err != nil {
 		return err
 	}
 
-	// Read Plant's Interval string into a Duration
-	duration, err := time.ParseDuration(p.WaterSchedule.Duration)
+	// Read Zone's Interval string into a Duration
+	duration, err := time.ParseDuration(z.WaterSchedule.Duration)
 	if err != nil {
 		return err
 	}
@@ -93,30 +93,30 @@ func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, p *pkg.Plant) error {
 	action := WaterAction{Duration: duration.Milliseconds()}
 	_, err = s.Scheduler.
 		Every(interval).
-		StartAt(*p.WaterSchedule.StartTime).
-		Tag(p.ID.String()).
+		StartAt(*z.WaterSchedule.StartTime).
+		Tag(z.ID.String()).
 		Do(func() {
 			defer s.influxdbClient.Close()
 
-			s.logger.Infof("Executing WateringAction to water Plant %s for %d ms", p.ID.String(), action.Duration)
-			err = action.Execute(g, p, s)
+			s.logger.Infof("Executing WateringAction to water Zone %s for %d ms", z.ID.String(), action.Duration)
+			err = action.Execute(g, z, s)
 			if err != nil {
-				s.logger.Error("Error executing scheduled plant watering action: ", err)
+				s.logger.Error("Error executing scheduled zone watering action: ", err)
 			}
 		})
 	return err
 }
 
 // ResetWateringSchedule will simply remove the existing Job and create a new one
-func (s *scheduler) ResetWateringSchedule(g *pkg.Garden, p *pkg.Plant) error {
+func (s *scheduler) ResetWateringSchedule(g *pkg.Garden, p *pkg.Zone) error {
 	if err := s.RemoveJobsByID(g.ID); err != nil {
 		return err
 	}
 	return s.ScheduleWateringAction(g, p)
 }
 
-// GetNextWateringTime determines the next scheduled watering time for a given Plant using tags
-func (s *scheduler) GetNextWateringTime(p *pkg.Plant) *time.Time {
+// GetNextWateringTime determines the next scheduled watering time for a given Zone using tags
+func (s *scheduler) GetNextWateringTime(p *pkg.Zone) *time.Time {
 	for _, job := range s.Scheduler.Jobs() {
 		for _, tag := range job.Tags() {
 			if tag == p.ID.String() {

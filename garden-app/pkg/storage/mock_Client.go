@@ -41,6 +41,20 @@ func (_m *MockClient) DeletePlant(_a0 xid.ID, _a1 xid.ID) error {
 	return r0
 }
 
+// DeleteZone provides a mock function with given fields: _a0, _a1
+func (_m *MockClient) DeleteZone(_a0 xid.ID, _a1 xid.ID) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(xid.ID, xid.ID) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
 // GetGarden provides a mock function with given fields: _a0
 func (_m *MockClient) GetGarden(_a0 xid.ID) (*pkg.Garden, error) {
 	ret := _m.Called(_a0)
@@ -133,6 +147,52 @@ func (_m *MockClient) GetPlants(_a0 xid.ID, _a1 bool) ([]*pkg.Plant, error) {
 	return r0, r1
 }
 
+// GetZone provides a mock function with given fields: _a0, _a1
+func (_m *MockClient) GetZone(_a0 xid.ID, _a1 xid.ID) (*pkg.Zone, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 *pkg.Zone
+	if rf, ok := ret.Get(0).(func(xid.ID, xid.ID) *pkg.Zone); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*pkg.Zone)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(xid.ID, xid.ID) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetZones provides a mock function with given fields: _a0, _a1
+func (_m *MockClient) GetZones(_a0 xid.ID, _a1 bool) ([]*pkg.Zone, error) {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 []*pkg.Zone
+	if rf, ok := ret.Get(0).(func(xid.ID, bool) []*pkg.Zone); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*pkg.Zone)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(xid.ID, bool) error); ok {
+		r1 = rf(_a0, _a1)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // Save provides a mock function with given fields:
 func (_m *MockClient) Save() error {
 	ret := _m.Called()
@@ -167,6 +227,20 @@ func (_m *MockClient) SavePlant(_a0 xid.ID, _a1 *pkg.Plant) error {
 
 	var r0 error
 	if rf, ok := ret.Get(0).(func(xid.ID, *pkg.Plant) error); ok {
+		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// SaveZone provides a mock function with given fields: _a0, _a1
+func (_m *MockClient) SaveZone(_a0 xid.ID, _a1 *pkg.Zone) error {
+	ret := _m.Called(_a0, _a1)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(xid.ID, *pkg.Zone) error); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
