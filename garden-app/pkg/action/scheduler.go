@@ -371,13 +371,13 @@ func (s *scheduler) rescheduleLightOnAction(g *pkg.Garden) error {
 	startDate := time.Date(
 		now.Year(),
 		now.Month(),
-		now.Day()+1,
+		now.Day(),
 		lightTime.Hour(),
 		lightTime.Minute(),
 		lightTime.Second(),
 		0,
 		lightTime.Location(),
-	)
+	).Add(24 * time.Hour)
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
