@@ -15,6 +15,7 @@ type Plant struct {
 	Name      string        `json:"name" yaml:"name,omitempty"`
 	Details   *PlantDetails `json:"details,omitempty" yaml:"details,omitempty"`
 	ID        xid.ID        `json:"id" yaml:"id,omitempty"`
+	ZoneID    xid.ID        `json:"zone_id" yaml:"zone_id"`
 	CreatedAt *time.Time    `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate   *time.Time    `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 }
@@ -38,6 +39,9 @@ func (p *Plant) EndDated() bool {
 func (p *Plant) Patch(newPlant *Plant) {
 	if newPlant.Name != "" {
 		p.Name = newPlant.Name
+	}
+	if newPlant.ZoneID != xid.NilID() {
+		p.ZoneID = newPlant.ZoneID
 	}
 	if newPlant.CreatedAt != nil {
 		p.CreatedAt = newPlant.CreatedAt

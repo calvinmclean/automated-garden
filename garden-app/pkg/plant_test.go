@@ -3,6 +3,8 @@ package pkg
 import (
 	"testing"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 func TestPlantEndDated(t *testing.T) {
@@ -29,6 +31,7 @@ func TestPlantEndDated(t *testing.T) {
 }
 
 func TestPlantPatch(t *testing.T) {
+	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	now := time.Now()
 	tests := []struct {
 		name     string
@@ -37,6 +40,10 @@ func TestPlantPatch(t *testing.T) {
 		{
 			"PatchName",
 			&Plant{Name: "name"},
+		},
+		{
+			"PatchZoneID",
+			&Plant{ZoneID: id},
 		},
 		{
 			"PatchCreatedAt",

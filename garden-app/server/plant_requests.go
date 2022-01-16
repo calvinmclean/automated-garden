@@ -23,6 +23,9 @@ func (p *PlantRequest) Bind(r *http.Request) error {
 	if p.Name == "" {
 		return errors.New("missing required name field")
 	}
+	if p.ZoneID == xid.NilID() {
+		return errors.New("missing required zone_id field")
+	}
 
 	return nil
 }

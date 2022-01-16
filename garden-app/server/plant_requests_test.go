@@ -30,12 +30,19 @@ func TestPlantRequest(t *testing.T) {
 			&PlantRequest{Plant: &pkg.Plant{}},
 			"missing required name field",
 		},
+		{
+			"EmptyZoneID",
+			&PlantRequest{Plant: &pkg.Plant{Name: "Name"}},
+			"missing required zone_id field",
+		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
+		id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 		pr := &PlantRequest{
 			Plant: &pkg.Plant{
-				Name: "plant",
+				Name:   "plant",
+				ZoneID: id,
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)
