@@ -185,6 +185,12 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	now := time.Now()
 
+	// Unable to delete Zone with associated Plants
+	if numPlants := len(garden.PlantsByZone(zone.ID)); numPlants > 0 {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to delete Zone with %d Plants", numPlants)))
+		return
+	}
+
 	// Permanently delete the Zone if it is already end-dated
 	if zone.EndDated() {
 		if err := zr.storageClient.DeleteZone(garden.ID, zone.ID); err != nil {

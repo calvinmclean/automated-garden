@@ -187,3 +187,13 @@ func (g *Garden) NumZones() uint {
 	}
 	return result
 }
+
+// PlantsByZone returns the Plants associated with the provided ZoneID
+func (g *Garden) PlantsByZone(zoneID xid.ID) (result []*Plant) {
+	for _, p := range g.Plants {
+		if p.ZoneID == zoneID {
+			result = append(result, p)
+		}
+	}
+	return
+}
