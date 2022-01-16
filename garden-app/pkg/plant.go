@@ -8,8 +8,7 @@ import (
 
 // Plant is the representation of the most important resource for this application, a Plant.
 // This includes some general information like name and unique ID, a start and end date to show when
-// the Plant was in the system, plus some information for watering like the duration to water for, how
-// often to water, and the PlantPosition field will tell the microcontroller which plant to water.
+// the Plant was in the system.
 // Some integers in this struct are pointers because it allows differentiating 0-value from empty.
 type Plant struct {
 	Name      string        `json:"name" yaml:"name,omitempty"`

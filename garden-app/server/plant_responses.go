@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 )
@@ -66,30 +65,4 @@ type PlantWateringHistoryResponse struct {
 	Count   int                   `json:"count"`
 	Average string                `json:"average"`
 	Total   string                `json:"total"`
-}
-
-// NewPlantWateringHistoryResponse creates a response by creating some basic statistics about a list of history events
-func NewPlantWateringHistoryResponse(history []pkg.WateringHistory) PlantWateringHistoryResponse {
-	total := time.Duration(0)
-	for _, h := range history {
-		amountDuration, _ := time.ParseDuration(h.Duration)
-		total += amountDuration
-	}
-	count := len(history)
-	average := time.Duration(0)
-	if count != 0 {
-		average = time.Duration(int(total) / len(history))
-	}
-	return PlantWateringHistoryResponse{
-		History: history,
-		Count:   count,
-		Average: average.String(),
-		Total:   time.Duration(total).String(),
-	}
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (resp PlantWateringHistoryResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
 }

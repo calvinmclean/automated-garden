@@ -6,6 +6,11 @@ import (
 	"github.com/rs/xid"
 )
 
+// Zone represents a "waterable resource" that is owned by a Garden and can be associated with multiple Plants.
+// This allows for more complex Garden setups where a large irrigation system will be watering entire groups of
+// Plants rather than watering individually. This contains the important information for managing WaterSchedules
+// and some additional details describing the Zone. The Position is an integer that tells the controller which
+// part of hardware needs to be switched on to start watering
 type Zone struct {
 	Name          string         `json:"name" yaml:"name,omitempty"`
 	Details       *ZoneDetails   `json:"details,omitempty" yaml:"details,omitempty"`

@@ -41,9 +41,9 @@ func NewZonesResource(gr GardensResource) (ZonesResource, error) {
 		if err != nil {
 			return zr, err
 		}
-		for _, p := range allZones {
-			if err = zr.scheduler.ScheduleWateringAction(g, p); err != nil {
-				err = fmt.Errorf("unable to add watering Job for Zone %v: %v", p.ID, err)
+		for _, z := range allZones {
+			if err = zr.scheduler.ScheduleWateringAction(g, z); err != nil {
+				err = fmt.Errorf("unable to add watering Job for Zone %v: %v", z.ID, err)
 				return zr, err
 			}
 		}
@@ -186,7 +186,7 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 	now := time.Now()
 
 	// Unable to delete Zone with associated Plants
-	if numPlants := len(garden.PlantsByZone(zone.ID)); numPlants > 0 {
+	if numPlants := len(garden.PlantsByZone(zone.ID, false)); numPlants > 0 {
 		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to delete Zone with %d Plants", numPlants)))
 		return
 	}
@@ -226,9 +226,9 @@ func (zr ZonesResource) getAllZones(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	zones := []*pkg.Zone{}
-	for _, p := range garden.Zones {
-		if getEndDated || (p.EndDate == nil || p.EndDate.After(time.Now())) {
-			zones = append(zones, p)
+	for _, z := range garden.Zones {
+		if getEndDated || (z.EndDate == nil || z.EndDate.After(time.Now())) {
+			zones = append(zones, z)
 		}
 	}
 	if err := render.Render(w, r, zr.NewAllZonesResponse(r.Context(), zones, garden)); err != nil {
@@ -255,7 +255,7 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	}
 	// Validate that ZonePosition works for a Garden with MaxZones (remember ZonePosition is zero-indexed)
 	if *zone.Position >= *garden.MaxZones {
-		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("zone_position invalid for Garden with max_zones=%d", *garden.MaxZones)))
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("position invalid for Garden with max_zones=%d", *garden.MaxZones)))
 		return
 	}
 
@@ -321,10 +321,10 @@ func (zr ZonesResource) wateringHistory(w http.ResponseWriter, r *http.Request) 
 	}
 }
 
-func (zr ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, p *pkg.Zone) (float64, error) {
+func (zr ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {
 	defer zr.influxdbClient.Close()
 
-	moisture, err := zr.influxdbClient.GetMoisture(ctx, *p.Position, g.TopicPrefix)
+	moisture, err := zr.influxdbClient.GetMoisture(ctx, *z.Position, g.TopicPrefix)
 	if err != nil {
 		return 0, err
 	}

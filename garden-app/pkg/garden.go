@@ -189,9 +189,9 @@ func (g *Garden) NumZones() uint {
 }
 
 // PlantsByZone returns the Plants associated with the provided ZoneID
-func (g *Garden) PlantsByZone(zoneID xid.ID) (result []*Plant) {
+func (g *Garden) PlantsByZone(zoneID xid.ID, getEndDated bool) (result []*Plant) {
 	for _, p := range g.Plants {
-		if p.ZoneID == zoneID {
+		if p.ZoneID == zoneID && (getEndDated || !p.EndDated()) {
 			result = append(result, p)
 		}
 	}
