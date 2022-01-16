@@ -93,6 +93,13 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+
+	// Don't allow changing ZoneID to non-existent Zone
+	if _, ok := garden.Zones[plant.ZoneID]; !ok {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to update Plant with non-existent zone: %v", plant.ZoneID)))
+		return
+	}
+
 	plant.Patch(request.Plant)
 
 	// Save the Plant
@@ -165,8 +172,13 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	plant := request.Plant
-
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+
+	// Don't allow creating Plant with nonexistent Zone
+	if _, ok := garden.Zones[plant.ZoneID]; !ok {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to create Plant with non-existent zone: %v", plant.ZoneID)))
+		return
+	}
 
 	// Assign values to fields that may not be set in the request
 	plant.ID = xid.New()

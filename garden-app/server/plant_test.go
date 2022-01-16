@@ -164,6 +164,7 @@ func TestUpdatePlant(t *testing.T) {
 		name      string
 		setupMock func(*storage.MockClient)
 		body      string
+		garden    *pkg.Garden
 		expected  string
 		status    int
 	}{
@@ -173,6 +174,7 @@ func TestUpdatePlant(t *testing.T) {
 				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(nil)
 			},
 			`{"name":"new name"}`,
+			createExampleGardenWithZone(),
 			`{"name":"new name","id":"c5cvhpcbcv45e8bp16dg","zone_id":"c5cvhpcbcv45e8bp16dg","created_at":"2021-10-03T11:24:52.891386-07:00","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/plants/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"}]}`,
 			http.StatusOK,
 		},
@@ -180,6 +182,7 @@ func TestUpdatePlant(t *testing.T) {
 			"BadRequest",
 			func(storageClient *storage.MockClient) {},
 			"this is not json",
+			createExampleGardenWithZone(),
 			`{"status":"Invalid request.","error":"invalid character 'h' in literal true (expecting 'r')"}`,
 			http.StatusBadRequest,
 		},
@@ -189,8 +192,17 @@ func TestUpdatePlant(t *testing.T) {
 				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(errors.New("storage error"))
 			},
 			`{"name":"new name"}`,
+			createExampleGardenWithZone(),
 			`{"status":"Server Error.","error":"storage error"}`,
 			http.StatusInternalServerError,
+		},
+		{
+			"ErrorNonexistentZone",
+			func(storageClient *storage.MockClient) {},
+			`{"zone_id": "c5cvhpcbcv45e8bp16dg"}`,
+			createExampleGarden(),
+			`{"status":"Invalid request.","error":"unable to update Plant with non-existent zone: c5cvhpcbcv45e8bp16dg"}`,
+			http.StatusBadRequest,
 		},
 	}
 
@@ -205,10 +217,9 @@ func TestUpdatePlant(t *testing.T) {
 					scheduler:     action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
 				},
 			}
-			garden := createExampleGarden()
 			plant := createExamplePlant()
 
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
 			plantCtx := context.WithValue(gardenCtx, plantCtxKey, plant)
 			r := httptest.NewRequest("PATCH", "/plant", strings.NewReader(tt.body)).WithContext(plantCtx)
 			r.Header.Add("Content-Type", "application/json")
@@ -399,7 +410,7 @@ func TestCreatePlant(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(nil)
 			},
-			createExampleGarden(),
+			createExampleGardenWithZone(),
 			`{"name":"test plant", "zone_id": "c5cvhpcbcv45e8bp16dg"}`,
 			`{"name":"test plant","id":"[0-9a-v]{20}","zone_id":"[0-9a-v]{20}","created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/plants/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
@@ -407,7 +418,7 @@ func TestCreatePlant(t *testing.T) {
 		{
 			"ErrorBadRequestBadJSON",
 			func(storageClient *storage.MockClient) {},
-			createExampleGarden(),
+			createExampleGardenWithZone(),
 			"this is not json",
 			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
 			http.StatusBadRequest,
@@ -417,10 +428,18 @@ func TestCreatePlant(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SavePlant", mock.Anything, mock.Anything).Return(errors.New("storage error"))
 			},
-			createExampleGarden(),
+			createExampleGardenWithZone(),
 			`{"name":"test plant", "zone_id": "c5cvhpcbcv45e8bp16dg"}`,
 			`{"status":"Server Error.","error":"storage error"}`,
 			http.StatusInternalServerError,
+		},
+		{
+			"ErrorNonexistentZone",
+			func(storageClient *storage.MockClient) {},
+			createExampleGarden(),
+			`{"name":"test plant", "zone_id": "c5cvhpcbcv45e8bp16dg"}`,
+			`{"status":"Invalid request.","error":"unable to create Plant with non-existent zone: c5cvhpcbcv45e8bp16dg"}`,
+			http.StatusBadRequest,
 		},
 	}
 

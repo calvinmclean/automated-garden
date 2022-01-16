@@ -47,6 +47,13 @@ func createExampleGarden() *pkg.Garden {
 	}
 }
 
+func createExampleGardenWithZone() *pkg.Garden {
+	garden := createExampleGarden()
+	zone := createExampleZone()
+	garden.Zones[zone.ID] = zone
+	return garden
+}
+
 func TestGardenContextMiddleware(t *testing.T) {
 	garden := createExampleGarden()
 
