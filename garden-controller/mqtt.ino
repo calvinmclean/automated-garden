@@ -50,7 +50,7 @@ void waterPublisherTask(void* parameters) {
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
             char message[50];
-            sprintf(message, "water,plant=%d millis=%lu", we.plant_position, we.duration);
+            sprintf(message, "water,zone=%d millis=%lu", we.position, we.duration);
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
                 client.publish(waterDataTopic, message);
@@ -153,10 +153,10 @@ void mqttLoopTask(void* parameters) {
 /*
   processIncomingMessage is a callback function for the MQTT client that will
   react to incoming messages. Currently, the topics are:
-    - waterCommandTopic: accepts a WateringEvent JSON to water a plant for
+    - waterCommandTopic: accepts a WateringEvent JSON to water a zone for
                          specified time
-    - stopCommandTopic: ignores message and stops the currently-watering plant
-    - stopAllCommandTopic: ignores message, stops the currently-watering plant,
+    - stopCommandTopic: ignores message and stops the currently-watering zone
+    - stopAllCommandTopic: ignores message, stops the currently-watering zone,
                            and clears the wateringQueue
     - lightCommandTopic: accepts LightingEvent JSON to control a grow light
 */
@@ -171,12 +171,12 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
 
     if (strcmp(topic, waterCommandTopic) == 0) {
         WateringEvent we = {
-            doc["plant_position"] | -1,
+            doc["position"] | -1,
             doc["duration"] | 0,
             doc["id"] | "N/A"
         };
-        printf("received command to water plant %d (%s) for %lu\n", we.plant_position, we.id, we.duration);
-        waterPlant(we);
+        printf("received command to water zone %d (%s) for %lu\n", we.position, we.id, we.duration);
+        waterZone(we);
     } else if (strcmp(topic, stopCommandTopic) == 0) {
         printf("received command to stop watering\n");
         stopWatering();

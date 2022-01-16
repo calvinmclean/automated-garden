@@ -17,11 +17,11 @@
  * MQTT_CLIENT_NAME
  *   Name to use when connecting to MQTT broker. By default this is TOPIC_PREFIX
  * MQTT_WATER_TOPIC
- *   Topic to subscribe to for incoming commands to water a plant
+ *   Topic to subscribe to for incoming commands to water a zone
  * MQTT_STOP_TOPIC
- *   Topic to subscribe to for incoming command to stop watering a plant
+ *   Topic to subscribe to for incoming command to stop watering a zone
  * MQTT_STOP_ALL_TOPIC
- *   Topic to subscribe to for incoming command to stop watering a plant and clear the watering queue
+ *   Topic to subscribe to for incoming command to stop watering a zone and clear the watering queue
  * MQTT_LIGHT_TOPIC
  *   Topic to subscribe to for incoming command to change the state of an attached grow light
  * MQTT_LIGHT_DATA_TOPIC
@@ -58,27 +58,27 @@
  *
  * DISABLE_WATERING
  *   Allows disabling Pump/Valve pins and doesn't listen on relevant MQTT topics. This allows a sensor-only Garden
- * NUM_PLANTS
- *   Number of plants in the PLANTS list
- * PLANTS
- *   List of plant pins in this format: { {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN} }
- *   You can create multiple plants before creating the PLANTS list for improved readability (see example below)
+ * NUM_ZONES
+ *   Number of zones in the ZONES list
+ * ZONES
+ *   List of zone pins in this format: { {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN} }
+ *   You can create multiple zones before creating the ZONES list for improved readability (see example below)
  * DEFAULT_WATER_TIME
  *   Default time to water for if none is specified. This is used by buttons
  * ENABLE_BUTTONS
- *   Configure if there are any hardware buttons corresponding to plants
+ *   Configure if there are any hardware buttons corresponding to zones
  * STOP_BUTTON_PIN
  *   Pin used for the button that will stop all watering
  * LIGHT_PIN
  *   The pin used to control a grow light relay
  */
 // #define DISABLE_WATERING
-#define NUM_PLANTS 3
+#define NUM_ZONES 3
 #define PUMP_PIN GPIO_NUM_18
-#define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
-#define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
-#define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
-#define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
+#define ZONE_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
+#define ZONE_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
+#define ZONE_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
+#define ZONES { ZONE_1, ZONE_2, ZONE_3 }
 #define DEFAULT_WATER_TIME 5000
 
 #define LIGHT_PIN GPIO_NUM_32
