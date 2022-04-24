@@ -1,5 +1,5 @@
 # Garden App
-The `garden-app` is a Go server application that provides a REST API for managing Gardens and Plants.
+The `garden-app` is a Go server application that provides a REST API for managing Gardens, Zones and Plants.
 
 ## Getting Started
 1. Clone the repository
@@ -46,10 +46,10 @@ This guide assumes you already completed the preceding section to run the `garde
     ```shell
     garden-app controller --topic test-garden
     ```
-1. Water the Plant to see output in the mock controller
+1. Water the Zone to see output in the mock controller
     ```shell
     curl --request POST \
-        --url http://localhost/gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/action \
+        --url http://localhost/gardens/c22tmvucie6n6gdrpal0/zones/c3ucvu06n88pt1dom670/action \
         --header 'Content-Type: application/json' \
         --data '{
             "water": {

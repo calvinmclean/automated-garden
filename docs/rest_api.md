@@ -7,7 +7,7 @@ Use [this link](https://petstore.swagger.io/?url=https://raw.githubusercontent.c
 To use with [Insomnia HTTP Client](https://insomnia.rest), import [`Insomnia.yaml`](https://github.com/calvinmclean/automated-garden/blob/main/garden-app/api/Insomnia.yaml).
 
 ## Overview
-This REST API is centered around two main resources: `Gardens` and `Plants`.
+This REST API is centered around three main resources: `Gardens`, `Zones` and `Plants`.
 
 ### Gardens
 A `Garden` represents a garden in the physical world and should correspond one-to-one with an IoT device running `garden-controller` firmware. A Garden provides the following functionalities:
@@ -23,73 +23,65 @@ A `Garden` represents a garden in the physical world and should correspond one-t
     - Using the `for_duration` field of the action with `state=OFF` allows turning a light off or delaying the light from turning on for a specific duration. This is useful if an indoor garden's light turning on would be disruptive
   - Stop watering by sending a `StopAction` to the `/action` endpoint
   - Access to a controller's health status using the `/health` endpoint to see if the controller has recently checked-in
-  - Storage of a collection of Plants
+  - Storage of a collection of Plants and Zones
 
 #### Examples
 <!-- tabs:start -->
 #### **Garden JSON**
 ```json
 {
-  "name": "Test Garden",
-  "topic_prefix": "test-garden",
-  "id": "c22tmvucie6n6gdrpal0",
-  "created_at": "2021-08-03T19:53:14.816332-07:00",
-  "num_plants": 3,
-  "plants": {
-    "rel": "collection",
-    "href": "/gardens/c22tmvucie6n6gdrpal0/plants"
-  },
-  "light_schedule": {
-    "duration": "15h",
-    "start_time": "23:00:00-07:00"
-  },
-  "links": [
-    {
-      "rel": "self",
-      "href": "/gardens/c22tmvucie6n6gdrpal0"
-    },
-    {
-      "rel": "health",
-      "href": "/gardens/c22tmvucie6n6gdrpal0/health"
-    },
-    {
-      "rel": "plants",
-      "href": "/gardens/c22tmvucie6n6gdrpal0/plants"
-    },
-    {
-      "rel": "action",
-      "href": "/gardens/c22tmvucie6n6gdrpal0/action"
-    }
-  ]
-}
-```
-
-#### **Garden JSON (end-dated)**
-```json
-{
-  "name": "test-garden",
-  "topic_prefix": "test-garden",
-  "id": "c22tmvucie6n6gdrpal0",
-  "created_at": "2021-08-03T19:53:14.816332-07:00",
-  "end_date": "2021-11-22T16:10:03.104226-07:00",
-  "num_plants": 0,
-  "plants": {
-    "rel": "collection",
-    "href": "/gardens/c22tmvucie6n6gdrpal0/plants"
-  },
-  "links": [
-    {
-      "rel": "self",
-      "href": "/gardens/c22tmvucie6n6gdrpal0"
-    }
-  ]
+	"name": "Test Garden",
+	"topic_prefix": "test-garden",
+	"id": "c9i98glvqc7km2vasfig",
+	"max_zones": 1,
+	"created_at": "2022-04-23T17:05:22.245112-07:00",
+	"light_schedule": {
+		"duration": "14h",
+		"start_time": "08:00:00-07:00"
+	},
+	"next_light_action": {
+		"time": "2022-04-23T22:00:00-07:00",
+		"state": "OFF"
+	},
+	"num_plants": 0,
+	"num_zones": 1,
+	"plants": {
+		"rel": "collection",
+		"href": "/gardens/c9i98glvqc7km2vasfig/plants"
+	},
+	"zones": {
+		"rel": "collection",
+		"href": "/gardens/c9i98glvqc7km2vasfig/zones"
+	},
+	"links": [
+		{
+			"rel": "self",
+			"href": "/gardens/c9i98glvqc7km2vasfig"
+		},
+		{
+			"rel": "health",
+			"href": "/gardens/c9i98glvqc7km2vasfig/health"
+		},
+		{
+			"rel": "plants",
+			"href": "/gardens/c9i98glvqc7km2vasfig/plants"
+		},
+		{
+			"rel": "zones",
+			"href": "/gardens/c9i98glvqc7km2vasfig/zones"
+		},
+		{
+			"rel": "action",
+			"href": "/gardens/c9i98glvqc7km2vasfig/action"
+		}
+	]
 }
 ```
 <!-- tabs:end -->
 
-### Plants
-A `Plant` represents a resource that can be watered. In many cases, this will represent a plant in the physical world, but it isn't necessarily always one-to-one. For example, a simple deep water culture hydroponics system might have multiple plants, but only controls watering by circulating water with a single pump. A Plant provides the following functionalities:
-  - Accessed at `/gardens/{GardenID}/plants/{PlantID}`
+### Zones
+A `Zone` represents a resource that can be watered. It may contain zero or more Plants. In the real world, this might be a single raised bed, a section of the yard, or a lawn. A Zone provides the following functionalities:
+  - Accessed at `/gardens/{GardenID}/zones/{ZoneID}`
   - Scheduled control of watering using a `water_schedule`:
     ```json
     "water_schedule": {
@@ -98,83 +90,82 @@ A `Plant` represents a resource that can be watered. In many cases, this will re
         "start_time": "2021-07-24T19:00:00-07:00"
     }
     ```
-  - Control of watering based on moisture using `minimum_moisture` in the `water_schedule`. This sets the moisture percentage the plant's soil must drop below to enable watering
+  - Control of watering based on moisture using `minimum_moisture` in the `water_schedule`. This sets the moisture percentage the zone's soil must drop below to enable watering
   - On-demand control of watering using a `WaterAction` to the `/action` endpoint
-  - Access to a Plant's watering history from InfluxDB using `/history` endpoint
+  - Access to a Zone's watering history from InfluxDB using `/history` endpoint
 
-It is important to note that, although this doesn't necessarily correspond to one real plant, it must correspond directly to a Plant in the `garden-controller` `PLANT` configuration array. This is controlled by the `plant_position` field in the `Plant` which is the index in the `PLANT` configuration.
+It is important to note that it must correspond directly to a Zone in the `garden-controller` `ZONES` configuration array. This is controlled by the `position` field in the `Zone` which is the index in the `ZONES` configuration.
+
+
+#### Examples
+<!-- tabs:start -->
+#### **Zone JSON**
+```json
+{
+	"name": "Zone 1",
+	"id": "c9i99otvqc7kmt8hjio0",
+	"position": 0,
+	"created_at": "2022-04-23T17:08:03.441727-07:00",
+	"water_schedule": {
+		"duration": "30s",
+		"interval": "24h",
+		"start_time": "2022-04-23T08:00:00-07:00"
+	},
+	"next_watering_time": "2022-04-24T08:00:00-07:00",
+	"links": [
+		{
+			"rel": "self",
+			"href": "/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0"
+		},
+		{
+			"rel": "garden",
+			"href": "/gardens/c9i98glvqc7km2vasfig"
+		},
+		{
+			"rel": "action",
+			"href": "/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0/action"
+		},
+		{
+			"rel": "history",
+			"href": "/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0/history"
+		}
+	]
+}
+```
+<!-- tabs:end -->
+
+### Plants
+A `Plant` represents an actual Plant in the real world. It doesn't have any special characteristics to interact with, like a Zone or Garden. This is just used to track Plants that exist in certain Gardens and Zones and is completely optional. It allows to easily keep track of planting details such as number of plants, time to harvest, and planting date.
 
 #### Examples
 <!-- tabs:start -->
 #### **Plant JSON**
 ```json
 {
-  "name": "Tom Thumb Lettuce",
-  "details": {
-    "description": "Dwarf lettuce variety",
-    "notes": "Planted from seed",
-    "time_to_harvest": "70 days",
-    "count": 6
-  },
-  "id": "c3ucvu06n88pt1dom670",
-  "plant_position": 0,
-  "created_at": "2021-07-24T19:44:08.014997-07:00",
-  "water_schedule": {
-    "duration": "5m",
-    "interval": "24h",
-    "start_time": "2021-07-24T19:00:00-07:00"
-  },
-  "next_watering_time": "2021-11-22T18:59:59.999998-07:00",
-  "links": [
-    {
-      "rel": "self",
-      "href": "/gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670"
-    },
-    {
-      "rel": "garden",
-      "href": "/gardens/c22tmvucie6n6gdrpal0"
-    },
-    {
-      "rel": "action",
-      "href": "/gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/action"
-    },
-    {
-      "rel": "history",
-      "href": "/gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/history"
-    }
-  ]
-}
-```
-
-#### **Plant JSON (end-dated)**
-```json
-{
-  "name": "Tom Thumb Lettuce",
-  "details": {
-    "description": "Dwarf lettuce variety",
-    "notes": "Planted from seed",
-    "time_to_harvest": "70 days",
-    "count": 6
-  },
-  "id": "c3ucvu06n88pt1dom670",
-  "plant_position": 0,
-  "created_at": "2021-07-24T19:44:08.014997-07:00",
-  "end_date": "2021-11-22T16:11:53.010698-07:00",
-  "water_schedule": {
-    "duration": 300000,
-    "interval": "24h",
-    "start_time": "2021-07-24T19:00:00-07:00"
-  },
-  "links": [
-    {
-      "rel": "self",
-      "href": "/gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670"
-    },
-    {
-      "rel": "garden",
-      "href": "/gardens/c22tmvucie6n6gdrpal0"
-    }
-  ]
+	"name": "Plant",
+	"details": {
+		"description": "My favorite plant",
+		"notes": "Planted from seed",
+		"time_to_harvest": "70 days",
+		"count": 1
+	},
+	"id": "c9i9jl5vqc7l7e3ikkgg",
+	"zone_id": "c9i99otvqc7kmt8hjio0",
+	"created_at": "2022-04-23T17:29:08.526638-07:00",
+	"links": [
+		{
+			"rel": "self",
+			"href": "/gardens/c9i98glvqc7km2vasfig/plants/c9i9jl5vqc7l7e3ikkgg"
+		},
+		{
+			"rel": "garden",
+			"href": "/gardens/c9i98glvqc7km2vasfig"
+		},
+		{
+			"rel": "zone",
+			"href": "/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0"
+		}
+	]
 }
 ```
 <!-- tabs:end -->

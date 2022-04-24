@@ -5,8 +5,8 @@
 
 /* button variables */
 unsigned long lastDebounceTime = 0;
-int buttonStates[NUM_PLANTS];
-int lastButtonStates[NUM_PLANTS];
+int buttonStates[NUM_ZONES];
+int lastButtonStates[NUM_ZONES];
 
 /* stop button variables */
 unsigned long lastStopDebounceTime = 0;

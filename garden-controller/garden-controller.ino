@@ -12,7 +12,7 @@
 #endif
 
 typedef struct WateringEvent {
-    int plant_position;
+    int position;
     unsigned long duration;
     const char* id;
 };
@@ -21,12 +21,12 @@ typedef struct LightingEvent {
     const char* state;
 };
 
-/* plant/valve variables */
-gpio_num_t plants[NUM_PLANTS][4] = PLANTS;
+/* zone/valve variables */
+gpio_num_t zones[NUM_ZONES][4] = ZONES;
 
 /* FreeRTOS Queue and Task handlers */
 QueueHandle_t wateringQueue;
-TaskHandle_t waterPlantTaskHandle;
+TaskHandle_t waterZoneTaskHandle;
 
 /* state variables */
 int light_state;
@@ -34,14 +34,14 @@ int light_state;
 void setup() {
 #ifndef DISABLE_WATERING
     // Prepare pins
-    for (int i = 0; i < NUM_PLANTS; i++) {
+    for (int i = 0; i < NUM_ZONES; i++) {
         // Setup valve pins
-        gpio_reset_pin(plants[i][1]);
-        gpio_set_direction(plants[i][1], GPIO_MODE_OUTPUT);
+        gpio_reset_pin(zones[i][1]);
+        gpio_set_direction(zones[i][1], GPIO_MODE_OUTPUT);
 
         // Setup pump pins
-        gpio_reset_pin(plants[i][0]);
-        gpio_set_direction(plants[i][0], GPIO_MODE_OUTPUT);
+        gpio_reset_pin(zones[i][0]);
+        gpio_set_direction(zones[i][0], GPIO_MODE_OUTPUT);
     }
 #endif
 
@@ -68,7 +68,7 @@ void setup() {
     }
 
     // Start all tasks (currently using equal priorities)
-    xTaskCreate(waterPlantTask, "WaterPlantTask", 2048, NULL, 1, &waterPlantTaskHandle);
+    xTaskCreate(waterZoneTask, "WaterZoneTask", 2048, NULL, 1, &waterZoneTaskHandle);
 
 #ifdef ENABLE_MQTT_LOGGING
     // Delay 1 second to allow MQTT to connect
@@ -84,13 +84,13 @@ void setup() {
 void loop() {}
 
 /*
-  waterPlantTask will wait for WateringEvents on a queue and will then open the
+  waterZoneTask will wait for WateringEvents on a queue and will then open the
   valve for an amount of time. The delay before closing the valve is done with
   xTaskNotifyWait, allowing it to be interrupted with xTaskNotify. After the
   valve is closed, the WateringEvent is pushed to the queue fro publisherTask
   which will record the WateringEvent in InfluxDB via MQTT and Telegraf
 */
-void waterPlantTask(void* parameters) {
+void waterZoneTask(void* parameters) {
     WateringEvent we;
     while (true) {
         if (xQueueReceive(wateringQueue, &we, 0)) {
@@ -103,11 +103,11 @@ void waterPlantTask(void* parameters) {
             }
 
             unsigned long start = millis();
-            plantOn(we.plant_position);
+            zoneOn(we.position);
             // Delay for specified watering time with option to interrupt
             xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
             unsigned long stop = millis();
-            plantOff(we.plant_position);
+            zoneOff(we.position);
             we.duration = stop - start;
             xQueueSend(waterPublisherQueue, &we, portMAX_DELAY);
         }
@@ -117,50 +117,50 @@ void waterPlantTask(void* parameters) {
 }
 
 /*
-  plantOn will turn on the correct valve and pump for a specific plant
+  zoneOn will turn on the correct valve and pump for a specific zone
 */
-void plantOn(int id) {
-    printf("turning on plant %d\n", id);
-    gpio_set_level(plants[id][0], 1);
-    gpio_set_level(plants[id][1], 1);
+void zoneOn(int id) {
+    printf("turning on zone %d\n", id);
+    gpio_set_level(zones[id][0], 1);
+    gpio_set_level(zones[id][1], 1);
 }
 
 /*
-  plantOff will turn off the correct valve and pump for a specific plant
+  zoneOff will turn off the correct valve and pump for a specific zone
 */
-void plantOff(int id) {
-    printf("turning off plant %d\n", id);
-    gpio_set_level(plants[id][0], 0);
-    gpio_set_level(plants[id][1], 0);
+void zoneOff(int id) {
+    printf("turning off zone %d\n", id);
+    gpio_set_level(zones[id][0], 0);
+    gpio_set_level(zones[id][1], 0);
 }
 
 /*
-  stopWatering will interrupt the WaterPlantTask. If another plant is in the queue,
+  stopWatering will interrupt the WaterZoneTask. If another zone is in the queue,
   it will begin watering
 */
 void stopWatering() {
-    xTaskNotify(waterPlantTaskHandle, 0, eNoAction);
+    xTaskNotify(waterZoneTaskHandle, 0, eNoAction);
 }
 
 /*
-  stopAllWatering will interrupt the WaterPlantTask and clear the remaining queue
+  stopAllWatering will interrupt the WaterZoneTask and clear the remaining queue
 */
 void stopAllWatering() {
     xQueueReset(wateringQueue);
-    xTaskNotify(waterPlantTaskHandle, 0, eNoAction);
+    xTaskNotify(waterZoneTaskHandle, 0, eNoAction);
 }
 
 /*
-  waterPlant pushes a WateringEvent to the queue in order to water a single
-  plant. First it will make sure the ID is not out of bounds
+  waterZone pushes a WateringEvent to the queue in order to water a single
+  zone. First it will make sure the ID is not out of bounds
 */
-void waterPlant(WateringEvent we) {
+void waterZone(WateringEvent we) {
     // Exit if valveID is out of bounds
-    if (we.plant_position >= NUM_PLANTS || we.plant_position < 0) {
-        printf("plant_position %d is out of range, aborting request\n", we.plant_position);
+    if (we.position >= NUM_ZONES || we.position < 0) {
+        printf("position %d is out of range, aborting request\n", we.position);
         return;
     }
-    printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", we.id, we.plant_position, we.duration);
+    printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", we.id, we.position, we.duration);
     xQueueSend(wateringQueue, &we, portMAX_DELAY);
 }
 

@@ -20,7 +20,7 @@ Arduino IDE will automatically combine all `.ino` files in alphabetical order, s
 
 
 ### FreeRTOS Tasks and Queues
-This project uses FreeRTOS features to take better advantage of the ESP32's two cores and allows interruptible long-running delays when watering a plant. The separate tasks also make it easier to organize logic of all the different things this controller needs to handle.
+This project uses FreeRTOS features to take better advantage of the ESP32's two cores and allows interruptible long-running delays when watering a zone. The separate tasks also make it easier to organize logic of all the different things this controller needs to handle.
 
 This is still an Arduino project since it is more approachable and easier to compile.
 

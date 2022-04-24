@@ -2,8 +2,8 @@
 
 void setupButtons() {
     // Setup button pins and state
-    for (int i = 0; i < NUM_PLANTS; i++) {
-        gpio_set_direction(plants[i][2], GPIO_MODE_INPUT);
+    for (int i = 0; i < NUM_ZONES; i++) {
+        gpio_set_direction(zones[i][2], GPIO_MODE_INPUT);
         buttonStates[i] = LOW;
         lastButtonStates[i] = LOW;
     }
@@ -17,7 +17,7 @@ void setupButtons() {
 void readButtonsTask(void* parameters) {
     while (true) {
         // Check if any valves need to be stopped and check all buttons
-        for (int i = 0; i < NUM_PLANTS; i++) {
+        for (int i = 0; i < NUM_ZONES; i++) {
             readButton(i);
         }
         readStopButton();
@@ -29,14 +29,14 @@ void readButtonsTask(void* parameters) {
 /*
   readButton takes an ID that represents the array index for the valve and
   button arrays and checks if the button is pressed. If the button is pressed,
-  a WateringEvent for that plant is added to the queue
+  a WateringEvent for that zone is added to the queue
 */
 void readButton(int valveID) {
     // Exit if valveID is out of bounds
-    if (valveID >= NUM_PLANTS || valveID < 0) {
+    if (valveID >= NUM_ZONES || valveID < 0) {
         return;
     }
-    int reading = gpio_get_level(plants[valveID][2]);
+    int reading = gpio_get_level(zones[valveID][2]);
     // If the switch changed, due to noise or pressing, reset debounce timer
     if (reading != lastButtonStates[valveID]) {
         lastDebounceTime = millis();
@@ -48,11 +48,11 @@ void readButton(int valveID) {
         if (reading != buttonStates[valveID]) {
             buttonStates[valveID] = reading;
 
-            // If our button state is HIGH, water the plant
+            // If our button state is HIGH, water the zone
             if (reading == HIGH && buttonStates[valveID] == HIGH) {
                 printf("button pressed: %d\n", valveID);
                 WateringEvent we = { valveID, DEFAULT_WATER_TIME, "N/A" };
-                waterPlant(we);
+                waterZone(we);
             }
         }
     }

@@ -59,10 +59,12 @@ type OrganizationsAPI interface {
 	RemoveOwnerWithID(ctx context.Context, orgID, memberID string) error
 }
 
+// organizationsAPI implements OrganizationsAPI
 type organizationsAPI struct {
 	apiClient *domain.ClientWithResponses
 }
 
+// NewOrganizationsAPI creates new instance of OrganizationsAPI
 func NewOrganizationsAPI(apiClient *domain.ClientWithResponses) OrganizationsAPI {
 	return &organizationsAPI{
 		apiClient: apiClient,
@@ -84,7 +86,7 @@ func (o *organizationsAPI) getOrganizations(ctx context.Context, params *domain.
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return response.JSON200.Orgs, nil
 }
@@ -101,9 +103,8 @@ func (o *organizationsAPI) FindOrganizationByName(ctx context.Context, orgName s
 	}
 	if organizations != nil && len(*organizations) > 0 {
 		return &(*organizations)[0], nil
-	} else {
-		return nil, fmt.Errorf("organization '%s' not found", orgName)
 	}
+	return nil, fmt.Errorf("organization '%s' not found", orgName)
 }
 
 func (o *organizationsAPI) FindOrganizationByID(ctx context.Context, orgID string) (*domain.Organization, error) {
@@ -113,7 +114,7 @@ func (o *organizationsAPI) FindOrganizationByID(ctx context.Context, orgID strin
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return response.JSON200, nil
 }
@@ -125,12 +126,16 @@ func (o *organizationsAPI) FindOrganizationsByUserID(ctx context.Context, userID
 
 func (o *organizationsAPI) CreateOrganization(ctx context.Context, org *domain.Organization) (*domain.Organization, error) {
 	params := &domain.PostOrgsParams{}
-	response, err := o.apiClient.PostOrgsWithResponse(ctx, params, domain.PostOrgsJSONRequestBody(*org))
+	req := domain.PostOrgsJSONRequestBody{
+		Name:        org.Name,
+		Description: org.Description,
+	}
+	response, err := o.apiClient.PostOrgsWithResponse(ctx, params, req)
 	if err != nil {
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return response.JSON201, nil
 }
@@ -152,22 +157,26 @@ func (o *organizationsAPI) DeleteOrganizationWithID(ctx context.Context, orgID s
 		return err
 	}
 	if response.JSONDefault != nil {
-		return domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	if response.JSON404 != nil {
-		return domain.DomainErrorToError(response.JSON404, response.StatusCode())
+		return domain.ErrorToHTTPError(response.JSON404, response.StatusCode())
 	}
 	return nil
 }
 
 func (o *organizationsAPI) UpdateOrganization(ctx context.Context, org *domain.Organization) (*domain.Organization, error) {
 	params := &domain.PatchOrgsIDParams{}
-	response, err := o.apiClient.PatchOrgsIDWithResponse(ctx, *org.Id, params, domain.PatchOrgsIDJSONRequestBody(*org))
+	req := domain.PatchOrgsIDJSONRequestBody{
+		Name:        &org.Name,
+		Description: org.Description,
+	}
+	response, err := o.apiClient.PatchOrgsIDWithResponse(ctx, *org.Id, params, req)
 	if err != nil {
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return response.JSON200, nil
 }
@@ -183,10 +192,10 @@ func (o *organizationsAPI) GetMembersWithID(ctx context.Context, orgID string) (
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	if response.JSON404 != nil {
-		return nil, domain.DomainErrorToError(response.JSON404, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSON404, response.StatusCode())
 	}
 	return response.JSON200.Users, nil
 }
@@ -203,7 +212,7 @@ func (o *organizationsAPI) AddMemberWithID(ctx context.Context, orgID, memberID 
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return response.JSON201, nil
 }
@@ -219,7 +228,7 @@ func (o *organizationsAPI) RemoveMemberWithID(ctx context.Context, orgID, member
 		return err
 	}
 	if response.JSONDefault != nil {
-		return domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return nil
 }
@@ -235,10 +244,10 @@ func (o *organizationsAPI) GetOwnersWithID(ctx context.Context, orgID string) (*
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	if response.JSON404 != nil {
-		return nil, domain.DomainErrorToError(response.JSON404, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSON404, response.StatusCode())
 	}
 	return response.JSON200.Users, nil
 }
@@ -255,7 +264,7 @@ func (o *organizationsAPI) AddOwnerWithID(ctx context.Context, orgID, memberID s
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return response.JSON201, nil
 }
@@ -271,7 +280,7 @@ func (o *organizationsAPI) RemoveOwnerWithID(ctx context.Context, orgID, memberI
 		return err
 	}
 	if response.JSONDefault != nil {
-		return domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return nil
 }

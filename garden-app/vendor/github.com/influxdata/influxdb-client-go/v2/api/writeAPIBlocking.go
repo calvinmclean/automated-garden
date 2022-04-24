@@ -7,7 +7,6 @@ package api
 import (
 	"context"
 	"strings"
-	"sync"
 
 	http2 "github.com/influxdata/influxdb-client-go/v2/api/http"
 	"github.com/influxdata/influxdb-client-go/v2/api/write"
@@ -16,6 +15,10 @@ import (
 
 // WriteAPIBlocking offers blocking methods for writing time series data synchronously into an InfluxDB server.
 // It doesn't implicitly create batches of points. It is intended to use for writing less frequent data, such as a weather sensing, or if there is a need to have explicit control of failed batches.
+//
+// WriteAPIBlocking can be used concurrently.
+// When using multiple goroutines for writing, use a single WriteAPIBlocking instance in all goroutines.
+//
 // To add implicit batching, use a wrapper, such as:
 //	type writer struct {
 //		batch []*write.Point
@@ -48,7 +51,8 @@ import (
 //	}
 type WriteAPIBlocking interface {
 	// WriteRecord writes line protocol record(s) into bucket.
-	// WriteRecord writes without implicit batching. Batch is created from given number of records
+	// WriteRecord writes without implicit batching. Batch is created from given number of records.
+	// Individual arguments can also be batches (multiple records separated by newline).
 	// Non-blocking alternative is available in the WriteAPI interface
 	WriteRecord(ctx context.Context, line ...string) error
 	// WritePoint data point into bucket.
@@ -61,34 +65,26 @@ type WriteAPIBlocking interface {
 type writeAPIBlocking struct {
 	service      *iwrite.Service
 	writeOptions *write.Options
-	lock         sync.Mutex
 }
 
-// NewWriteAPIBlocking creates new WriteAPIBlocking instance for org and bucket with underlying client
-func NewWriteAPIBlocking(org string, bucket string, service http2.Service, writeOptions *write.Options) *writeAPIBlocking {
+// NewWriteAPIBlocking creates new instance of blocking write client for writing data to bucket belonging to org
+func NewWriteAPIBlocking(org string, bucket string, service http2.Service, writeOptions *write.Options) WriteAPIBlocking {
 	return &writeAPIBlocking{service: iwrite.NewService(org, bucket, service, writeOptions), writeOptions: writeOptions}
 }
 
 func (w *writeAPIBlocking) write(ctx context.Context, line string) error {
-	w.lock.Lock()
-	defer w.lock.Unlock()
-	err := w.service.HandleWrite(ctx, iwrite.NewBatch(line, w.writeOptions.RetryInterval()))
-	return err
+	err := w.service.WriteBatch(ctx, iwrite.NewBatch(line, w.writeOptions.RetryInterval(), w.writeOptions.MaxRetryTime()))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (w *writeAPIBlocking) WriteRecord(ctx context.Context, line ...string) error {
-	if len(line) > 0 {
-		var sb strings.Builder
-		for _, line := range line {
-			b := []byte(line)
-			b = append(b, 0xa)
-			if _, err := sb.Write(b); err != nil {
-				return err
-			}
-		}
-		return w.write(ctx, sb.String())
+	if len(line) == 0 {
+		return nil
 	}
-	return nil
+	return w.write(ctx, strings.Join(line, "\n"))
 }
 
 func (w *writeAPIBlocking) WritePoint(ctx context.Context, point ...*write.Point) error {

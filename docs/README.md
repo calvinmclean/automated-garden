@@ -6,12 +6,12 @@ The `automated-garden` allows you to manage on or more Gardens through a user-fr
 
 Never worry about manually watering your plants or dealing with confusing irrigation timers again!
 
-`garden-app` refers to the central server for managing Plants and Gardens.
+`garden-app` refers to the central server for managing Plants, Zones and Gardens.
 
 `garden-controller` refers to the IoT devices attached to each physical Garden.
 
 ## Features
-- Water plants on a schedule
+- Water zones on a schedule
 - Control lighting for indoor gardens on a schedule
 - Collect soil moisture data (can be used to control watering)
 - Fully-configurable Arduino project allowing for easy and flexible setup without code changes

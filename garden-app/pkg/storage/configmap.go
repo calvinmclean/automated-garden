@@ -108,6 +108,45 @@ func (c *ConfigMapClient) DeleteGarden(garden xid.ID) error {
 	return c.Save()
 }
 
+// GetZone just returns the request Zone from the map
+func (c *ConfigMapClient) GetZone(garden xid.ID, id xid.ID) (*pkg.Zone, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
+	return c.gardens[garden].Zones[id], nil
+}
+
+// GetZones returns all zones from the map as a slice
+func (c *ConfigMapClient) GetZones(garden xid.ID, getEndDated bool) ([]*pkg.Zone, error) {
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
+	result := []*pkg.Zone{}
+	for _, p := range c.gardens[garden].Zones {
+		if getEndDated || !p.EndDated() {
+			result = append(result, p)
+		}
+	}
+	return result, nil
+}
+
+// SaveZone saves a zone in the map and will write it back to the YAML file
+func (c *ConfigMapClient) SaveZone(gardenID xid.ID, zone *pkg.Zone) error {
+	if c.gardens[gardenID].Zones == nil {
+		c.gardens[gardenID].Zones = map[xid.ID]*pkg.Zone{}
+	}
+	c.gardens[gardenID].Zones[zone.ID] = zone
+	return c.Save()
+}
+
+// DeleteZone permanently deletes a zone and removes it from the YAML file
+func (c *ConfigMapClient) DeleteZone(garden xid.ID, zone xid.ID) error {
+	delete(c.gardens[garden].Zones, zone)
+	return c.Save()
+}
+
 // GetPlant just returns the request Plant from the map
 func (c *ConfigMapClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 	err := c.update()

@@ -182,25 +182,25 @@ func TestGardenRequest(t *testing.T) {
 			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"MissingMaxPlantsError",
+			"MissingMaxZonesError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
 				},
 			},
-			"missing required max_plants field",
+			"missing required max_zones field",
 		},
 		{
-			"MaxPlantsZeroError",
+			"MaxZonesZeroError",
 			&GardenRequest{
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
-					MaxPlants:   &zero,
+					MaxZones:    &zero,
 				},
 			},
-			"max_plants must not be 0",
+			"max_zones must not be 0",
 		},
 		{
 			"CreatingPlantsNotAllowedError",
@@ -208,7 +208,7 @@ func TestGardenRequest(t *testing.T) {
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
-					MaxPlants:   &one,
+					MaxZones:    &one,
 					Plants: map[xid.ID]*pkg.Plant{
 						xid.New(): {},
 					},
@@ -222,7 +222,7 @@ func TestGardenRequest(t *testing.T) {
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
-					MaxPlants:   &one,
+					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
 						StartTime: "22:00:01-07:00",
 					},
@@ -236,7 +236,7 @@ func TestGardenRequest(t *testing.T) {
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
-					MaxPlants:   &one,
+					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration: "1m",
 					},
@@ -250,7 +250,7 @@ func TestGardenRequest(t *testing.T) {
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
-					MaxPlants:   &one,
+					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration: "NOT A DURATION",
 					},
@@ -264,7 +264,7 @@ func TestGardenRequest(t *testing.T) {
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
-					MaxPlants:   &one,
+					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration: "25h",
 					},
@@ -278,7 +278,7 @@ func TestGardenRequest(t *testing.T) {
 				Garden: &pkg.Garden{
 					Name:        "garden",
 					TopicPrefix: "garden",
-					MaxPlants:   &one,
+					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
 						Duration:  "1m",
 						StartTime: "NOT A TIME",
@@ -294,7 +294,7 @@ func TestGardenRequest(t *testing.T) {
 			Garden: &pkg.Garden{
 				TopicPrefix: "garden",
 				Name:        "garden",
-				MaxPlants:   &one,
+				MaxZones:    &one,
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)
@@ -447,7 +447,7 @@ func TestUpdateGardenRequest(t *testing.T) {
 			"MaxPlantsZeroError",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
-					MaxPlants: &zero,
+					MaxZones: &zero,
 				},
 			},
 			"max_plants must not be 0",

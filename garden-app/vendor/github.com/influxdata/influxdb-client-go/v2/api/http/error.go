@@ -30,6 +30,13 @@ func (e *Error) Error() string {
 	}
 }
 
+func (e *Error) Unwrap() error {
+	if e.Err != nil {
+		return e.Err
+	}
+	return nil
+}
+
 // NewError returns newly created Error initialised with nested error and default values
 func NewError(err error) *Error {
 	return &Error{

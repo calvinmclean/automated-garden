@@ -23,7 +23,7 @@ These are the basic options that are required and do not fit in specific categor
 
 `TOPIC_PREFIX`: this is used as the prefix for MQTT topics so it is critical that this matches the Garden's `TopicPrefix` in `garden-app`
 
-`QUEUE_SIZE`: maximum number of messages that can be queued in FreeRTOS queues. 10 is a sensible default that should never overflow unless you have a large number of Plants
+`QUEUE_SIZE`: maximum number of messages that can be queued in FreeRTOS queues. 10 is a sensible default that should never overflow unless you have a large number of Zones
 
 `JSON_CAPACITY`: Size of JSON object calculated using Arduino JSON Assistant. This should not be changed
 
@@ -45,11 +45,11 @@ The following options should be left as defaults, unless you have a good reason 
 
 `MQTT_CLIENT_NAME`: Name to use when connecting to MQTT broker. By default this is `TOPIC_PREFIX`. It is important that this is unique
 
-`MQTT_WATER_TOPIC`: Topic to subscribe to for incoming commands to water a plant
+`MQTT_WATER_TOPIC`: Topic to subscribe to for incoming commands to water a zone
 
-`MQTT_STOP_TOPIC`: Topic to subscribe to for incoming command to stop watering a plant
+`MQTT_STOP_TOPIC`: Topic to subscribe to for incoming command to stop watering a zone
 
-`MQTT_STOP_ALL_TOPIC`: Topic to subscribe to for incoming command to stop watering a plant and clear the watering queue
+`MQTT_STOP_ALL_TOPIC`: Topic to subscribe to for incoming command to stop watering a zone and clear the watering queue
 
 `MQTT_LIGHT_TOPIC`: Topic to subscribe to for incoming command to change the state of an attached grow light
 
@@ -66,39 +66,39 @@ These options are used for enabled/configuring publishing of health check-ins to
 
 `HEALTH_PUBLISH_INTERVAL`: Time, in milliseconds, to wait between publishing of health check-ins
 
-### Plant Options
-These options are related to the actual pins and other necessary information for watering plants.
+### Zone Options
+These options are related to the actual pins and other necessary information for watering zones.
 
 `DISABLE_WATERING`: Allows disabling Pump/Valve pins and doesn't listen on relevant MQTT topics. This allows a sensor-only Garden. If you are running this alongside a separate `garden-controller` that handles watering, please remember to change the `MQTT_CLIENT_NAME` to be different
 
-`NUM_PLANTS`: Number of plants connected to this Garden
+`NUM_ZONES`: Number of zones connected to this Garden
 
-`PUMP_PIN`: Optional configuration that makes organization better if you use the same pump for all plants
+`PUMP_PIN`: Optional configuration that makes organization better if you use the same pump for all zones
 
-`PLANT_1`, `PLANT_2`, ..., `PLANT_N`: These are optional configurations that will be included in `PLANTS` below, but make it a bit easier to organize the configuration. Use the following format:
+`ZONE_1`, `ZONE_2`, ..., `ZONE_N`: These are optional configurations that will be included in `ZONES` below, but make it a bit easier to organize the configuration. Use the following format:
 ```
 {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN}
 ```
 
-`PLANTS`: This is a list of all plants managed by this controller. It contains the pin details for pump, valve, button, and moisture sensor. The button and sensor pins are ignored if not enabled (see sections below). If you are not using a pump, or not using a valve, just use the same pin for both. Use the following format:
+`ZONES`: This is a list of all zones managed by this controller. It contains the pin details for pump, valve, button, and moisture sensor. The button and sensor pins are ignored if not enabled (see sections below). If you are not using a pump, or not using a valve, just use the same pin for both. Use the following format:
 ```
 { {PUMP_PIN, VALVE_PIN, BUTTON_PIN, MOISTURE_SENSOR_PIN} }
 ```
-**note**: Use `GPIO_NUM_MAX` to disable moisture sensing for only certain Plants.
+**note**: Use `GPIO_NUM_MAX` to disable moisture sensing for only certain Zones.
 
 `DEFAULT_WATER_TIME`: The default amount of time to water for, in milliseconds, if one is not defined in the command. This is also used to determine how long button-presses will water for
 
 `LIGHT_PIN`: Pin used to control grow light relay
 
 #### Button Options
-These options allow optionally enabling button control. The buttons pins are defined as a part of the plants configuration.
+These options allow optionally enabling button control. The buttons pins are defined as a part of the zones configuration.
 
 `ENABLE_BUTTONS`: Enables reading input from buttons when defined
 
-`STOP_BUTTON_PIN`: Button pins are usually defined for each individual plant, but this is a separate button that will cancel in-progress watering
+`STOP_BUTTON_PIN`: Button pins are usually defined for each individual zone, but this is a separate button that will cancel in-progress watering
 
 #### Moisture Sensor Options
-These options allow optionally enabling moisture data publishing. WiFi + MQTT are also required for this since the data must be published for storage. The value configurations below are used for calibrating the sensor. The moisture sensor pins are configured as part fo the plants configuration.
+These options allow optionally enabling moisture data publishing. WiFi + MQTT are also required for this since the data must be published for storage. The value configurations below are used for calibrating the sensor. The moisture sensor pins are configured as part fo the zones configuration.
 
 `ENABLE_MOISTURE_SENSORS`: Enables moisture sensors when defined
 

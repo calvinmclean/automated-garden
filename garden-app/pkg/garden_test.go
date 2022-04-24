@@ -100,7 +100,7 @@ func TestGardenPatch(t *testing.T) {
 		},
 		{
 			"PatchMaxPlants",
-			&Garden{MaxPlants: &ten},
+			&Garden{MaxZones: &ten},
 		},
 		{
 			"PatchCreatedAt",
@@ -363,4 +363,99 @@ func TestLightStateMarshal(t *testing.T) {
 			t.Errorf("Expected empty string but got: %v", string(result))
 		}
 	})
+}
+
+func TestNumZones(t *testing.T) {
+	past := time.Now().Add(-1 * time.Hour)
+	tests := []struct {
+		name     string
+		garden   *Garden
+		expected uint
+	}{
+		{
+			"Zero",
+			&Garden{},
+			0,
+		},
+		{
+			"One",
+			&Garden{
+				Zones: map[xid.ID]*Zone{xid.New(): {}},
+			},
+			1,
+		},
+		{
+			"OneWithEndDated",
+			&Garden{
+				Zones: map[xid.ID]*Zone{
+					xid.New(): {},
+					xid.New(): {EndDate: &past},
+				},
+			},
+			1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.garden.NumZones()
+			if result != tt.expected {
+				t.Errorf("Expected %d but got %d", tt.expected, result)
+			}
+		})
+	}
+}
+
+func TestPlantsByZone(t *testing.T) {
+	zone := &Zone{ID: xid.New()}
+	plant := &Plant{ID: xid.New(), ZoneID: zone.ID}
+	past := time.Now().Add(-1 * time.Hour)
+	endDatedPlant := &Plant{ID: xid.New(), EndDate: &past, ZoneID: zone.ID}
+
+	tests := []struct {
+		name        string
+		garden      *Garden
+		zoneID      xid.ID
+		getEndDated bool
+		expectedLen int
+	}{
+		{
+			"Zero",
+			&Garden{
+				Zones: map[xid.ID]*Zone{zone.ID: zone},
+			},
+			zone.ID,
+			true,
+			0,
+		},
+		{
+			"NoEndDated",
+			&Garden{
+				Zones:  map[xid.ID]*Zone{zone.ID: zone},
+				Plants: map[xid.ID]*Plant{plant.ID: plant, endDatedPlant.ID: endDatedPlant},
+			},
+			zone.ID,
+			false,
+			1,
+		},
+		{
+			"GetEndDated",
+			&Garden{
+				Zones:  map[xid.ID]*Zone{zone.ID: zone},
+				Plants: map[xid.ID]*Plant{plant.ID: plant, endDatedPlant.ID: endDatedPlant},
+			},
+			zone.ID,
+			true,
+			2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			plants := tt.garden.PlantsByZone(tt.zoneID, tt.getEndDated)
+			if len(plants) != tt.expectedLen {
+				t.Errorf("Expected %d Plants but got %d", tt.expectedLen, len(plants))
+			}
+		})
+	}
 }

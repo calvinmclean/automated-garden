@@ -3,7 +3,7 @@
 ## Details
 This is a simple hydroponics setup built from parts of an Aerogarden that I found at a thrift store. It didn't have the built-in light and the pump was broken. I replaced the pump with a 12V DC fountain pump and hooked that up to a single relay.
 
-This Garden has just one Plant that circulates the water with the pump for 5 minutes in every hour.
+This Garden has just one Zone that circulates the water with the pump for 5 minutes in every hour. It is not necessary to add any Plants.
 
 ## Components
 
@@ -58,8 +58,8 @@ This has a very basic setup since it just consists of the ESP32 and a single rel
 #define JSON_CAPACITY 48
 #endif
 
-#define NUM_PLANTS 1
-#define PLANTS { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 } }
+#define NUM_ZONES 1
+#define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 } }
 #define DEFAULT_WATER_TIME 5000
 
 #endif
@@ -95,13 +95,18 @@ storage:
     "name": "Aerogarden",
     "topic_prefix": "aerogarden",
     "id": "c5ma39fphd1c514hk48g",
-    "max_plants": 1,
+    "max_zones": 1,
     "created_at": "2021-10-13T02:55:13.046499731Z",
+    "num_zones": 0,
     "num_plants": 1,
     "plants": {
         "rel": "collection",
         "href": "/gardens/c5ma39fphd1c514hk48g/plants"
     },
+    "zones": {
+		"rel": "collection",
+		"href": "/gardens/c5ma39fphd1c514hk48g/zones"
+	},
     "links": [
         {
             "rel": "self",
@@ -116,6 +121,10 @@ storage:
             "href": "/gardens/c5ma39fphd1c514hk48g/plants"
         },
         {
+			"rel": "zones",
+			"href": "/gardens/c5ma39fphd1c514hk48g/zones"
+		},
+        {
             "rel": "action",
             "href": "/gardens/c5ma39fphd1c514hk48g/action"
         }
@@ -123,18 +132,12 @@ storage:
 }
 ```
 
-#### **Plant JSON**
+#### **Zone JSON**
 ```json
 {
-    "name": "Tom Thumb Lettuce",
-    "details": {
-        "description": "Dwarf lettuce variety",
-        "notes": "Grown in our thrifted aerogarden",
-        "time_to_harvest": "70 days",
-        "count": 2
-    },
-    "id": "c5maadvphd1ftefa6ok0",
-    "plant_position": 0,
+    "name": "Circulation Pump",
+    "id": "c5ma39fphd1c514hk48g",
+    "position": 0,
     "created_at": "2021-10-17T22:35:35.205085596Z",
     "water_schedule": {
         "duration": "5m",
@@ -145,7 +148,7 @@ storage:
     "links": [
         {
             "rel": "self",
-            "href": "/gardens/c5ma39fphd1c514hk48g/plants/c5maadvphd1ftefa6ok0"
+            "href": "/gardens/c5ma39fphd1c514hk48g/plants/c5ma39fphd1c514hk48g"
         },
         {
             "rel": "garden",
@@ -153,11 +156,11 @@ storage:
         },
         {
             "rel": "action",
-            "href": "/gardens/c5ma39fphd1c514hk48g/plants/c5maadvphd1ftefa6ok0/action"
+            "href": "/gardens/c5ma39fphd1c514hk48g/plants/c5ma39fphd1c514hk48g/action"
         },
         {
             "rel": "history",
-            "href": "/gardens/c5ma39fphd1c514hk48g/plants/c5maadvphd1ftefa6ok0/history"
+            "href": "/gardens/c5ma39fphd1c514hk48g/plants/c5ma39fphd1c514hk48g/history"
         }
     ]
 }

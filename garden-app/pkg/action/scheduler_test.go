@@ -20,9 +20,9 @@ func createExampleGarden() *pkg.Garden {
 	return &pkg.Garden{
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
-		MaxPlants:   &two,
+		MaxZones:    &two,
 		ID:          id,
-		Plants:      map[xid.ID]*pkg.Plant{},
+		Zones:       map[xid.ID]*pkg.Zone{},
 		CreatedAt:   &time,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  "15h",
@@ -31,15 +31,15 @@ func createExampleGarden() *pkg.Garden {
 	}
 }
 
-func createExamplePlant() *pkg.Plant {
+func createExampleZone() *pkg.Zone {
 	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
-	pp := uint(0)
-	return &pkg.Plant{
-		Name:          "test plant",
-		ID:            id,
-		CreatedAt:     &time,
-		PlantPosition: &pp,
+	p := uint(0)
+	return &pkg.Zone{
+		Name:      "test zone",
+		ID:        id,
+		CreatedAt: &time,
+		Position:  &p,
 		WaterSchedule: &pkg.WaterSchedule{
 			Duration:  "1000ms",
 			Interval:  "24h",
@@ -62,11 +62,11 @@ func TestScheduleWateringAction(t *testing.T) {
 	defer scheduler.Stop()
 
 	g := createExampleGarden()
-	p := createExamplePlant()
-	// Set Plant's WaterSchedule.StartTime to the near future
+	z := createExampleZone()
+	// Set Zone's WaterSchedule.StartTime to the near future
 	startTime := time.Now().Add(250 * time.Millisecond)
-	p.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, p)
+	z.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
 	}
@@ -88,24 +88,24 @@ func TestResetNextWateringTime(t *testing.T) {
 	defer scheduler.Stop()
 
 	g := createExampleGarden()
-	p := createExamplePlant()
-	// Set Plant's WaterSchedule.StartTime to a time that won't cause it to run
+	z := createExampleZone()
+	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
-	p.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, p)
+	z.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
 	}
 
 	// Change WaterSchedule and restart
 	newTime := startTime.Add(-30 * time.Minute)
-	p.WaterSchedule.StartTime = &newTime
-	err = scheduler.ResetWateringSchedule(g, p)
+	z.WaterSchedule.StartTime = &newTime
+	err = scheduler.ResetWateringSchedule(g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when resetting WateringAction: %v", err)
 	}
 
-	nextWaterTime := scheduler.GetNextWateringTime(p)
+	nextWaterTime := scheduler.GetNextWateringTime(z)
 	expected := startTime.Add(-30 * time.Minute).Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -126,16 +126,16 @@ func TestGetNextWateringTime(t *testing.T) {
 	defer scheduler.Stop()
 
 	g := createExampleGarden()
-	p := createExamplePlant()
-	// Set Plant's WaterSchedule.StartTime to a time that won't cause it to run
+	z := createExampleZone()
+	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
-	p.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, p)
+	z.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
 	}
 
-	nextWaterTime := scheduler.GetNextWateringTime(p)
+	nextWaterTime := scheduler.GetNextWateringTime(z)
 	expected := startTime.Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -437,22 +437,22 @@ func TestRemoveJobsByID(t *testing.T) {
 	defer scheduler.Stop()
 
 	g := createExampleGarden()
-	p := createExamplePlant()
-	// Set Plant's WaterSchedule.StartTime to a time that won't cause it to run
+	z := createExampleZone()
+	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
-	p.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, p)
+	z.WaterSchedule.StartTime = &startTime
+	err := scheduler.ScheduleWateringAction(g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
 	}
 
-	err = scheduler.RemoveJobsByID(p.ID)
+	err = scheduler.RemoveJobsByID(z.ID)
 	if err != nil {
 		t.Errorf("Unexpected error when removing jobs: %v", err)
 	}
 
 	// This also gets coverage for GetNextWateringTime when no Job exists
-	nextWaterTime := scheduler.GetNextWateringTime(p)
+	nextWaterTime := scheduler.GetNextWateringTime(z)
 	if nextWaterTime != nil {
 		t.Errorf("Expected nil but got: %v", nextWaterTime)
 	}

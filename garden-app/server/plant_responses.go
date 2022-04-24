@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 )
@@ -32,9 +31,7 @@ func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) erro
 // and hypermedia Links fields
 type PlantResponse struct {
 	*pkg.Plant
-	Moisture         float64    `json:"moisture,omitempty"`
-	NextWateringTime *time.Time `json:"next_watering_time,omitempty"`
-	Links            []Link     `json:"links,omitempty"`
+	Links []Link `json:"links,omitempty"`
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
@@ -49,32 +46,13 @@ func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garde
 			"garden",
 			gardenPath,
 		},
+		Link{
+			"zone",
+			fmt.Sprintf("%s%s/%s", gardenPath, zoneBasePath, plant.ZoneID),
+		},
 	)
-	if !plant.EndDated() {
-		links = append(links,
-			Link{
-				"action",
-				fmt.Sprintf("%s%s/%s/action", gardenPath, plantBasePath, plant.ID),
-			},
-			Link{
-				"history",
-				fmt.Sprintf("%s%s/%s/history", gardenPath, plantBasePath, plant.ID),
-			},
-		)
-	}
-	moisture := 0.0
-	var err error
-	if plant.WaterSchedule.MinimumMoisture > 0 && garden != nil {
-		moisture, err = pr.getMoisture(ctx, garden, plant)
-		if err != nil {
-			// Log moisture error but do not return an error since this isn't critical information
-			logger.Errorf("unable to get moisture of Plant %v: %v", plant.ID, err)
-		}
-	}
 	return &PlantResponse{
 		plant,
-		moisture,
-		pr.scheduler.GetNextWateringTime(plant),
 		links,
 	}
 }
@@ -91,30 +69,4 @@ type PlantWateringHistoryResponse struct {
 	Count   int                   `json:"count"`
 	Average string                `json:"average"`
 	Total   string                `json:"total"`
-}
-
-// NewPlantWateringHistoryResponse creates a response by creating some basic statistics about a list of history events
-func NewPlantWateringHistoryResponse(history []pkg.WateringHistory) PlantWateringHistoryResponse {
-	total := time.Duration(0)
-	for _, h := range history {
-		amountDuration, _ := time.ParseDuration(h.Duration)
-		total += amountDuration
-	}
-	count := len(history)
-	average := time.Duration(0)
-	if count != 0 {
-		average = time.Duration(int(total) / len(history))
-	}
-	return PlantWateringHistoryResponse{
-		History: history,
-		Count:   count,
-		Average: average.String(),
-		Total:   time.Duration(total).String(),
-	}
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (resp PlantWateringHistoryResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
 }

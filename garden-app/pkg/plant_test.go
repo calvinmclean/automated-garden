@@ -3,6 +3,8 @@ package pkg
 import (
 	"testing"
 	"time"
+
+	"github.com/rs/xid"
 )
 
 func TestPlantEndDated(t *testing.T) {
@@ -29,7 +31,7 @@ func TestPlantEndDated(t *testing.T) {
 }
 
 func TestPlantPatch(t *testing.T) {
-	zero := uint(0)
+	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	now := time.Now()
 	tests := []struct {
 		name     string
@@ -40,58 +42,34 @@ func TestPlantPatch(t *testing.T) {
 			&Plant{Name: "name"},
 		},
 		{
-			"PatchPlantPosition",
-			&Plant{PlantPosition: &zero},
+			"PatchZoneID",
+			&Plant{ZoneID: id},
 		},
 		{
 			"PatchCreatedAt",
 			&Plant{CreatedAt: &now},
 		},
 		{
-			"PatchWaterSchedule.Duration",
-			&Plant{WaterSchedule: &WaterSchedule{
-				Duration: "1000ms",
-			}},
-		},
-		{
-			"PatchWaterSchedule.Interval",
-			&Plant{WaterSchedule: &WaterSchedule{
-				Interval: "2h",
-			}},
-		},
-		{
-			"PatchWaterSchedule.MinimumMoisture",
-			&Plant{WaterSchedule: &WaterSchedule{
-				MinimumMoisture: 1,
-			}},
-		},
-		{
-			"PatchWaterSchedule.StartTime",
-			&Plant{WaterSchedule: &WaterSchedule{
-				StartTime: &now,
-			}},
-		},
-		{
 			"PatchDetails.Description",
-			&Plant{Details: &Details{
+			&Plant{Details: &PlantDetails{
 				Description: "description",
 			}},
 		},
 		{
 			"PatchDetails.Notes",
-			&Plant{Details: &Details{
+			&Plant{Details: &PlantDetails{
 				Notes: "notes",
 			}},
 		},
 		{
 			"PatchDetails.TimeToHarvest",
-			&Plant{Details: &Details{
+			&Plant{Details: &PlantDetails{
 				TimeToHarvest: "TimeToHarvest",
 			}},
 		},
 		{
 			"PatchDetails.Count",
-			&Plant{Details: &Details{
+			&Plant{Details: &PlantDetails{
 				Count: 1,
 			}},
 		},
@@ -101,11 +79,6 @@ func TestPlantPatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &Plant{}
 			p.Patch(tt.newPlant)
-			if p.WaterSchedule != nil && *p.WaterSchedule != *tt.newPlant.WaterSchedule {
-				t.Errorf("Unexpected result for WaterSchedule: expected=%v, actual=%v", tt.newPlant, p)
-			}
-			p.WaterSchedule = nil
-			tt.newPlant.WaterSchedule = nil
 			if p.Details != nil && *p.Details != *tt.newPlant.Details {
 				t.Errorf("Unexpected result for Details: expected=%v, actual=%v", tt.newPlant, p)
 			}

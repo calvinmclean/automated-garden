@@ -12,7 +12,8 @@ import (
 )
 
 const (
-	Version = "2.2.2"
+	// Version defines current version
+	Version = "2.8.2"
 )
 
 func init() {

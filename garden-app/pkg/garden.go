@@ -67,7 +67,8 @@ type Garden struct {
 	TopicPrefix   string            `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
 	ID            xid.ID            `json:"id" yaml:"id,omitempty"`
 	Plants        map[xid.ID]*Plant `json:"plants" yaml:"plants,omitempty"`
-	MaxPlants     *uint             `json:"max_plants" yaml:"max_plants"`
+	Zones         map[xid.ID]*Zone  `json:"zones" yaml:"zones,omitempty"`
+	MaxZones      *uint             `json:"max_zones" yaml:"max_zones"`
 	CreatedAt     *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate       *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	LightSchedule *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
@@ -135,8 +136,8 @@ func (g *Garden) Patch(newGarden *Garden) {
 	if newGarden.TopicPrefix != "" {
 		g.TopicPrefix = newGarden.TopicPrefix
 	}
-	if newGarden.MaxPlants != nil {
-		g.MaxPlants = newGarden.MaxPlants
+	if newGarden.MaxZones != nil {
+		g.MaxZones = newGarden.MaxZones
 	}
 	if newGarden.CreatedAt != nil {
 		g.CreatedAt = newGarden.CreatedAt
@@ -174,4 +175,25 @@ func (g *Garden) NumPlants() uint {
 		}
 	}
 	return result
+}
+
+// NumZones returns the number of non-end-dated Zones that are part of this Garden
+func (g *Garden) NumZones() uint {
+	result := uint(0)
+	for _, z := range g.Zones {
+		if !z.EndDated() {
+			result++
+		}
+	}
+	return result
+}
+
+// PlantsByZone returns the Plants associated with the provided ZoneID
+func (g *Garden) PlantsByZone(zoneID xid.ID, getEndDated bool) (result []*Plant) {
+	for _, p := range g.Plants {
+		if p.ZoneID == zoneID && (getEndDated || !p.EndDated()) {
+			result = append(result, p)
+		}
+	}
+	return
 }

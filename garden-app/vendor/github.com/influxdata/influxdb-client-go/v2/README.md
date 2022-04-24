@@ -16,6 +16,10 @@ This repository contains the reference Go client for InfluxDB 2.
     - [Basic Example](#basic-example)
     - [Writes in Detail](#writes)
     - [Queries in Detail](#queries)
+    - [Parametrized Queries](#parametrized-queries) 
+    - [Concurrency](#concurrency)
+    - [Proxy and redirects](#proxy-and-redirects)
+    - [Checking Server State](#checking-server-state)
 - [InfluxDB 1.8 API compatibility](#influxdb-18-api-compatibility)
 - [Contributing](#contributing)
 - [License](#license)
@@ -28,7 +32,7 @@ This repository contains the reference Go client for InfluxDB 2.
         - into raw data, flux table representation
         - [How to queries](#queries)
     - Writing data using
-        - [Line Protocol](https://docs.influxdata.com/influxdb/v1.6/write_protocols/line_protocol_tutorial/) 
+        - [Line Protocol](https://docs.influxdata.com/influxdb/v2.0/reference/syntax/line-protocol/)
         - [Data Point](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2/api/write#Point)
         - Both [asynchronous](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2/api#WriteAPI) or [synchronous](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2/api#WriteAPIBlocking) ways
         - [How to writes](#writes)  
@@ -40,7 +44,12 @@ This repository contains the reference Go client for InfluxDB 2.
      
 ## Documentation
 
-Go API docs is available at: [https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2)
+This section contains links to the client library documentation.
+
+- [Product documentation](https://docs.influxdata.com/influxdb/v2.0/tools/client-libraries/), [Getting Started](#how-to-use)
+- [Examples](#examples)
+- [API Reference](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2)
+- [Changelog](CHANGELOG.md)
 
 ### Examples
 
@@ -53,7 +62,7 @@ There are also other examples in the API docs:
 ## How To Use
 
 ### Installation
-**Go 1.13** or later is required.
+**Go 1.17** or later is required.
 
 1.  Add the client package your to your project dependencies (go.mod).
     ```sh
@@ -198,6 +207,33 @@ func main() {
     client.Close()
 }
 ```
+### Handling of failed async writes
+WriteAPI by default continues with retrying of failed writes. 
+Retried are automatically writes that fail on a connection failure or when server returns response HTTP status code >= 429.
+
+Retrying algorithm uses random exponential strategy to set retry time.
+The delay for the next retry attempt is a random value in the interval _retryInterval * exponentialBase^(attempts)_ and _retryInterval * exponentialBase^(attempts+1)_.
+If writes of batch repeatedly fails, WriteAPI continues with retrying until _maxRetries_ is reached or the overall retry time of batch exceeds _maxRetryTime_. 
+
+The defaults parameters (part of the WriteOptions) are:
+ - _retryInterval_=5,000ms
+ - _exponentialBase_=2
+ - _maxRetryDelay_=125,000ms
+ - _maxRetries_=5
+ - _maxRetryTime_=180,000ms
+ 
+Retry delays are by default randomly distributed within the ranges:
+ 1. 5,000-10,000
+ 1. 10,000-20,000
+ 1. 20,000-40,000
+ 1. 40,000-80,000
+ 1. 80,000-125,000
+ 
+Setting _retryInterval_ to 0 disables retry strategy and any failed write will discard the batch. 
+
+[WriteFailedCallback](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2/api#WriteFailedCallback) allows advanced controlling of retrying. 
+It is synchronously notified in case async write fails.
+It controls further batch handling by its return value. If it returns `true`, WriteAPI continues with retrying of writes of this batch. Returned `false` means the batch should be discarded. 
 
 ### Reading async errors
 [Errors()](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2/api#WriteAPI.Errors) method returns a channel for reading errors which occurs during async writes. This channel is unbuffered and it 
@@ -377,7 +413,207 @@ func main() {
     client.Close()
 }    
 ```
+### Parametrized Queries
+InfluxDB Cloud supports [Parameterized Queries](https://docs.influxdata.com/influxdb/cloud/query-data/parameterized-queries/)
+that let you dynamically change values in a query using the InfluxDB API. Parameterized queries make Flux queries more
+reusable and can also be used to help prevent injection attacks.
 
+InfluxDB Cloud inserts the params object into the Flux query as a Flux record named `params`. Use dot or bracket
+notation to access parameters in the `params` record in your Flux query. Parameterized Flux queries support only `int`
+, `float`, and `string` data types. To convert the supported data types into
+other [Flux basic data types, use Flux type conversion functions](https://docs.influxdata.com/influxdb/cloud/query-data/parameterized-queries/#supported-parameter-data-types).
+
+Query parameters can be passed as a struct or map. Param values can be only simple types or `time.Time`.
+The name of the parameter represented by a struct field can be specified by JSON annotation.
+
+Parameterized query example:
+> :warning: Parameterized Queries are supported only in InfluxDB Cloud. There is no support in InfluxDB OSS currently.
+```go
+package main
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/influxdata/influxdb-client-go/v2"
+)
+
+func main() {
+	// Create a new client using an InfluxDB server base URL and an authentication token
+	client := influxdb2.NewClient("http://localhost:8086", "my-token")
+	// Get query client
+	queryAPI := client.QueryAPI("my-org")
+	// Define parameters
+	parameters := struct {
+		Start string  `json:"start"`
+		Field string  `json:"field"`
+		Value float64 `json:"value"`
+	}{
+		"-1h",
+		"temperature",
+		25,
+	}
+	// Query with parameters
+	query := `from(bucket:"my-bucket")
+				|> range(start: duration(params.start)) 
+				|> filter(fn: (r) => r._measurement == "stat")
+				|> filter(fn: (r) => r._field == params.field)
+				|> filter(fn: (r) => r._value > params.value)`
+
+	// Get result
+	result, err := queryAPI.QueryWithParams(context.Background(), query, parameters)
+	if err == nil {
+		// Iterate over query response
+		for result.Next() {
+			// Notice when group key has changed
+			if result.TableChanged() {
+				fmt.Printf("table: %s\n", result.TableMetadata().String())
+			}
+			// Access data
+			fmt.Printf("value: %v\n", result.Record().Value())
+		}
+		// check for an error
+		if result.Err() != nil {
+			fmt.Printf("query parsing error: %s\n", result.Err().Error())
+		}
+	} else {
+		panic(err)
+	}
+	// Ensures background processes finishes
+	client.Close()
+}
+```
+
+### Concurrency
+InfluxDB Go Client can be used in a concurrent environment. All its functions are thread-safe.
+
+The best practise is to use a single `Client` instance per server URL. This ensures optimized resources usage, 
+most importantly reusing HTTP connections. 
+
+For efficient reuse of HTTP resources among multiple clients, create an HTTP client and use `Options.SetHTTPClient()` for setting it to all clients:
+```go
+    // Create HTTP client
+    httpClient := &http.Client{
+        Timeout: time.Second * time.Duration(60),
+        Transport: &http.Transport{
+            DialContext: (&net.Dialer{
+                Timeout: 5 * time.Second,
+            }).DialContext,
+            TLSHandshakeTimeout: 5 * time.Second,
+            TLSClientConfig: &tls.Config{
+                InsecureSkipVerify: true,
+            },
+            MaxIdleConns:        100,
+            MaxIdleConnsPerHost: 100,
+            IdleConnTimeout:     90 * time.Second,
+        },
+    }
+    // Client for server 1
+    client1 := influxdb2.NewClientWithOptions("https://server:8086", "my-token", influxdb2.DefaultOptions().SetHTTPClient(httpClient))
+    // Client for server 2
+    client2 := influxdb2.NewClientWithOptions("https://server:9999", "my-token2", influxdb2.DefaultOptions().SetHTTPClient(httpClient))
+```
+
+Client ensures that there is a single instance of each server API sub-client for the specific area. E.g. a single `WriteAPI` instance for each org/bucket pair, 
+a single `QueryAPI` for each org.
+
+Such a single API sub-client instance can be used concurrently:
+```go
+package main
+
+import (
+	"math/rand"
+	"sync"
+	"time"
+
+	influxdb2 "github.com/influxdata/influxdb-client-go"
+	"github.com/influxdata/influxdb-client-go/v2/api/write"
+)
+
+func main() {
+    // Create client
+    client := influxdb2.NewClient("http://localhost:8086", "my-token")
+    // Ensure closing the client
+    defer client.Close()
+
+    // Get write client
+    writeApi := client.WriteAPI("my-org", "my-bucket")
+
+    // Create channel for points feeding
+    pointsCh := make(chan *write.Point, 200)
+
+    threads := 5
+
+    var wg sync.WaitGroup
+    go func(points int) {
+        for i := 0; i < points; i++ {
+            p := influxdb2.NewPoint("meas",
+                map[string]string{"tag": "tagvalue"},
+                map[string]interface{}{"val1": rand.Int63n(1000), "val2": rand.Float64()*100.0 - 50.0},
+                time.Now())
+            pointsCh <- p
+        }
+        close(pointsCh)
+    }(1000000)
+
+    // Launch write routines
+    for t := 0; t < threads; t++ {
+        wg.Add(1)
+        go func() {
+            for p := range pointsCh {
+                writeApi.WritePoint(p)
+            }
+            wg.Done()
+        }()
+    }
+    // Wait for writes complete
+    wg.Wait()
+}
+```
+
+### Proxy and redirects
+You can configure InfluxDB Go client behind a proxy in two ways:
+ 1. Using environment variable  
+     Set environment variable `HTTP_PROXY` (or `HTTPS_PROXY` based on the scheme of your server url).  
+     e.g. (linux) `export HTTP_PROXY=http://my-proxy:8080` or in Go code `os.Setenv("HTTP_PROXY","http://my-proxy:8080")`
+     
+ 1. Configure `http.Client` to use proxy<br>
+     Create a custom `http.Client` with a proxy configuration:
+    ```go
+    proxyUrl, err := url.Parse("http://my-proxy:8080")
+    httpClient := &http.Client{
+        Transport: &http.Transport{
+            Proxy: http.ProxyURL(proxyUrl)
+        }
+    }
+    client := influxdb2.NewClientWithOptions("http://localhost:8086", token, influxdb2.DefaultOptions().SetHTTPClient(httpClient))
+    ```
+ 
+ Client automatically follows HTTP redirects. The default redirect policy is to follow up to 10 consecutive requests.
+ Due to a security reason _Authorization_ header is not forwarded when redirect leads to a different domain.
+ To overcome this limitation you have to set a custom redirect handler:
+```go
+token := "my-token"
+
+httpClient := &http.Client{
+    CheckRedirect: func(req *http.Request, via []*http.Request) error {
+        req.Header.Add("Authorization","Token " + token)
+        return nil
+    },
+}
+client := influxdb2.NewClientWithOptions("http://localhost:8086", token, influxdb2.DefaultOptions().SetHTTPClient(httpClient))
+``` 
+
+### Checking Server State
+There are three functions for checking whether a server is up and ready for communication:
+
+| Function| Description | Availability |
+|:----------|:----------|:----------|
+| [Health()](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2#Client.Health) | Detailed info about the server status, along with version string | OSS |
+| [Ready()](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2#Client.Ready) | Server uptime info | OSS |
+| [Ping()](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2#Client.Ping) | Whether a server is up | OSS, Cloud |
+
+Only the [Ping()](https://pkg.go.dev/github.com/influxdata/influxdb-client-go/v2#Client.Ping) function works in InfluxDB Cloud server.
 
 ## InfluxDB 1.8 API compatibility
   
@@ -451,6 +687,7 @@ func main() {
     client.Close()
 }
 ```
+
 ## Contributing
 
 If you would like to contribute code you can do through GitHub by forking the repository and sending a pull request into the `master` branch.

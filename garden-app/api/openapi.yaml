@@ -12,6 +12,8 @@ tags:
     description: Operations related to Garden resources
   - name: plants
     description: Operations related to Plant resources
+  - name: zones
+    description: Operations related to Zone resources
 paths:
   /gardens:
     post:
@@ -288,39 +290,150 @@ paths:
                 $ref: "#/components/schemas/PlantResponse"
         "400":
           description: Bad Request
-  /gardens/{gardenID}/plants/{plantID}/action:
+
+  /gardens/{gardenID}/zones:
     post:
       tags:
-        - plants
-      summary: Execute action on a Plant
-      description: This endpoint allows executing certain actions on a Plant. This will actually interact with the `garden-controller` rather than just manipulating resources.
-      operationId: plantAction
+        - zones
+      summary: Add a Zone
+      description: Adds a new Zone to this Garden.
+      operationId: addZone
       parameters:
         - $ref: "#/components/parameters/GardenID"
-        - $ref: "#/components/parameters/PlantID"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ZoneResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Add a Zone
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateZoneRequest"
+    get:
+      tags:
+        - zones
+      summary: Get all Zones
+      description: Query for a list of all Zones. Optionally include end-dated Zones.
+      operationId: getAllZones
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - name: end_dated
+          in: query
+          description: whether or not to include end-dated Zones in the response
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllZonesResponse"
+        "400":
+          description: Bad Request
+  /gardens/{gardenID}/zones/{zoneID}:
+    get:
+      tags:
+        - zones
+      summary: Get a Zone
+      description: Get details of a Zone.
+      operationId: getZone
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/ZoneID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ZoneResponse"
+        "400":
+          description: Bad Request
+    patch:
+      tags:
+        - zones
+      summary: Update/Edit a Zone
+      description: Update/Edit a Zone. Only certain fields of a Zone are editable.
+      operationId: updateZone
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/ZoneID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ZoneResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Update/Edit a new Zone
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateZoneRequest"
+    delete:
+      tags:
+        - zones
+      summary: End-date a Zone
+      description: End-date a Zone. This allows deleting without actually losing the resource data. Once a Zone is end-dated, certain resources will not be available such as health and action.
+      operationId: endDateZone
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/ZoneID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ZoneResponse"
+        "400":
+          description: Bad Request
+  /gardens/{gardenID}/zones/{zoneID}/action:
+    post:
+      tags:
+        - zones
+      summary: Execute action on a Zone
+      description: This endpoint allows executing certain actions on a Zone. This will actually interact with the `garden-controller` rather than just manipulating resources.
+      operationId: zoneAction
+      parameters:
+        - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/ZoneID"
       responses:
         "202":
           description: Accepted
         "400":
           description: Bad Request
       requestBody:
-        description: Execute action on a Plant
+        description: Execute action on a Zone
         required: true
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/PlantAction"
+              $ref: "#/components/schemas/ZoneAction"
 
-  /gardens/{gardenID}/plants/{plantID}/history:
+  /gardens/{gardenID}/zones/{zoneID}/history:
     post:
       tags:
-        - plants
-      summary: Get Plant's watering history
-      description: This endpoint retrieves information about past watering events for this Plant
-      operationId: plantHistory
+        - zones
+      summary: Get Zone's watering history
+      description: This endpoint retrieves information about past watering events for this Zone
+      operationId: zoneHistory
       parameters:
         - $ref: "#/components/parameters/GardenID"
-        - $ref: "#/components/parameters/PlantID"
+        - $ref: "#/components/parameters/ZoneID"
         - name: range
           in: query
           description: duration describing the amount of time in the past to show events from (default=72h)
@@ -341,7 +454,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/PlantHistoryResponse"
+                $ref: "#/components/schemas/WaterHistoryResponse"
         "400":
           description: Bad Request
 
@@ -358,6 +471,13 @@ components:
       name: plantID
       in: path
       description: ID of Plant resource for this request
+      required: true
+      schema:
+        $ref: "#/components/schemas/xid"
+    ZoneID:
+      name: zoneID
+      in: path
+      description: ID of Zone resource for this request
       required: true
       schema:
         $ref: "#/components/schemas/xid"
@@ -381,63 +501,6 @@ components:
         href:
           type: string
           description: relative path for the specified resource
-
-    PlantHistoryResponse:
-      type: object
-      description: response containing a list of past watering events and some basic aggegrate details about them
-      properties:
-        history:
-          type: array
-          items:
-            $ref: "#/components/schemas/PlantHistory"
-        count:
-          type: integer
-          description: number of watering events found in the range
-          example: 1
-        average:
-          type: string
-          description: average of `duration` for all events found. Formatted as a float in Go duration format
-          example: 15s
-        total:
-          type: string
-          description: total of `duration` for all events found. Formatted as a float in Go duration format
-          example: 15s
-
-    PlantHistory:
-      type: object
-      description: a
-      properties:
-        duration:
-          type: string
-          description: amount of time, in Duration format, that Plant should be watered
-          example: 15000ms
-        record_time:
-          type: string
-          format: date-time
-          description: time that the watering event was recorded
-
-    PlantAction:
-      type: object
-      description: collects all the possible actions for a Plant into a single struct so these can easily be received as one request
-      properties:
-        water:
-          $ref: "#/components/schemas/WaterAction"
-      required:
-        - water
-
-    WaterAction:
-      type: object
-      description: waters a Plant for the specified amount of time
-      properties:
-        duration:
-          type: number
-          description: amount of time, in milliseconds, that Plant should be watered
-          example: 150000
-        ignore_moisture:
-          type: boolean
-          description: if Plant is configured with a `minimum_moisture` for watering, ignore it and force watering
-      required:
-        - duration
 
     UpdatePlantRequest:
       type: object
@@ -466,8 +529,7 @@ components:
         - $ref: "#/components/schemas/Plant"
       required:
         - name
-        - plant_position
-        - water_schedule
+        - zone_id
 
     PlantResponse:
       type: object
@@ -502,17 +564,15 @@ components:
                   href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670
                 - rel: garden
                   href: /gardens/c22tmvucie6n6gdrpal0
+                - rel: zone
+                  href: /gardens/c22tmvucie6n6gdrpal0/zones/c3ucvu06n88pt1dom670
                 - rel: action
                   href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/action
-                - rel: history
-                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/history
       required:
         - id
         - created_at
         - links
         - name
-        - plant_position
-        - water_schedule
 
     Plant:
       type: object
@@ -524,6 +584,11 @@ components:
           type: string
           description: this is the name of the Plant
           example: lettuce
+        zone_id:
+          type: object
+          description: ID referencing the Zone that this Plant is a part of
+          allOf:
+            - $ref: "#/components/schemas/xid"
         details:
           type: object
           description: this holds various additional information about a Plant that might be useful to remember, but is not related to core functionality of this application.
@@ -544,41 +609,6 @@ components:
               type: integer
               description: number of actual plants that would be managed
               example: 6
-        plant_position:
-          type: integer
-          description: this is the position of this Plant in the Garden. It corresponds directly to the configuration of the `garden-controller` and is critical for watering the Plant
-          example: 0
-          minimum: 0
-        water_schedule:
-          type: object
-          description: |
-            Allows control over how/when the Plant is watered. The `interval` is used to control the amount of time the pump runs to water the Garden.
-            Specifying a `minimum_moisture` will instruct the server to consider moisture sensor data when executing the WaterAction.
-            To avoid falsely triggering watering and avoid the complexity if constantly checking moisture data, the moisture is only checked when executing a WaterAction.
-          properties:
-            duration:
-              type: string
-              description: amount of time, in Duration format, that Plant should be watered
-              example: 15000ms
-            interval:
-              type: string
-              format: duration
-              description: amount of time, as a Duration string, to wait between scheduled watering
-              example: 72h
-            minimum_moisture:
-              type: integer
-              minimum: 0
-              maximum: 100
-              description: this is a percentage representing the threshold that the Plant's moisture must be below to enable a WaterAction
-              example: 50
-            start_time:
-              type: string
-              format: date-time
-              description: time that the watering interval should be started at
-          required:
-            - duration
-            - interval
-            - start_time
 
     GardenHealth:
       type: object
@@ -687,6 +717,13 @@ components:
               example:
                 rel: collection
                 href: /gardens/c6corm5mk1u53v1dchq0/plants
+            zones:
+              description: link specifically for the collection of Zones
+              allOf:
+                - $ref: "#/components/schemas/link"
+              example:
+                rel: collection
+                href: /gardens/c6corm5mk1u53v1dchq0/zones
             links:
               type: array
               items:
@@ -698,12 +735,15 @@ components:
                   href: /gardens/c6corm5mk1u53v1dchq0/health
                 - rel: plants
                   href: /gardens/c6corm5mk1u53v1dchq0/plants
+                - rel: zones
+                  href: /gardens/c6corm5mk1u53v1dchq0/zones
                 - rel: action
                   href: /gardens/c6corm5mk1u53v1dchq0/action
       required:
         - id
         - created_at
         - plants
+        - zones
         - links
 
     AllGardensResponse:
@@ -728,9 +768,9 @@ components:
           description: |
             This is the prefix of the MQTT topic for sending messages to the controller, so it is recommended to avoid spaces and the following characters are not allowed: `[$#*>+/]`
           example: garden
-        max_plants:
+        max_zones:
           type: integer
-          description: used to help with validation and avoid errors. This represents the maximum number of Plants that this Garden is able to water
+          description: used to help with validation and avoid errors. This represents the maximum number of Zones that this Garden is able to water
           example: 3
           minimum: 0
         light_schedule:
@@ -755,4 +795,198 @@ components:
             - duration
             - start_time
       required:
-        - max_plants
+        - max_zones
+
+    WaterSchedule:
+      type: object
+      description: |
+        Allows control over how/when the Zone is watered. The `interval` is used to control the amount of time the pump runs to water the Garden.
+        Specifying a `minimum_moisture` will instruct the server to consider moisture sensor data when executing the WaterAction.
+        To avoid falsely triggering watering and avoid the complexity if constantly checking moisture data, the moisture is only checked when executing a WaterAction.
+      properties:
+        duration:
+          type: string
+          description: amount of time, in Duration format, that Plant should be watered
+          example: 15000ms
+        interval:
+          type: string
+          format: duration
+          description: amount of time, as a Duration string, to wait between scheduled watering
+          example: 72h
+        minimum_moisture:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: this is a percentage representing the threshold that the Plant's moisture must be below to enable a WaterAction
+          example: 50
+        start_time:
+          type: string
+          format: date-time
+          description: time that the watering interval should be started at
+      required:
+        - duration
+        - interval
+        - start_time
+
+    Zone:
+      type: object
+      description: |
+        A Zone corresponds to a "waterable resource" and enabled direct control of `garden-controller` watering devices.
+        It holds a WaterSchedule and can be referenced by Plants to track their watering and location. This allows watering
+        multiple Plants from a single control and is useful for larger Garden setups, such as an outdoor Garden with beds.
+      properties:
+        name:
+          type: string
+          description: this is the name of the Zone
+          example: Raised Bed 1
+        details:
+          type: object
+          description: this holds various additional information about a Zone that might be useful to remember, but is not related to core functionality of this application.
+          properties:
+            description:
+              type: string
+              description: a general description of a Zone
+              example: raised bed containing assorted vegetables
+            notes:
+              type: string
+              description: general notes about the Zone
+              example: near the west wall of the yard, receiving morning light and afternoon shade
+        position:
+          type: integer
+          description: this corresponds directly to the configuration of the `garden-controller` and is critical for having control of the Zone
+          example: 0
+          minimum: 0
+        water_schedule:
+          $ref: "#/components/schemas/WaterSchedule"
+
+    UpdateZoneRequest:
+      type: object
+      description: This allows updating/editing a Zone resource
+      allOf:
+        - $ref: "#/components/schemas/Zone"
+        - properties:
+            created_at:
+              type: string
+              format: date-time
+              description: the date-time when the Zone was originally created
+
+    AllZonesResponse:
+      type: object
+      description: List of all Zones
+      properties:
+        plants:
+          type: array
+          items:
+            $ref: "#/components/schemas/ZoneResponse"
+
+    CreateZoneRequest:
+      type: object
+      description: This allows creating a Zone resource
+      allOf:
+        - $ref: "#/components/schemas/Zone"
+      required:
+        - name
+        - position
+        - water_schedule
+
+    ZoneResponse:
+      type: object
+      description: This is the response object for Zones that contains extra information only available on Zones that are created
+      allOf:
+        - $ref: "#/components/schemas/Zone"
+        - properties:
+            id:
+              $ref: "#/components/schemas/xid"
+            created_at:
+              type: string
+              format: date-time
+              description: the date-time when the Zone was originally created
+            end_date:
+              type: string
+              format: date-time
+              description: the date-time when the Zone was deleted/removed
+            next_watering_time:
+              type: string
+              description: time of the next scheduled watering
+              format: date-time
+            moisture:
+              type: number
+              format: float
+              description: moisture percentage of a Zone with a soil moisture sensor
+            links:
+              type: array
+              items:
+                $ref: "#/components/schemas/link"
+              example:
+                - rel: self
+                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670
+                - rel: garden
+                  href: /gardens/c22tmvucie6n6gdrpal0
+                - rel: action
+                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/action
+                - rel: history
+                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/history
+      required:
+        - id
+        - created_at
+        - links
+        - name
+        - position
+        - water_schedule
+
+    WaterHistoryResponse:
+      type: object
+      description: response containing a list of past watering events and some basic aggegrate details about them
+      properties:
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaterHistory"
+        count:
+          type: integer
+          description: number of watering events found in the range
+          example: 1
+        average:
+          type: string
+          description: average of `duration` for all events found. Formatted as a float in Go duration format
+          example: 15s
+        total:
+          type: string
+          description: total of `duration` for all events found. Formatted as a float in Go duration format
+          example: 15s
+
+    WaterHistory:
+      type: object
+      description: a
+      properties:
+        duration:
+          type: string
+          description: amount of time, in Duration format, that Zone should be watered
+          example: 15000ms
+        record_time:
+          type: string
+          format: date-time
+          description: time that the watering event was recorded
+
+    ZoneAction:
+      type: object
+      description: collects all the possible actions for a Zone into a single struct so these can easily be received as one request
+      properties:
+        water:
+          $ref: "#/components/schemas/WaterAction"
+      required:
+        - water
+
+    WaterAction:
+      type: object
+      description: waters a Zone for the specified amount of time
+      properties:
+        duration:
+          type: number
+          description: amount of time, in milliseconds, that Zone should be watered
+          example: 150000
+        ignore_moisture:
+          type: boolean
+          description: if Zone is configured with a `minimum_moisture` for watering, ignore it and force watering
+      required:
+        - duration

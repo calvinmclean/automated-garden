@@ -7,6 +7,7 @@ package query
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -146,24 +147,28 @@ func NewFluxRecord(table int, values map[string]interface{}) *FluxRecord {
 	return &FluxRecord{table: table, values: values}
 }
 
-// Table returns index of the table record belongs to
+// Table returns value of the table column
+// It returns zero if the table column is not found
 func (r *FluxRecord) Table() int {
-	return r.table
+	return int(intValue(r.values, "table"))
 }
 
-// Start returns the inclusive lower time bound of all records in the current table
+// Start returns the inclusive lower time bound of all records in the current table.
+// Returns empty time.Time if there is no column "_start".
 func (r *FluxRecord) Start() time.Time {
-	return r.ValueByKey("_start").(time.Time)
+	return timeValue(r.values, "_start")
 }
 
-// Stop returns the exclusive upper time bound of all records in the current table
+// Stop returns the exclusive upper time bound of all records in the current table.
+// Returns empty time.Time if there is no column "_stop".
 func (r *FluxRecord) Stop() time.Time {
-	return r.ValueByKey("_stop").(time.Time)
+	return timeValue(r.values, "_stop")
 }
 
-// Time returns the time of the record
+// Time returns the time of the record.
+// Returns empty time.Time if there is no column "_time".
 func (r *FluxRecord) Time() time.Time {
-	return r.ValueByKey("_time").(time.Time)
+	return timeValue(r.values, "_time")
 }
 
 // Value returns the default _value column value or nil if not present
@@ -171,14 +176,22 @@ func (r *FluxRecord) Value() interface{} {
 	return r.ValueByKey("_value")
 }
 
-// Field returns the field name
+// Field returns the field name.
+// Returns empty string if there is no column "_field".
 func (r *FluxRecord) Field() string {
-	return r.ValueByKey("_field").(string)
+	return stringValue(r.values, "_field")
+}
+
+// Result returns the value of the _result column, which represents result name.
+// Returns empty string if there is no column "result".
+func (r *FluxRecord) Result() string {
+	return stringValue(r.values, "result")
 }
 
 // Measurement returns the measurement name of the record
+// Returns empty string if there is no column "_measurement".
 func (r *FluxRecord) Measurement() string {
-	return r.ValueByKey("_measurement").(string)
+	return stringValue(r.values, "_measurement")
 }
 
 // Values returns map of the values where key is the column name
@@ -193,14 +206,55 @@ func (r *FluxRecord) ValueByKey(key string) interface{} {
 
 // String returns FluxRecord string dump
 func (r *FluxRecord) String() string {
-	var buffer strings.Builder
+	if len(r.values) == 0 {
+		return ""
+	}
+
 	i := 0
-	for k, v := range r.values {
-		if i > 0 {
-			buffer.WriteString(",")
-		}
-		buffer.WriteString(fmt.Sprintf("%s:%v", k, v))
+	keys := make([]string, len(r.values))
+	for k := range r.values {
+		keys[i] = k
 		i++
 	}
+	sort.Strings(keys)
+	var buffer strings.Builder
+	buffer.WriteString(fmt.Sprintf("%s:%v", keys[0], r.values[keys[0]]))
+	for _, k := range keys[1:] {
+		buffer.WriteString(",")
+		buffer.WriteString(fmt.Sprintf("%s:%v", k, r.values[k]))
+	}
 	return buffer.String()
+}
+
+// timeValue returns time.Time value from values map according to the key
+// Empty time.Time value is returned if key is not found
+func timeValue(values map[string]interface{}, key string) time.Time {
+	if val, ok := values[key]; ok {
+		if t, ok := val.(time.Time); ok {
+			return t
+		}
+	}
+	return time.Time{}
+}
+
+// stringValue returns string value from values map according to the key
+// Empty string is returned if key is not found
+func stringValue(values map[string]interface{}, key string) string {
+	if val, ok := values[key]; ok {
+		if s, ok := val.(string); ok {
+			return s
+		}
+	}
+	return ""
+}
+
+// intValue returns int64 value from values map according to the key
+// Zero value is returned if key is not found
+func intValue(values map[string]interface{}, key string) int64 {
+	if val, ok := values[key]; ok {
+		if i, ok := val.(int64); ok {
+			return i
+		}
+	}
+	return 0
 }

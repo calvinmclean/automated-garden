@@ -49,6 +49,7 @@ type UsersAPI interface {
 	SignOut(ctx context.Context) error
 }
 
+// usersAPI implements UsersAPI
 type usersAPI struct {
 	apiClient       *domain.ClientWithResponses
 	httpService     http.Service
@@ -57,6 +58,7 @@ type usersAPI struct {
 	lock            sync.Mutex
 }
 
+// NewUsersAPI creates new instance of UsersAPI
 func NewUsersAPI(apiClient *domain.ClientWithResponses, httpService http.Service, httpClient *nethttp.Client) UsersAPI {
 	return &usersAPI{
 		apiClient:   apiClient,
@@ -72,9 +74,9 @@ func (u *usersAPI) GetUsers(ctx context.Context) (*[]domain.User, error) {
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
-	return response.JSON200.Users, nil
+	return userResponsesToUsers(response.JSON200.Users), nil
 }
 
 func (u *usersAPI) FindUserByID(ctx context.Context, userID string) (*domain.User, error) {
@@ -84,9 +86,9 @@ func (u *usersAPI) FindUserByID(ctx context.Context, userID string) (*domain.Use
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
-	return response.JSON200, nil
+	return userResponseToUser(response.JSON200), nil
 }
 
 func (u *usersAPI) FindUserByName(ctx context.Context, userName string) (*domain.User, error) {
@@ -119,9 +121,9 @@ func (u *usersAPI) CreateUser(ctx context.Context, user *domain.User) (*domain.U
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
-	return response.JSON201, nil
+	return userResponseToUser(response.JSON201), nil
 }
 
 func (u *usersAPI) UpdateUser(ctx context.Context, user *domain.User) (*domain.User, error) {
@@ -131,9 +133,9 @@ func (u *usersAPI) UpdateUser(ctx context.Context, user *domain.User) (*domain.U
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
-	return response.JSON200, nil
+	return userResponseToUser(response.JSON200), nil
 }
 
 func (u *usersAPI) UpdateUserPassword(ctx context.Context, user *domain.User, password string) error {
@@ -148,7 +150,7 @@ func (u *usersAPI) UpdateUserPasswordWithID(ctx context.Context, userID string, 
 		return err
 	}
 	if response.JSONDefault != nil {
-		return domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return nil
 }
@@ -164,7 +166,7 @@ func (u *usersAPI) DeleteUserWithID(ctx context.Context, userID string) error {
 		return err
 	}
 	if response.JSONDefault != nil {
-		return domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return nil
 }
@@ -176,9 +178,9 @@ func (u *usersAPI) Me(ctx context.Context) (*domain.User, error) {
 		return nil, err
 	}
 	if response.JSONDefault != nil {
-		return nil, domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return nil, domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
-	return response.JSON200, nil
+	return userResponseToUser(response.JSON200), nil
 }
 
 func (u *usersAPI) MeUpdatePassword(ctx context.Context, oldPassword, newPassword string) error {
@@ -199,7 +201,7 @@ func (u *usersAPI) MeUpdatePassword(ctx context.Context, oldPassword, newPasswor
 		return err
 	}
 	if response.JSONDefault != nil {
-		return domain.DomainErrorToError(response.JSONDefault, response.StatusCode())
+		return domain.ErrorToHTTPError(response.JSONDefault, response.StatusCode())
 	}
 	return nil
 }
@@ -223,13 +225,13 @@ func (u *usersAPI) SignIn(ctx context.Context, username, password string) error 
 		return err
 	}
 	if resp.JSONDefault != nil {
-		return domain.DomainErrorToError(resp.JSONDefault, resp.StatusCode())
+		return domain.ErrorToHTTPError(resp.JSONDefault, resp.StatusCode())
 	}
 	if resp.JSON401 != nil {
-		return domain.DomainErrorToError(resp.JSON401, resp.StatusCode())
+		return domain.ErrorToHTTPError(resp.JSON401, resp.StatusCode())
 	}
 	if resp.JSON403 != nil {
-		return domain.DomainErrorToError(resp.JSON403, resp.StatusCode())
+		return domain.ErrorToHTTPError(resp.JSON403, resp.StatusCode())
 	}
 	return nil
 }
@@ -242,13 +244,45 @@ func (u *usersAPI) SignOut(ctx context.Context) error {
 		return err
 	}
 	if resp.JSONDefault != nil {
-		return domain.DomainErrorToError(resp.JSONDefault, resp.StatusCode())
+		return domain.ErrorToHTTPError(resp.JSONDefault, resp.StatusCode())
 	}
 	if resp.JSON401 != nil {
-		return domain.DomainErrorToError(resp.JSON401, resp.StatusCode())
+		return domain.ErrorToHTTPError(resp.JSON401, resp.StatusCode())
 	}
 	if u.deleteCookieJar {
 		u.httpClient.Jar = nil
 	}
 	return nil
+}
+
+func userResponseToUser(ur *domain.UserResponse) *domain.User {
+	if ur == nil {
+		return nil
+	}
+	user := &domain.User{
+		Id:      ur.Id,
+		Name:    ur.Name,
+		OauthID: ur.OauthID,
+		Status:  userResponseStatusToUserStatus(ur.Status),
+	}
+	return user
+}
+
+func userResponseStatusToUserStatus(urs *domain.UserResponseStatus) *domain.UserStatus {
+	if urs == nil {
+		return nil
+	}
+	us := domain.UserStatus(*urs)
+	return &us
+}
+
+func userResponsesToUsers(urs *[]domain.UserResponse) *[]domain.User {
+	if urs == nil {
+		return nil
+	}
+	us := make([]domain.User, len(*urs))
+	for i, ur := range *urs {
+		us[i] = *userResponseToUser(&ur)
+	}
+	return &us
 }

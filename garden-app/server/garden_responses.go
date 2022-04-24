@@ -14,7 +14,9 @@ type GardenResponse struct {
 	*pkg.Garden
 	NextLightAction *NextLightAction `json:"next_light_action,omitempty"`
 	NumPlants       uint             `json:"num_plants"`
+	NumZones        uint             `json:"num_zones"`
 	Plants          Link             `json:"plants"`
+	Zones           Link             `json:"zones"`
 	Links           []Link           `json:"links,omitempty"`
 }
 
@@ -27,10 +29,13 @@ type NextLightAction struct {
 // NewGardenResponse creates a self-referencing GardenResponse
 func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
 	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)
+	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, zoneBasePath)
 	response := &GardenResponse{
 		Garden:    garden,
 		NumPlants: garden.NumPlants(),
+		NumZones:  garden.NumZones(),
 		Plants:    Link{"collection", plantsPath},
+		Zones:     Link{"collection", zonesPath},
 	}
 	response.Links = append(links,
 		Link{
@@ -47,6 +52,10 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 			Link{
 				"plants",
 				plantsPath,
+			},
+			Link{
+				"zones",
+				zonesPath,
 			},
 			Link{
 				"action",

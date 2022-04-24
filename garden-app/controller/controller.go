@@ -28,7 +28,7 @@ var subLogger *logrus.Logger
 type Config struct {
 	MQTTConfig           mqtt.Config   `mapstructure:"mqtt"`
 	TopicPrefix          string        `mapstructure:"topic_prefix"`
-	NumPlants            int           `mapstructure:"num_plants"`
+	NumZones             int           `mapstructure:"num_zones"`
 	MoistureStrategy     string        `mapstructure:"moisture_strategy"`
 	MoistureValue        int           `mapstructure:"moisture_value"`
 	MoistureInterval     time.Duration `mapstructure:"moisture_interval"`
@@ -61,8 +61,8 @@ func Start(config Config) {
 
 	logger.Infof("starting controller '%s'\n", controller.TopicPrefix)
 
-	if config.NumPlants > 0 {
-		pubLogger.Infof("publishing moisture data for %d Plants", config.NumPlants)
+	if config.NumZones > 0 {
+		pubLogger.Infof("publishing moisture data for %d Zones", config.NumZones)
 	}
 
 	topics, err := controller.topics()
@@ -100,7 +100,7 @@ func Start(config Config) {
 
 	// Initialize scheduler and schedule publishing Jobs
 	scheduler := gocron.NewScheduler(time.Local)
-	for p := 0; p < controller.NumPlants; p++ {
+	for p := 0; p < controller.NumZones; p++ {
 		scheduler.Every(controller.MoistureInterval).Do(controller.publishMoistureData, p)
 	}
 	if controller.PublishHealth {
@@ -171,8 +171,8 @@ func (c *Controller) setupUI() *tview.Application {
 		SetTextAlign(tview.AlignCenter).
 		SetText(c.TopicPrefix)
 	tview.ANSIWriter(header).Write([]byte(fmt.Sprintf(
-		"\n%d Plants\nPublishWateringEvent: %t, PublishHealth: %t, MoistureStrategy: %s",
-		c.NumPlants, c.PublishWateringEvent, c.PublishHealth, c.MoistureStrategy),
+		"\n%d Zones\nPublishWateringEvent: %t, PublishHealth: %t, MoistureStrategy: %s",
+		c.NumZones, c.PublishWateringEvent, c.PublishHealth, c.MoistureStrategy),
 	))
 
 	grid := tview.NewGrid().
@@ -190,14 +190,14 @@ func (c *Controller) setupUI() *tview.Application {
 	return app.SetRoot(grid, true)
 }
 
-// publishMoistureData publishes an InfluxDB line containing moisture data for a Plant
-func (c *Controller) publishMoistureData(plant int) {
+// publishMoistureData publishes an InfluxDB line containing moisture data for a Zone
+func (c *Controller) publishMoistureData(zone int) {
 	moisture := c.createMoistureData()
 	topic := fmt.Sprintf("%s/data/moisture", c.TopicPrefix)
-	pubLogger.Infof("publishing moisture data for Plant %d on topic %s: %d", plant, topic, moisture)
+	pubLogger.Infof("publishing moisture data for Zone %d on topic %s: %d", zone, topic, moisture)
 	err := c.mqttClient.Publish(
 		topic,
-		[]byte(fmt.Sprintf("moisture,plant=%d value=%d", plant, moisture)),
+		[]byte(fmt.Sprintf("moisture,zone=%d value=%d", zone, moisture)),
 	)
 	if err != nil {
 		pubLogger.Errorf("encountered error publishing: %v", err)
@@ -246,10 +246,10 @@ func (c *Controller) publishWateringEvent(waterMsg action.WaterMessage, cmdTopic
 	}
 	// Incoming topic is "{{.TopicPrefix}}/command/water" but we need to publish on "{{.TopicPrefix}}/data/water"
 	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
-	pubLogger.Infof("publishing watering event for Plant on topic %s: %v", dataTopic, waterMsg)
+	pubLogger.Infof("publishing watering event for Zone on topic %s: %v", dataTopic, waterMsg)
 	err := c.mqttClient.Publish(
 		dataTopic,
-		[]byte(fmt.Sprintf("water,plant=%d millis=%d", waterMsg.PlantPosition, waterMsg.Duration)),
+		[]byte(fmt.Sprintf("water,zone=%d millis=%d", waterMsg.Position, waterMsg.Duration)),
 	)
 	if err != nil {
 		pubLogger.Errorf("encountered error publishing: %v", err)
@@ -268,10 +268,10 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 				subLogger.Errorf("unable to unmarshal WaterMessage JSON: %s", err.Error())
 			}
 			subLogger.WithFields(logrus.Fields{
-				"topic":          msg.Topic(),
-				"plant_id":       waterMsg.PlantID,
-				"plant_position": waterMsg.PlantPosition,
-				"duration":       waterMsg.Duration,
+				"topic":    msg.Topic(),
+				"zone_id":  waterMsg.ZoneID,
+				"position": waterMsg.Position,
+				"duration": waterMsg.Duration,
 			}).Info("received WaterAction")
 			c.publishWateringEvent(waterMsg, topic)
 		})

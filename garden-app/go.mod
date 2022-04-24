@@ -2,14 +2,18 @@ module github.com/calvinmclean/automated-garden/garden-app
 
 go 1.16
 
+// Security upgrade/fix
+require github.com/gogo/protobuf v1.3.2 // indirect
+
 require (
+	github.com/deepmap/oapi-codegen v1.10.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.3.5
-	github.com/go-chi/chi/v5 v5.0.2
+	github.com/go-chi/chi/v5 v5.0.7
 	github.com/go-chi/render v1.0.1
-	github.com/go-co-op/gocron v1.11.0
+	github.com/go-co-op/gocron v1.13.0
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
-	github.com/influxdata/influxdb-client-go/v2 v2.2.2
-	github.com/kr/text v0.2.0 // indirect
+	github.com/influxdata/influxdb-client-go/v2 v2.8.2
+	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1 // indirect
 	github.com/pelletier/go-toml v1.8.1 // indirect
@@ -22,9 +26,8 @@ require (
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
-	github.com/stretchr/testify v1.7.0
-	golang.org/x/net v0.0.0-20210716203947-853a461950ff // indirect
-	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
+	github.com/stretchr/testify v1.7.1
+	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/apimachinery v0.19.9

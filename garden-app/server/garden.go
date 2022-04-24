@@ -78,7 +78,7 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 }
 
 // routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
-func (gr GardensResource) routes(pr PlantsResource) chi.Router {
+func (gr GardensResource) routes(pr PlantsResource, zr ZonesResource) chi.Router {
 	r := chi.NewRouter()
 	r.Post("/", gr.createGarden)
 	r.Get("/", gr.getAllGardens)
@@ -96,6 +96,7 @@ func (gr GardensResource) routes(pr PlantsResource) chi.Router {
 			r.Post("/action", gr.gardenAction)
 			r.Get("/health", gr.getGardenHealth)
 			r.Mount(plantBasePath, pr.routes())
+			r.Mount(zoneBasePath, zr.routes())
 		})
 	})
 	return r
@@ -251,9 +252,9 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate that new MaxPlants (if defined) is not less than NumPlants
-	if request.Garden.MaxPlants != nil && *request.Garden.MaxPlants < garden.NumPlants() {
-		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to set max_plants less than current num_plants=%d", garden.NumPlants())))
+	// Validate that new MaxPlants (if defined) is not less than NumZones
+	if request.Garden.MaxZones != nil && *request.Garden.MaxZones < garden.NumZones() {
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to set max_zones less than current num_zones=%d", garden.NumZones())))
 		return
 	}
 
