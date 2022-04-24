@@ -8,10 +8,14 @@ import (
 	"github.com/influxdata/influxdb-client-go/v2/api/http"
 )
 
-func DomainErrorToError(error *Error, statusCode int) *http.Error {
-	return &http.Error{
+// ErrorToHTTPError creates http.Error from domain.Error
+func ErrorToHTTPError(error *Error, statusCode int) *http.Error {
+	err := &http.Error{
 		StatusCode: statusCode,
 		Code:       string(error.Code),
-		Message:    error.Message,
 	}
+	if error.Message != nil {
+		err.Message = *error.Message
+	}
+	return err
 }

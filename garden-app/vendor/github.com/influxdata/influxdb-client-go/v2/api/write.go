@@ -7,6 +7,7 @@ package api
 import (
 	"context"
 	"strings"
+	"sync"
 	"time"
 
 	http2 "github.com/influxdata/influxdb-client-go/v2/api/http"
@@ -15,7 +16,15 @@ import (
 	iwrite "github.com/influxdata/influxdb-client-go/v2/internal/write"
 )
 
+// WriteFailedCallback is synchronously notified in case non-blocking write fails.
+// batch contains complete payload, error holds detailed error information,
+// retryAttempts means number of retries, 0 if it failed during first write.
+// It must return true if WriteAPI should continue with retrying, false will discard the batch.
+type WriteFailedCallback func(batch string, error http2.Error, retryAttempts uint) bool
+
 // WriteAPI is Write client interface with non-blocking methods for writing time series data asynchronously in batches into an InfluxDB server.
+// WriteAPI can be used concurrently.
+// When using multiple goroutines for writing, use a single WriteAPI instance in all goroutines.
 type WriteAPI interface {
 	// WriteRecord writes asynchronously line protocol record into bucket.
 	// WriteRecord adds record into the buffer which is sent on the background when it reaches the batch size.
@@ -31,6 +40,9 @@ type WriteAPI interface {
 	// Must be called before performing any writes for errors to be collected.
 	// The chan is unbuffered and must be drained or the writer will block.
 	Errors() <-chan error
+	// SetWriteFailedCallback sets callback allowing custom handling of failed writes.
+	// If callback returns true, failed batch will be retried, otherwise discarded.
+	SetWriteFailedCallback(cb WriteFailedCallback)
 }
 
 // WriteAPIImpl provides main implementation for WriteAPI
@@ -48,12 +60,14 @@ type WriteAPIImpl struct {
 	bufferInfoCh chan writeBuffInfoReq
 	writeInfoCh  chan writeBuffInfoReq
 	writeOptions *write.Options
+	closingMu    *sync.Mutex
 }
 
 type writeBuffInfoReq struct {
 	writeBuffLen int
 }
 
+// NewWriteAPI returns new non-blocking write client for writing data to  bucket belonging to org
 func NewWriteAPI(org string, bucket string, service http2.Service, writeOptions *write.Options) *WriteAPIImpl {
 	w := &WriteAPIImpl{
 		service:      iwrite.NewService(org, bucket, service, writeOptions),
@@ -67,6 +81,7 @@ func NewWriteAPI(org string, bucket string, service http2.Service, writeOptions 
 		bufferInfoCh: make(chan writeBuffInfoReq),
 		writeInfoCh:  make(chan writeBuffInfoReq),
 		writeOptions: writeOptions,
+		closingMu:    &sync.Mutex{},
 	}
 
 	go w.bufferProc()
@@ -75,6 +90,17 @@ func NewWriteAPI(org string, bucket string, service http2.Service, writeOptions 
 	return w
 }
 
+// SetWriteFailedCallback sets callback allowing custom handling of failed writes.
+// If callback returns true, failed batch will be retried, otherwise discarded.
+func (w *WriteAPIImpl) SetWriteFailedCallback(cb WriteFailedCallback) {
+	w.service.SetBatchErrorCallback(func(batch *iwrite.Batch, error2 http2.Error) bool {
+		return cb(batch.Batch, error2, batch.RetryAttempts)
+	})
+}
+
+// Errors returns a channel for reading errors which occurs during async writes.
+// Must be called before performing any writes for errors to be collected.
+// The chan is unbuffered and must be drained or the writer will block.
 func (w *WriteAPIImpl) Errors() <-chan error {
 	if w.errCh == nil {
 		w.errCh = make(chan error)
@@ -82,6 +108,7 @@ func (w *WriteAPIImpl) Errors() <-chan error {
 	return w.errCh
 }
 
+// Flush forces all pending writes from the buffer to be sent
 func (w *WriteAPIImpl) Flush() {
 	w.bufferFlush <- struct{}{}
 	w.waitForFlushing()
@@ -139,7 +166,7 @@ x:
 func (w *WriteAPIImpl) flushBuffer() {
 	if len(w.writeBuffer) > 0 {
 		log.Info("sending batch")
-		batch := iwrite.NewBatch(buffer(w.writeBuffer), w.writeOptions.RetryInterval())
+		batch := iwrite.NewBatch(buffer(w.writeBuffer), w.writeOptions.RetryInterval(), w.writeOptions.MaxRetryTime())
 		w.writeCh <- batch
 		w.writeBuffer = w.writeBuffer[:0]
 	}
@@ -167,7 +194,11 @@ x:
 	w.doneCh <- struct{}{}
 }
 
+// Close finishes outstanding write operations,
+// stop background routines and closes all channels
 func (w *WriteAPIImpl) Close() {
+	w.closingMu.Lock()
+	defer w.closingMu.Unlock()
 	if w.writeCh != nil {
 		// Flush outstanding metrics
 		w.Flush()
@@ -196,12 +227,18 @@ func (w *WriteAPIImpl) Close() {
 	}
 }
 
+// WriteRecord writes asynchronously line protocol record into bucket.
+// WriteRecord adds record into the buffer which is sent on the background when it reaches the batch size.
+// Blocking alternative is available in the WriteAPIBlocking interface
 func (w *WriteAPIImpl) WriteRecord(line string) {
 	b := []byte(line)
 	b = append(b, 0xa)
 	w.bufferCh <- string(b)
 }
 
+// WritePoint writes asynchronously Point into bucket.
+// WritePoint adds Point into the buffer which is sent on the background when it reaches the batch size.
+// Blocking alternative is available in the WriteAPIBlocking interface
 func (w *WriteAPIImpl) WritePoint(point *write.Point) {
 	line, err := w.service.EncodePoints(point)
 	if err != nil {
