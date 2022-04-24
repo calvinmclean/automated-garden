@@ -137,13 +137,6 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove scheduled watering Job
-	if err := pr.scheduler.RemoveJobsByID(plant.ID); err != nil {
-		logger.Errorf("Unable to remove watering Job for Plant %s: %v", plant.ID.String(), err)
-		render.Render(w, r, InternalServerError(err))
-		return
-	}
-
 	if err := render.Render(w, r, pr.NewPlantResponse(r.Context(), garden, plant)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}

@@ -17,6 +17,7 @@ import (
 
 const (
 	lightingInterval = 24 * time.Hour
+	adhocTag         = "ADHOC"
 )
 
 // Scheduler exposes scheduling functionality that allows executing actions at predetermined times and intervals
@@ -197,10 +198,16 @@ func (s *scheduler) ScheduleLightActions(g *pkg.Garden) error {
 			return s.storageClient.SaveGarden(g)
 		}
 
-		// If nextOnTime is before AdhocOnTime, remove it
-		nextOnTime := s.GetNextLightTime(g, pkg.LightStateOn)
+		nextOnJob, err := s.getNextJob(g.ID.String(), pkg.LightStateOn, false)
+		if err != nil {
+			return err
+		}
+
+		// If nextOnTime is before AdhocOnTime, delay it by 24 hours
+		nextOnTime := nextOnJob.NextRun()
 		if nextOnTime.Before(*g.LightSchedule.AdhocOnTime) {
-			if err := s.removeLightScheduleByState(g, pkg.LightStateOn.String()); err != nil {
+			_, err = s.Job(nextOnJob).StartAt(nextOnTime.Add(24 * time.Hour)).Update()
+			if err != nil {
 				return err
 			}
 		}
@@ -302,13 +309,6 @@ func (s *scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error
 		return err
 	}
 
-	jobs := s.Jobs()
-	fmt.Println("jobs:", jobs)
-	for _, j := range jobs {
-		fmt.Println(j.Tags())
-		fmt.Println(j.NextRun())
-	}
-
 	return s.storageClient.SaveGarden(g)
 }
 
@@ -334,7 +334,7 @@ func (s *scheduler) getNextJob(gardenID string, state pkg.LightState, allowAdhoc
 	}
 	for _, j := range jobs {
 		for _, tag := range j.Tags() {
-			if tag == "ADHOC" {
+			if tag == adhocTag {
 				continue
 			}
 			return j, nil
@@ -349,6 +349,11 @@ func (s *scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
 		return errors.New("unable to schedule adhoc light schedule without LightSchedule.AdhocOnTime")
 	}
 	s.logger.Infof("Creating one-time scheduled Job for lighting Garden %s", g.ID.String())
+
+	// Remove existing adhoc Jobs for this Garden
+	if err := s.Scheduler.RemoveByTags(g.ID.String(), adhocTag); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+		return err
+	}
 
 	executeLightAction := func(action *LightAction) {
 		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
@@ -373,57 +378,8 @@ func (s *scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
 		WaitForSchedule().
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOn.String()).
-		Tag("ADHOC").
+		Tag(adhocTag).
 		Do(executeLightAction, onAction)
 
 	return err
-}
-
-// rescheduleLightOnAction is used to reschedule only the ON action after it is removed as part of adhoc light delay
-func (s *scheduler) rescheduleLightOnAction(g *pkg.Garden) error {
-	s.logger.Infof("Creating new scheduled Jobs for turning ON Garden %s", g.ID.String())
-
-	// Parse Gardens's LightSchedule.Time (has no "date")
-	lightTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
-	if err != nil {
-		return err
-	}
-
-	// Create startDate using 24 hours from today with the WaterSchedule's timestamp
-	now := time.Now()
-	startDate := time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		lightTime.Hour(),
-		lightTime.Minute(),
-		lightTime.Second(),
-		0,
-		lightTime.Location(),
-	).Add(24 * time.Hour)
-
-	executeLightAction := func(action *LightAction) {
-		s.logger.Infof("Executing LightAction for Garden %s with state %s", g.ID.String(), action.State)
-		err = action.Execute(g, nil, s)
-		if err != nil {
-			s.logger.Error("Error executing scheduled LightAction: ", err)
-		}
-	}
-
-	// Schedule the LightAction execution for ON and OFF
-	onAction := &LightAction{State: pkg.LightStateOn}
-	_, err = s.Scheduler.
-		Every(lightingInterval).
-		StartAt(startDate).
-		Tag(g.ID.String()).
-		Tag(pkg.LightStateOn.String()).
-		Do(executeLightAction, onAction)
-	return err
-}
-
-func (s *scheduler) removeLightScheduleByState(g *pkg.Garden, state string) error {
-	if err := s.Scheduler.RemoveByTags(g.ID.String(), state); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
-		return err
-	}
-	return nil
 }
