@@ -2,6 +2,7 @@ package action
 
 import (
 	"errors"
+	"fmt"
 	"sort"
 	"time"
 
@@ -222,24 +223,12 @@ func (s *scheduler) ResetLightingSchedule(g *pkg.Garden) error {
 
 // GetNextLightTime returns the next time that the Garden's light will be turned to the specified state
 func (s *scheduler) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Time {
-	sort.Sort(s.Scheduler)
-	for _, job := range s.Scheduler.Jobs() {
-		matchedID := false
-		matchedState := false
-		for _, tag := range job.Tags() {
-			if tag == g.ID.String() {
-				matchedID = true
-			}
-			if tag == state.String() {
-				matchedState = true
-			}
-		}
-		if matchedID && matchedState {
-			result := job.NextRun()
-			return &result
-		}
+	nextJob, err := s.getNextJob(g.ID.String(), state, true)
+	if err != nil {
+		return nil
 	}
-	return nil
+	nextRun := nextJob.NextRun()
+	return &nextRun
 }
 
 // ScheduleLightDelay handles a LightAction that requests delaying turning a light on
@@ -276,7 +265,8 @@ func (s *scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error
 
 	var adhocTime time.Time
 
-	// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on. No need to delete any schedules
+	// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on.
+	// No need to change any schedules
 	if nextOffTime.Before(*nextOnTime) {
 		now := time.Now()
 
@@ -287,20 +277,22 @@ func (s *scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error
 
 		adhocTime = now.Add(delayDuration)
 	} else {
-		// If nextOffTime is after nextOnTime, then light was not ON yet and we need to delete nextOnTime and schedule nextOnTime + delay. Then we need to reschedule the regular ON time
-		// Delete existing ON schedule
-		if err := s.removeLightScheduleByState(g, pkg.LightStateOn.String()); err != nil {
+		// If nextOffTime is after nextOnTime, then light was not ON yet and we need to reschedule the regular ON time
+		// and schedule nextOnTime + delay
+
+		nextOnJob, err := s.getNextJob(g.ID.String(), pkg.LightStateOn, false)
+		if err != nil {
+			return err
+		}
+
+		// Delay the original ON Job for 24 hours
+		_, err = s.Job(nextOnJob).StartAt(nextOnJob.NextRun().Add(24 * time.Hour)).Update()
+		if err != nil {
 			return err
 		}
 
 		// Add new ON schedule with action.Light.ForDuration that executes once
 		adhocTime = nextOnTime.Add(delayDuration)
-
-		// Add new regular ON schedule starting 24 hours from today's Date + g.LightSchedule.StartTime
-		err = s.rescheduleLightOnAction(g)
-		if err != nil {
-			return err
-		}
 	}
 
 	// Add new lightSchedule with AdhocTime and Save Garden
@@ -309,6 +301,14 @@ func (s *scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error
 	if err != nil {
 		return err
 	}
+
+	jobs := s.Jobs()
+	fmt.Println("jobs:", jobs)
+	for _, j := range jobs {
+		fmt.Println(j.Tags())
+		fmt.Println(j.NextRun())
+	}
+
 	return s.storageClient.SaveGarden(g)
 }
 
@@ -318,6 +318,29 @@ func (s *scheduler) RemoveJobsByID(id xid.ID) error {
 		return err
 	}
 	return nil
+}
+
+// getNextJob returns the next Job tagged with the gardenID and state. If allowAdhoc is true, return whichever job is soonest,
+// otherwise return the first non-adhoc Job
+func (s *scheduler) getNextJob(gardenID string, state pkg.LightState, allowAdhoc bool) (*gocron.Job, error) {
+	sort.Sort(s.Scheduler)
+	jobs, err := s.FindJobsByTag(gardenID, state.String())
+	if err != nil {
+		return nil, err
+	}
+
+	if allowAdhoc {
+		return jobs[0], nil
+	}
+	for _, j := range jobs {
+		for _, tag := range j.Tags() {
+			if tag == "ADHOC" {
+				continue
+			}
+			return j, nil
+		}
+	}
+	return nil, fmt.Errorf("unable to find next %s Job for Garden %s", state.String(), gardenID)
 }
 
 // scheduleAdhocLightAction schedules a one-time action to turn a light on based on the LightSchedule.AdhocOnTime
@@ -344,7 +367,7 @@ func (s *scheduler) scheduleAdhocLightAction(g *pkg.Garden) error {
 	// Schedule the LightAction execution for ON and OFF
 	onAction := &LightAction{State: pkg.LightStateOn}
 	_, err := s.Scheduler.
-		Every("1m"). // Every is required even though it's not needed for this Job
+		Every("1s"). // Every is required even though it's not needed for this Job
 		LimitRunsTo(1).
 		StartAt(*g.LightSchedule.AdhocOnTime).
 		WaitForSchedule().
