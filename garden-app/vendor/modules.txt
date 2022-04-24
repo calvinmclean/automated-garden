@@ -64,7 +64,8 @@ github.com/go-chi/render
 github.com/go-co-op/gocron
 # github.com/go-logr/logr v0.2.0
 github.com/go-logr/logr
-# github.com/gogo/protobuf v1.3.1
+# github.com/gogo/protobuf v1.3.2
+## explicit
 github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/protobuf v1.5.2
