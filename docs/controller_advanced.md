@@ -53,7 +53,7 @@ The following options should be left as defaults, unless you have a good reason 
 
 `MQTT_LIGHT_TOPIC`: Topic to subscribe to for incoming command to change the state of an attached grow light
 
-`MQTT_LIGHT_DATA_TOPIC`: Topic to publish LightingEvents on
+`MQTT_LIGHT_DATA_TOPIC`: Topic to publish LightEvents on
 
 `MQTT_WATER_DATA_TOPIC`: Topic to publish watering metrics on
 

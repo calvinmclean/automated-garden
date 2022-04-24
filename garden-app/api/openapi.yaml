@@ -547,7 +547,7 @@ components:
               type: string
               format: date-time
               description: the date-time when the Plant was deleted/removed
-            next_watering_time:
+            next_water_time:
               type: string
               description: time of the next scheduled watering
               format: date-time
@@ -905,7 +905,7 @@ components:
               type: string
               format: date-time
               description: the date-time when the Zone was deleted/removed
-            next_watering_time:
+            next_water_time:
               type: string
               description: time of the next scheduled watering
               format: date-time

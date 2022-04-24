@@ -111,7 +111,7 @@ It is important to note that it must correspond directly to a Zone in the `garde
 		"interval": "24h",
 		"start_time": "2022-04-23T08:00:00-07:00"
 	},
-	"next_watering_time": "2022-04-24T08:00:00-07:00",
+	"next_water_time": "2022-04-24T08:00:00-07:00",
 	"links": [
 		{
 			"rel": "self",

@@ -31,7 +31,7 @@ func NewZonesResource(gr GardensResource) (ZonesResource, error) {
 		GardensResource: gr,
 	}
 
-	// Initialize watering Jobs for each Zone from the storage client
+	// Initialize water Jobs for each Zone from the storage client
 	allGardens, err := zr.storageClient.GetGardens(false)
 	if err != nil {
 		return zr, err
@@ -42,8 +42,8 @@ func NewZonesResource(gr GardensResource) (ZonesResource, error) {
 			return zr, err
 		}
 		for _, z := range allZones {
-			if err = zr.scheduler.ScheduleWateringAction(g, z); err != nil {
-				err = fmt.Errorf("unable to add watering Job for Zone %v: %v", z.ID, err)
+			if err = zr.scheduler.ScheduleWaterAction(g, z); err != nil {
+				err = fmt.Errorf("unable to add water Job for Zone %v: %v", z.ID, err)
 				return zr, err
 			}
 		}
@@ -69,7 +69,7 @@ func (zr ZonesResource) routes() chi.Router {
 			r.Use(zr.restrictEndDatedMiddleware)
 
 			r.Post("/action", zr.zoneAction)
-			r.Get("/history", zr.wateringHistory)
+			r.Get("/history", zr.WaterHistory)
 		})
 	})
 	return r
@@ -166,9 +166,9 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the watering schedule for the Zone if it was changed or EndDate is removed
+	// Update the water schedule for the Zone if it was changed or EndDate is removed
 	if request.Zone.WaterSchedule != nil || request.Zone.EndDate == nil {
-		if err := zr.scheduler.ResetWateringSchedule(garden, zone); err != nil {
+		if err := zr.scheduler.ResetWaterSchedule(garden, zone); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
@@ -209,9 +209,9 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Remove scheduled watering Job
+	// Remove scheduled water Job
 	if err := zr.scheduler.RemoveJobsByID(zone.ID); err != nil {
-		logger.Errorf("Unable to remove watering Job for Zone %s: %v", zone.ID.String(), err)
+		logger.Errorf("Unable to remove water Job for Zone %s: %v", zone.ID.String(), err)
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
@@ -266,9 +266,9 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 		zone.CreatedAt = &now
 	}
 
-	// Start watering schedule
-	if err := zr.scheduler.ScheduleWateringAction(garden, zone); err != nil {
-		logger.Errorf("Unable to add watering Job for Zone %v: %v", zone.ID, err)
+	// Start water schedule
+	if err := zr.scheduler.ScheduleWaterAction(garden, zone); err != nil {
+		logger.Errorf("Unable to add water Job for Zone %v: %v", zone.ID, err)
 	}
 
 	// Save the Zone
@@ -284,8 +284,8 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// wateringHistory responds with the Zone's recent watering events read from InfluxDB
-func (zr ZonesResource) wateringHistory(w http.ResponseWriter, r *http.Request) {
+// WaterHistory responds with the Zone's recent water events read from InfluxDB
+func (zr ZonesResource) WaterHistory(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	zone := r.Context().Value(zoneCtxKey).(*pkg.Zone)
 
@@ -311,12 +311,12 @@ func (zr ZonesResource) wateringHistory(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	history, err := zr.getWateringHistory(r.Context(), zone, garden, timeRange, limit)
+	history, err := zr.getWaterHistory(r.Context(), zone, garden, timeRange, limit)
 	if err != nil {
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
-	if err := render.Render(w, r, NewZoneWateringHistoryResponse(history)); err != nil {
+	if err := render.Render(w, r, NewZoneWaterHistoryResponse(history)); err != nil {
 		render.Render(w, r, ErrRender(err))
 	}
 }
@@ -331,17 +331,17 @@ func (zr ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Z
 	return moisture, err
 }
 
-// getWateringHistory gets previous WateringEvents for this Zone from InfluxDB
-func (zr ZonesResource) getWateringHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WateringHistory, err error) {
+// getWaterHistory gets previous WaterEvents for this Zone from InfluxDB
+func (zr ZonesResource) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WaterHistory, err error) {
 	defer zr.influxdbClient.Close()
 
-	history, err := zr.influxdbClient.GetWateringHistory(ctx, *zone.Position, garden.TopicPrefix, timeRange, limit)
+	history, err := zr.influxdbClient.GetWaterHistory(ctx, *zone.Position, garden.TopicPrefix, timeRange, limit)
 	if err != nil {
 		return
 	}
 
 	for _, h := range history {
-		result = append(result, pkg.WateringHistory{
+		result = append(result, pkg.WaterHistory{
 			Duration:   (time.Duration(h["Duration"].(int)) * time.Millisecond).String(),
 			RecordTime: h["RecordTime"].(time.Time),
 		})

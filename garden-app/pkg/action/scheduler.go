@@ -16,18 +16,18 @@ import (
 )
 
 const (
-	lightingInterval = 24 * time.Hour
-	adhocTag         = "ADHOC"
+	lightInterval = 24 * time.Hour
+	adhocTag      = "ADHOC"
 )
 
 // Scheduler exposes scheduling functionality that allows executing actions at predetermined times and intervals
 type Scheduler interface {
-	ScheduleWateringAction(*pkg.Garden, *pkg.Zone) error
-	ResetWateringSchedule(*pkg.Garden, *pkg.Zone) error
-	GetNextWateringTime(*pkg.Zone) *time.Time
+	ScheduleWaterAction(*pkg.Garden, *pkg.Zone) error
+	ResetWaterSchedule(*pkg.Garden, *pkg.Zone) error
+	GetNextWaterTime(*pkg.Zone) *time.Time
 
 	ScheduleLightActions(*pkg.Garden) error
-	ResetLightingSchedule(*pkg.Garden) error
+	ResetLightSchedule(*pkg.Garden) error
 	GetNextLightTime(*pkg.Garden, pkg.LightState) *time.Time
 	ScheduleLightDelay(*pkg.Garden, *LightAction) error
 
@@ -73,10 +73,10 @@ func (s *scheduler) MQTTClient() mqtt.Client {
 	return s.mqttClient
 }
 
-// ScheduleWateringAction will schedule watering actions for the Zone based off the CreatedAt date,
+// ScheduleWaterAction will schedule water actions for the Zone based off the CreatedAt date,
 // WaterSchedule time, and Interval. The scheduled Job is tagged with the Zone's ID so it can
 // easily be removed
-func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, z *pkg.Zone) error {
+func (s *scheduler) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 	s.logger.Infof("Creating scheduled Job for watering Zone %s", z.ID.String())
 
 	// Read Zone's Interval string into a Duration
@@ -100,25 +100,25 @@ func (s *scheduler) ScheduleWateringAction(g *pkg.Garden, z *pkg.Zone) error {
 		Do(func() {
 			defer s.influxdbClient.Close()
 
-			s.logger.Infof("Executing WateringAction to water Zone %s for %d ms", z.ID.String(), action.Duration)
+			s.logger.Infof("Executing WaterAction to water Zone %s for %d ms", z.ID.String(), action.Duration)
 			err = action.Execute(g, z, s)
 			if err != nil {
-				s.logger.Error("Error executing scheduled zone watering action: ", err)
+				s.logger.Error("Error executing scheduled zone water action: ", err)
 			}
 		})
 	return err
 }
 
-// ResetWateringSchedule will simply remove the existing Job and create a new one
-func (s *scheduler) ResetWateringSchedule(g *pkg.Garden, p *pkg.Zone) error {
+// ResetWaterSchedule will simply remove the existing Job and create a new one
+func (s *scheduler) ResetWaterSchedule(g *pkg.Garden, p *pkg.Zone) error {
 	if err := s.RemoveJobsByID(g.ID); err != nil {
 		return err
 	}
-	return s.ScheduleWateringAction(g, p)
+	return s.ScheduleWaterAction(g, p)
 }
 
-// GetNextWateringTime determines the next scheduled watering time for a given Zone using tags
-func (s *scheduler) GetNextWateringTime(p *pkg.Zone) *time.Time {
+// GetNextWaterTime determines the next scheduled watering time for a given Zone using tags
+func (s *scheduler) GetNextWaterTime(p *pkg.Zone) *time.Time {
 	for _, job := range s.Scheduler.Jobs() {
 		for _, tag := range job.Tags() {
 			if tag == p.ID.String() {
@@ -131,7 +131,7 @@ func (s *scheduler) GetNextWateringTime(p *pkg.Zone) *time.Time {
 }
 
 // ScheduleLightActions will schedule LightActions to turn the light on and off based off the CreatedAt date,
-// LightingSchedule time, and Interval. The scheduled Jobs are tagged with the Garden's ID so they can
+// LightSchedule time, and Interval. The scheduled Jobs are tagged with the Garden's ID so they can
 // easily be removed
 func (s *scheduler) ScheduleLightActions(g *pkg.Garden) error {
 	s.logger.Infof("Creating scheduled Jobs for lighting Garden %s", g.ID.String())
@@ -172,7 +172,7 @@ func (s *scheduler) ScheduleLightActions(g *pkg.Garden) error {
 	onAction := &LightAction{State: pkg.LightStateOn}
 	offAction := &LightAction{State: pkg.LightStateOff}
 	_, err = s.Scheduler.
-		Every(lightingInterval).
+		Every(lightInterval).
 		StartAt(startDate).
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOn.String()).
@@ -181,7 +181,7 @@ func (s *scheduler) ScheduleLightActions(g *pkg.Garden) error {
 		return err
 	}
 	_, err = s.Scheduler.
-		Every(lightingInterval).
+		Every(lightInterval).
 		StartAt(startDate.Add(duration)).
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOff.String()).
@@ -220,8 +220,8 @@ func (s *scheduler) ScheduleLightActions(g *pkg.Garden) error {
 	return nil
 }
 
-// ResetLightingSchedule will simply remove the existing Job and create a new one
-func (s *scheduler) ResetLightingSchedule(g *pkg.Garden) error {
+// ResetLightSchedule will simply remove the existing Job and create a new one
+func (s *scheduler) ResetLightSchedule(g *pkg.Garden) error {
 	if err := s.RemoveJobsByID(g.ID); err != nil {
 		return err
 	}

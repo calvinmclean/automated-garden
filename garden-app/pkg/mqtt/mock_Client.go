@@ -105,8 +105,8 @@ func (_m *MockClient) StopTopic(_a0 string) (string, error) {
 	return r0, r1
 }
 
-// WateringTopic provides a mock function with given fields: _a0
-func (_m *MockClient) WateringTopic(_a0 string) (string, error) {
+// WaterTopic provides a mock function with given fields: _a0
+func (_m *MockClient) WaterTopic(_a0 string) (string, error) {
 	ret := _m.Called(_a0)
 
 	var r0 string

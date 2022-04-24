@@ -29,7 +29,7 @@ void readButtonsTask(void* parameters) {
 /*
   readButton takes an ID that represents the array index for the valve and
   button arrays and checks if the button is pressed. If the button is pressed,
-  a WateringEvent for that zone is added to the queue
+  a WaterEvent for that zone is added to the queue
 */
 void readButton(int valveID) {
     // Exit if valveID is out of bounds
@@ -51,7 +51,7 @@ void readButton(int valveID) {
             // If our button state is HIGH, water the zone
             if (reading == HIGH && buttonStates[valveID] == HIGH) {
                 printf("button pressed: %d\n", valveID);
-                WateringEvent we = { valveID, DEFAULT_WATER_TIME, "N/A" };
+                WaterEvent we = { valveID, DEFAULT_WATER_TIME, "N/A" };
                 waterZone(we);
             }
         }

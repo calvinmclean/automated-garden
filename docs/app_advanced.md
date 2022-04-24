@@ -65,7 +65,7 @@ mqtt:
   broker: "localhost"
   port: 1883
   client_id: "garden-app"
-  watering_topic: "{{.Garden}}/command/water"
+  water_topic: "{{.Garden}}/command/water"
   stop_topic: "{{.Garden}}/command/stop"
   stop_all_topic: "{{.Garden}}/command/stop_all"
   light_topic: "{{.Garden}}/command/light"
@@ -135,7 +135,7 @@ Flags:
   -n, --name string                  Name of the garden-controller (helps determine which MQTT topic to subscribe to) (default "garden")
   -z, --zones int                    Number of Zones for which moisture data should be emulated
       --publish-health               Whether or not to publish health data every minute (default true)
-      --publish-watering-event       Whether or not watering events should be published for logging (default true)
+      --publish-water-event          Whether or not water events should be published for logging (default true)
 
 Global Flags:
       --config string      path to config file (default "config.yaml")

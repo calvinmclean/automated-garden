@@ -48,12 +48,12 @@ func createExampleZone() *pkg.Zone {
 	}
 }
 
-func TestScheduleWateringAction(t *testing.T) {
+func TestScheduleWaterAction(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
 
-	mqttClient.On("WateringTopic", mock.Anything).Return("test-garden/action/water", nil)
+	mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
 	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
 	influxdbClient.On("Close").Return()
 
@@ -66,9 +66,9 @@ func TestScheduleWateringAction(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to the near future
 	startTime := time.Now().Add(250 * time.Millisecond)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, z)
+	err := scheduler.ScheduleWaterAction(g, z)
 	if err != nil {
-		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
 	time.Sleep(1000 * time.Millisecond)
@@ -78,7 +78,7 @@ func TestScheduleWateringAction(t *testing.T) {
 	mqttClient.AssertExpectations(t)
 }
 
-func TestResetNextWateringTime(t *testing.T) {
+func TestResetNextWaterTime(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
@@ -92,20 +92,20 @@ func TestResetNextWateringTime(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, z)
+	err := scheduler.ScheduleWaterAction(g, z)
 	if err != nil {
-		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
 	// Change WaterSchedule and restart
 	newTime := startTime.Add(-30 * time.Minute)
 	z.WaterSchedule.StartTime = &newTime
-	err = scheduler.ResetWateringSchedule(g, z)
+	err = scheduler.ResetWaterSchedule(g, z)
 	if err != nil {
-		t.Errorf("Unexpected error when resetting WateringAction: %v", err)
+		t.Errorf("Unexpected error when resetting WaterAction: %v", err)
 	}
 
-	nextWaterTime := scheduler.GetNextWateringTime(z)
+	nextWaterTime := scheduler.GetNextWaterTime(z)
 	expected := startTime.Add(-30 * time.Minute).Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -116,7 +116,7 @@ func TestResetNextWateringTime(t *testing.T) {
 	mqttClient.AssertExpectations(t)
 }
 
-func TestGetNextWateringTime(t *testing.T) {
+func TestGetNextWaterTime(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
@@ -130,12 +130,12 @@ func TestGetNextWateringTime(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, z)
+	err := scheduler.ScheduleWaterAction(g, z)
 	if err != nil {
-		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
-	nextWaterTime := scheduler.GetNextWateringTime(z)
+	nextWaterTime := scheduler.GetNextWaterTime(z)
 	expected := startTime.Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -198,7 +198,7 @@ func TestScheduleLightActions(t *testing.T) {
 		)
 		// If expected time is before now, it will be tomorrow
 		if expected.Before(now) {
-			expected = expected.Add(lightingInterval)
+			expected = expected.Add(lightInterval)
 		}
 
 		nextOnTime := scheduler.GetNextLightTime(g, pkg.LightStateOn)
@@ -441,9 +441,9 @@ func TestRemoveJobsByID(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWateringAction(g, z)
+	err := scheduler.ScheduleWaterAction(g, z)
 	if err != nil {
-		t.Errorf("Unexpected error when scheduling WateringAction: %v", err)
+		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
 	err = scheduler.RemoveJobsByID(z.ID)
@@ -451,8 +451,8 @@ func TestRemoveJobsByID(t *testing.T) {
 		t.Errorf("Unexpected error when removing jobs: %v", err)
 	}
 
-	// This also gets coverage for GetNextWateringTime when no Job exists
-	nextWaterTime := scheduler.GetNextWateringTime(z)
+	// This also gets coverage for GetNextWaterTime when no Job exists
+	nextWaterTime := scheduler.GetNextWaterTime(z)
 	if nextWaterTime != nil {
 		t.Errorf("Expected nil but got: %v", nextWaterTime)
 	}

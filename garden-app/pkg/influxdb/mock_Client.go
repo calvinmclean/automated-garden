@@ -118,8 +118,8 @@ func (_m *MockClient) GetMoisture(_a0 context.Context, _a1 uint, _a2 string) (fl
 	return r0, r1
 }
 
-// GetWateringHistory provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
-func (_m *MockClient) GetWateringHistory(_a0 context.Context, _a1 uint, _a2 string, _a3 time.Duration, _a4 uint64) ([]map[string]interface{}, error) {
+// GetWaterHistory provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
+func (_m *MockClient) GetWaterHistory(_a0 context.Context, _a1 uint, _a2 string, _a3 time.Duration, _a4 uint64) ([]map[string]interface{}, error) {
 	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
 
 	var r0 []map[string]interface{}

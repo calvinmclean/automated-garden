@@ -93,7 +93,7 @@ mqtt:
   broker: "mosquitto"
   port: 1883
   client_id: "garden-app"
-  watering_topic: "{{.Garden}}/command/water"
+  water_topic: "{{.Garden}}/command/water"
   stop_topic: "{{.Garden}}/command/stop"
   stop_all_topic: "{{.Garden}}/command/stop_all"
   light_topic: "{{.Garden}}/command/light"
@@ -172,7 +172,7 @@ storage:
         "interval": "72h",
         "start_time": "2021-07-24T19:00:00-07:00"
     },
-    "next_watering_time": "2021-11-26T04:59:59.99999675Z",
+    "next_water_time": "2021-11-26T04:59:59.99999675Z",
     "links": [
         {
             "rel": "self",

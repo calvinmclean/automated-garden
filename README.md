@@ -37,11 +37,11 @@ The microcontroller is able to send and receive messages using MQTT, a pub/sub m
 
 Capabilities:
   - Control pump and valves for one or more plants (only limited by number of output pins)
-  - Queue up watering events to water multiple plants one after the other
+  - Queue up water events to water multiple plants one after the other
   - Publish moisture data to InfluxDB via Telegraf + MQTT
   - Respond to buttons to water individual plants and cancel watering
   - Listen on MQTT for watering a plant for specified amount of time, cancel current watering, and clear current watering queue
-  - Publish on MQTT for logging watering events in InfluxDB for visualization with Grafana
+  - Publish on MQTT for logging water events in InfluxDB for visualization with Grafana
 
 ## Core Technologies
 - Arduino/FreeRTOS

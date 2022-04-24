@@ -4,7 +4,7 @@ void setupMQTT() {
     client.setCallback(processIncomingMessage);
 
     // Initialize publisher Queue
-    waterPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WateringEvent));
+    waterPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
     if (waterPublisherQueue == NULL) {
         printf("error creating the waterPublisherQueue\n");
     }
@@ -14,7 +14,7 @@ void setupMQTT() {
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
 #ifdef LIGHT_PIN
-    lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightingEvent));
+    lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightEvent));
     if (lightPublisherQueue == NULL) {
         printf("error creating the lightPublisherQueue\n");
     }
@@ -42,11 +42,11 @@ void setupWifi() {
 }
 
 /*
-  waterPublisherTask reads from a queue to publish WateringEvents as an InfluxDB
+  waterPublisherTask reads from a queue to publish WaterEvents as an InfluxDB
   line protocol message to MQTT
 */
 void waterPublisherTask(void* parameters) {
-    WateringEvent we;
+    WaterEvent we;
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
             char message[50];
@@ -65,7 +65,7 @@ void waterPublisherTask(void* parameters) {
 
 #ifdef LIGHT_PIN
 /*
-  lightPublisherTask reads from a queue to publish LightingEvents as an InfluxDB
+  lightPublisherTask reads from a queue to publish LightEvents as an InfluxDB
   line protocol message to MQTT
 */
 void lightPublisherTask(void* parameters) {
@@ -92,7 +92,7 @@ void lightPublisherTask(void* parameters) {
   healthPublisherTask runs every minute and publishes a message to MQTT to record a health check-in
 */
 void healthPublisherTask(void* parameters) {
-    WateringEvent we;
+    WaterEvent we;
     while (true) {
         char message[50];
         sprintf(message, "health garden=\"%s\"", TOPIC_PREFIX);
@@ -153,12 +153,12 @@ void mqttLoopTask(void* parameters) {
 /*
   processIncomingMessage is a callback function for the MQTT client that will
   react to incoming messages. Currently, the topics are:
-    - waterCommandTopic: accepts a WateringEvent JSON to water a zone for
+    - waterCommandTopic: accepts a WaterEvent JSON to water a zone for
                          specified time
     - stopCommandTopic: ignores message and stops the currently-watering zone
     - stopAllCommandTopic: ignores message, stops the currently-watering zone,
-                           and clears the wateringQueue
-    - lightCommandTopic: accepts LightingEvent JSON to control a grow light
+                           and clears the waterQueue
+    - lightCommandTopic: accepts LightEvent JSON to control a grow light
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
@@ -170,7 +170,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     }
 
     if (strcmp(topic, waterCommandTopic) == 0) {
-        WateringEvent we = {
+        WaterEvent we = {
             doc["position"] | -1,
             doc["duration"] | 0,
             doc["id"] | "N/A"
@@ -184,7 +184,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         printf("received command to stop ALL watering\n");
         stopAllWatering();
     } else if (strcmp(topic, lightCommandTopic) == 0) {
-        LightingEvent le = {
+        LightEvent le = {
             doc["state"] | ""
         };
 #ifdef LIGHT_PIN

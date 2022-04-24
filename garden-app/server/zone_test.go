@@ -269,7 +269,7 @@ func TestZoneAction(t *testing.T) {
 		{
 			"SuccessfulWaterAction",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("WateringTopic", "test-garden").Return("garden/action/water", nil)
+				mqttClient.On("WaterTopic", "test-garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
 			`{"water":{"duration":1000}}`,
@@ -279,7 +279,7 @@ func TestZoneAction(t *testing.T) {
 		{
 			"ExecuteErrorForWaterAction",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("WateringTopic", "test-garden").Return("", errors.New("template error"))
+				mqttClient.On("WaterTopic", "test-garden").Return("", errors.New("template error"))
 			},
 			`{"water":{"duration":1000}}`,
 			`{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`,
@@ -338,7 +338,7 @@ func TestUpdateZone(t *testing.T) {
 				storageClient.On("SaveZone", mock.Anything, mock.Anything).Return(nil)
 			},
 			`{"name":"new name"}`,
-			`{"name":"new name","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"new name","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_water_time":"0001-01-01T00:00:00Z","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
 			http.StatusOK,
 		},
 		{
@@ -566,7 +566,7 @@ func TestCreateZone(t *testing.T) {
 			},
 			createExampleGarden(),
 			`{"name":"test-zone","position":0,"water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
-			`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_watering_time":"0001-01-01T00:00:00Z","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`,
+			`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule":{"duration":"1000ms","interval":"24h","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_water_time":"0001-01-01T00:00:00Z","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -649,7 +649,7 @@ func TestCreateZone(t *testing.T) {
 	}
 }
 
-func TestWateringHistory(t *testing.T) {
+func TestWaterHistory(t *testing.T) {
 	recordTime, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	tests := []struct {
 		name        string
@@ -675,7 +675,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistoryEmpty",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).Return([]map[string]interface{}{}, nil)
+				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).Return([]map[string]interface{}{}, nil)
 				influxdbClient.On("Close")
 			},
 			"",
@@ -685,7 +685,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistory",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).
 					Return([]map[string]interface{}{{"Duration": 3000, "RecordTime": recordTime}}, nil)
 				influxdbClient.On("Close")
 			},
@@ -696,7 +696,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistoryWithLimit",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(1)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(1)).
 					Return([]map[string]interface{}{
 						{"Duration": 3000, "RecordTime": recordTime},
 					}, nil)
@@ -709,7 +709,7 @@ func TestWateringHistory(t *testing.T) {
 		{
 			"InfluxDBClientError",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWateringHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).
 					Return([]map[string]interface{}{}, errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
@@ -736,7 +736,7 @@ func TestWateringHistory(t *testing.T) {
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
 			r := httptest.NewRequest("GET", fmt.Sprintf("/history%s", tt.queryParams), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(pr.wateringHistory)
+			h := http.HandlerFunc(pr.WaterHistory)
 
 			h.ServeHTTP(w, r)
 
@@ -755,7 +755,7 @@ func TestWateringHistory(t *testing.T) {
 	}
 }
 
-func TestGetNextWateringTime(t *testing.T) {
+func TestGetNextWaterTime(t *testing.T) {
 	tests := []struct {
 		name         string
 		expectedDiff time.Duration
@@ -773,14 +773,14 @@ func TestGetNextWateringTime(t *testing.T) {
 			g := createExampleGarden()
 			p := createExampleZone()
 
-			pr.scheduler.ScheduleWateringAction(g, p)
+			pr.scheduler.ScheduleWaterAction(g, p)
 			pr.scheduler.StartAsync()
 			defer pr.scheduler.Stop()
 
-			nextWateringTime := pr.scheduler.GetNextWateringTime(p)
-			nextWateringTimeWithSkip := pr.scheduler.GetNextWateringTime(p)
+			NextWaterTime := pr.scheduler.GetNextWaterTime(p)
+			NextWaterTimeWithSkip := pr.scheduler.GetNextWaterTime(p)
 
-			diff := nextWateringTimeWithSkip.Sub(*nextWateringTime)
+			diff := NextWaterTimeWithSkip.Sub(*NextWaterTime)
 			if diff != tt.expectedDiff {
 				t.Errorf("Unexpected difference between next watering times: expected=%v, actual=%v", tt.expectedDiff, diff)
 			}

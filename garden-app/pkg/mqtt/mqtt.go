@@ -15,16 +15,16 @@ type Config struct {
 	Broker   string `mapstructure:"broker"`
 	Port     int    `mapstructure:"port"`
 
-	WateringTopicTemplate string `mapstructure:"watering_topic"`
-	StopTopicTemplate     string `mapstructure:"stop_topic"`
-	StopAllTopicTemplate  string `mapstructure:"stop_all_topic"`
-	LightTopicTemplate    string `mapstructure:"light_topic"`
+	WaterTopicTemplate   string `mapstructure:"water_topic"`
+	StopTopicTemplate    string `mapstructure:"stop_topic"`
+	StopAllTopicTemplate string `mapstructure:"stop_all_topic"`
+	LightTopicTemplate   string `mapstructure:"light_topic"`
 }
 
 // Client is an interface that allows access to MQTT functionality within the garden-app
 type Client interface {
 	Publish(string, []byte) error
-	WateringTopic(string) (string, error)
+	WaterTopic(string) (string, error)
 	StopTopic(string) (string, error)
 	StopAllTopic(string) (string, error)
 	LightTopic(string) (string, error)
@@ -93,9 +93,9 @@ func (c *client) Publish(topic string, message []byte) error {
 	return nil
 }
 
-// WateringTopic returns the topic string for watering a plant
-func (c *Config) WateringTopic(topicPrefix string) (string, error) {
-	return c.executeTopicTemplate(c.WateringTopicTemplate, topicPrefix)
+// WaterTopic returns the topic string for watering a plant
+func (c *Config) WaterTopic(topicPrefix string) (string, error) {
+	return c.executeTopicTemplate(c.WaterTopicTemplate, topicPrefix)
 }
 
 // StopTopic returns the topic string for stopping watering a single plant
@@ -108,7 +108,7 @@ func (c *Config) StopAllTopic(topicPrefix string) (string, error) {
 	return c.executeTopicTemplate(c.StopAllTopicTemplate, topicPrefix)
 }
 
-// LightTopic returns the topic string for changing the lighting state in a Garden
+// LightTopic returns the topic string for changing the light state in a Garden
 func (c *Config) LightTopic(topicPrefix string) (string, error) {
 	return c.executeTopicTemplate(c.LightTopicTemplate, topicPrefix)
 }

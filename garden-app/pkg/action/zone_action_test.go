@@ -41,7 +41,7 @@ func TestZoneAction(t *testing.T) {
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
+				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
@@ -58,7 +58,7 @@ func TestZoneAction(t *testing.T) {
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WateringTopic", "garden").Return("", errors.New("template error"))
+				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
 			func(err error, t *testing.T) {
 				if err == nil {
@@ -111,7 +111,7 @@ func TestWaterActionExecute(t *testing.T) {
 				WaterSchedule: &pkg.WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
+				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
@@ -127,7 +127,7 @@ func TestWaterActionExecute(t *testing.T) {
 				WaterSchedule: &pkg.WaterSchedule{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WateringTopic", "garden").Return("", errors.New("template error"))
+				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
 			func(err error, t *testing.T) {
 				if err == nil {
@@ -147,7 +147,7 @@ func TestWaterActionExecute(t *testing.T) {
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WateringTopic", "garden").Return("garden/action/water", nil)
+				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), nil)
 				influxdbClient.On("Close")

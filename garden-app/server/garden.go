@@ -60,7 +60,7 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 	gr.scheduler = action.NewScheduler(gr.storageClient, gr.influxdbClient, gr.mqttClient, logger)
 	gr.scheduler.StartAsync()
 
-	// Initialize lighting schedules for all Gardens
+	// Initialize light schedules for all Gardens
 	allGardens, err := gr.storageClient.GetGardens(false)
 	if err != nil {
 		return gr, err
@@ -68,7 +68,7 @@ func NewGardenResource(config Config) (gr GardensResource, err error) {
 	for _, g := range allGardens {
 		if g.LightSchedule != nil {
 			if err = gr.scheduler.ScheduleLightActions(g); err != nil {
-				err = fmt.Errorf("unable to add lighting Job for Garden %v: %v", g.ID, err)
+				err = fmt.Errorf("unable to add light Job for Garden %v: %v", g.ID, err)
 				return gr, err
 			}
 		}
@@ -157,7 +157,7 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 		garden.CreatedAt = &now
 	}
 
-	// Start lighting schedule (if applicable)
+	// Start light schedule (if applicable)
 	if garden.LightSchedule != nil {
 		if err := gr.scheduler.ScheduleLightActions(garden); err != nil {
 			logger.Errorf("Unable to add lighting Job for Garden %v: %v", garden.ID, err)
@@ -229,7 +229,7 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	// Remove scheduled lighting actions
+	// Remove scheduled light actions
 	if err := gr.scheduler.RemoveJobsByID(garden.ID); err != nil {
 		logger.Errorf("Unable to remove watering Job for Garden %s: %v", garden.ID.String(), err)
 		render.Render(w, r, InternalServerError(err))
@@ -274,9 +274,9 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Update the lighting schedule for the Garden (if it exists)
+	// Update the light schedule for the Garden (if it exists)
 	if garden.LightSchedule != nil {
-		if err := gr.scheduler.ResetLightingSchedule(garden); err != nil {
+		if err := gr.scheduler.ResetLightSchedule(garden); err != nil {
 			render.Render(w, r, InternalServerError(err))
 			return
 		}

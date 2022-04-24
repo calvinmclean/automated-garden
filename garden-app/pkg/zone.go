@@ -38,8 +38,8 @@ type WaterSchedule struct {
 	StartTime       *time.Time `json:"start_time" yaml:"start_time"`
 }
 
-// WateringHistory holds information about a WateringEvent that occurred in the past
-type WateringHistory struct {
+// WaterHistory holds information about a WaterEvent that occurred in the past
+type WaterHistory struct {
 	Duration   string    `json:"duration"`
 	RecordTime time.Time `json:"record_time"`
 }

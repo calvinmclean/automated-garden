@@ -11,13 +11,13 @@
 #include "moisture.h"
 #endif
 
-typedef struct WateringEvent {
+typedef struct WaterEvent {
     int position;
     unsigned long duration;
     const char* id;
 };
 
-typedef struct LightingEvent {
+typedef struct LightEvent {
     const char* state;
 };
 
@@ -25,7 +25,7 @@ typedef struct LightingEvent {
 gpio_num_t zones[NUM_ZONES][4] = ZONES;
 
 /* FreeRTOS Queue and Task handlers */
-QueueHandle_t wateringQueue;
+QueueHandle_t waterQueue;
 TaskHandle_t waterZoneTaskHandle;
 
 /* state variables */
@@ -62,9 +62,9 @@ void setup() {
 #endif
 
     // Initialize Queues
-    wateringQueue = xQueueCreate(QUEUE_SIZE, sizeof(WateringEvent));
-    if (wateringQueue == NULL) {
-        printf("error creating the wateringQueue\n");
+    waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
+    if (waterQueue == NULL) {
+        printf("error creating the waterQueue\n");
     }
 
     // Start all tasks (currently using equal priorities)
@@ -84,16 +84,16 @@ void setup() {
 void loop() {}
 
 /*
-  waterZoneTask will wait for WateringEvents on a queue and will then open the
+  waterZoneTask will wait for WaterEvents on a queue and will then open the
   valve for an amount of time. The delay before closing the valve is done with
   xTaskNotifyWait, allowing it to be interrupted with xTaskNotify. After the
-  valve is closed, the WateringEvent is pushed to the queue fro publisherTask
-  which will record the WateringEvent in InfluxDB via MQTT and Telegraf
+  valve is closed, the WaterEvent is pushed to the queue fro publisherTask
+  which will record the WaterEvent in InfluxDB via MQTT and Telegraf
 */
 void waterZoneTask(void* parameters) {
-    WateringEvent we;
+    WaterEvent we;
     while (true) {
-        if (xQueueReceive(wateringQueue, &we, 0)) {
+        if (xQueueReceive(waterQueue, &we, 0)) {
             // First clear the notifications to prevent a bug that would cause
             // watering to be skipped if I run xTaskNotify when not waiting
             ulTaskNotifyTake(NULL, 0);
@@ -146,31 +146,31 @@ void stopWatering() {
   stopAllWatering will interrupt the WaterZoneTask and clear the remaining queue
 */
 void stopAllWatering() {
-    xQueueReset(wateringQueue);
+    xQueueReset(waterQueue);
     xTaskNotify(waterZoneTaskHandle, 0, eNoAction);
 }
 
 /*
-  waterZone pushes a WateringEvent to the queue in order to water a single
+  waterZone pushes a WaterEvent to the queue in order to water a single
   zone. First it will make sure the ID is not out of bounds
 */
-void waterZone(WateringEvent we) {
+void waterZone(WaterEvent we) {
     // Exit if valveID is out of bounds
     if (we.position >= NUM_ZONES || we.position < 0) {
         printf("position %d is out of range, aborting request\n", we.position);
         return;
     }
-    printf("pushing WateringEvent to queue: id=%s, position=%d, time=%lu\n", we.id, we.position, we.duration);
-    xQueueSend(wateringQueue, &we, portMAX_DELAY);
+    printf("pushing WaterEvent to queue: id=%s, position=%d, time=%lu\n", we.id, we.position, we.duration);
+    xQueueSend(waterQueue, &we, portMAX_DELAY);
 }
 
 #ifdef LIGHT_PIN
 /*
-  changeLight will use the state on the LightingEvent to change the state of the light. If the state
+  changeLight will use the state on the LightEvent to change the state of the light. If the state
   is empty, this will toggle the current state.
   This is a non-blocking operation, so no task or queue is required.
 */
-void changeLight(LightingEvent le) {
+void changeLight(LightEvent le) {
     if (strlen(le.state) == 0) {
         light_state = !light_state;
     } else if (strcasecmp(le.state, "on") == 0) {

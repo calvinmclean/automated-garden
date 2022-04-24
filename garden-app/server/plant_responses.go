@@ -63,10 +63,10 @@ func (p *PlantResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// PlantWateringHistoryResponse wraps a slice of WateringHistory structs plus some aggregate stats for an HTTP response
-type PlantWateringHistoryResponse struct {
-	History []pkg.WateringHistory `json:"history"`
-	Count   int                   `json:"count"`
-	Average string                `json:"average"`
-	Total   string                `json:"total"`
+// PlantWaterHistoryResponse wraps a slice of WaterHistory structs plus some aggregate stats for an HTTP response
+type PlantWaterHistoryResponse struct {
+	History []pkg.WaterHistory `json:"history"`
+	Count   int                `json:"count"`
+	Average string             `json:"average"`
+	Total   string             `json:"total"`
 }

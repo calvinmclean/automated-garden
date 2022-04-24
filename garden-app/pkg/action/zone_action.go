@@ -68,7 +68,7 @@ func (action *WaterAction) Execute(g *pkg.Garden, z *pkg.Zone, scheduler Schedul
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %v", err)
 	}
 
-	topic, err := scheduler.MQTTClient().WateringTopic(g.TopicPrefix)
+	topic, err := scheduler.MQTTClient().WaterTopic(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}

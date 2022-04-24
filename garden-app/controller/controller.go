@@ -26,17 +26,17 @@ var subLogger *logrus.Logger
 
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
-	MQTTConfig           mqtt.Config   `mapstructure:"mqtt"`
-	TopicPrefix          string        `mapstructure:"topic_prefix"`
-	NumZones             int           `mapstructure:"num_zones"`
-	MoistureStrategy     string        `mapstructure:"moisture_strategy"`
-	MoistureValue        int           `mapstructure:"moisture_value"`
-	MoistureInterval     time.Duration `mapstructure:"moisture_interval"`
-	PublishWateringEvent bool          `mapstructure:"publish_watering_event"`
-	PublishHealth        bool          `mapstructure:"publish_health"`
-	HealthInterval       time.Duration `mapstructure:"health_interval"`
-	EnableUI             bool          `mapstructure:"enable_ui"`
-	LogLevel             logrus.Level
+	MQTTConfig        mqtt.Config   `mapstructure:"mqtt"`
+	TopicPrefix       string        `mapstructure:"topic_prefix"`
+	NumZones          int           `mapstructure:"num_zones"`
+	MoistureStrategy  string        `mapstructure:"moisture_strategy"`
+	MoistureValue     int           `mapstructure:"moisture_value"`
+	MoistureInterval  time.Duration `mapstructure:"moisture_interval"`
+	PublishWaterEvent bool          `mapstructure:"publish_watering_event"`
+	PublishHealth     bool          `mapstructure:"publish_health"`
+	HealthInterval    time.Duration `mapstructure:"health_interval"`
+	EnableUI          bool          `mapstructure:"enable_ui"`
+	LogLevel          logrus.Level
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller
@@ -171,8 +171,8 @@ func (c *Controller) setupUI() *tview.Application {
 		SetTextAlign(tview.AlignCenter).
 		SetText(c.TopicPrefix)
 	tview.ANSIWriter(header).Write([]byte(fmt.Sprintf(
-		"\n%d Zones\nPublishWateringEvent: %t, PublishHealth: %t, MoistureStrategy: %s",
-		c.NumZones, c.PublishWateringEvent, c.PublishHealth, c.MoistureStrategy),
+		"\n%d Zones\nPublishWaterEvent: %t, PublishHealth: %t, MoistureStrategy: %s",
+		c.NumZones, c.PublishWaterEvent, c.PublishHealth, c.MoistureStrategy),
 	))
 
 	grid := tview.NewGrid().
@@ -239,9 +239,9 @@ func (c *Controller) createMoistureData() int {
 	}
 }
 
-// publishWateringEvent logs moisture data to InfluxDB via Telegraf and MQTT
-func (c *Controller) publishWateringEvent(waterMsg action.WaterMessage, cmdTopic string) {
-	if !c.PublishWateringEvent {
+// publishWaterEvent logs moisture data to InfluxDB via Telegraf and MQTT
+func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic string) {
+	if !c.PublishWaterEvent {
 		return
 	}
 	// Incoming topic is "{{.TopicPrefix}}/command/water" but we need to publish on "{{.TopicPrefix}}/data/water"
@@ -273,7 +273,7 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 				"position": waterMsg.Position,
 				"duration": waterMsg.Duration,
 			}).Info("received WaterAction")
-			c.publishWateringEvent(waterMsg, topic)
+			c.publishWaterEvent(waterMsg, topic)
 		})
 	case "stop":
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
@@ -312,7 +312,7 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 func (c *Controller) topics() ([]string, error) {
 	topics := []string{}
 	templateFuncs := []func(string) (string, error){
-		c.MQTTConfig.WateringTopic,
+		c.MQTTConfig.WaterTopic,
 		c.MQTTConfig.StopTopic,
 		c.MQTTConfig.StopAllTopic,
 		c.MQTTConfig.LightTopic,

@@ -25,7 +25,7 @@
  * MQTT_LIGHT_TOPIC
  *   Topic to subscribe to for incoming command to change the state of an attached grow light
  * MQTT_LIGHT_DATA_TOPIC
- *   Topic to publish LightingEvents on
+ *   Topic to publish LightEvents on
  * MQTT_WATER_DATA_TOPIC
  *   Topic to publish watering metrics on
  */
@@ -50,7 +50,7 @@
 #define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
 #endif
 
-// Size of JSON object calculated using Arduino JSON Assistant
+ // Size of JSON object calculated using Arduino JSON Assistant
 #define JSON_CAPACITY 48
 
 /**
@@ -72,7 +72,7 @@
  * LIGHT_PIN
  *   The pin used to control a grow light relay
  */
-// #define DISABLE_WATERING
+ // #define DISABLE_WATERING
 #define NUM_ZONES 3
 #define PUMP_PIN GPIO_NUM_18
 #define ZONE_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }

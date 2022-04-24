@@ -25,7 +25,7 @@ const (
 |> filter(fn: (r) => r["_field"] == "garden")
 |> filter(fn: (r) => r["_value"] == "{{.TopicPrefix}}")
 |> last()`
-	wateringHistoryQueryTemplate = `from(bucket: "{{.Bucket}}")
+	waterHistoryQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "water")
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
@@ -61,7 +61,7 @@ func (q queryData) Render(queryTemplate string) (string, error) {
 type Client interface {
 	GetMoisture(context.Context, uint, string) (float64, error)
 	GetLastContact(context.Context, string) (time.Time, error)
-	GetWateringHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
+	GetWaterHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
 	influxdb2.Client
 }
 
@@ -142,8 +142,8 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (r
 	return
 }
 
-// GetWateringHistory gets recent watering events for a specific Plant
-func (client *client) GetWateringHistory(ctx context.Context, plantPosition uint, topicPrefix string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
+// GetWaterHistory gets recent water events for a specific Plant
+func (client *client) GetWaterHistory(ctx context.Context, plantPosition uint, topicPrefix string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:        client.config.Bucket,
@@ -151,7 +151,7 @@ func (client *client) GetWateringHistory(ctx context.Context, plantPosition uint
 		TopicPrefix:   topicPrefix,
 		PlantPosition: plantPosition,
 		Limit:         limit,
-	}.Render(wateringHistoryQueryTemplate)
+	}.Render(waterHistoryQueryTemplate)
 	if err != nil {
 		return nil, err
 	}

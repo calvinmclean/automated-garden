@@ -32,9 +32,9 @@ func (zr *AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error
 // and hypermedia Links fields
 type ZoneResponse struct {
 	*pkg.Zone
-	Moisture         float64    `json:"moisture,omitempty"`
-	NextWateringTime *time.Time `json:"next_watering_time,omitempty"`
-	Links            []Link     `json:"links,omitempty"`
+	Moisture      float64    `json:"moisture,omitempty"`
+	NextWaterTime *time.Time `json:"next_water_time,omitempty"`
+	Links         []Link     `json:"links,omitempty"`
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
@@ -74,7 +74,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 	return &ZoneResponse{
 		zone,
 		moisture,
-		zr.scheduler.GetNextWateringTime(zone),
+		zr.scheduler.GetNextWaterTime(zone),
 		links,
 	}
 }
@@ -85,16 +85,16 @@ func (z *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-// ZoneWateringHistoryResponse wraps a slice of WateringHistory structs plus some aggregate stats for an HTTP response
-type ZoneWateringHistoryResponse struct {
-	History []pkg.WateringHistory `json:"history"`
-	Count   int                   `json:"count"`
-	Average string                `json:"average"`
-	Total   string                `json:"total"`
+// ZoneWaterHistoryResponse wraps a slice of WaterHistory structs plus some aggregate stats for an HTTP response
+type ZoneWaterHistoryResponse struct {
+	History []pkg.WaterHistory `json:"history"`
+	Count   int                `json:"count"`
+	Average string             `json:"average"`
+	Total   string             `json:"total"`
 }
 
-// NewZoneWateringHistoryResponse creates a response by creating some basic statistics about a list of history events
-func NewZoneWateringHistoryResponse(history []pkg.WateringHistory) ZoneWateringHistoryResponse {
+// NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
+func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryResponse {
 	total := time.Duration(0)
 	for _, h := range history {
 		amountDuration, _ := time.ParseDuration(h.Duration)
@@ -105,7 +105,7 @@ func NewZoneWateringHistoryResponse(history []pkg.WateringHistory) ZoneWateringH
 	if count != 0 {
 		average = time.Duration(int(total) / len(history))
 	}
-	return ZoneWateringHistoryResponse{
+	return ZoneWaterHistoryResponse{
 		History: history,
 		Count:   count,
 		Average: average.String(),
@@ -115,6 +115,6 @@ func NewZoneWateringHistoryResponse(history []pkg.WateringHistory) ZoneWateringH
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (resp ZoneWateringHistoryResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (resp ZoneWaterHistoryResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
