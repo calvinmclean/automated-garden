@@ -1,7 +1,7 @@
 # Indoor Herb Garden Example
 
 ## Details
-This is the first garden I setup with this. It consists of three small/medium pots and a grow light on a bookshelf. A 12V DC fountain pump moves water from a container at the base to a 3D printed splitter. The splitter delivers water to three 12V DC valves that route to a 3D printed watering ring on the pot.
+This setup consists of three small/medium pots and a grow light on a bookshelf. A 12V DC fountain pump moves water from a container at the base to a 3D printed splitter. The splitter delivers water to three 12V DC valves that route to a 3D printed watering ring on the pot.
 
 This small garden has worked really well for growing herbs or even cherry tomatoes.
 
@@ -67,12 +67,12 @@ Then there are two 6-pin JST connectors that provide power (ground/5V) and 4 dat
 #define JSON_CAPACITY 48
 #endif
 
-#define NUM_PLANTS 3
+#define NUM_ZONES 3
 #define PUMP_PIN GPIO_NUM_18
-#define PLANT_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
-#define PLANT_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
-#define PLANT_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
-#define PLANTS { PLANT_1, PLANT_2, PLANT_3 }
+#define ZONE_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
+#define ZONE_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
+#define ZONE_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
+#define ZONES { ZONE_1, ZONE_2, ZONE_3 }
 #define DEFAULT_WATER_TIME 5000
 
 #define LIGHT_PIN GPIO_NUM_32
@@ -115,7 +115,7 @@ storage:
     "name": "Garden",
     "topic_prefix": "garden",
     "id": "c5ma3cvphd1c514hk490",
-    "max_plants": 3,
+    "max_zones": 3,
     "created_at": "2021-10-13T02:55:13.025436541Z",
     "light_schedule": {
         "duration": "13h",
@@ -126,10 +126,15 @@ storage:
         "state": "OFF"
     },
     "num_plants": 3,
+    "num_zones": 3,
     "plants": {
         "rel": "collection",
         "href": "/gardens/c5ma3cvphd1c514hk490/plants"
     },
+    "zones": {
+		"rel": "collection",
+		"href": "/gardens/c5ma3cvphd1c514hk490/zones"
+	},
     "links": [
         {
             "rel": "self",
@@ -144,6 +149,10 @@ storage:
             "href": "/gardens/c5ma3cvphd1c514hk490/plants"
         },
         {
+			"rel": "zones",
+			"href": "/gardens/c5ma3cvphd1c514hk490/zones"
+		},
+        {
             "rel": "action",
             "href": "/gardens/c5ma3cvphd1c514hk490/action"
         }
@@ -151,16 +160,12 @@ storage:
 }
 ```
 
-#### **Example Plant JSON**
+#### **Example Zone JSON**
 ```json
 {
-    "name": "Chives",
-    "details": {
-        "notes": "Planted by seed",
-        "count": 4
-    },
+    "name": "Planter 1",
     "id": "c5maco7phd1ftefa6ol0",
-    "plant_position": 1,
+    "position": 1,
     "created_at": "2021-10-17T22:40:32.474585191Z",
     "water_schedule": {
         "duration": "20s",
@@ -185,6 +190,34 @@ storage:
             "rel": "history",
             "href": "/gardens/c5ma3cvphd1c514hk490/plants/c5maco7phd1ftefa6ol0/history"
         }
+    ]
+}
+```
+
+#### **Example Plant JSON**
+```json
+{
+    "name": "Chives",
+    "details": {
+        "notes": "Planted by seed",
+        "count": 4
+    },
+    "id": "c9i9jl5vqc7l7e3ikkgg",
+    "zone_id": "c5maco7phd1ftefa6ol0",
+    "created_at": "2021-10-17T22:40:32.474585191Z",
+    "links": [
+        {
+            "rel": "self",
+            "href": "/gardens/c5ma3cvphd1c514hk490/plants/c5maco7phd1ftefa6ol0"
+        },
+        {
+            "rel": "garden",
+            "href": "/gardens/c5ma3cvphd1c514hk490"
+        },
+        {
+            "rel": "zone",
+            "href": "/gardens/c5ma3cvphd1c514hk490/zones/c5maco7phd1ftefa6ol0"
+        },
     ]
 }
 ```

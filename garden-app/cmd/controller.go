@@ -10,7 +10,7 @@ import (
 
 var (
 	topicPrefix          string
-	numPlants            int
+	numZones             int
 	moistureStrategy     string
 	moistureValue        int
 	moistureInterval     time.Duration
@@ -31,8 +31,8 @@ func init() {
 	controllerCommand.Flags().StringVarP(&topicPrefix, "topic", "t", "test-garden", "MQTT topic prefix of the garden-controller")
 	viper.BindPFlag("topic_prefix", controllerCommand.Flags().Lookup("topic"))
 
-	controllerCommand.Flags().IntVarP(&numPlants, "plants", "p", 0, "Number of Plants for which moisture data should be emulated")
-	viper.BindPFlag("num_plants", controllerCommand.Flags().Lookup("plants"))
+	controllerCommand.Flags().IntVarP(&numZones, "zones", "z", 0, "Number of Zones for which moisture data should be emulated")
+	viper.BindPFlag("num_zones", controllerCommand.Flags().Lookup("zones"))
 
 	controllerCommand.Flags().StringVar(&moistureStrategy, "moisture-strategy", "random", "Strategy for creating moisture data")
 	controllerCommand.RegisterFlagCompletionFunc("moisture-strategy", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {

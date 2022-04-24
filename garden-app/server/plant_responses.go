@@ -46,6 +46,10 @@ func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garde
 			"garden",
 			gardenPath,
 		},
+		Link{
+			"zone",
+			fmt.Sprintf("%s%s/%s", gardenPath, zoneBasePath, plant.ZoneID),
+		},
 	)
 	return &PlantResponse{
 		plant,

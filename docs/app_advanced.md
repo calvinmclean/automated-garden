@@ -7,8 +7,8 @@ Additional functionality comes from the following commands:
   - `controller`
 
 ## Features
-- User-friendly REST API for managing Gardens and Plants
-- Reliable scheduled actions using [`gocron`](https://github.com/go-co-op/gocron) for watering and lighting Plants
+- User-friendly REST API for managing Gardens, Zones and Plants
+- Reliable scheduled actions using [`gocron`](https://github.com/go-co-op/gocron) for watering and lighting
 - Connect to MQTT to publish messages to distributed controllers
 - Connect to InfluxDB to read time-series data that comes from controllers
 
@@ -16,7 +16,7 @@ Additional functionality comes from the following commands:
 - `pkg`: contains models and other core code necessary for the application's functionality that may be used by other packages
     - `pkg/influxdb`: interacts with InfluxDB to make queries
     - `pkg/mqtt`: connects to MQTT for publish/subscribe
-    - `pkg/storage`: provides a generic `Client` interface and various implementations for storing Garden/Plant data
+    - `pkg/storage`: provides a generic `Client` interface and various implementations for storing data
 - `cmd`: this is the entrypoint to the application that contains code using the popular [`spf13/cobra` CLI library](https://github.com/spf13/cobra) to configure different commands and flags. Logic in this package is minimal and it will just configure CLI options and call the relevant package's startup function
 - `server`: contains code for implementing the HTTP API and running scheduled actions
 - `controller`: contains code for running the mock `garden-controller` that behaves as-if it is an embedded device
@@ -133,7 +133,7 @@ Flags:
       --moisture-strategy string     Strategy for creating moisture data (default "random")
       --moisture-value int           The value, or starting value, to use for moisture data publishing (default 100)
   -n, --name string                  Name of the garden-controller (helps determine which MQTT topic to subscribe to) (default "garden")
-  -p, --plants int                   Number of Plants for which moisture data should be emulated
+  -z, --zones int                    Number of Zones for which moisture data should be emulated
       --publish-health               Whether or not to publish health data every minute (default true)
       --publish-watering-event       Whether or not watering events should be published for logging (default true)
 
