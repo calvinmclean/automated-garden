@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html/template"
 	"os"
+	"regexp"
 	"time"
 
 	"golang.org/x/term"
@@ -30,13 +31,13 @@ const (
 #define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
 #define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
 
-{{ if .PublishHealth -}}
+{{ if .PublishHealth }}
 #define ENABLE_MQTT_HEALTH
 #ifdef ENABLE_MQTT_HEALTH
 #define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
-#define HEALTH_PUBLISH_INTERVAL {{ .HealthInterval }}
+#define HEALTH_PUBLISH_INTERVAL {{ milliseconds .HealthInterval }}
 #endif
-{{- end }}
+{{ end }}
 
 #define ENABLE_MQTT_LOGGING
 #ifdef ENABLE_MQTT_LOGGING
@@ -46,27 +47,32 @@ const (
 #define JSON_CAPACITY 48
 #endif
 
+{{ if .DisableWatering }}
+#define DISABLE_WATERING
+{{ end -}}
 #define NUM_ZONES {{ .NumZones }}
-#define ZONES { {{ range $p := .Zones }}{ {{ $p.PumpPin }}, {{ $p.ValvePin }}, {{ $p.ButtonPin }}, {{ $p.MoistureSensorPin }} }{{ end }} }
-#define DEFAULT_WATER_TIME {{ .DefaultWaterTime }}
+#define ZONES { {{ range $p := .Zones }}{ {{ $p.PumpPin }}, {{ $p.ValvePin }}, {{ or $p.ButtonPin "GPIO_NUM_MAX" }}, {{ or $p.MoistureSensorPin "GPIO_NUM_MAX" }} }{{ end }} }
+#define DEFAULT_WATER_TIME {{ milliseconds  .DefaultWaterTime }}
 
+{{ if .LightPin }}
 #define LIGHT_PIN {{ .LightPin }}
+{{ end }}
 
-{{ if .EnableButtons -}}
+{{ if .EnableButtons }}
 #define ENABLE_BUTTONS
 #ifdef ENABLE_BUTTONS
 #define STOP_BUTTON_PIN {{ .StopButtonPin }}
 #endif
-{{- end }}
+{{ end }}
 
-{{ if .EnableMoistureSensor -}}
+{{ if .EnableMoistureSensor }}
 #ifdef ENABLE_MOISTURE_SENSORS AND ENABLE_WIFI
 #define MQTT_MOISTURE_DATA_TOPIC TOPIC_PREFIX"/data/moisture"
 #define MOISTURE_SENSOR_AIR_VALUE 3415
 #define MOISTURE_SENSOR_WATER_VALUE 1362
 #define MOISTURE_SENSOR_INTERVAL {{ milliseconds .MoistureInterval }}
 #endif
-{{ end }}
+{{ end -}}
 #endif
 `
 	wifiConfigTemplate = `#ifndef wifi_config_h
@@ -98,7 +104,7 @@ func GenerateConfig(config Config) {
 	}
 	fmt.Println(mainConfig)
 	fmt.Println("====")
-	wifiConfig, err := generateWiFiConfig(config)
+	wifiConfig, err := generateWiFiConfig(config.WifiConfig)
 	if err != nil {
 		fmt.Printf("error generating 'wifi_config.h': %v", err)
 	}
@@ -120,25 +126,29 @@ func generateMainConfig(config Config) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return result.String(), nil
+	return removeExtraNewlines(result.String()), nil
 }
 
-func generateWiFiConfig(config Config) (string, error) {
-	if config.WifiConfig.Password == "" {
+func generateWiFiConfig(config WifiConfig) (string, error) {
+	if config.Password == "" {
 		fmt.Print("WiFi password: ")
 		password, err := term.ReadPassword(int(os.Stdin.Fd()))
 		if err != nil {
 			return "", nil
 		}
 
-		config.WifiConfig.Password = string(password)
+		config.Password = string(password)
 	}
 
 	t := template.Must(template.New("wifi_config.h").Parse(wifiConfigTemplate))
 	var result bytes.Buffer
-	err := t.Execute(&result, config.WifiConfig)
+	err := t.Execute(&result, config)
 	if err != nil {
 		return "", err
 	}
-	return result.String(), nil
+	return removeExtraNewlines(result.String()), nil
+}
+
+func removeExtraNewlines(input string) string {
+	return regexp.MustCompile(`(?m)^\n{2,}`).ReplaceAllLiteralString(input, "\n")
 }

@@ -46,12 +46,13 @@ type ControllerCfg struct {
 
 	// Configs only used for generate-config
 	WifiConfig           `mapstructure:"wifi"`
-	Zones                []ZoneConfig `mapstructure:"zones"`
-	DefaultWaterTime     int          `mapstructure:"default_water_time"`
-	EnableButtons        bool         `mapstructure:"enable_buttons"`
-	EnableMoistureSensor bool         `mapstructure:"enable_moisture_sensor"`
-	LightPin             string       `mapstructure:"light_pin"`
-	StopButtonPin        string       `mapstructure:"stop_water_button"`
+	Zones                []ZoneConfig  `mapstructure:"zones"`
+	DefaultWaterTime     time.Duration `mapstructure:"default_water_time"`
+	EnableButtons        bool          `mapstructure:"enable_buttons"`
+	EnableMoistureSensor bool          `mapstructure:"enable_moisture_sensor"`
+	LightPin             string        `mapstructure:"light_pin"`
+	StopButtonPin        string        `mapstructure:"stop_water_button"`
+	DisableWatering      bool          `mapstructure:"disable_watering"`
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller
