@@ -26,7 +26,14 @@ var subLogger *logrus.Logger
 
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
-	MQTTConfig        mqtt.Config   `mapstructure:"mqtt"`
+	MQTTConfig    mqtt.Config `mapstructure:"mqtt"`
+	ControllerCfg `mapstructure:"controller"`
+	LogLevel      logrus.Level
+}
+
+// ControllerCfg is an unfortunate struct that I had to create to have this nested under the 'controller' key
+// in the YAML config
+type ControllerCfg struct {
 	TopicPrefix       string        `mapstructure:"topic_prefix"`
 	NumZones          int           `mapstructure:"num_zones"`
 	MoistureStrategy  string        `mapstructure:"moisture_strategy"`
@@ -36,7 +43,15 @@ type Config struct {
 	PublishHealth     bool          `mapstructure:"publish_health"`
 	HealthInterval    time.Duration `mapstructure:"health_interval"`
 	EnableUI          bool          `mapstructure:"enable_ui"`
-	LogLevel          logrus.Level
+
+	// Configs only used for generate-config
+	WifiConfig           `mapstructure:"wifi"`
+	Zones                []ZoneConfig `mapstructure:"zones"`
+	DefaultWaterTime     int          `mapstructure:"default_water_time"`
+	EnableButtons        bool         `mapstructure:"enable_buttons"`
+	EnableMoistureSensor bool         `mapstructure:"enable_moisture_sensor"`
+	LightPin             string       `mapstructure:"light_pin"`
+	StopButtonPin        string       `mapstructure:"stop_water_button"`
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller

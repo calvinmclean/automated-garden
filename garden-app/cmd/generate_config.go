@@ -7,6 +7,8 @@ import (
 )
 
 var (
+	wifiSSID string
+
 	generateConfigCommand = &cobra.Command{
 		Use:   "generate-config",
 		Short: "Generate config.h and wifi_config.h files for garden-controller",
@@ -16,13 +18,10 @@ var (
 )
 
 func init() {
-	generateConfigCommand.Flags().StringVarP(&gardenName, "name", "n", "garden", "TODO")
-	viper.BindPFlag("garden_name", generateConfigCommand.Flags().Lookup("name"))
+	generateConfigCommand.Flags().StringVar(&wifiSSID, "ssid", "", "SSID for your WiFi network")
+	viper.BindPFlag("controller.wifi.ssid", generateConfigCommand.Flags().Lookup("ssid"))
 
-	generateConfigCommand.Flags().IntVarP(&numPlants, "plants", "p", 0, "TODO")
-	viper.BindPFlag("num_plants", generateConfigCommand.Flags().Lookup("plants"))
-
-	rootCommand.AddCommand(generateConfigCommand)
+	controllerCommand.AddCommand(generateConfigCommand)
 }
 
 // GenerateConfig is used to help in the creation of garden-controller Arduino configuration files
