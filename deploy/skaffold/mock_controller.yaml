@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garden-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: garden-controller
+  template:
+    metadata:
+      labels:
+        app: garden-controller
+    spec:
+      containers:
+        - name: garden-controller
+          image: ghcr.io/calvinmclean/garden-app
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          args:
+            - controller
+            - --config
+            - /config/config.yaml
+            - --enable-ui=false
+      volumes:
+        - name: config
+          configMap:
+            name: garden-controller-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: garden-controller-config
+data:
+  config.yaml: |
+    mqtt:
+      broker: "mosquitto"
+      port: 1883
+      client_id: "garden-controller"
+      water_topic: "{{.Garden}}/command/water"
+      stop_topic: "{{.Garden}}/command/stop"
+      stop_all_topic: "{{.Garden}}/command/stop_all"
+      light_topic: "{{.Garden}}/command/light"
+    controller:
+      topic_prefix: "garden"
+      num_zones: 3
+      moisture_strategy: increasing
+      moisture_value: 0
+      moisture_interval: 30s
+      publish_water_event: true
+      publish_health: true
+      health_interval: 1m

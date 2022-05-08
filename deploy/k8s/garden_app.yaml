@@ -2,7 +2,6 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: garden-app
-  namespace: default
 spec:
   replicas: 1
   selector:
@@ -16,6 +15,7 @@ spec:
       containers:
         - name: garden-app
           image: ghcr.io/calvinmclean/garden-app
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
           volumeMounts:
@@ -34,7 +34,6 @@ apiVersion: v1
 kind: Service
 metadata:
   name: garden-app
-  namespace: default
 spec:
   type: NodePort
   selector:
@@ -48,7 +47,6 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: garden-app-config
-  namespace: default
 data:
   config.yaml: |
     web_server:
@@ -65,7 +63,7 @@ data:
       address: "http://influxdb:8086"
       token: "my-secret-token"
       org: "garden"
-      bucket: "water"
+      bucket: "garden"
     storage:
       type: "ConfigMap"
       options:
@@ -73,8 +71,8 @@ data:
         key: "gardens.yaml"
   gardens.yaml: |
     c9i98glvqc7km2vasfig:
-        name: Seed Starting
-        topic_prefix: seeds
+        name: Garden
+        topic_prefix: garden
         id: c9i98glvqc7km2vasfig
         zones:
             c9i99otvqc7kmt8hjio0:
