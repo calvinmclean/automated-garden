@@ -5,6 +5,7 @@ The `garden-app`'s main functionality comes from the `server` command, which run
 
 Additional functionality comes from the following commands:
   - `controller`
+  - `controller generate-config`
 
 ## Features
 - User-friendly REST API for managing Gardens, Zones and Plants
@@ -19,7 +20,7 @@ Additional functionality comes from the following commands:
     - `pkg/storage`: provides a generic `Client` interface and various implementations for storing data
 - `cmd`: this is the entrypoint to the application that contains code using the popular [`spf13/cobra` CLI library](https://github.com/spf13/cobra) to configure different commands and flags. Logic in this package is minimal and it will just configure CLI options and call the relevant package's startup function
 - `server`: contains code for implementing the HTTP API and running scheduled actions
-- `controller`: contains code for running the mock `garden-controller` that behaves as-if it is an embedded device
+- `controller`: contains code for running the mock `garden-controller` that behaves as-if it is an embedded device, and other controller-related commands
 
 Configuration is at the core of the application. Each package provides its own `Config` struct that encapsulates all the necessary options. The config file is read by the command code and then passed into the actual startup code of relevant packages. This allows for easily keeping all configurations in a `config.yaml` file that is read at application startup.
 
@@ -125,21 +126,31 @@ garden-app controller
 ```shell
 Usage:
   garden-app controller [flags]
+  garden-app controller [command]
+
+Aliases:
+  controller, controller run
+
+Available Commands:
+  generate-config Generate config.h and wifi_config.h files for garden-controller
 
 Flags:
+      --enable-ui                    Enable tview UI for nicer output (default true)
       --health-interval duration     Interval between health data publishing (default 1m0s)
   -h, --help                         help for controller
       --moisture-interval duration   Interval between moisture data publishing (default 10s)
       --moisture-strategy string     Strategy for creating moisture data (default "random")
       --moisture-value int           The value, or starting value, to use for moisture data publishing (default 100)
-  -n, --name string                  Name of the garden-controller (helps determine which MQTT topic to subscribe to) (default "garden")
-  -z, --zones int                    Number of Zones for which moisture data should be emulated
       --publish-health               Whether or not to publish health data every minute (default true)
-      --publish-water-event          Whether or not water events should be published for logging (default true)
+      --publish-water-event          Whether or not watering events should be published for logging (default true)
+  -t, --topic string                 MQTT topic prefix of the garden-controller (default "test-garden")
+  -z, --zones int                    Number of Zones for which moisture data should be emulated
 
 Global Flags:
       --config string      path to config file (default "config.yaml")
   -l, --log-level string   level of logging to display (default "info")
+
+Use "garden-app controller [command] --help" for more information about a command.
 ```
 
 ### Configuration
