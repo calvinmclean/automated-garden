@@ -19,7 +19,7 @@ jobs:
       - name: Check for debug prints
         id: check-print
         working-directory: ./${{ env.PROJECT_NAME }}
-        run: if [[ -n $(grep -R "fmt.Print" | grep -v vendor) ]]; then echo "Did you forget to remove debug prints?" && false; else echo "All good!"; fi
+        run: if [[ -n $(grep -R "fmt.Print" | grep -v vendor | grep -v generate_config\.go) ]]; then echo "Did you forget to remove debug prints?" && false; else echo "All good!"; fi
 
       - name: Set up Go
         uses: actions/setup-go@v2
