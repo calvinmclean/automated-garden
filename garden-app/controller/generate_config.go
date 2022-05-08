@@ -85,11 +85,13 @@ const (
 `
 )
 
+// WifiConfig holds WiFi connection details
 type WifiConfig struct {
 	SSID     string `mapstructure:"ssid"`
 	Password string `mapstructure:"password"`
 }
 
+// ZoneConfig has the configuration details for controlling hardware pins
 type ZoneConfig struct {
 	PumpPin           string `mapstructure:"pump_pin"`
 	ValvePin          string `mapstructure:"valve_pin"`
@@ -97,18 +99,61 @@ type ZoneConfig struct {
 	MoistureSensorPin string `mapstructure:"moisture_sensor_pin"`
 }
 
-func GenerateConfig(config Config) {
-	mainConfig, err := generateMainConfig(config)
-	if err != nil {
-		fmt.Printf("error generating 'config.h': %v", err)
+// GenerateConfig will create config.h and wifi_config.h based on the provided configurations. It can optionally write to files
+// instead of stdout
+func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bool) {
+	logger = config.setupLogger()
+
+	if !wifiOnly {
+		mainConfig, err := generateMainConfig(config)
+		if err != nil {
+			logger.Errorf("error generating 'config.h': %v", err)
+			return
+		}
+		err = writeOutput(mainConfig, "config.h", writeFile, overwrite)
+		if err != nil {
+			logger.Errorf("error generating 'config.h': %v", err)
+			return
+		}
 	}
-	fmt.Println(mainConfig)
-	fmt.Println("====")
-	wifiConfig, err := generateWiFiConfig(config.WifiConfig)
-	if err != nil {
-		fmt.Printf("error generating 'wifi_config.h': %v", err)
+
+	if !configOnly {
+		wifiConfig, err := generateWiFiConfig(config.WifiConfig)
+		if err != nil {
+			logger.Errorf("error generating 'wifi_config.h': %v", err)
+			return
+		}
+		err = writeOutput(wifiConfig, "wifi_config.h", writeFile, overwrite)
+		if err != nil {
+			logger.Errorf("error generating 'wifi_config.h': %v", err)
+			return
+		}
 	}
-	fmt.Println(wifiConfig)
+}
+
+func writeOutput(content, filename string, writeFile, overwrite bool) error {
+	file := os.Stdout
+	// if configured to write to a file, replace os.Stdout with file
+	if writeFile {
+		// if overwrite is false, first check if file exists and error if it does
+		if !overwrite {
+			if _, err := os.Stat(filename); err == nil {
+				return fmt.Errorf("file %q exists, use --force to overwrite", filename)
+			}
+		}
+
+		var err error
+		file, err = os.Create(filename)
+		if err != nil {
+			return err
+		}
+	}
+
+	_, err := file.WriteString(content)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func generateMainConfig(config Config) (string, error) {

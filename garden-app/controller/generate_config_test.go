@@ -17,7 +17,7 @@ func TestGenerateMainConfig(t *testing.T) {
 		{
 			"OneZoneNoSpecialFeatures",
 			Config{
-				ControllerCfg: ControllerCfg{
+				NestedConfig: NestedConfig{
 					Zones: []ZoneConfig{
 						{
 							PumpPin:  "GPIO_NUM_18",
@@ -70,7 +70,7 @@ func TestGenerateMainConfig(t *testing.T) {
 		{
 			"OneZoneAllSpecialFeatures",
 			Config{
-				ControllerCfg: ControllerCfg{
+				NestedConfig: NestedConfig{
 					Zones: []ZoneConfig{
 						{
 							PumpPin:           "GPIO_NUM_18",
@@ -151,7 +151,7 @@ func TestGenerateMainConfig(t *testing.T) {
 		{
 			"OneZoneNoSpecialFeaturesDisableWatering",
 			Config{
-				ControllerCfg: ControllerCfg{
+				NestedConfig: NestedConfig{
 					Zones: []ZoneConfig{
 						{
 							PumpPin:  "GPIO_NUM_18",

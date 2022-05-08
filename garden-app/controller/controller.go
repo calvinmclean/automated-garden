@@ -26,14 +26,14 @@ var subLogger *logrus.Logger
 
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
-	MQTTConfig    mqtt.Config `mapstructure:"mqtt"`
-	ControllerCfg `mapstructure:"controller"`
-	LogLevel      logrus.Level
+	MQTTConfig   mqtt.Config `mapstructure:"mqtt"`
+	NestedConfig `mapstructure:"controller"`
+	LogLevel     logrus.Level
 }
 
-// ControllerCfg is an unfortunate struct that I had to create to have this nested under the 'controller' key
+// NestedConfig is an unfortunate struct that I had to create to have this nested under the 'controller' key
 // in the YAML config
-type ControllerCfg struct {
+type NestedConfig struct {
 	TopicPrefix       string        `mapstructure:"topic_prefix"`
 	NumZones          int           `mapstructure:"num_zones"`
 	MoistureStrategy  string        `mapstructure:"moisture_strategy"`
@@ -154,7 +154,7 @@ func Start(config Config) {
 }
 
 // setupLogger creates and configures a logger with colors and specified log level
-func (c *Controller) setupLogger() *logrus.Logger {
+func (c *Config) setupLogger() *logrus.Logger {
 	l := logrus.New()
 	l.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,

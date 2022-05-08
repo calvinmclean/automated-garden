@@ -7,7 +7,11 @@ import (
 )
 
 var (
-	wifiSSID string
+	wifiSSID   string
+	writeFile  bool
+	wifiOnly   bool
+	configOnly bool
+	overwrite  bool
 
 	generateConfigCommand = &cobra.Command{
 		Use:   "generate-config",
@@ -21,6 +25,11 @@ func init() {
 	generateConfigCommand.Flags().StringVar(&wifiSSID, "ssid", "", "SSID for your WiFi network")
 	viper.BindPFlag("controller.wifi.ssid", generateConfigCommand.Flags().Lookup("ssid"))
 
+	generateConfigCommand.Flags().BoolVarP(&writeFile, "write", "w", false, "write results to file instead of stdout")
+	generateConfigCommand.Flags().BoolVar(&wifiOnly, "wifi-only", false, "only generate wifi_config.h")
+	generateConfigCommand.Flags().BoolVar(&configOnly, "config-only", false, "only generate config.h")
+	generateConfigCommand.Flags().BoolVarP(&overwrite, "force", "f", false, "overwrite files if they already exist")
+
 	controllerCommand.AddCommand(generateConfigCommand)
 }
 
@@ -33,5 +42,5 @@ func GenerateConfig(cmd *cobra.Command, args []string) {
 	}
 	config.LogLevel = parsedLogLevel
 
-	controller.GenerateConfig(config)
+	controller.GenerateConfig(config, writeFile, wifiOnly, configOnly, overwrite)
 }
