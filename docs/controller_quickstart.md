@@ -14,5 +14,41 @@ This is going to assume you have some familiarity with the ESP32 and Arduino IDE
 
 It is more difficult to provide a comprehensive quickstart for the `garden-controller` because it is so closely related to the hardware. You will have to wire everything up to the device and that depends on your individual skill level, hardware components, and use-case. Please see the Examples section for more detailed explanations on hardware setups and corresponding controller configs.
 
+## Configuring
+The easiest way to get started is to use the default configurations. The next best thing is creating the Arduino configurations using the `garden-app controller generate-config` command with a populated `config.yaml`.
+
+For example, the following `config.yaml` file creates the necessary configuration for a 3-zone garden with moisture sensing, buttons, and light control:
+```YAML
+mqtt:
+  broker: "localhost"
+  port: 1883
+
+controller:
+  wifi:
+    ssid: "My Wifi Network"
+  zones:
+    - pump_pin: GPIO_NUM_18
+      valve_pin: GPIO_NUM_16
+      button_pin: GPIO_NUM_19
+      moisture_sensor_pin: GPIO_NUM_36
+    - pump_pin: GPIO_NUM_18
+      valve_pin: GPIO_NUM_17
+      button_pin: GPIO_NUM_21
+      moisture_sensor_pin: GPIO_NUM_39
+    - pump_pin: GPIO_NUM_18
+      valve_pin: GPIO_NUM_5
+      button_pin: GPIO_NUM_22
+      moisture_sensor_pin: GPIO_NUM_34
+  enable_moisture_sensor: true
+  enable_buttons: true
+  stop_water_button: GPIO_NUM_23
+  light_pin: GPIO_NUM_32
+  topic_prefix: "garden"
+  default_water_time: 5s
+  publish_health: true
+  health_interval: 1m
+  moisture_interval: 5s
+```
+
 ## Advanced
 See the [advanced section](controller_advanced.md) for more detailed documentation.
