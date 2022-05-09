@@ -7,7 +7,7 @@ spec:
     storage: 2Gi
   volumeMode: Filesystem
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   persistentVolumeReclaimPolicy: Delete
   storageClassName: local-storage
   local:
@@ -15,11 +15,11 @@ spec:
   nodeAffinity:
     required:
       nodeSelectorTerms:
-      - matchExpressions:
-        - key: kubernetes.io/hostname
-          operator: In
-          values:
-          - nuc
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - nuc
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -32,3 +32,4 @@ spec:
   resources:
     requests:
       storage: 2Gi
+# Note: in order for this to work, I had to make the directory first and then chown /opt/garden-data/grafana to 472:root

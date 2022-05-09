@@ -425,7 +425,7 @@ paths:
               $ref: "#/components/schemas/ZoneAction"
 
   /gardens/{gardenID}/zones/{zoneID}/history:
-    post:
+    get:
       tags:
         - zones
       summary: Get Zone's watering history

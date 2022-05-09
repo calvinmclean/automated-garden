@@ -39,7 +39,7 @@ type NestedConfig struct {
 	MoistureStrategy  string        `mapstructure:"moisture_strategy"`
 	MoistureValue     int           `mapstructure:"moisture_value"`
 	MoistureInterval  time.Duration `mapstructure:"moisture_interval"`
-	PublishWaterEvent bool          `mapstructure:"publish_watering_event"`
+	PublishWaterEvent bool          `mapstructure:"publish_water_event"`
 	PublishHealth     bool          `mapstructure:"publish_health"`
 	HealthInterval    time.Duration `mapstructure:"health_interval"`
 	EnableUI          bool          `mapstructure:"enable_ui"`

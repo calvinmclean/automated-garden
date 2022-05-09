@@ -3,6 +3,7 @@ package storage
 import (
 	"context"
 	"fmt"
+	"io/ioutil"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -49,7 +50,12 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 		return nil, fmt.Errorf("unable to create Clientset: %v", err)
 	}
 
-	client.k8sClient = clientset.CoreV1().ConfigMaps("default")
+	namespace, err := ioutil.ReadFile("/run/secrets/kubernetes.io/serviceaccount/namespace")
+	if err != nil {
+		return nil, fmt.Errorf("unable to read namespace from file: %v", err)
+	}
+
+	client.k8sClient = clientset.CoreV1().ConfigMaps(string(namespace))
 
 	// Get the ConfigMap and read into map
 	err = client.update()
