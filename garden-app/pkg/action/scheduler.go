@@ -110,18 +110,18 @@ func (s *scheduler) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 }
 
 // ResetWaterSchedule will simply remove the existing Job and create a new one
-func (s *scheduler) ResetWaterSchedule(g *pkg.Garden, p *pkg.Zone) error {
-	if err := s.RemoveJobsByID(g.ID); err != nil {
+func (s *scheduler) ResetWaterSchedule(g *pkg.Garden, z *pkg.Zone) error {
+	if err := s.RemoveJobsByID(z.ID); err != nil {
 		return err
 	}
-	return s.ScheduleWaterAction(g, p)
+	return s.ScheduleWaterAction(g, z)
 }
 
 // GetNextWaterTime determines the next scheduled watering time for a given Zone using tags
-func (s *scheduler) GetNextWaterTime(p *pkg.Zone) *time.Time {
+func (s *scheduler) GetNextWaterTime(z *pkg.Zone) *time.Time {
 	for _, job := range s.Scheduler.Jobs() {
 		for _, tag := range job.Tags() {
-			if tag == p.ID.String() {
+			if tag == z.ID.String() {
 				result := job.NextRun()
 				return &result
 			}
