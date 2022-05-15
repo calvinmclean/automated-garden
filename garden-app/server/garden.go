@@ -83,7 +83,7 @@ func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, e
 		logger.WithField(gardenIDLogField, g.ID).Debugf("scheduling LightAction for: %+v", g.LightSchedule)
 		if g.LightSchedule != nil {
 			if err = gr.scheduler.ScheduleLightActions(g); err != nil {
-				return gr, fmt.Errorf("unable to add light Job for Garden %v: %v", g.ID, err)
+				return gr, fmt.Errorf("unable to schedule LightAction for Garden %v: %v", g.ID, err)
 			}
 		}
 	}

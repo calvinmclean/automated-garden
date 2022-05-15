@@ -33,7 +33,7 @@ func NewZonesResource(gr GardensResource, logger *logrus.Logger) (ZonesResource,
 		GardensResource: gr,
 	}
 
-	// Initialize water Jobs for each Zone from the storage client
+	// Initialize WaterActions for each Zone from the storage client
 	logger.Info("setting up WaterAction for Zones")
 	allGardens, err := zr.storageClient.GetGardens(false)
 	if err != nil {
@@ -47,7 +47,7 @@ func NewZonesResource(gr GardensResource, logger *logrus.Logger) (ZonesResource,
 		for _, z := range allZones {
 			logger.WithField(zoneIDLogField, g.ID).Debugf("scheduling WaterAction for: %+v", z.WaterSchedule)
 			if err = zr.scheduler.ScheduleWaterAction(g, z); err != nil {
-				return zr, fmt.Errorf("unable to add water Job for Zone %v: %v", z.ID, err)
+				return zr, fmt.Errorf("unable to add WaterAction for Zone %v: %v", z.ID, err)
 			}
 		}
 	}
@@ -248,7 +248,7 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Debug("saved end-dated Zone")
 
-	// Remove scheduled water Job
+	// Remove scheduled WaterActions
 	logger.Info("removing scheduled WaterActions for Zone")
 	if err := zr.scheduler.RemoveJobsByID(zone.ID); err != nil {
 		logger.WithError(err).Error("unable to remove scheduled WaterActions")
