@@ -736,7 +736,7 @@ func TestWaterHistory(t *testing.T) {
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
 			r := httptest.NewRequest("GET", fmt.Sprintf("/history%s", tt.queryParams), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(pr.WaterHistory)
+			h := http.HandlerFunc(pr.waterHistory)
 
 			h.ServeHTTP(w, r)
 

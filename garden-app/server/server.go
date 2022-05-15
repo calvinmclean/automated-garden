@@ -15,8 +15,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var logger *logrus.Logger
-
 // Config holds all the options and sub-configs for the server
 type Config struct {
 	WebConfig      `mapstructure:"web_server"`
@@ -36,7 +34,7 @@ type contextKey string
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
 // and is called by the "server" command
 func Run(config Config) {
-	logger = logrus.New()
+	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
 		FullTimestamp: true,
@@ -47,29 +45,25 @@ func Run(config Config) {
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(middleware.Logger)
+	r.Use(loggerMiddleware(logger))
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
-
-	// Set a timeout value on the request context (ctx), that will signal
-	// through ctx.Done() that the request has timed out and further
-	// processing should be stopped.
 	r.Use(middleware.Timeout(3 * time.Second))
 
 	// RESTy routes for Garden and Plant API
-	gardenResource, err := NewGardenResource(config)
+	gardenResource, err := NewGardenResource(config, logger)
 	if err != nil {
-		logger.Errorf("Error initializing '%s' endpoint: %v", gardenBasePath, err)
+		logger.WithError(err).Errorf("error initializing '%s' endpoint", gardenBasePath)
 		os.Exit(1)
 	}
 	plantsResource, err := NewPlantsResource(gardenResource)
 	if err != nil {
-		logger.Errorf("Error initializing '%s' endpoint: %v", plantBasePath, err)
+		logger.WithError(err).Errorf("error initializing '%s' endpoint", plantBasePath)
 		os.Exit(1)
 	}
-	zonesResource, err := NewZonesResource(gardenResource)
+	zonesResource, err := NewZonesResource(gardenResource, logger)
 	if err != nil {
-		logger.Errorf("Error initializing '%s' endpoint: %v", zoneBasePath, err)
+		logger.WithError(err).Errorf("error initializing '%s' endpoint", zoneBasePath)
 		os.Exit(1)
 	}
 	r.Mount(gardenBasePath, gardenResource.routes(plantsResource, zonesResource))

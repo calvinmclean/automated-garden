@@ -24,10 +24,6 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-func init() {
-	logger = logrus.New()
-}
-
 func createExampleGarden() *pkg.Garden {
 	two := uint(2)
 	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
@@ -388,8 +384,8 @@ func TestEndDateGarden(t *testing.T) {
 	endDatedGarden := createExampleGarden()
 	endDatedGarden.EndDate = &now
 
-	gardenWithPlant := createExampleGarden()
-	gardenWithPlant.Plants[xid.New()] = &pkg.Plant{}
+	gardenWithZone := createExampleGarden()
+	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
 
 	tests := []struct {
 		name           string
@@ -417,10 +413,10 @@ func TestEndDateGarden(t *testing.T) {
 			http.StatusNoContent,
 		},
 		{
-			"ErrorEndDatingGardenWithPlants",
+			"ErrorEndDatingGardenWithZones",
 			func(storageClient *storage.MockClient) {},
-			gardenWithPlant,
-			`{"status":"Invalid request.","error":"unable to end-date Garden with active Plants"}`,
+			gardenWithZone,
+			`{"status":"Invalid request.","error":"unable to end-date Garden with active Zones"}`,
 			http.StatusBadRequest,
 		},
 		{

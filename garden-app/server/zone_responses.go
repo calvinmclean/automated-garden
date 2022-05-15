@@ -39,6 +39,8 @@ type ZoneResponse struct {
 
 // NewZoneResponse creates a self-referencing ZoneResponse
 func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
+	logger := contextLogger(ctx)
+
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	links = append(links,
 		Link{
@@ -65,10 +67,13 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 	moisture := 0.0
 	var err error
 	if zone.WaterSchedule.MinimumMoisture > 0 && garden != nil {
+		logger.Debug("getting moisture data for Zone")
 		moisture, err = zr.getMoisture(ctx, garden, zone)
 		if err != nil {
 			// Log moisture error but do not return an error since this isn't critical information
-			logger.Errorf("unable to get moisture of Zone %v: %v", zone.ID, err)
+			logger.WithError(err).Warn("unable to get moisture data for Zone")
+		} else {
+			logger.Debugf("successfully got moisture data for Zone: %f", moisture)
 		}
 	}
 	return &ZoneResponse{

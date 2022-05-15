@@ -329,7 +329,7 @@ func (s *scheduler) ScheduleLightDelay(g *pkg.Garden, action *LightAction) error
 		// Add new ON schedule with action.Light.ForDuration that executes once
 		adhocTime = nextOnTime.Add(delayDuration)
 	}
-	logger.Debug("saving adhoc on time to Garden: %v", adhocTime)
+	logger.Debugf("saving adhoc on time to Garden: %v", adhocTime)
 
 	// Add new lightSchedule with AdhocTime and Save Garden
 	g.LightSchedule.AdhocOnTime = &adhocTime
