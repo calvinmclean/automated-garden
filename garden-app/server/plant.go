@@ -52,10 +52,12 @@ func (pr PlantsResource) routes() chi.Router {
 // we stop here and return a 404.
 func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		plantIDString := chi.URLParam(r, plantPathParam)
-		logger := contextLogger(r.Context()).WithField(plantIDLogField, plantIDString)
+		ctx := r.Context()
 
-		garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+		plantIDString := chi.URLParam(r, plantPathParam)
+		logger := contextLogger(ctx).WithField(plantIDLogField, plantIDString)
+
+		garden := ctx.Value(gardenCtxKey).(*pkg.Garden)
 		plantID, err := xid.FromString(plantIDString)
 		if err != nil {
 			logger.WithError(err).Error("unable to parse PlantID")
@@ -71,7 +73,8 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 		}
 		logger.Debugf("found Plant: %+v", plant)
 
-		ctx := context.WithValue(r.Context(), plantCtxKey, plant)
+		ctx = context.WithValue(ctx, plantCtxKey, plant)
+		ctx = context.WithValue(ctx, loggerCtxKey, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

@@ -103,8 +103,10 @@ func (zr ZonesResource) restrictEndDatedMiddleware(next http.Handler) http.Handl
 // we stop here and return a 404.
 func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		zoneIDString := chi.URLParam(r, zonePathParam)
-		logger := contextLogger(r.Context()).WithField(zoneIDLogField, zoneIDString)
+		logger := contextLogger(ctx).WithField(zoneIDLogField, zoneIDString)
 		zoneID, err := xid.FromString(zoneIDString)
 		if err != nil {
 			logger.WithError(err).Error("unable to parse Zone ID")
@@ -112,7 +114,7 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+		garden := ctx.Value(gardenCtxKey).(*pkg.Garden)
 		zone := garden.Zones[zoneID]
 		if zone == nil {
 			logger.Info("zone not found")
@@ -121,7 +123,8 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 		}
 		logger.Debugf("found Zone: %+v", zone)
 
-		ctx := context.WithValue(r.Context(), zoneCtxKey, zone)
+		ctx = context.WithValue(ctx, zoneCtxKey, zone)
+		ctx = context.WithValue(ctx, loggerCtxKey, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }

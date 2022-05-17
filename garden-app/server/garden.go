@@ -138,8 +138,10 @@ func (gr GardensResource) restrictEndDatedMiddleware(next http.Handler) http.Han
 // we stop here and return a 404.
 func (gr GardensResource) gardenContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		ctx := r.Context()
+
 		gardenIDString := chi.URLParam(r, gardenPathParam)
-		logger := contextLogger(r.Context()).WithField(gardenIDLogField, gardenIDString)
+		logger := contextLogger(ctx).WithField(gardenIDLogField, gardenIDString)
 		gardenID, err := xid.FromString(gardenIDString)
 		if err != nil {
 			logger.WithError(err).Error("unable to parse Garden ID")
@@ -160,7 +162,7 @@ func (gr GardensResource) gardenContextMiddleware(next http.Handler) http.Handle
 		}
 		logger.Debugf("found Garden: %+v", garden)
 
-		ctx := context.WithValue(r.Context(), gardenCtxKey, garden)
+		ctx = context.WithValue(ctx, gardenCtxKey, garden)
 		ctx = context.WithValue(ctx, loggerCtxKey, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
