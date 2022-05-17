@@ -70,7 +70,7 @@ func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, e
 
 	// Initialize Scheduler
 	logger.Info("initializing scheduler")
-	gr.scheduler = action.NewScheduler(gr.storageClient, gr.influxdbClient, gr.mqttClient, logger)
+	gr.scheduler = action.NewScheduler(gr.storageClient, gr.influxdbClient, gr.mqttClient)
 	gr.scheduler.StartAsync()
 
 	// Initialize light schedules for all Gardens
@@ -80,9 +80,10 @@ func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, e
 		return gr, err
 	}
 	for _, g := range allGardens {
-		logger.WithField(gardenIDLogField, g.ID).Debugf("scheduling LightAction for: %+v", g.LightSchedule)
+		gardenLogger := logger.WithField(gardenIDLogField, g.ID)
+		gardenLogger.Debugf("scheduling LightAction for: %+v", g.LightSchedule)
 		if g.LightSchedule != nil {
-			if err = gr.scheduler.ScheduleLightActions(g); err != nil {
+			if err = gr.scheduler.ScheduleLightActions(gardenLogger, g); err != nil {
 				return gr, fmt.Errorf("unable to schedule LightAction for Garden %v: %v", g.ID, err)
 			}
 		}
@@ -189,7 +190,7 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 
 	// Start light schedule (if applicable)
 	if garden.LightSchedule != nil {
-		if err := gr.scheduler.ScheduleLightActions(garden); err != nil {
+		if err := gr.scheduler.ScheduleLightActions(logger, garden); err != nil {
 			logger.WithError(err).Error("unable to schedule LightAction")
 			render.Render(w, r, InternalServerError(err))
 			return
@@ -205,7 +206,7 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
+	if err := render.Render(w, r, gr.NewGardenResponse(r.Context(), garden)); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -226,7 +227,7 @@ func (gr GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request) 
 	}
 	logger.Debugf("found %d Gardens", len(gardens))
 
-	if err := render.Render(w, r, gr.NewAllGardensResponse(gardens)); err != nil {
+	if err := render.Render(w, r, gr.NewAllGardensResponse(r.Context(), gardens)); err != nil {
 		logger.WithError(err).Error("unable to render AllGardensResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -240,7 +241,7 @@ func (gr GardensResource) getGarden(w http.ResponseWriter, r *http.Request) {
 	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
 	logger.Debugf("responding with Garden: %+v", garden)
 
-	gardenResponse := gr.NewGardenResponse(garden)
+	gardenResponse := gr.NewGardenResponse(r.Context(), garden)
 	if err := render.Render(w, r, gardenResponse); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
@@ -290,13 +291,13 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 
 	// Remove scheduled light actions
 	logger.Info("removing scheduled LightActions for Garden")
-	if err := gr.scheduler.RemoveJobsByID(garden.ID); err != nil {
+	if err := gr.scheduler.RemoveJobsByID(logger, garden.ID); err != nil {
 		logger.WithError(err).Error("unable to remove scheduled LightActions")
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
-	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
+	if err := render.Render(w, r, gr.NewGardenResponse(r.Context(), garden)); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -341,7 +342,7 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 	// If LightSchedule is empty, remove the scheduled Job
 	if garden.LightSchedule == nil {
 		logger.Info("removing LightSchedule")
-		if err := gr.scheduler.RemoveJobsByID(garden.ID); err != nil {
+		if err := gr.scheduler.RemoveJobsByID(logger, garden.ID); err != nil {
 			logger.WithError(err).Error("unable to remove LightSchedule for Garden")
 			render.Render(w, r, InternalServerError(err))
 			return
@@ -351,14 +352,14 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 	// Update the light schedule for the Garden (if it exists)
 	if garden.LightSchedule != nil {
 		logger.Info("updating/resetting LightSchedule for Garden")
-		if err := gr.scheduler.ResetLightSchedule(garden); err != nil {
+		if err := gr.scheduler.ResetLightSchedule(logger, garden); err != nil {
 			logger.WithError(err).Errorf("unable to update/reset LightSchedule: %+v", garden.LightSchedule)
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
 	}
 
-	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
+	if err := render.Render(w, r, gr.NewGardenResponse(r.Context(), garden)); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
 	}

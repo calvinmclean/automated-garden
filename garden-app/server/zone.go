@@ -45,8 +45,12 @@ func NewZonesResource(gr GardensResource, logger *logrus.Logger) (ZonesResource,
 			return zr, fmt.Errorf("unable to get Zones for Garden %s: %v", g.ID.String(), err)
 		}
 		for _, z := range allZones {
-			logger.WithField(zoneIDLogField, g.ID).Debugf("scheduling WaterAction for: %+v", z.WaterSchedule)
-			if err = zr.scheduler.ScheduleWaterAction(g, z); err != nil {
+			ctxLogger := logger.WithFields(logrus.Fields{
+				gardenIDLogField: g.ID,
+				zoneIDLogField:   z.ID,
+			})
+			ctxLogger.Debugf("scheduling WaterAction for: %+v", z.WaterSchedule)
+			if err = zr.scheduler.ScheduleWaterAction(ctxLogger, g, z); err != nil {
 				return zr, fmt.Errorf("unable to add WaterAction for Zone %v: %v", z.ID, err)
 			}
 		}
@@ -194,7 +198,7 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 	// Update the water schedule for the Zone if it was changed or EndDate is removed
 	if request.Zone.WaterSchedule != nil || request.Zone.EndDate == nil {
 		logger.Info("updating/resetting WaterSchedule for Zone")
-		if err := zr.scheduler.ResetWaterSchedule(garden, zone); err != nil {
+		if err := zr.scheduler.ResetWaterSchedule(logger, garden, zone); err != nil {
 			logger.WithError(err).Errorf("unable to update/reset WaterSchedule: %+v", zone.WaterSchedule)
 			render.Render(w, r, InternalServerError(err))
 			return
@@ -250,7 +254,7 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 
 	// Remove scheduled WaterActions
 	logger.Info("removing scheduled WaterActions for Zone")
-	if err := zr.scheduler.RemoveJobsByID(zone.ID); err != nil {
+	if err := zr.scheduler.RemoveJobsByID(logger, zone.ID); err != nil {
 		logger.WithError(err).Error("unable to remove scheduled WaterActions")
 		render.Render(w, r, InternalServerError(err))
 		return
@@ -325,7 +329,7 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	logger.Debugf("new zone ID: %v", zone.ID)
 
 	// Start water schedule
-	if err := zr.scheduler.ScheduleWaterAction(garden, zone); err != nil {
+	if err := zr.scheduler.ScheduleWaterAction(logger, garden, zone); err != nil {
 		logger.WithError(err).Error("unable to schedule WaterAction")
 		render.Render(w, r, InternalServerError(err))
 		return

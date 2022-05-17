@@ -57,7 +57,7 @@ func (action *LightAction) Execute(g *pkg.Garden, z *pkg.Zone, scheduler Schedul
 
 	// If this is a LightAction with specified duration, additional steps are necessary
 	if action != nil && action.ForDuration != "" {
-		err := scheduler.ScheduleLightDelay(g, action)
+		err := scheduler.ScheduleLightDelay(nil, g, action)
 		if err != nil {
 			return fmt.Errorf("unable to handle light delay: %v", err)
 		}

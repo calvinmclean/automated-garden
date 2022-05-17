@@ -79,7 +79,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 	return &ZoneResponse{
 		zone,
 		moisture,
-		zr.scheduler.GetNextWaterTime(zone),
+		zr.scheduler.GetNextWaterTime(logger, zone),
 		links,
 	}
 }

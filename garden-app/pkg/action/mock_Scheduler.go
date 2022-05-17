@@ -4,6 +4,8 @@ package action
 
 import (
 	influxdb "github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	logrus "github.com/sirupsen/logrus"
+
 	mock "github.com/stretchr/testify/mock"
 
 	mqtt "github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
@@ -22,13 +24,13 @@ type MockScheduler struct {
 	mock.Mock
 }
 
-// GetNextLightTime provides a mock function with given fields: _a0, _a1
-func (_m *MockScheduler) GetNextLightTime(_a0 *pkg.Garden, _a1 pkg.LightState) *time.Time {
-	ret := _m.Called(_a0, _a1)
+// GetNextLightTime provides a mock function with given fields: _a0, _a1, _a2
+func (_m *MockScheduler) GetNextLightTime(_a0 *logrus.Entry, _a1 *pkg.Garden, _a2 pkg.LightState) *time.Time {
+	ret := _m.Called(_a0, _a1, _a2)
 
 	var r0 *time.Time
-	if rf, ok := ret.Get(0).(func(*pkg.Garden, pkg.LightState) *time.Time); ok {
-		r0 = rf(_a0, _a1)
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, *pkg.Garden, pkg.LightState) *time.Time); ok {
+		r0 = rf(_a0, _a1, _a2)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*time.Time)
@@ -38,13 +40,13 @@ func (_m *MockScheduler) GetNextLightTime(_a0 *pkg.Garden, _a1 pkg.LightState) *
 	return r0
 }
 
-// GetNextWaterTime provides a mock function with given fields: _a0
-func (_m *MockScheduler) GetNextWaterTime(_a0 *pkg.Zone) *time.Time {
-	ret := _m.Called(_a0)
+// GetNextWaterTime provides a mock function with given fields: _a0, _a1
+func (_m *MockScheduler) GetNextWaterTime(_a0 *logrus.Entry, _a1 *pkg.Zone) *time.Time {
+	ret := _m.Called(_a0, _a1)
 
 	var r0 *time.Time
-	if rf, ok := ret.Get(0).(func(*pkg.Zone) *time.Time); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, *pkg.Zone) *time.Time); ok {
+		r0 = rf(_a0, _a1)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*time.Time)
@@ -86,40 +88,12 @@ func (_m *MockScheduler) MQTTClient() mqtt.Client {
 	return r0
 }
 
-// RemoveJobsByID provides a mock function with given fields: _a0
-func (_m *MockScheduler) RemoveJobsByID(_a0 xid.ID) error {
-	ret := _m.Called(_a0)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(xid.ID) error); ok {
-		r0 = rf(_a0)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// ResetLightSchedule provides a mock function with given fields: _a0
-func (_m *MockScheduler) ResetLightSchedule(_a0 *pkg.Garden) error {
-	ret := _m.Called(_a0)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden) error); ok {
-		r0 = rf(_a0)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// ResetWaterSchedule provides a mock function with given fields: _a0, _a1
-func (_m *MockScheduler) ResetWaterSchedule(_a0 *pkg.Garden, _a1 *pkg.Zone) error {
+// RemoveJobsByID provides a mock function with given fields: _a0, _a1
+func (_m *MockScheduler) RemoveJobsByID(_a0 *logrus.Entry, _a1 xid.ID) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden, *pkg.Zone) error); ok {
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, xid.ID) error); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
@@ -128,26 +102,12 @@ func (_m *MockScheduler) ResetWaterSchedule(_a0 *pkg.Garden, _a1 *pkg.Zone) erro
 	return r0
 }
 
-// ScheduleLightActions provides a mock function with given fields: _a0
-func (_m *MockScheduler) ScheduleLightActions(_a0 *pkg.Garden) error {
-	ret := _m.Called(_a0)
-
-	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden) error); ok {
-		r0 = rf(_a0)
-	} else {
-		r0 = ret.Error(0)
-	}
-
-	return r0
-}
-
-// ScheduleLightDelay provides a mock function with given fields: _a0, _a1
-func (_m *MockScheduler) ScheduleLightDelay(_a0 *pkg.Garden, _a1 *LightAction) error {
+// ResetLightSchedule provides a mock function with given fields: _a0, _a1
+func (_m *MockScheduler) ResetLightSchedule(_a0 *logrus.Entry, _a1 *pkg.Garden) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden, *LightAction) error); ok {
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, *pkg.Garden) error); ok {
 		r0 = rf(_a0, _a1)
 	} else {
 		r0 = ret.Error(0)
@@ -156,13 +116,55 @@ func (_m *MockScheduler) ScheduleLightDelay(_a0 *pkg.Garden, _a1 *LightAction) e
 	return r0
 }
 
-// ScheduleWaterAction provides a mock function with given fields: _a0, _a1
-func (_m *MockScheduler) ScheduleWaterAction(_a0 *pkg.Garden, _a1 *pkg.Zone) error {
+// ResetWaterSchedule provides a mock function with given fields: _a0, _a1, _a2
+func (_m *MockScheduler) ResetWaterSchedule(_a0 *logrus.Entry, _a1 *pkg.Garden, _a2 *pkg.Zone) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, *pkg.Garden, *pkg.Zone) error); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ScheduleLightActions provides a mock function with given fields: _a0, _a1
+func (_m *MockScheduler) ScheduleLightActions(_a0 *logrus.Entry, _a1 *pkg.Garden) error {
 	ret := _m.Called(_a0, _a1)
 
 	var r0 error
-	if rf, ok := ret.Get(0).(func(*pkg.Garden, *pkg.Zone) error); ok {
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, *pkg.Garden) error); ok {
 		r0 = rf(_a0, _a1)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ScheduleLightDelay provides a mock function with given fields: _a0, _a1, _a2
+func (_m *MockScheduler) ScheduleLightDelay(_a0 *logrus.Entry, _a1 *pkg.Garden, _a2 *LightAction) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, *pkg.Garden, *LightAction) error); ok {
+		r0 = rf(_a0, _a1, _a2)
+	} else {
+		r0 = ret.Error(0)
+	}
+
+	return r0
+}
+
+// ScheduleWaterAction provides a mock function with given fields: _a0, _a1, _a2
+func (_m *MockScheduler) ScheduleWaterAction(_a0 *logrus.Entry, _a1 *pkg.Garden, _a2 *pkg.Zone) error {
+	ret := _m.Called(_a0, _a1, _a2)
+
+	var r0 error
+	if rf, ok := ret.Get(0).(func(*logrus.Entry, *pkg.Garden, *pkg.Zone) error); ok {
+		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Error(0)
 	}
