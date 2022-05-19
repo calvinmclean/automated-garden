@@ -7,7 +7,6 @@ build:
     - image: ghcr.io/calvinmclean/garden-app
   local: {}
 deploy:
-  kubectl:
-    manifests:
-    - ../deploy/skaffold/*
-  kubeContext: docker-desktop
+  kustomize:
+    paths:
+      - ../deploy/overlays/dev

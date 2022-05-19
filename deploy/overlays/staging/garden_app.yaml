@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: garden-app
+spec:
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 31001

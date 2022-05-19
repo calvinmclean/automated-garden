@@ -1,0 +1,38 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+configMapGenerator:
+  - name: garden-app-config
+    files:
+      - configs/config.yaml
+      - configs/gardens.yaml
+    options:
+      disableNameSuffixHash: true
+  - name: mosquitto-config
+    files:
+      - configs/mosquitto.conf
+  - name: grafana-config
+    files:
+      - configs/grafana_datasource.yaml
+  - name: telegraf-config
+    files:
+      - configs/telegraf.conf
+  - name: shared-environment
+    literals:
+      - ADMIN_USER=admin
+      - ADMIN_PSWD=adminadmin
+      - INFLUXDB_TOKEN=my-secret-token
+      - INFLUXDB_ORG=garden
+      - INFLUXDB_BUCKET=garden
+      - MQTT_WATER_TOPIC="+/data/water"
+      - MQTT_LIGHT_TOPIC="+/data/light"
+      - MQTT_MOISTURE_TOPIC="+/data/moisture"
+      - MQTT_LOGGING_TOPIC="+/data/logs"
+      - MQTT_HEALTH_TOPIC="+/data/health"
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
+resources:
+  - garden_app.yaml
+  - grafana.yaml
+  - influxdb.yaml
+  - mosquitto.yaml
+  - telegraf.yaml
+  - rbac.yaml

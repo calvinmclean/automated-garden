@@ -68,23 +68,3 @@ spec:
     - port: 3000
       targetPort: 3000
       nodePort: 30003
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: grafana-config
-data:
-  datasource.yml: |
-    apiVersion: 1
-    datasources:
-      - name: InfluxDB
-        type: influxdb
-        access: proxy
-        url: http://influxdb:8086
-        secureJsonData:
-          token: ${INFLUXDB_TOKEN}
-        jsonData:
-          version: Flux
-          organization: ${INFLUXDB_ORG}
-          defaultBucket: ${INFLUXDB_BUCKET}
-          tlsSkipVerify: true

@@ -1,0 +1,31 @@
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: garden-app-configmap-access
+  labels:
+    app: garden-app
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["update", "get"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  name: garden-app-configmap-access
+  labels:
+    app: garden-app
+subjects:
+  - kind: ServiceAccount
+    name: garden-app-configmap-access
+roleRef:
+  kind: Role
+  name: garden-app-configmap-access
+  apiGroup: rbac.authorization.k8s.io
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  name: garden-app-configmap-access
+  labels:
+    app: garden-app

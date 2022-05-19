@@ -1,0 +1,7 @@
+configMapGenerator:
+  - name: garden-controller-config
+    files:
+      - configs/config.yaml
+resources:
+  - ../../base
+  - garden_controller.yaml
