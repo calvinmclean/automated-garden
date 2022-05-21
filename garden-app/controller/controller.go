@@ -1,7 +1,6 @@
 package controller
 
 import (
-	"encoding/json"
 	"fmt"
 	"math/rand"
 	"os"
@@ -83,14 +82,15 @@ func Start(config Config) {
 
 	topics, err := controller.topics()
 	if err != nil {
-		logger.Errorf("unable to determine topics: %v", err)
+		logger.WithError(err).Error("unable to determine topics")
 		return
 	}
+	logger.Debugf("subscribing to topics: %v", topics)
 
 	// Build TopicHandlers to handle subscription to each topic
 	var handlers []mqtt.TopicHandler
 	for _, topic := range topics {
-		subLogger.Infof("subscribing on topic: %s", topic)
+		subLogger.WithField("topic", topic).Info("initializing handler for MQTT messages")
 		handlers = append(handlers, mqtt.TopicHandler{
 			Topic:   topic,
 			Handler: controller.getHandlerForTopic(topic),
@@ -100,26 +100,36 @@ func Start(config Config) {
 	// Create default handler and mqttClient, then connect
 	defaultHandler := paho.MessageHandler(func(c paho.Client, msg paho.Message) {
 		logger.WithFields(logrus.Fields{
-			"topic": msg.Topic(),
-		}).Infof("default handler called with message: %s", string(msg.Payload()))
+			"topic":   msg.Topic(),
+			"message": string(msg.Payload()),
+		}).Info("default handler called with message")
 	})
 	// Override configured ClientID with the TopicPrefix from command flags
 	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.TopicPrefix)
 	controller.mqttClient, err = mqtt.NewClient(controller.MQTTConfig, defaultHandler, handlers...)
 	if err != nil {
-		logger.Errorf("unable to initialize MQTT client: %v", err)
+		logger.WithError(err).Error("unable to initialize MQTT client")
 		return
 	}
 	if err := controller.mqttClient.Connect(); err != nil {
-		logger.Errorf("unable to connect to MQTT broker: %v", err.Error())
+		logger.WithError(err).Error("unable to connect to MQTT broker")
+		return
 	}
 
 	// Initialize scheduler and schedule publishing Jobs
+	logger.Debug("initializing scheduler")
 	scheduler := gocron.NewScheduler(time.Local)
 	for p := 0; p < controller.NumZones; p++ {
+		logger.WithFields(logrus.Fields{
+			"interval": controller.MoistureInterval.String(),
+			"strategy": controller.MoistureStrategy,
+		}).Debug("create scheduled job to publish moisture data")
 		scheduler.Every(controller.MoistureInterval).Do(controller.publishMoistureData, p)
 	}
 	if controller.PublishHealth {
+		logger.WithFields(logrus.Fields{
+			"interval": controller.HealthInterval.String(),
+		}).Debug("create scheduled job to publish health data")
 		scheduler.Every(controller.HealthInterval).Do(controller.publishHealthData)
 	}
 	scheduler.StartAsync()
@@ -150,7 +160,7 @@ func Start(config Config) {
 	} else {
 		wg.Wait()
 	}
-	logger.Infof("controller shutdown gracefully in %v", time.Since(shutdownStart))
+	logger.WithField("time_elapsed", time.Since(shutdownStart)).Info("controller shutdown gracefully")
 }
 
 // setupLogger creates and configures a logger with colors and specified log level
@@ -210,23 +220,28 @@ func (c *Controller) setupUI() *tview.Application {
 func (c *Controller) publishMoistureData(zone int) {
 	moisture := c.createMoistureData()
 	topic := fmt.Sprintf("%s/data/moisture", c.TopicPrefix)
-	pubLogger.Infof("publishing moisture data for Zone %d on topic %s: %d", zone, topic, moisture)
+	moistureLogger := pubLogger.WithFields(logrus.Fields{
+		"topic":    topic,
+		"moisture": moisture,
+	})
+	moistureLogger.Infof("publishing moisture data for Zone %d on topic %s: %d", zone, topic, moisture)
 	err := c.mqttClient.Publish(
 		topic,
 		[]byte(fmt.Sprintf("moisture,zone=%d value=%d", zone, moisture)),
 	)
 	if err != nil {
-		pubLogger.Errorf("encountered error publishing: %v", err)
+		moistureLogger.WithError(err).Error("unable to publish moisture data")
 	}
 }
 
 // publishHealthData publishes an InfluxDB line to record that the controller is alive and active
 func (c *Controller) publishHealthData() {
 	topic := fmt.Sprintf("%s/data/health", c.TopicPrefix)
-	pubLogger.Infof("publishing health data on topic %s", topic)
+	healthLogger := pubLogger.WithField("topic", topic)
+	healthLogger.Info("publishing health data")
 	err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.TopicPrefix)))
 	if err != nil {
-		pubLogger.Errorf("encountered error publishing: %v", err)
+		healthLogger.WithError(err).Error("unable to publish health data")
 	}
 }
 
@@ -258,17 +273,23 @@ func (c *Controller) createMoistureData() int {
 // publishWaterEvent logs moisture data to InfluxDB via Telegraf and MQTT
 func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic string) {
 	if !c.PublishWaterEvent {
+		pubLogger.Debug("publishing water events is disabled")
 		return
 	}
 	// Incoming topic is "{{.TopicPrefix}}/command/water" but we need to publish on "{{.TopicPrefix}}/data/water"
 	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
-	pubLogger.Infof("publishing watering event for Zone on topic %s: %v", dataTopic, waterMsg)
+	waterEventLogger := pubLogger.WithFields(logrus.Fields{
+		"topic":         dataTopic,
+		"zone_position": waterMsg.Position,
+		"duration":      waterMsg.Duration,
+	})
+	waterEventLogger.Info("publishing watering event for Zone")
 	err := c.mqttClient.Publish(
 		dataTopic,
 		[]byte(fmt.Sprintf("water,zone=%d millis=%d", waterMsg.Position, waterMsg.Duration)),
 	)
 	if err != nil {
-		pubLogger.Errorf("encountered error publishing: %v", err)
+		waterEventLogger.WithError(err).Error("unable to publish watering event")
 	}
 }
 
@@ -277,49 +298,19 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 	switch t := strings.Split(topic, "/")[2]; t {
 	case "water":
-		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			var waterMsg action.WaterMessage
-			err := json.Unmarshal(msg.Payload(), &waterMsg)
-			if err != nil {
-				subLogger.Errorf("unable to unmarshal WaterMessage JSON: %s", err.Error())
-			}
-			subLogger.WithFields(logrus.Fields{
-				"topic":    msg.Topic(),
-				"zone_id":  waterMsg.ZoneID,
-				"position": waterMsg.Position,
-				"duration": waterMsg.Duration,
-			}).Info("received WaterAction")
-			c.publishWaterEvent(waterMsg, topic)
-		})
+		return c.waterHandler(topic)
 	case "stop":
-		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			subLogger.WithFields(logrus.Fields{
-				"topic": msg.Topic(),
-			}).Info("received StopAction")
-		})
+		return c.stopHandler(topic)
 	case "stop_all":
-		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			subLogger.WithFields(logrus.Fields{
-				"topic": msg.Topic(),
-			}).Info("received StopAllAction")
-		})
+		return c.stopAllHandler(topic)
 	case "light":
-		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			var action action.LightAction
-			err := json.Unmarshal(msg.Payload(), &action)
-			if err != nil {
-				subLogger.Errorf("unable to unmarshal LightAction JSON: %s", err.Error())
-			}
-			subLogger.WithFields(logrus.Fields{
-				"topic": msg.Topic(),
-				"state": action.State,
-			}).Info("received LightAction")
-		})
+		return c.lightHandler(topic)
 	default:
 		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
 			subLogger.WithFields(logrus.Fields{
-				"topic": msg.Topic(),
-			}).Infof("received message on unexpected topic: %s", string(msg.Payload()))
+				"topic":   msg.Topic(),
+				"message": string(msg.Payload()),
+			}).Info("received message on unexpected topic")
 		})
 	}
 }
