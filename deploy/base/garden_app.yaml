@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garden-app
+  labels:
+    app: garden-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: garden-app
+  template:
+    metadata:
+      labels:
+        app: garden-app
+    spec:
+      serviceAccountName: garden-app-configmap-access
+      automountServiceAccountToken: true
+      containers:
+        - name: garden-app
+          image: ghcr.io/calvinmclean/garden-app
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          args:
+            - server
+            - --config
+            - /config/config.yaml
+      volumes:
+        - name: config
+          configMap:
+            name: garden-app-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: garden-app
+spec:
+  type: NodePort
+  selector:
+    app: garden-app
+  ports:
+    - port: 80
+      targetPort: 80
+      nodePort: 30001

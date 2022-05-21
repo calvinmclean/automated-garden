@@ -1,0 +1,9 @@
+namespace: staging
+resources:
+  - ../dev
+  - namespace.yaml
+patchesStrategicMerge:
+  - garden_app.yaml
+  - grafana.yaml
+  - influxdb.yaml
+  - mosquitto.yaml

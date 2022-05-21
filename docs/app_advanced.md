@@ -95,7 +95,15 @@ This setup will allow for easily adding more storage clients in the future.
 ### Kubernetes
 It is possible to run this project on Kubernetes and I highly recommend this because you can easily manage all services in the cluster and quickly redeploy the `garden-app` for updates. [K3s](https://k3s.io) is a simple single-node cluster that can be run on a Raspberry Pi.
 
-All the necessary Kubernetes manifests are available in this repository at [`deploy/k8s`](https://github.com/calvinmclean/automated-garden/tree/main/deploy/k8s). You might need to make changes to `garden_app.yaml` to change the configuration and storage file.
+All the necessary Kubernetes manifests are available in this repository at [`deploy/`](https://github.com/calvinmclean/automated-garden/tree/main/deploy/). The project uses [`kustomize`](https://kustomize.io) to easily deploy to multiple K8s environments.
+```
+kubectl apply -k deploy/dev
+```
+Available kustomizations are:
+    - `base`: basic setup includes `garden-app` and all dependencies
+    - `overlays/dev`: adds a `garden-controller` Deployment to test communication with a mock controller
+    - `overlays/prod`: adds PersistentVolume for InfluxDB and Grafana
+    - `overlays/staging`: extends `dev`, changing namespace to `staging` and changing `NodePorts` for all services
 
 #### Setup `PersistentVolumeClaim`
 Adding a `PersistentVolumeClaim` will allow storing InfluxDB data and Grafana configurations on the local filesystem so you don't have to worry about losing that when Pods go down.

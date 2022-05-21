@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: influxdb
+  namespace: default
+spec:
+  ports:
+    - port: 8086
+      targetPort: 8086
+      nodePort: 31004

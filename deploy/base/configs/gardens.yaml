@@ -1,0 +1,19 @@
+c9i98glvqc7km2vasfig:
+  name: Garden
+  topic_prefix: garden
+  id: c9i98glvqc7km2vasfig
+  zones:
+    c9i99otvqc7kmt8hjio0:
+      name: Zone 1
+      id: c9i99otvqc7kmt8hjio0
+      position: 0
+      created_at: 2022-04-23T17:08:03.441727-07:00
+      water_schedule:
+        duration: 30s
+        interval: 24h
+        start_time: 2022-04-23T08:00:00-07:00
+  max_zones: 1
+  created_at: 2022-04-23T17:05:22.245112-07:00
+  light_schedule:
+    duration: 14h
+    start_time: 08:00:00-07:00

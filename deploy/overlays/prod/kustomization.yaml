@@ -1,0 +1,6 @@
+resources:
+  - ../../base
+  - persistent_volume.yaml
+patchesStrategicMerge:
+  - grafana.yaml
+  - influxdb.yaml
