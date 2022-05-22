@@ -37,6 +37,7 @@ func Run(config Config) {
 	logger := logrus.New()
 	logger.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
+		ForceColors:   true,
 		FullTimestamp: true,
 	})
 	logger.SetLevel(config.LogLevel)
