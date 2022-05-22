@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -27,7 +28,9 @@ type NextLightAction struct {
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
-func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
+func (gr GardensResource) NewGardenResponse(ctx context.Context, garden *pkg.Garden, links ...Link) *GardenResponse {
+	logger := contextLogger(ctx)
+
 	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, zoneBasePath)
 	response := &GardenResponse{
@@ -64,8 +67,8 @@ func (gr GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *
 		)
 
 		if garden.LightSchedule != nil {
-			nextOnTime := gr.scheduler.GetNextLightTime(garden, pkg.LightStateOn)
-			nextOffTime := gr.scheduler.GetNextLightTime(garden, pkg.LightStateOff)
+			nextOnTime := gr.scheduler.GetNextLightTime(logger, garden, pkg.LightStateOn)
+			nextOffTime := gr.scheduler.GetNextLightTime(logger, garden, pkg.LightStateOff)
 			if nextOnTime != nil && nextOffTime != nil {
 				// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
 				if nextOnTime.Before(*nextOffTime) {
@@ -107,10 +110,10 @@ type AllGardensResponse struct {
 }
 
 // NewAllGardensResponse will create an AllGardensResponse from a list of Gardens
-func (gr GardensResource) NewAllGardensResponse(gardens []*pkg.Garden) *AllGardensResponse {
+func (gr GardensResource) NewAllGardensResponse(ctx context.Context, gardens []*pkg.Garden) *AllGardensResponse {
 	gardenResponses := []*GardenResponse{}
 	for _, g := range gardens {
-		gardenResponses = append(gardenResponses, gr.NewGardenResponse(g))
+		gardenResponses = append(gardenResponses, gr.NewGardenResponse(ctx, g))
 	}
 	return &AllGardensResponse{gardenResponses}
 }

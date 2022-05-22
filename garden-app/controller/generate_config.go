@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/term"
 )
 
@@ -105,33 +106,40 @@ func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bo
 	logger = config.setupLogger()
 
 	if !wifiOnly {
+		logger.Debug("generating 'config.h'")
 		mainConfig, err := generateMainConfig(config)
 		if err != nil {
-			logger.Errorf("error generating 'config.h': %v", err)
+			logger.WithError(err).Error("error generating 'config.h'")
 			return
 		}
 		err = writeOutput(mainConfig, "config.h", writeFile, overwrite)
 		if err != nil {
-			logger.Errorf("error generating 'config.h': %v", err)
+			logger.WithError(err).Error("error generating 'config.h'")
 			return
 		}
 	}
 
 	if !configOnly {
+		logger.Debug("generating 'wifi_config.h'")
 		wifiConfig, err := generateWiFiConfig(config.WifiConfig)
 		if err != nil {
-			logger.Errorf("error generating 'wifi_config.h': %v", err)
+			logger.WithError(err).Error("error generating 'wifi_config.h'")
 			return
 		}
 		err = writeOutput(wifiConfig, "wifi_config.h", writeFile, overwrite)
 		if err != nil {
-			logger.Errorf("error generating 'wifi_config.h': %v", err)
+			logger.WithError(err).Error("error generating 'wifi_config.h'")
 			return
 		}
 	}
 }
 
 func writeOutput(content, filename string, writeFile, overwrite bool) error {
+	logger.WithFields(logrus.Fields{
+		"filename":       filename,
+		"write_file":     writeFile,
+		"overwrite_file": overwrite,
+	}).Debug("writing output to file")
 	file := os.Stdout
 	// if configured to write to a file, replace os.Stdout with file
 	if writeFile {

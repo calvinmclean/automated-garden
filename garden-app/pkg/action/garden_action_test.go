@@ -7,7 +7,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -95,7 +94,7 @@ func TestGardenAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, nil, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
+			err := tt.action.Execute(garden, nil, NewScheduler(nil, influxdbClient, mqttClient))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -138,7 +137,7 @@ func TestLightActionExecute(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, scheduler *MockScheduler) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-				scheduler.On("ScheduleLightDelay", mock.Anything, mock.Anything).Return(nil)
+				scheduler.On("ScheduleLightDelay", mock.AnythingOfType("*logrus.Entry"), mock.Anything, mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -152,7 +151,7 @@ func TestLightActionExecute(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, scheduler *MockScheduler) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-				scheduler.On("ScheduleLightDelay", mock.Anything, mock.Anything).Return(errors.New("delay error"))
+				scheduler.On("ScheduleLightDelay", mock.AnythingOfType("*logrus.Entry"), mock.Anything, mock.Anything).Return(errors.New("delay error"))
 			},
 			func(err error, t *testing.T) {
 				if err == nil {
@@ -274,7 +273,7 @@ func TestStopActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, nil, NewScheduler(nil, influxdbClient, mqttClient, logrus.StandardLogger()))
+			err := tt.action.Execute(garden, nil, NewScheduler(nil, influxdbClient, mqttClient))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)

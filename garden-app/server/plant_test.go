@@ -19,7 +19,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -127,7 +126,7 @@ func TestGetPlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					scheduler:      action.NewScheduler(nil, influxdbClient, nil, logrus.StandardLogger()),
+					scheduler:      action.NewScheduler(nil, influxdbClient, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -214,7 +213,7 @@ func TestUpdatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
+					scheduler:     action.NewScheduler(nil, nil, nil),
 				},
 			}
 			plant := createExamplePlant()
@@ -301,7 +300,7 @@ func TestEndDatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
+					scheduler:     action.NewScheduler(nil, nil, nil),
 				},
 			}
 
@@ -334,7 +333,7 @@ func TestEndDatePlant(t *testing.T) {
 func TestGetAllPlants(t *testing.T) {
 	pr := PlantsResource{
 		GardensResource: GardensResource{
-			scheduler: action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
+			scheduler: action.NewScheduler(nil, nil, nil),
 		},
 	}
 	garden := createExampleGarden()
@@ -451,7 +450,7 @@ func TestCreatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
+					scheduler:     action.NewScheduler(storageClient, nil, nil),
 				},
 			}
 

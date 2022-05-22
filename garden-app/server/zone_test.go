@@ -219,7 +219,7 @@ func TestGetZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					scheduler:      action.NewScheduler(nil, influxdbClient, nil, logrus.StandardLogger()),
+					scheduler:      action.NewScheduler(nil, influxdbClient, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -294,7 +294,7 @@ func TestZoneAction(t *testing.T) {
 
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					scheduler: action.NewScheduler(nil, nil, mqttClient, logrus.StandardLogger()),
+					scheduler: action.NewScheduler(nil, nil, mqttClient),
 				},
 			}
 			garden := createExampleGarden()
@@ -367,7 +367,7 @@ func TestUpdateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
+					scheduler:     action.NewScheduler(nil, nil, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -455,7 +455,7 @@ func TestEndDateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
+					scheduler:     action.NewScheduler(nil, nil, nil),
 				},
 			}
 
@@ -488,7 +488,7 @@ func TestEndDateZone(t *testing.T) {
 func TestGetAllZones(t *testing.T) {
 	pr := ZonesResource{
 		GardensResource: GardensResource{
-			scheduler: action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
+			scheduler: action.NewScheduler(nil, nil, nil),
 		},
 	}
 	garden := createExampleGarden()
@@ -621,7 +621,7 @@ func TestCreateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
+					scheduler:     action.NewScheduler(storageClient, nil, nil),
 				},
 			}
 
@@ -736,7 +736,7 @@ func TestWaterHistory(t *testing.T) {
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
 			r := httptest.NewRequest("GET", fmt.Sprintf("/history%s", tt.queryParams), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(pr.WaterHistory)
+			h := http.HandlerFunc(pr.waterHistory)
 
 			h.ServeHTTP(w, r)
 
@@ -767,18 +767,19 @@ func TestGetNextWaterTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					scheduler: action.NewScheduler(nil, nil, nil, logrus.StandardLogger()),
+					scheduler: action.NewScheduler(nil, nil, nil),
 				},
 			}
 			g := createExampleGarden()
 			p := createExampleZone()
 
-			pr.scheduler.ScheduleWaterAction(g, p)
+			logger := logrus.New().WithField("test", "test")
+			pr.scheduler.ScheduleWaterAction(logger, g, p)
 			pr.scheduler.StartAsync()
 			defer pr.scheduler.Stop()
 
-			NextWaterTime := pr.scheduler.GetNextWaterTime(p)
-			NextWaterTimeWithSkip := pr.scheduler.GetNextWaterTime(p)
+			NextWaterTime := pr.scheduler.GetNextWaterTime(logger, p)
+			NextWaterTimeWithSkip := pr.scheduler.GetNextWaterTime(logger, p)
 
 			diff := NextWaterTimeWithSkip.Sub(*NextWaterTime)
 			if diff != tt.expectedDiff {

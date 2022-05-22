@@ -20,13 +20,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 )
-
-func init() {
-	logger = logrus.New()
-}
 
 func createExampleGarden() *pkg.Garden {
 	two := uint(2)
@@ -254,7 +249,7 @@ func TestCreateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
+				scheduler:     action.NewScheduler(storageClient, nil, nil),
 			}
 
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
@@ -325,7 +320,7 @@ func TestGetAllGardens(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
+				scheduler:     action.NewScheduler(storageClient, nil, nil),
 			}
 			tt.setupMock(storageClient)
 
@@ -357,7 +352,7 @@ func TestGetGarden(t *testing.T) {
 		gr := GardensResource{
 			storageClient: storageClient,
 			config:        Config{},
-			scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
+			scheduler:     action.NewScheduler(storageClient, nil, nil),
 		}
 		garden := createExampleGarden()
 
@@ -373,7 +368,7 @@ func TestGetGarden(t *testing.T) {
 			t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 		}
 
-		gardenJSON, _ := json.Marshal(gr.NewGardenResponse(garden))
+		gardenJSON, _ := json.Marshal(gr.NewGardenResponse(ctx, garden))
 		// check HTTP response body
 		actual := strings.TrimSpace(w.Body.String())
 		if actual != string(gardenJSON) {
@@ -388,8 +383,8 @@ func TestEndDateGarden(t *testing.T) {
 	endDatedGarden := createExampleGarden()
 	endDatedGarden.EndDate = &now
 
-	gardenWithPlant := createExampleGarden()
-	gardenWithPlant.Plants[xid.New()] = &pkg.Plant{}
+	gardenWithZone := createExampleGarden()
+	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
 
 	tests := []struct {
 		name           string
@@ -417,10 +412,10 @@ func TestEndDateGarden(t *testing.T) {
 			http.StatusNoContent,
 		},
 		{
-			"ErrorEndDatingGardenWithPlants",
+			"ErrorEndDatingGardenWithZones",
 			func(storageClient *storage.MockClient) {},
-			gardenWithPlant,
-			`{"status":"Invalid request.","error":"unable to end-date Garden with active Plants"}`,
+			gardenWithZone,
+			`{"status":"Invalid request.","error":"unable to end-date Garden with active Zones"}`,
 			http.StatusBadRequest,
 		},
 		{
@@ -450,7 +445,7 @@ func TestEndDateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
+				scheduler:     action.NewScheduler(storageClient, nil, nil),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -556,7 +551,7 @@ func TestUpdateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, logrus.StandardLogger()),
+				scheduler:     action.NewScheduler(storageClient, nil, nil),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -700,7 +695,7 @@ func TestGardenAction(t *testing.T) {
 
 			gr := GardensResource{
 				mqttClient: mqttClient,
-				scheduler:  action.NewScheduler(nil, nil, mqttClient, logrus.StandardLogger()),
+				scheduler:  action.NewScheduler(nil, nil, mqttClient),
 			}
 			garden := createExampleGarden()
 

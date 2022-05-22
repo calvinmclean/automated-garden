@@ -52,12 +52,13 @@ func TestScheduleWaterAction(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
+	logger := logrus.New().WithField("test", "test")
 
 	mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
 	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
 	influxdbClient.On("Close").Return()
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 
@@ -66,7 +67,7 @@ func TestScheduleWaterAction(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to the near future
 	startTime := time.Now().Add(250 * time.Millisecond)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWaterAction(g, z)
+	err := scheduler.ScheduleWaterAction(logger, g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
@@ -82,8 +83,9 @@ func TestResetNextWaterTime(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
+	logger := logrus.New().WithField("test", "test")
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 
@@ -92,7 +94,7 @@ func TestResetNextWaterTime(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWaterAction(g, z)
+	err := scheduler.ScheduleWaterAction(logger, g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
@@ -100,12 +102,12 @@ func TestResetNextWaterTime(t *testing.T) {
 	// Change WaterSchedule and restart
 	newTime := startTime.Add(-30 * time.Minute)
 	z.WaterSchedule.StartTime = &newTime
-	err = scheduler.ResetWaterSchedule(g, z)
+	err = scheduler.ResetWaterSchedule(logger, g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when resetting WaterAction: %v", err)
 	}
 
-	nextWaterTime := scheduler.GetNextWaterTime(z)
+	nextWaterTime := scheduler.GetNextWaterTime(logger, z)
 	expected := startTime.Add(-30 * time.Minute).Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -120,8 +122,9 @@ func TestGetNextWaterTime(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
+	logger := logrus.New().WithField("test", "test")
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 
@@ -130,12 +133,12 @@ func TestGetNextWaterTime(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWaterAction(g, z)
+	err := scheduler.ScheduleWaterAction(logger, g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
-	nextWaterTime := scheduler.GetNextWaterTime(z)
+	nextWaterTime := scheduler.GetNextWaterTime(logger, z)
 	expected := startTime.Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -148,7 +151,8 @@ func TestGetNextWaterTime(t *testing.T) {
 
 func TestScheduleLightActions(t *testing.T) {
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
-		scheduler := NewScheduler(nil, nil, nil, logrus.StandardLogger())
+		logger := logrus.New().WithField("test", "test")
+		scheduler := NewScheduler(nil, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -156,19 +160,20 @@ func TestScheduleLightActions(t *testing.T) {
 		later := now.Add(1 * time.Hour)
 		g := createExampleGarden()
 		g.LightSchedule.AdhocOnTime = &later
-		err := scheduler.ScheduleLightActions(g)
+		err := scheduler.ScheduleLightActions(logger, g)
 		if err != nil {
 			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
-		nextOnTime := scheduler.GetNextLightTime(g, pkg.LightStateOn)
+		nextOnTime := scheduler.GetNextLightTime(logger, g, pkg.LightStateOn)
 		if *nextOnTime != later {
 			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", later, *nextOnTime)
 		}
 	})
 	t.Run("AdhocOnTimeInPastIsNotUsed", func(t *testing.T) {
+		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
+		scheduler := NewScheduler(storageClient, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -177,7 +182,7 @@ func TestScheduleLightActions(t *testing.T) {
 		g := createExampleGarden()
 		g.LightSchedule.AdhocOnTime = &past
 		storageClient.On("SaveGarden", g).Return(nil)
-		err := scheduler.ScheduleLightActions(g)
+		err := scheduler.ScheduleLightActions(logger, g)
 		if err != nil {
 			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
@@ -201,7 +206,7 @@ func TestScheduleLightActions(t *testing.T) {
 			expected = expected.Add(lightInterval)
 		}
 
-		nextOnTime := scheduler.GetNextLightTime(g, pkg.LightStateOn)
+		nextOnTime := scheduler.GetNextLightTime(logger, g, pkg.LightStateOn)
 		if nextOnTime.UnixNano() != expected.UnixNano() {
 			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 		}
@@ -297,13 +302,14 @@ func TestScheduleLightDelay(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			logger := logrus.New().WithField("test", "test")
 			storageClient := new(storage.MockClient)
-			scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
+			scheduler := NewScheduler(storageClient, nil, nil)
 			scheduler.StartAsync()
 			defer scheduler.Stop()
 
 			storageClient.On("SaveGarden", tt.garden).Return(nil)
-			err := scheduler.ScheduleLightActions(tt.garden)
+			err := scheduler.ScheduleLightActions(logger, tt.garden)
 			if err != nil {
 				t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 			}
@@ -311,7 +317,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			// Now request delay
 			now := time.Now()
 			for _, action := range tt.actions {
-				err = scheduler.ScheduleLightDelay(tt.garden, action)
+				err = scheduler.ScheduleLightDelay(logger, tt.garden, action)
 				if err != nil {
 					t.Errorf("Unexpected error when scheduling delay: %v", err)
 				}
@@ -334,7 +340,7 @@ func TestScheduleLightDelay(t *testing.T) {
 				).Add(tt.expectedDelay).Truncate(time.Second)
 			}
 
-			nextOnTime := scheduler.GetNextLightTime(tt.garden, pkg.LightStateOn).Truncate(time.Second)
+			nextOnTime := scheduler.GetNextLightTime(logger, tt.garden, pkg.LightStateOn).Truncate(time.Second)
 			if nextOnTime.UnixNano() != expected.UnixNano() {
 				t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
 			}
@@ -343,8 +349,9 @@ func TestScheduleLightDelay(t *testing.T) {
 	}
 
 	t.Run("ErrorDelayingPastNextOffTime", func(t *testing.T) {
+		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
+		scheduler := NewScheduler(storageClient, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -353,13 +360,13 @@ func TestScheduleLightDelay(t *testing.T) {
 		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(pkg.LightTimeFormat)
 		g.LightSchedule.Duration = "1h2m"
 
-		err := scheduler.ScheduleLightActions(g)
+		err := scheduler.ScheduleLightActions(logger, g)
 		if err != nil {
 			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
 		// Now request delay
-		err = scheduler.ScheduleLightDelay(g, &LightAction{
+		err = scheduler.ScheduleLightDelay(logger, g, &LightAction{
 			State:       pkg.LightStateOff,
 			ForDuration: "30m",
 		})
@@ -373,20 +380,21 @@ func TestScheduleLightDelay(t *testing.T) {
 	})
 
 	t.Run("ErrorDelayingLongerThanLightDuration", func(t *testing.T) {
+		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
+		scheduler := NewScheduler(storageClient, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
 		g := createExampleGarden()
 
-		err := scheduler.ScheduleLightActions(g)
+		err := scheduler.ScheduleLightActions(logger, g)
 		if err != nil {
 			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
 		// Now request delay
-		err = scheduler.ScheduleLightDelay(g, &LightAction{
+		err = scheduler.ScheduleLightDelay(logger, g, &LightAction{
 			State:       pkg.LightStateOff,
 			ForDuration: "16h",
 		})
@@ -400,20 +408,21 @@ func TestScheduleLightDelay(t *testing.T) {
 	})
 
 	t.Run("ErrorSettingDelayWithoutOFFState", func(t *testing.T) {
+		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil, logrus.StandardLogger())
+		scheduler := NewScheduler(storageClient, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
 		g := createExampleGarden()
 
-		err := scheduler.ScheduleLightActions(g)
+		err := scheduler.ScheduleLightActions(logger, g)
 		if err != nil {
 			t.Errorf("Unexpected error when scheduling LightAction: %v", err)
 		}
 
 		// Now request delay
-		err = scheduler.ScheduleLightDelay(g, &LightAction{
+		err = scheduler.ScheduleLightDelay(logger, g, &LightAction{
 			State:       pkg.LightStateOn,
 			ForDuration: "30m",
 		})
@@ -431,8 +440,9 @@ func TestRemoveJobsByID(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
+	logger := logrus.New().WithField("test", "test")
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, logrus.StandardLogger())
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 
@@ -441,18 +451,18 @@ func TestRemoveJobsByID(t *testing.T) {
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
 	z.WaterSchedule.StartTime = &startTime
-	err := scheduler.ScheduleWaterAction(g, z)
+	err := scheduler.ScheduleWaterAction(logger, g, z)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
-	err = scheduler.RemoveJobsByID(z.ID)
+	err = scheduler.RemoveJobsByID(logger, z.ID)
 	if err != nil {
 		t.Errorf("Unexpected error when removing jobs: %v", err)
 	}
 
 	// This also gets coverage for GetNextWaterTime when no Job exists
-	nextWaterTime := scheduler.GetNextWaterTime(z)
+	nextWaterTime := scheduler.GetNextWaterTime(logger, z)
 	if nextWaterTime != nil {
 		t.Errorf("Expected nil but got: %v", nextWaterTime)
 	}
