@@ -5,3 +5,5 @@ configMapGenerator:
 resources:
   - ../../base
   - garden_controller.yaml
+patchesStrategicMerge:
+  - garden_app.yaml

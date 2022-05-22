@@ -20,9 +20,9 @@ spec:
               mountPath: /config
           args:
             - controller
-            - --config
-            - /config/config.yaml
+            - --config=/config/config.yaml
             - --enable-ui=false
+            - --log-level=debug
       volumes:
         - name: config
           configMap:

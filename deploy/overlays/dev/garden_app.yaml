@@ -1,0 +1,13 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: garden-app
+spec:
+  template:
+    spec:
+      containers:
+        - name: garden-app
+          args:
+            - server
+            - --config=/config/config.yaml
+            - --log-level=debug
