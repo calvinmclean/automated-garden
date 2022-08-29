@@ -55,7 +55,7 @@ func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, e
 
 	// Initialize Storage Client
 	logger.WithField("type", config.StorageConfig.Type).Info("initializing storage client")
-	gr.storageClient, err = storage.NewStorageClient(config.StorageConfig)
+	gr.storageClient, err = storage.NewClient(config.StorageConfig)
 	if err != nil {
 		return gr, fmt.Errorf("unable to initialize storage client: %v", err)
 	}

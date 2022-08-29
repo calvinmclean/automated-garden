@@ -1,9 +1,9 @@
-package storage
+package configmap
 
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
@@ -14,29 +14,29 @@ import (
 	"k8s.io/client-go/rest"
 )
 
-// ConfigMapClient implements the Client interface to use a Kubernetes ConfigMap to
+// Client implements the Client interface to use a Kubernetes ConfigMap to
 // store a YAML file containing Plant information
-type ConfigMapClient struct {
+type Client struct {
 	configMapName string
 	keyName       string
 	gardens       map[xid.ID]*pkg.Garden
 	k8sClient     v1.ConfigMapInterface
-	Config        Config
+	Options       map[string]string
 }
 
-// NewConfigMapClient initializes a K8s clientset and reads the ConfigMap into a map
-func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
-	if _, ok := config.Options["name"]; !ok {
+// NewClient initializes a K8s clientset and reads the ConfigMap into a map
+func NewClient(options map[string]string) (*Client, error) {
+	if _, ok := options["name"]; !ok {
 		return nil, fmt.Errorf("missing config key 'name'")
 	}
-	if _, ok := config.Options["key"]; !ok {
+	if _, ok := options["key"]; !ok {
 		return nil, fmt.Errorf("missing config key 'key'")
 	}
-	client := &ConfigMapClient{
-		configMapName: config.Options["name"],
-		keyName:       config.Options["key"],
+	client := &Client{
+		configMapName: options["name"],
+		keyName:       options["key"],
 		gardens:       map[xid.ID]*pkg.Garden{},
-		Config:        config,
+		Options:       options,
 	}
 
 	// Ccreate the in-cluster config
@@ -50,7 +50,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 		return nil, fmt.Errorf("unable to create Clientset: %v", err)
 	}
 
-	namespace, err := ioutil.ReadFile("/run/secrets/kubernetes.io/serviceaccount/namespace")
+	namespace, err := os.ReadFile("/run/secrets/kubernetes.io/serviceaccount/namespace")
 	if err != nil {
 		return nil, fmt.Errorf("unable to read namespace from file: %v", err)
 	}
@@ -66,7 +66,7 @@ func NewConfigMapClient(config Config) (*ConfigMapClient, error) {
 	return client, nil
 }
 
-func (c *ConfigMapClient) update() error {
+func (c *Client) update() error {
 	configMap, err := c.k8sClient.Get(context.TODO(), c.configMapName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to get ConfigMap '%s': %v", c.configMapName, err)
@@ -79,7 +79,7 @@ func (c *ConfigMapClient) update() error {
 }
 
 // GetGarden returns the garden
-func (c *ConfigMapClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
+func (c *Client) GetGarden(id xid.ID) (*pkg.Garden, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -88,7 +88,7 @@ func (c *ConfigMapClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
 }
 
 // GetGardens returns all gardens
-func (c *ConfigMapClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
+func (c *Client) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -103,19 +103,19 @@ func (c *ConfigMapClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 }
 
 // SaveGarden saves a garden and writes it back to the ConfigMap
-func (c *ConfigMapClient) SaveGarden(garden *pkg.Garden) error {
+func (c *Client) SaveGarden(garden *pkg.Garden) error {
 	c.gardens[garden.ID] = garden
 	return c.Save()
 }
 
 // DeleteGarden permanently deletes a garden and removes it from the YAML file
-func (c *ConfigMapClient) DeleteGarden(garden xid.ID) error {
+func (c *Client) DeleteGarden(garden xid.ID) error {
 	delete(c.gardens, garden)
 	return c.Save()
 }
 
 // GetZone just returns the request Zone from the map
-func (c *ConfigMapClient) GetZone(garden xid.ID, id xid.ID) (*pkg.Zone, error) {
+func (c *Client) GetZone(garden xid.ID, id xid.ID) (*pkg.Zone, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -124,7 +124,7 @@ func (c *ConfigMapClient) GetZone(garden xid.ID, id xid.ID) (*pkg.Zone, error) {
 }
 
 // GetZones returns all zones from the map as a slice
-func (c *ConfigMapClient) GetZones(garden xid.ID, getEndDated bool) ([]*pkg.Zone, error) {
+func (c *Client) GetZones(garden xid.ID, getEndDated bool) ([]*pkg.Zone, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -139,7 +139,7 @@ func (c *ConfigMapClient) GetZones(garden xid.ID, getEndDated bool) ([]*pkg.Zone
 }
 
 // SaveZone saves a zone in the map and will write it back to the YAML file
-func (c *ConfigMapClient) SaveZone(gardenID xid.ID, zone *pkg.Zone) error {
+func (c *Client) SaveZone(gardenID xid.ID, zone *pkg.Zone) error {
 	if c.gardens[gardenID].Zones == nil {
 		c.gardens[gardenID].Zones = map[xid.ID]*pkg.Zone{}
 	}
@@ -148,13 +148,13 @@ func (c *ConfigMapClient) SaveZone(gardenID xid.ID, zone *pkg.Zone) error {
 }
 
 // DeleteZone permanently deletes a zone and removes it from the YAML file
-func (c *ConfigMapClient) DeleteZone(garden xid.ID, zone xid.ID) error {
+func (c *Client) DeleteZone(garden xid.ID, zone xid.ID) error {
 	delete(c.gardens[garden].Zones, zone)
 	return c.Save()
 }
 
 // GetPlant just returns the request Plant from the map
-func (c *ConfigMapClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
+func (c *Client) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -163,7 +163,7 @@ func (c *ConfigMapClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error)
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *ConfigMapClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
+func (c *Client) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -178,7 +178,7 @@ func (c *ConfigMapClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Pla
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *ConfigMapClient) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
+func (c *Client) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
 	if c.gardens[gardenID].Plants == nil {
 		c.gardens[gardenID].Plants = map[xid.ID]*pkg.Plant{}
 	}
@@ -187,13 +187,13 @@ func (c *ConfigMapClient) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
 }
 
 // DeletePlant permanently deletes a plant and removes it from the YAML file
-func (c *ConfigMapClient) DeletePlant(garden xid.ID, plant xid.ID) error {
+func (c *Client) DeletePlant(garden xid.ID, plant xid.ID) error {
 	delete(c.gardens[garden].Plants, plant)
 	return c.Save()
 }
 
 // Save saves the client's data back to a persistent source
-func (c *ConfigMapClient) Save() error {
+func (c *Client) Save() error {
 	// Marshal map to YAML bytes
 	content, err := yaml.Marshal(c.gardens)
 	if err != nil {

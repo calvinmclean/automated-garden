@@ -1,7 +1,7 @@
-package storage
+package yaml
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -26,7 +26,7 @@ func resetFile(filename string, gardens map[xid.ID]*pkg.Garden) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(filename, content, 0755)
+	return os.WriteFile(filename, content, 0755)
 }
 
 func copyMap(gardens map[xid.ID]*pkg.Garden) map[xid.ID]*pkg.Garden {
@@ -37,37 +37,28 @@ func copyMap(gardens map[xid.ID]*pkg.Garden) map[xid.ID]*pkg.Garden {
 	return result
 }
 
-func TestNewYAMLClient(t *testing.T) {
+func TestNewClient(t *testing.T) {
 	tests := []struct {
 		name             string
-		config           Config
+		options          map[string]string
 		expectedFilename string
 		expectedGardens  map[xid.ID]*pkg.Garden
 	}{
 		{
 			"FileNotExist",
-			Config{
-				Type:    "YAML",
-				Options: map[string]string{"filename": "fake file"},
-			},
+			map[string]string{"filename": "fake file"},
 			"fake file",
 			map[xid.ID]*pkg.Garden{},
 		},
 		{
 			"EmptyFile",
-			Config{
-				Type:    "YAML",
-				Options: map[string]string{"filename": "testdata/gardens_empty.yaml"},
-			},
+			map[string]string{"filename": "testdata/gardens_empty.yaml"},
 			"testdata/gardens_empty.yaml",
 			map[xid.ID]*pkg.Garden{},
 		},
 		{
 			"RealFile",
-			Config{
-				Type:    "YAML",
-				Options: map[string]string{"filename": "testdata/gardens_data.yaml"},
-			},
+			map[string]string{"filename": "testdata/gardens_data.yaml"},
 			"testdata/gardens_data.yaml",
 			map[xid.ID]*pkg.Garden{
 				gardenID: {
@@ -80,9 +71,9 @@ func TestNewYAMLClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewYAMLClient(tt.config)
+			client, err := NewClient(tt.options)
 			if err != nil {
-				t.Errorf("Unexpected error from NewYAMLClient: %v", err)
+				t.Errorf("Unexpected error from NewClient: %v", err)
 			}
 			if tt.expectedFilename != client.filename {
 				t.Errorf("Unepected filename: expected=%v, actual=%v", tt.expectedFilename, client.filename)
@@ -106,10 +97,7 @@ func TestNewYAMLClient(t *testing.T) {
 	}
 
 	t.Run("ErrorMissingFilename", func(t *testing.T) {
-		_, err := NewYAMLClient(Config{
-			Type:    "YAML",
-			Options: map[string]string{},
-		})
+		_, err := NewClient(map[string]string{})
 		if err == nil {
 			t.Error("Expected error but got nil")
 		}
@@ -121,12 +109,9 @@ func TestNewYAMLClient(t *testing.T) {
 }
 
 func TestGetGarden(t *testing.T) {
-	client, err := NewYAMLClient(Config{
-		Type:    "YAML",
-		Options: map[string]string{"filename": "testdata/gardens_data.yaml"},
-	})
+	client, err := NewClient(map[string]string{"filename": "testdata/gardens_data.yaml"})
 	if err != nil {
-		t.Errorf("Unexpected error from NewYAMLClient: %v", err)
+		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
 
 	t.Run("Successful", func(t *testing.T) {
@@ -156,12 +141,9 @@ func TestGetGarden(t *testing.T) {
 }
 
 func TestGetGardens(t *testing.T) {
-	client, err := NewYAMLClient(Config{
-		Type:    "YAML",
-		Options: map[string]string{"filename": "testdata/gardens_end_dated.yaml"},
-	})
+	client, err := NewClient(map[string]string{"filename": "testdata/gardens_end_dated.yaml"})
 	if err != nil {
-		t.Errorf("Unexpected error from NewYAMLClient: %v", err)
+		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
 
 	t.Run("SuccessfulNoEndDated", func(t *testing.T) {
@@ -191,12 +173,9 @@ func TestGetGardens(t *testing.T) {
 }
 
 func TestSaveGarden(t *testing.T) {
-	client, err := NewYAMLClient(Config{
-		Type:    "YAML",
-		Options: map[string]string{"filename": "testdata/gardens_data.yaml"},
-	})
+	client, err := NewClient(map[string]string{"filename": "testdata/gardens_data.yaml"})
 	if err != nil {
-		t.Errorf("Unexpected error from NewYAMLClient: %v", err)
+		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
 
 	backup := copyMap(client.gardens)
@@ -228,12 +207,9 @@ func TestSaveGarden(t *testing.T) {
 }
 
 func TestDeleteGarden(t *testing.T) {
-	client, err := NewYAMLClient(Config{
-		Type:    "YAML",
-		Options: map[string]string{"filename": "testdata/gardens_data.yaml"},
-	})
+	client, err := NewClient(map[string]string{"filename": "testdata/gardens_data.yaml"})
 	if err != nil {
-		t.Errorf("Unexpected error from NewYAMLClient: %v", err)
+		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
 
 	backup := copyMap(client.gardens)

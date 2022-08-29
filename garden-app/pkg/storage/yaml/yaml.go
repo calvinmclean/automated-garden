@@ -1,8 +1,7 @@
-package storage
+package yaml
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -10,26 +9,26 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-// YAMLClient implements the Client interface to use a YAML file as a storage mechanism
-type YAMLClient struct {
+// Client implements the Client interface to use a YAML file as a storage mechanism
+type Client struct {
 	gardens  map[xid.ID]*pkg.Garden
 	filename string
-	Config   Config
+	Options  map[string]string
 }
 
 // NewYAMLClient will read the plants from the file and store them in a map
-func NewYAMLClient(config Config) (*YAMLClient, error) {
-	if _, ok := config.Options["filename"]; !ok {
+func NewClient(options map[string]string) (*Client, error) {
+	if _, ok := options["filename"]; !ok {
 		return nil, fmt.Errorf("missing config key 'filename'")
 	}
-	client := &YAMLClient{
+	client := &Client{
 		gardens:  map[xid.ID]*pkg.Garden{},
-		filename: config.Options["filename"],
-		Config:   config,
+		filename: options["filename"],
+		Options:  options,
 	}
 
 	// If file does not exist, that is fine and we will just have an empty map
-	_, err := os.Stat(client.Config.Options["filename"])
+	_, err := os.Stat(client.filename)
 	if os.IsNotExist(err) {
 		return client, nil
 	}
@@ -43,8 +42,8 @@ func NewYAMLClient(config Config) (*YAMLClient, error) {
 	return client, err
 }
 
-func (c *YAMLClient) update() error {
-	data, err := ioutil.ReadFile(c.filename)
+func (c *Client) update() error {
+	data, err := os.ReadFile(c.filename)
 	if err != nil {
 		return err
 	}
@@ -56,7 +55,7 @@ func (c *YAMLClient) update() error {
 }
 
 // GetGarden returns the garden
-func (c *YAMLClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
+func (c *Client) GetGarden(id xid.ID) (*pkg.Garden, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -65,7 +64,7 @@ func (c *YAMLClient) GetGarden(id xid.ID) (*pkg.Garden, error) {
 }
 
 // GetGardens returns all the gardens
-func (c *YAMLClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
+func (c *Client) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -80,19 +79,19 @@ func (c *YAMLClient) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 }
 
 // SaveGarden saves a garden and writes it back to the YAML file
-func (c *YAMLClient) SaveGarden(garden *pkg.Garden) error {
+func (c *Client) SaveGarden(garden *pkg.Garden) error {
 	c.gardens[garden.ID] = garden
 	return c.Save()
 }
 
 // DeleteGarden permanently deletes a garden and removes it from the YAML file
-func (c *YAMLClient) DeleteGarden(garden xid.ID) error {
+func (c *Client) DeleteGarden(garden xid.ID) error {
 	delete(c.gardens, garden)
 	return c.Save()
 }
 
 // GetZone just returns the request Zone from the map
-func (c *YAMLClient) GetZone(garden xid.ID, id xid.ID) (*pkg.Zone, error) {
+func (c *Client) GetZone(garden xid.ID, id xid.ID) (*pkg.Zone, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -101,7 +100,7 @@ func (c *YAMLClient) GetZone(garden xid.ID, id xid.ID) (*pkg.Zone, error) {
 }
 
 // GetZones returns all zones from the map as a slice
-func (c *YAMLClient) GetZones(garden xid.ID, getEndDated bool) ([]*pkg.Zone, error) {
+func (c *Client) GetZones(garden xid.ID, getEndDated bool) ([]*pkg.Zone, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -116,7 +115,7 @@ func (c *YAMLClient) GetZones(garden xid.ID, getEndDated bool) ([]*pkg.Zone, err
 }
 
 // SaveZone saves a zone in the map and will write it back to the YAML file
-func (c *YAMLClient) SaveZone(gardenID xid.ID, zone *pkg.Zone) error {
+func (c *Client) SaveZone(gardenID xid.ID, zone *pkg.Zone) error {
 	if c.gardens[gardenID].Zones == nil {
 		c.gardens[gardenID].Zones = map[xid.ID]*pkg.Zone{}
 	}
@@ -125,13 +124,13 @@ func (c *YAMLClient) SaveZone(gardenID xid.ID, zone *pkg.Zone) error {
 }
 
 // DeleteZone permanently deletes a zone and removes it from the YAML file
-func (c *YAMLClient) DeleteZone(garden xid.ID, zone xid.ID) error {
+func (c *Client) DeleteZone(garden xid.ID, zone xid.ID) error {
 	delete(c.gardens[garden].Zones, zone)
 	return c.Save()
 }
 
 // GetPlant just returns the request Plant from the map
-func (c *YAMLClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
+func (c *Client) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -140,7 +139,7 @@ func (c *YAMLClient) GetPlant(garden xid.ID, id xid.ID) (*pkg.Plant, error) {
 }
 
 // GetPlants returns all plants from the map as a slice
-func (c *YAMLClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
+func (c *Client) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
 	err := c.update()
 	if err != nil {
 		return nil, err
@@ -155,7 +154,7 @@ func (c *YAMLClient) GetPlants(garden xid.ID, getEndDated bool) ([]*pkg.Plant, e
 }
 
 // SavePlant saves a plant in the map and will write it back to the YAML file
-func (c *YAMLClient) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
+func (c *Client) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
 	if c.gardens[gardenID].Plants == nil {
 		c.gardens[gardenID].Plants = map[xid.ID]*pkg.Plant{}
 	}
@@ -164,18 +163,18 @@ func (c *YAMLClient) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
 }
 
 // DeletePlant permanently deletes a plant and removes it from the YAML file
-func (c *YAMLClient) DeletePlant(garden xid.ID, plant xid.ID) error {
+func (c *Client) DeletePlant(garden xid.ID, plant xid.ID) error {
 	delete(c.gardens[garden].Plants, plant)
 	return c.Save()
 }
 
 // Save saves the client's data back to a persistent source
-func (c *YAMLClient) Save() error {
+func (c *Client) Save() error {
 	// Marshal map to YAML bytes
 	content, err := yaml.Marshal(c.gardens)
 	if err != nil {
 		return err
 	}
 
-	return ioutil.WriteFile(c.filename, content, 0755)
+	return os.WriteFile(c.filename, content, 0755)
 }
