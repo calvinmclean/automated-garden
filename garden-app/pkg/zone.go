@@ -3,6 +3,7 @@ package pkg
 import (
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 )
 
@@ -32,10 +33,11 @@ type ZoneDetails struct {
 // and optional MinimumMoisture which acts as the threshold the Plant's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
-	Duration        string     `json:"duration" yaml:"duration"`
-	Interval        string     `json:"interval" yaml:"interval"`
-	MinimumMoisture int        `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
-	StartTime       *time.Time `json:"start_time" yaml:"start_time"`
+	Duration        string           `json:"duration" yaml:"duration"`
+	Interval        string           `json:"interval" yaml:"interval"`
+	MinimumMoisture int              `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
+	StartTime       *time.Time       `json:"start_time" yaml:"start_time"`
+	WeatherControl  *weather.Control `json:"weather_control,omitempty"`
 }
 
 // WaterHistory holds information about a WaterEvent that occurred in the past
@@ -96,4 +98,9 @@ func (z *Zone) Patch(newZone *Zone) {
 			z.Details.Notes = newZone.Details.Notes
 		}
 	}
+}
+
+// HasWeatherControl is used to determine if weather conditions should be checked before watering the Zone
+func (z *Zone) HasWeatherControl() bool {
+	return z.WaterSchedule != nil && z.WaterSchedule.WeatherControl != nil
 }

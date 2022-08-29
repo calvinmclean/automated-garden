@@ -80,7 +80,7 @@ func TestZoneAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, zone, NewScheduler(nil, influxdbClient, mqttClient))
+			err := tt.action.Execute(garden, zone, NewScheduler(nil, influxdbClient, mqttClient, nil))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -207,7 +207,7 @@ func TestWaterActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := action.Execute(garden, tt.zone, NewScheduler(nil, influxdbClient, mqttClient))
+			err := action.Execute(garden, tt.zone, NewScheduler(nil, influxdbClient, mqttClient, nil))
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)

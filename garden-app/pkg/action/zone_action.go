@@ -4,9 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	time "time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/units"
 	"github.com/rs/xid"
 )
 
@@ -59,6 +61,15 @@ func (action *WaterAction) Execute(g *pkg.Garden, z *pkg.Zone, scheduler Schedul
 		}
 	}
 
+	if scheduler.WeatherClient() != nil && z.HasWeatherControl() {
+		// Ignore weather errors and proceed with watering
+		shouldWater, _ := action.shouldWater(g, z, scheduler)
+		// TODO: Refactor to be able to return warnings so they can be logged without returning an error
+		if !shouldWater {
+			return fmt.Errorf("rain control determined that watering should be skipped")
+		}
+	}
+
 	msg, err := json.Marshal(WaterMessage{
 		Duration: action.Duration,
 		ZoneID:   z.ID,
@@ -74,4 +85,19 @@ func (action *WaterAction) Execute(g *pkg.Garden, z *pkg.Zone, scheduler Schedul
 	}
 
 	return scheduler.MQTTClient().Publish(topic, msg)
+}
+
+func (action *WaterAction) shouldWater(g *pkg.Garden, z *pkg.Zone, scheduler Scheduler) (bool, error) {
+	intervalDuration, err := time.ParseDuration(z.WaterSchedule.Interval)
+	if err != nil {
+		return false, err
+	}
+
+	totalRain, err := scheduler.WeatherClient().GetTotalRain(time.Now().Add(-intervalDuration), units.RainUnitMillimeter)
+	if err != nil {
+		return false, err
+	}
+
+	// if rain < threshold, still water
+	return totalRain < z.WaterSchedule.WeatherControl.Rain.Threshold, nil
 }
