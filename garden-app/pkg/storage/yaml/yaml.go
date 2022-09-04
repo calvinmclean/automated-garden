@@ -16,7 +16,7 @@ type Client struct {
 	Options  map[string]string
 }
 
-// NewYAMLClient will read the plants from the file and store them in a map
+// NewClient will read the plants from the file and store them in a map
 func NewClient(options map[string]string) (*Client, error) {
 	if _, ok := options["filename"]; !ok {
 		return nil, fmt.Errorf("missing config key 'filename'")

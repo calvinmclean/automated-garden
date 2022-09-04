@@ -8,7 +8,6 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/units"
 	"github.com/rs/xid"
 )
 
@@ -93,7 +92,7 @@ func (action *WaterAction) shouldWater(g *pkg.Garden, z *pkg.Zone, scheduler Sch
 		return false, err
 	}
 
-	totalRain, err := scheduler.WeatherClient().GetTotalRain(time.Now().Add(-intervalDuration), units.RainUnitMillimeter)
+	totalRain, err := scheduler.WeatherClient().GetTotalRain(time.Now().Add(-intervalDuration))
 	if err != nil {
 		return false, err
 	}

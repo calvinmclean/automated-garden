@@ -15,22 +15,25 @@ import (
 
 const (
 	baseURI = "https://api.netatmo.com"
-
-	StationDeviceType       = "NAMain"
-	OutdoorModuleDeviceType = "NAModule1"
-	RainModuleDeviceType    = "NAModule3"
 )
 
+// Config is specific to the Netatmo API and holds all of the necessary fields for interacting with the API.
+// If StationID is not provided, StationName is used to get it from the API
+// If RainModuleID is not provided, RainModuleName is used to get it from the API
+// For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
 type Config struct {
-	StationID      string     `mapstructure:"station_id"`
-	RainModuleID   string     `mapstructure:"rain_module_id"`
-	StationName    string     `mapstructure:"station_name"`
-	RainModuleName string     `mapstructure:"rain_module_name"`
+	StationID   string `mapstructure:"station_id"`
+	StationName string `mapstructure:"station_name"`
+
+	RainModuleID   string `mapstructure:"rain_module_id"`
+	RainModuleName string `mapstructure:"rain_module_name"`
+
 	Authentication *TokenData `mapstructure:"authentication"`
 	ClientID       string     `mapstructure:"client_id"`
 	ClientSecret   string     `mapstructure:"client_secret"`
 }
 
+// TokenData contains information returned by Netatmo auth API
 type TokenData struct {
 	AccessToken    string `mapstructure:"access_token" json:"access_token"`
 	RefreshToken   string `mapstructure:"refresh_token" json:"refresh_token"`
@@ -38,12 +41,17 @@ type TokenData struct {
 	ExpirationDate time.Time
 }
 
+// Client is used to interact with Netatmo API
 type Client struct {
 	*Config
 	*http.Client
 	baseURL *url.URL
 }
 
+// NewClient creates a new Netatmo API client from configuration
+// If StationID is not provided, StationName is used to get it from the API
+// If RainModuleID is not provided, RainModuleName is used to get it from the API
+// For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
 func NewClient(options map[string]interface{}) (*Client, error) {
 	client := &Client{Client: http.DefaultClient}
 
@@ -67,13 +75,13 @@ func NewClient(options map[string]interface{}) (*Client, error) {
 	return client, nil
 }
 
-type StationDataResponse struct {
+type stationDataResponse struct {
 	Body struct {
-		Devices []Station `json:"devices"`
+		Devices []station `json:"devices"`
 	} `json:"body"`
 }
 
-type Station struct {
+type station struct {
 	ID         string `json:"_id"`
 	Name       string `json:"station_name"`
 	ModuleName string `json:"module_name"`
@@ -83,10 +91,10 @@ type Station struct {
 	} `json:"modules"`
 }
 
-func (c *Client) getStationData() (StationDataResponse, error) {
+func (c *Client) getStationData() (stationDataResponse, error) {
 	err := c.refreshToken()
 	if err != nil {
-		return StationDataResponse{}, err
+		return stationDataResponse{}, err
 	}
 
 	stationDataURL := *c.baseURL
@@ -101,25 +109,25 @@ func (c *Client) getStationData() (StationDataResponse, error) {
 
 	req, err := http.NewRequest(http.MethodGet, stationDataURL.String(), nil)
 	if err != nil {
-		return StationDataResponse{}, err
+		return stationDataResponse{}, err
 	}
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.Authentication.AccessToken))
 	req.Header.Add("Accept", "application/json")
 
 	resp, err := c.Client.Do(req)
 	if err != nil {
-		return StationDataResponse{}, err
+		return stationDataResponse{}, err
 	}
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return StationDataResponse{}, fmt.Errorf("error reading response body with status %d: %v", resp.StatusCode, err)
+		return stationDataResponse{}, fmt.Errorf("error reading response body with status %d: %v", resp.StatusCode, err)
 	}
 
-	var respData StationDataResponse
+	var respData stationDataResponse
 	err = json.Unmarshal(respBody, &respData)
 	if err != nil {
-		return StationDataResponse{}, err
+		return stationDataResponse{}, err
 	}
 
 	return respData, nil
@@ -139,7 +147,7 @@ func (c *Client) setDeviceIDs() error {
 	}
 
 	// Find Station ID if not provided
-	var targetStation Station
+	var targetStation station
 	if c.StationID == "" {
 		for _, s := range stationData.Body.Devices {
 			if s.ModuleName == c.StationName {

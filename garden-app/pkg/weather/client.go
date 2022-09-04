@@ -5,18 +5,21 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/units"
 )
 
+// Config is used to identify and configure a client type
 type Config struct {
 	Type    string                 `mapstructure:"type"`
 	Options map[string]interface{} `mapstructure:"options"`
 }
 
+// Client is an interface defining the possible methods used to interact with the weather client APIs
 type Client interface {
-	GetTotalRain(since time.Time, unit units.RainUnit) (float32, error)
+	GetTotalRain(since time.Time) (float32, error)
 }
 
+// NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
+// return a nil client rather than an error since Weather client is not required
 func NewClient(config Config) (Client, error) {
 	switch config.Type {
 	case "netatmo":
