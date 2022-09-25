@@ -33,6 +33,7 @@ func (action *ZoneAction) Execute(g *pkg.Garden, z *pkg.Zone, scheduler Schedule
 type WaterAction struct {
 	Duration       int64 `json:"duration"`
 	IgnoreMoisture bool  `json:"ignore_moisture"`
+	IgnoreWeather  bool  `json:"ignore_weather"`
 }
 
 // WaterMessage is the message being sent over MQTT to the embedded garden controller
@@ -60,7 +61,7 @@ func (action *WaterAction) Execute(g *pkg.Garden, z *pkg.Zone, scheduler Schedul
 		}
 	}
 
-	if scheduler.WeatherClient() != nil && z.HasWeatherControl() {
+	if scheduler.WeatherClient() != nil && z.HasWeatherControl() && !action.IgnoreWeather {
 		// Ignore weather errors and proceed with watering
 		shouldWater, _ := action.shouldWater(g, z, scheduler)
 		// TODO: Refactor to be able to return warnings so they can be logged without returning an error
