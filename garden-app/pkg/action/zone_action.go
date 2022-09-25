@@ -92,7 +92,7 @@ func (action *WaterAction) shouldWater(g *pkg.Garden, z *pkg.Zone, scheduler Sch
 		return false, err
 	}
 
-	totalRain, err := scheduler.WeatherClient().GetTotalRain(time.Now().Add(-intervalDuration))
+	totalRain, err := scheduler.WeatherClient().GetTotalRain(intervalDuration)
 	if err != nil {
 		return false, err
 	}

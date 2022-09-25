@@ -48,8 +48,9 @@ func (d *rainData) Total() float32 {
 }
 
 // GetTotalRain returns the sum of all rainfall in millimeters in the given period
-func (c *Client) GetTotalRain(since time.Time) (float32, error) {
-	rainDataJSON, err := c.getMeasure("sum_rain", "1day", since)
+func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
+	beginDate := time.Now().Add(-since)
+	rainDataJSON, err := c.getMeasure("sum_rain", "1day", beginDate)
 	if err != nil {
 		return 0, err
 	}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
 )
 
@@ -15,7 +16,7 @@ type Config struct {
 
 // Client is an interface defining the possible methods used to interact with the weather client APIs
 type Client interface {
-	GetTotalRain(since time.Time) (float32, error)
+	GetTotalRain(since time.Duration) (float32, error)
 }
 
 // NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
@@ -24,6 +25,8 @@ func NewClient(config Config) (Client, error) {
 	switch config.Type {
 	case "netatmo":
 		return netatmo.NewClient(config.Options)
+	case "fake":
+		return fake.NewClient(config.Options)
 	case "":
 		return nil, nil
 	default:
