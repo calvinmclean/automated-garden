@@ -84,6 +84,19 @@ func (z *Zone) Patch(newZone *Zone) {
 		if newZone.WaterSchedule.StartTime != nil {
 			z.WaterSchedule.StartTime = newZone.WaterSchedule.StartTime
 		}
+		if newZone.WaterSchedule.WeatherControl != nil {
+			if z.WaterSchedule.WeatherControl == nil {
+				z.WaterSchedule.WeatherControl = &weather.Control{}
+			}
+			if newZone.WaterSchedule.WeatherControl.Rain != nil {
+				if z.WaterSchedule.WeatherControl.Rain == nil {
+					z.WaterSchedule.WeatherControl.Rain = &weather.RainControl{}
+				}
+				if newZone.WaterSchedule.WeatherControl.Rain.Threshold != 0 {
+					z.WaterSchedule.WeatherControl.Rain.Threshold = newZone.WaterSchedule.WeatherControl.Rain.Threshold
+				}
+			}
+		}
 	}
 
 	if newZone.Details != nil {
