@@ -33,7 +33,7 @@ type GardensResource struct {
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, error) {
+func NewGardenResource(config Config, logger *logrus.Entry) (GardensResource, error) {
 	gr := GardensResource{
 		config: config,
 	}
@@ -72,7 +72,7 @@ func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, e
 
 	// Initialize Scheduler
 	logger.Info("initializing scheduler")
-	gr.worker = worker.NewWorker(gr.storageClient, gr.influxdbClient, mqttClient, weatherClient, logger)
+	gr.worker = worker.NewWorker(gr.storageClient, gr.influxdbClient, mqttClient, weatherClient, logger.Logger)
 	gr.worker.StartAsync()
 
 	// Initialize light schedules for all Gardens

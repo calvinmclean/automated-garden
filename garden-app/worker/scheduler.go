@@ -51,10 +51,7 @@ func (w *Worker) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 			if err != nil {
 				jobLogger.Errorf("error executing scheduled zone water action: %v", err)
 			}
-		}, logrus.New().WithFields(logrus.Fields{
-			"garden_id": g.ID,
-			"zone_id":   z.ID,
-		}))
+		}, logger.WithField("source", "scheduled_job"))
 	return err
 }
 
@@ -125,9 +122,6 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		}
 	}
 
-	actionLogger := logrus.New().WithFields(logrus.Fields{
-		"garden_id": g.ID,
-	})
 	// Schedule the LightAction execution for ON and OFF
 	onAction := &action.LightAction{State: pkg.LightStateOn}
 	offAction := &action.LightAction{State: pkg.LightStateOff}
@@ -136,7 +130,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		StartAt(startDate).
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOn.String()).
-		Do(executeLightAction, onAction, actionLogger)
+		Do(executeLightAction, onAction, logger.WithField("source", "scheduled_job"))
 	if err != nil {
 		return err
 	}
@@ -145,7 +139,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		StartAt(startDate.Add(duration)).
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOff.String()).
-		Do(executeLightAction, offAction, actionLogger)
+		Do(executeLightAction, offAction, logger.WithField("source", "scheduled_job"))
 	if err != nil {
 		return err
 	}
@@ -364,10 +358,6 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 		}
 	}
 
-	actionLogger := logrus.New().WithFields(logrus.Fields{
-		"garden_id": g.ID,
-	})
-
 	// Schedule the LightAction execution for ON and OFF
 	onAction := &action.LightAction{State: pkg.LightStateOn}
 	_, err := w.scheduler.
@@ -378,7 +368,7 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOn.String()).
 		Tag(adhocTag).
-		Do(executeLightAction, onAction, actionLogger)
+		Do(executeLightAction, onAction, logger.WithField("source", "scheduled_job"))
 
 	return err
 }

@@ -34,13 +34,14 @@ type WebConfig struct {
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
 // and is called by the "server" command
 func Run(config Config) {
-	logger := logrus.New()
-	logger.SetFormatter(&logrus.TextFormatter{
+	baseLogger := logrus.New()
+	baseLogger.SetFormatter(&logrus.TextFormatter{
 		DisableColors: false,
 		ForceColors:   true,
 		FullTimestamp: true,
 	})
-	logger.SetLevel(config.LogLevel)
+	baseLogger.SetLevel(config.LogLevel)
+	logger := baseLogger.WithField("source", "server")
 
 	r := chi.NewRouter()
 

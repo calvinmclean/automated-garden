@@ -35,7 +35,7 @@ func NewWorker(
 		mqttClient:     mqttClient,
 		weatherClient:  weatherClient,
 		scheduler:      gocron.NewScheduler(time.Local),
-		logger:         logger.WithField("type", "worker"),
+		logger:         logger.WithField("source", "worker"),
 	}
 }
 
