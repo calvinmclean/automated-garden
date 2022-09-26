@@ -40,7 +40,7 @@ func TestPlantContextMiddleware(t *testing.T) {
 	}
 	plant := createExamplePlant()
 	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		p := r.Context().Value(plantCtxKey).(*pkg.Plant)
+		p := getPlantFromContext(r.Context())
 		if plant != p {
 			t.Errorf("Unexpected Plant saved in request context. Expected %v but got %v", plant, p)
 		}

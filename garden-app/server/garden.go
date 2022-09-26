@@ -1,13 +1,11 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -22,7 +20,6 @@ import (
 const (
 	gardenBasePath   = "/gardens"
 	gardenPathParam  = "gardenID"
-	gardenCtxKey     = contextKey("garden")
 	gardenIDLogField = "garden_id"
 )
 
@@ -125,8 +122,8 @@ func (gr GardensResource) routes(pr PlantsResource, zr ZonesResource) chi.Router
 // restrictEndDatedMiddleware will return a 400 response if the requested Garden is end-dated
 func (gr GardensResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-		logger := contextLogger(r.Context())
+		garden := getGardenFromContext(r.Context())
+		logger := getLoggerFromContext(r.Context())
 
 		if garden.EndDated() {
 			err := fmt.Errorf("resource not available for end-dated Garden")
@@ -146,7 +143,7 @@ func (gr GardensResource) gardenContextMiddleware(next http.Handler) http.Handle
 		ctx := r.Context()
 
 		gardenIDString := chi.URLParam(r, gardenPathParam)
-		logger := contextLogger(ctx).WithField(gardenIDLogField, gardenIDString)
+		logger := getLoggerFromContext(ctx).WithField(gardenIDLogField, gardenIDString)
 		gardenID, err := xid.FromString(gardenIDString)
 		if err != nil {
 			logger.WithError(err).Error("unable to parse Garden ID")
@@ -167,14 +164,14 @@ func (gr GardensResource) gardenContextMiddleware(next http.Handler) http.Handle
 		}
 		logger.Debugf("found Garden: %+v", garden)
 
-		ctx = context.WithValue(ctx, gardenCtxKey, garden)
-		ctx = context.WithValue(ctx, loggerCtxKey, logger)
+		ctx = newContextWithGarden(ctx, garden)
+		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new Garden")
 
 	request := &GardenRequest{}
@@ -223,7 +220,7 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 func (gr GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 
-	logger := contextLogger(r.Context()).WithField("include_end_dated", getEndDated)
+	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
 	logger.Info("received request to get all Gardens")
 
 	gardens, err := gr.storageClient.GetGardens(getEndDated)
@@ -242,10 +239,10 @@ func (gr GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request) 
 
 // getGarden will return a garden by ID/name
 func (gr GardensResource) getGarden(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get Garden")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 	logger.Debugf("responding with Garden: %+v", garden)
 
 	gardenResponse := gr.NewGardenResponse(r.Context(), garden)
@@ -258,10 +255,10 @@ func (gr GardensResource) getGarden(w http.ResponseWriter, r *http.Request) {
 // endDatePlant will mark the Plant's end date as now and save it. If the Garden is already
 // end-dated, it will permanently delete it
 func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to end-date Garden")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 	now := time.Now()
 
 	// Don't allow end-dating a Garden with active Zones
@@ -312,10 +309,10 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 
 // updateGarden updates any fields in the existing Garden from the request
 func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update Garden")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 	request := &UpdateGardenRequest{}
 
 	// Read the request body into existing garden to overwrite fields
@@ -374,12 +371,12 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 
 // getGardenHealth responds with the Garden's health status bsed on querying InfluxDB for self-reported status
 func (gr GardensResource) getGardenHealth(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get Garden health")
 
 	defer gr.influxdbClient.Close()
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 	health := garden.Health(r.Context(), gr.influxdbClient)
 
 	logger.Debugf("retrieved Garden health data: %+v", health)
@@ -394,10 +391,10 @@ func (gr GardensResource) getGardenHealth(w http.ResponseWriter, r *http.Request
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to execute GardenAction")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 
 	action := &GardenActionRequest{}
 	if err := render.Bind(r, action); err != nil {

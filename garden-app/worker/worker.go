@@ -18,7 +18,7 @@ type Worker struct {
 	mqttClient     mqtt.Client
 	weatherClient  weather.Client
 	scheduler      *gocron.Scheduler
-	logger         *logrus.Logger
+	logger         *logrus.Entry
 }
 
 // NewWorker creates a Worker with specified clients
@@ -35,7 +35,7 @@ func NewWorker(
 		mqttClient:     mqttClient,
 		weatherClient:  weatherClient,
 		scheduler:      gocron.NewScheduler(time.Local),
-		logger:         logger,
+		logger:         logger.WithField("type", "worker"),
 	}
 }
 

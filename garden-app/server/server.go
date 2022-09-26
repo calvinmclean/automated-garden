@@ -31,8 +31,6 @@ type WebConfig struct {
 	Port int `mapstructure:"port"`
 }
 
-type contextKey string
-
 // Run sets up and runs the webserver. This is the main entrypoint to our webserver application
 // and is called by the "server" command
 func Run(config Config) {

@@ -105,7 +105,7 @@ func TestGardenContextMiddleware(t *testing.T) {
 				config:        Config{},
 			}
 			testHandler := func(w http.ResponseWriter, r *http.Request) {
-				g := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+				g := getGardenFromContext(r.Context())
 				if garden != g {
 					t.Errorf("Unexpected Garden saved in request context. Expected %v but got %v", garden, g)
 				}

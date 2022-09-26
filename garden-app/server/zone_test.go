@@ -47,7 +47,7 @@ func TestZoneContextMiddleware(t *testing.T) {
 	}
 	zone := createExampleZone()
 	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		p := r.Context().Value(zoneCtxKey).(*pkg.Zone)
+		p := getZoneFromContext(r.Context())
 		if zone != p {
 			t.Errorf("Unexpected Zone saved in request context. Expected %v but got %v", zone, p)
 		}
