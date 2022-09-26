@@ -27,7 +27,7 @@ type ZonesResource struct {
 }
 
 // NewZonesResource creates a new ZonesResource
-func NewZonesResource(gr GardensResource, logger *logrus.Logger) (ZonesResource, error) {
+func NewZonesResource(gr GardensResource, logger *logrus.Entry) (ZonesResource, error) {
 	zr := ZonesResource{
 		GardensResource: gr,
 	}
