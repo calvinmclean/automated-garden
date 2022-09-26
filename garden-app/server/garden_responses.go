@@ -29,8 +29,6 @@ type NextLightAction struct {
 
 // NewGardenResponse creates a self-referencing GardenResponse
 func (gr GardensResource) NewGardenResponse(ctx context.Context, garden *pkg.Garden, links ...Link) *GardenResponse {
-	logger := contextLogger(ctx)
-
 	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, plantBasePath)
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, garden.ID, zoneBasePath)
 	response := &GardenResponse{
@@ -67,8 +65,8 @@ func (gr GardensResource) NewGardenResponse(ctx context.Context, garden *pkg.Gar
 		)
 
 		if garden.LightSchedule != nil {
-			nextOnTime := gr.scheduler.GetNextLightTime(logger, garden, pkg.LightStateOn)
-			nextOffTime := gr.scheduler.GetNextLightTime(logger, garden, pkg.LightStateOff)
+			nextOnTime := gr.worker.GetNextLightTime(garden, pkg.LightStateOn)
+			nextOffTime := gr.worker.GetNextLightTime(garden, pkg.LightStateOff)
 			if nextOnTime != nil && nextOffTime != nil {
 				// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
 				if nextOnTime.Before(*nextOffTime) {
