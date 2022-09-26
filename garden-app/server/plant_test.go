@@ -13,12 +13,13 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -126,7 +127,7 @@ func TestGetPlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					scheduler:      action.NewScheduler(nil, influxdbClient, nil, nil),
+					worker:         worker.NewWorker(nil, influxdbClient, nil, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -213,7 +214,7 @@ func TestUpdatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, nil),
+					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
 				},
 			}
 			plant := createExamplePlant()
@@ -300,7 +301,7 @@ func TestEndDatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, nil),
+					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
 				},
 			}
 
@@ -333,7 +334,7 @@ func TestEndDatePlant(t *testing.T) {
 func TestGetAllPlants(t *testing.T) {
 	pr := PlantsResource{
 		GardensResource: GardensResource{
-			scheduler: action.NewScheduler(nil, nil, nil, nil),
+			worker: worker.NewWorker(nil, nil, nil, nil, logrus.New()),
 		},
 	}
 	garden := createExampleGarden()
@@ -450,7 +451,7 @@ func TestCreatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
+					worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 				},
 			}
 

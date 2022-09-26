@@ -1,13 +1,15 @@
-package action
+package worker
 
 import (
 	"errors"
 	"testing"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -20,13 +22,13 @@ func TestZoneAction(t *testing.T) {
 
 	tests := []struct {
 		name      string
-		action    *ZoneAction
+		action    *action.ZoneAction
 		setupMock func(*mqtt.MockClient, *influxdb.MockClient)
 		assert    func(error, *testing.T)
 	}{
 		{
 			"SuccessfulEmptyZoneAction",
-			&ZoneAction{},
+			&action.ZoneAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
 			func(err error, t *testing.T) {
 				if err != nil {
@@ -36,8 +38,8 @@ func TestZoneAction(t *testing.T) {
 		},
 		{
 			"SuccessfulZoneActionWithWaterAction",
-			&ZoneAction{
-				Water: &WaterAction{
+			&action.ZoneAction{
+				Water: &action.WaterAction{
 					Duration: 1000,
 				},
 			},
@@ -53,8 +55,8 @@ func TestZoneAction(t *testing.T) {
 		},
 		{
 			"FailedZoneActionWithWaterAction",
-			&ZoneAction{
-				Water: &WaterAction{
+			&action.ZoneAction{
+				Water: &action.WaterAction{
 					Duration: 1000,
 				},
 			},
@@ -65,7 +67,7 @@ func TestZoneAction(t *testing.T) {
 				if err == nil {
 					t.Error("Expected error, but nil was returned")
 				}
-				if err.Error() != "unable to fill MQTT topic template: template error" {
+				if err.Error() != "unable to execute WaterAction: unable to fill MQTT topic template: template error" {
 					t.Errorf("Unexpected error string: %v", err)
 				}
 			},
@@ -82,7 +84,7 @@ func TestZoneAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := tt.action.Execute(garden, zone, NewScheduler(nil, influxdbClient, mqttClient, nil))
+			err := NewWorker(nil, influxdbClient, mqttClient, nil, logrus.New()).ExecuteZoneAction(garden, zone, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -95,7 +97,7 @@ func TestWaterActionExecute(t *testing.T) {
 		Name:        "garden",
 		TopicPrefix: "garden",
 	}
-	action := &WaterAction{
+	action := &action.WaterAction{
 		Duration: 1000,
 	}
 	fakeWeatherClient, err := weather.NewClient(weather.Config{
@@ -265,7 +267,7 @@ func TestWaterActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := action.Execute(garden, tt.zone, NewScheduler(nil, influxdbClient, mqttClient, tt.weatherClient))
+			err := NewWorker(nil, influxdbClient, mqttClient, tt.weatherClient, logrus.New()).ExecuteWaterAction(garden, tt.zone, action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)

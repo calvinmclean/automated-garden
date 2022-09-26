@@ -15,7 +15,7 @@ require (
 	github.com/influxdata/influxdb-client-go/v2 v2.8.2
 	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
 	github.com/magiconair/properties v1.8.4 // indirect
-	github.com/mitchellh/mapstructure v1.4.1 // indirect
+	github.com/mitchellh/mapstructure v1.4.1
 	github.com/pelletier/go-toml v1.8.1 // indirect
 	github.com/rivo/tview v0.0.0-20211029142923-a4acb08f513e
 	github.com/rs/xid v1.2.1
@@ -29,7 +29,7 @@ require (
 	github.com/stretchr/testify v1.7.1
 	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
 	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
-	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171 // indirect
+	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
 	k8s.io/apimachinery v0.19.9

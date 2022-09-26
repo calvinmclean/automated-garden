@@ -13,13 +13,14 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
+	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -249,7 +250,7 @@ func TestCreateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
+				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 			}
 
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
@@ -320,7 +321,7 @@ func TestGetAllGardens(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
+				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 			}
 			tt.setupMock(storageClient)
 
@@ -352,7 +353,7 @@ func TestGetGarden(t *testing.T) {
 		gr := GardensResource{
 			storageClient: storageClient,
 			config:        Config{},
-			scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
+			worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 		}
 		garden := createExampleGarden()
 
@@ -445,7 +446,7 @@ func TestEndDateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
+				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -551,7 +552,7 @@ func TestUpdateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
+				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -676,7 +677,7 @@ func TestGardenAction(t *testing.T) {
 				mqttClient.On("LightTopic", "test-garden").Return("", errors.New("template error"))
 			},
 			`{"light":{"state":"on"}}`,
-			`{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`,
+			`{"status":"Server Error.","error":"unable to execute LightAction: unable to fill MQTT topic template: template error"}`,
 			http.StatusInternalServerError,
 		},
 		{
@@ -694,8 +695,7 @@ func TestGardenAction(t *testing.T) {
 			tt.setupMock(mqttClient)
 
 			gr := GardensResource{
-				mqttClient: mqttClient,
-				scheduler:  action.NewScheduler(nil, nil, mqttClient, nil),
+				worker: worker.NewWorker(nil, nil, mqttClient, nil, logrus.New()),
 			}
 			garden := createExampleGarden()
 

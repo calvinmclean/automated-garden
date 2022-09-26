@@ -13,10 +13,10 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
@@ -219,7 +219,7 @@ func TestGetZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					scheduler:      action.NewScheduler(nil, influxdbClient, nil, nil),
+					worker:         worker.NewWorker(nil, influxdbClient, nil, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -282,7 +282,7 @@ func TestZoneAction(t *testing.T) {
 				mqttClient.On("WaterTopic", "test-garden").Return("", errors.New("template error"))
 			},
 			`{"water":{"duration":1000}}`,
-			`{"status":"Server Error.","error":"unable to fill MQTT topic template: template error"}`,
+			`{"status":"Server Error.","error":"unable to execute WaterAction: unable to fill MQTT topic template: template error"}`,
 			http.StatusInternalServerError,
 		},
 	}
@@ -294,7 +294,7 @@ func TestZoneAction(t *testing.T) {
 
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					scheduler: action.NewScheduler(nil, nil, mqttClient, nil),
+					worker: worker.NewWorker(nil, nil, mqttClient, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -367,7 +367,7 @@ func TestUpdateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, nil),
+					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -455,7 +455,7 @@ func TestEndDateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil, nil),
+					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
 				},
 			}
 
@@ -488,7 +488,7 @@ func TestEndDateZone(t *testing.T) {
 func TestGetAllZones(t *testing.T) {
 	pr := ZonesResource{
 		GardensResource: GardensResource{
-			scheduler: action.NewScheduler(nil, nil, nil, nil),
+			worker: worker.NewWorker(nil, nil, nil, nil, logrus.New()),
 		},
 	}
 	garden := createExampleGarden()
@@ -621,7 +621,7 @@ func TestCreateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
+					worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 				},
 			}
 
@@ -767,19 +767,18 @@ func TestGetNextWaterTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					scheduler: action.NewScheduler(nil, nil, nil, nil),
+					worker: worker.NewWorker(nil, nil, nil, nil, logrus.New()),
 				},
 			}
 			g := createExampleGarden()
-			p := createExampleZone()
+			z := createExampleZone()
 
-			logger := logrus.New().WithField("test", "test")
-			pr.scheduler.ScheduleWaterAction(logger, g, p)
-			pr.scheduler.StartAsync()
-			defer pr.scheduler.Stop()
+			pr.worker.ScheduleWaterAction(g, z)
+			pr.worker.StartAsync()
+			defer pr.worker.Stop()
 
-			NextWaterTime := pr.scheduler.GetNextWaterTime(logger, p)
-			NextWaterTimeWithSkip := pr.scheduler.GetNextWaterTime(logger, p)
+			NextWaterTime := pr.worker.GetNextWaterTime(z)
+			NextWaterTimeWithSkip := pr.worker.GetNextWaterTime(z)
 
 			diff := NextWaterTimeWithSkip.Sub(*NextWaterTime)
 			if diff != tt.expectedDiff {
