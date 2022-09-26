@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,7 +14,6 @@ import (
 const (
 	plantBasePath   = "/plants"
 	plantPathParam  = "plantID"
-	plantCtxKey     = contextKey("plant")
 	plantIDLogField = "plant_id"
 )
 
@@ -55,9 +53,9 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 		ctx := r.Context()
 
 		plantIDString := chi.URLParam(r, plantPathParam)
-		logger := contextLogger(ctx).WithField(plantIDLogField, plantIDString)
+		logger := getLoggerFromContext(ctx).WithField(plantIDLogField, plantIDString)
 
-		garden := ctx.Value(gardenCtxKey).(*pkg.Garden)
+		garden := getGardenFromContext(ctx)
 		plantID, err := xid.FromString(plantIDString)
 		if err != nil {
 			logger.WithError(err).Error("unable to parse PlantID")
@@ -73,19 +71,19 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 		}
 		logger.Debugf("found Plant: %+v", plant)
 
-		ctx = context.WithValue(ctx, plantCtxKey, plant)
-		ctx = context.WithValue(ctx, loggerCtxKey, logger)
+		ctx = newContextWithPlant(ctx, plant)
+		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
 // getPlant simply returns the Plant requested by the provided ID
 func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get Plant")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+	garden := getGardenFromContext(r.Context())
+	plant := getPlantFromContext(r.Context())
 	logger.Debugf("responding with Plant: %+v", plant)
 
 	plantResponse := pr.NewPlantResponse(r.Context(), garden, plant)
@@ -97,12 +95,12 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 
 // updatePlant will change any specified fields of the Plant and save it
 func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update Plant")
 
-	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
+	plant := getPlantFromContext(r.Context())
 	request := &UpdatePlantRequest{}
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 
 	// Read the request body into existing Plant to overwrite fields
 	if err := render.Bind(r, request); err != nil {
@@ -140,11 +138,11 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 
 // endDatePlant will mark the Plant's end date as now and save it
 func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to end-date Plant")
 
-	plant := r.Context().Value(plantCtxKey).(*pkg.Plant)
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	plant := getPlantFromContext(r.Context())
+	garden := getGardenFromContext(r.Context())
 	now := time.Now()
 
 	// Permanently delete the Plant if it is already end-dated
@@ -181,10 +179,10 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 
-	logger := contextLogger(r.Context()).WithField("include_end_dated", getEndDated)
+	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
 	logger.Info("received request to get all Plants")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 	plants := []*pkg.Plant{}
 	for _, p := range garden.Plants {
 		if getEndDated || (p.EndDate == nil || p.EndDate.After(time.Now())) {
@@ -201,7 +199,7 @@ func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 
 // createPlant will create a new Plant resource
 func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new Plant")
 
 	request := &PlantRequest{}
@@ -213,7 +211,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	plant := request.Plant
 	logger.Debugf("request to create Plant: %+v", plant)
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 
 	// Don't allow creating Plant with nonexistent Zone
 	if _, ok := garden.Zones[plant.ZoneID]; !ok {

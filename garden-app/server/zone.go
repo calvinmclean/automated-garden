@@ -17,7 +17,6 @@ import (
 const (
 	zoneBasePath   = "/zones"
 	zonePathParam  = "zoneID"
-	zoneCtxKey     = contextKey("zone")
 	zoneIDLogField = "zone_id"
 )
 
@@ -85,8 +84,8 @@ func (zr ZonesResource) routes() chi.Router {
 // restrictEndDatedMiddleware will return a 400 response if the requested Zone is end-dated
 func (zr ZonesResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		zone := r.Context().Value(zoneCtxKey).(*pkg.Zone)
-		logger := contextLogger(r.Context())
+		zone := getZoneFromContext(r.Context())
+		logger := getLoggerFromContext(r.Context())
 
 		if zone.EndDated() {
 			err := fmt.Errorf("resource not available for end-dated Zone")
@@ -106,7 +105,7 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 		ctx := r.Context()
 
 		zoneIDString := chi.URLParam(r, zonePathParam)
-		logger := contextLogger(ctx).WithField(zoneIDLogField, zoneIDString)
+		logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zoneIDString)
 		zoneID, err := xid.FromString(zoneIDString)
 		if err != nil {
 			logger.WithError(err).Error("unable to parse Zone ID")
@@ -114,7 +113,7 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		garden := ctx.Value(gardenCtxKey).(*pkg.Garden)
+		garden := getGardenFromContext(ctx)
 		zone := garden.Zones[zoneID]
 		if zone == nil {
 			logger.Info("zone not found")
@@ -123,8 +122,8 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 		}
 		logger.Debugf("found Zone: %+v", zone)
 
-		ctx = context.WithValue(ctx, zoneCtxKey, zone)
-		ctx = context.WithValue(ctx, loggerCtxKey, logger)
+		ctx = newContextWithZone(ctx, zone)
+		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
@@ -133,11 +132,11 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (zr ZonesResource) zoneAction(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to execute ZoneAction")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	zone := r.Context().Value(zoneCtxKey).(*pkg.Zone)
+	garden := getGardenFromContext(r.Context())
+	zone := getZoneFromContext(r.Context())
 
 	action := &ZoneActionRequest{}
 	if err := render.Bind(r, action); err != nil {
@@ -159,11 +158,11 @@ func (zr ZonesResource) zoneAction(w http.ResponseWriter, r *http.Request) {
 
 // getZone simply returns the Zone requested by the provided ID
 func (zr ZonesResource) getZone(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	zone := r.Context().Value(zoneCtxKey).(*pkg.Zone)
+	garden := getGardenFromContext(r.Context())
+	zone := getZoneFromContext(r.Context())
 	logger.Debugf("responding with Zone: %+v", zone)
 
 	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone)); err != nil {
@@ -174,12 +173,12 @@ func (zr ZonesResource) getZone(w http.ResponseWriter, r *http.Request) {
 
 // updateZone will change any specified fields of the Zone and save it
 func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update Zone")
 
-	zone := r.Context().Value(zoneCtxKey).(*pkg.Zone)
+	zone := getZoneFromContext(r.Context())
 	request := &UpdateZoneRequest{}
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 
 	// Read the request body into existing zone to overwrite fields
 	if err := render.Bind(r, request); err != nil {
@@ -216,11 +215,11 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 
 // endDateZone will mark the Zone's end date as now and save it
 func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to end-date Zone")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	zone := r.Context().Value(zoneCtxKey).(*pkg.Zone)
+	garden := getGardenFromContext(r.Context())
+	zone := getZoneFromContext(r.Context())
 	now := time.Now()
 
 	// Unable to delete Zone with associated Plants
@@ -273,10 +272,10 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 func (zr ZonesResource) getAllZones(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 
-	logger := contextLogger(r.Context()).WithField("include_end_dated", getEndDated)
+	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
 	logger.Info("received request to get all Zones")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 	zones := []*pkg.Zone{}
 	for _, z := range garden.Zones {
 		if getEndDated || (z.EndDate == nil || z.EndDate.After(time.Now())) {
@@ -293,7 +292,7 @@ func (zr ZonesResource) getAllZones(w http.ResponseWriter, r *http.Request) {
 
 // createZone will create a new Zone resource
 func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new Zone")
 
 	request := &ZoneRequest{}
@@ -306,7 +305,7 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	zone := request.Zone
 	logger.Debugf("request to create Zone: %+v", zone)
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
+	garden := getGardenFromContext(r.Context())
 
 	// Validate that adding a Zone does not exceed Garden.MaxZones
 	if garden.NumZones()+1 > *garden.MaxZones {
@@ -355,11 +354,11 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
 func (zr ZonesResource) waterHistory(w http.ResponseWriter, r *http.Request) {
-	logger := contextLogger(r.Context())
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
-	garden := r.Context().Value(gardenCtxKey).(*pkg.Garden)
-	zone := r.Context().Value(zoneCtxKey).(*pkg.Zone)
+	garden := getGardenFromContext(r.Context())
+	zone := getZoneFromContext(r.Context())
 
 	// Read query parameters and set default values
 	timeRangeString := r.URL.Query().Get("range")

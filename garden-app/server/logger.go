@@ -1,15 +1,12 @@
 package server
 
 import (
-	"context"
 	"net/http"
 	"time"
 
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/sirupsen/logrus"
 )
-
-const loggerCtxKey = contextKey("logger")
 
 func loggerMiddleware(logger *logrus.Logger) func(next http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
@@ -35,22 +32,8 @@ func loggerMiddleware(logger *logrus.Logger) func(next http.Handler) http.Handle
 				}).Info("response completed")
 			}()
 
-			next.ServeHTTP(ww, r.WithContext(context.WithValue(ctx, loggerCtxKey, httpLogger)))
+			next.ServeHTTP(ww, r.WithContext(newContextWithLogger(ctx, httpLogger)))
 		}
 		return http.HandlerFunc(fn)
 	}
-}
-
-func contextLogger(ctx context.Context) *logrus.Entry {
-	if ctx == nil {
-		logger := logrus.New().WithField("", "")
-		logger.Info("created new logger due to nil context")
-		return logger
-	}
-	if logger, ok := ctx.Value(loggerCtxKey).(*logrus.Entry); ok {
-		return logger
-	}
-	logger := logrus.New().WithField("", "")
-	logger.Info("created new logger due to missing context key")
-	return logger
 }

@@ -39,7 +39,7 @@ type ZoneResponse struct {
 
 // NewZoneResponse creates a self-referencing ZoneResponse
 func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
-	logger := contextLogger(ctx)
+	logger := getLoggerFromContext(ctx)
 
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	links = append(links,
