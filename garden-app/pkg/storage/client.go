@@ -31,8 +31,6 @@ type Client interface {
 	GetPlants(xid.ID, bool) ([]*pkg.Plant, error)
 	SavePlant(xid.ID, *pkg.Plant) error
 	DeletePlant(xid.ID, xid.ID) error
-
-	Save() error
 }
 
 // NewClient will use the config to create and return the correct type of storage client
