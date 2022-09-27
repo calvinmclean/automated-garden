@@ -219,7 +219,7 @@ func TestGetZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					scheduler:      action.NewScheduler(nil, influxdbClient, nil),
+					scheduler:      action.NewScheduler(nil, influxdbClient, nil, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -294,7 +294,7 @@ func TestZoneAction(t *testing.T) {
 
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					scheduler: action.NewScheduler(nil, nil, mqttClient),
+					scheduler: action.NewScheduler(nil, nil, mqttClient, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -367,7 +367,7 @@ func TestUpdateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil),
+					scheduler:     action.NewScheduler(nil, nil, nil, nil),
 				},
 			}
 			garden := createExampleGarden()
@@ -455,7 +455,7 @@ func TestEndDateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(nil, nil, nil),
+					scheduler:     action.NewScheduler(nil, nil, nil, nil),
 				},
 			}
 
@@ -488,7 +488,7 @@ func TestEndDateZone(t *testing.T) {
 func TestGetAllZones(t *testing.T) {
 	pr := ZonesResource{
 		GardensResource: GardensResource{
-			scheduler: action.NewScheduler(nil, nil, nil),
+			scheduler: action.NewScheduler(nil, nil, nil, nil),
 		},
 	}
 	garden := createExampleGarden()
@@ -621,7 +621,7 @@ func TestCreateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					scheduler:     action.NewScheduler(storageClient, nil, nil),
+					scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
 				},
 			}
 
@@ -767,7 +767,7 @@ func TestGetNextWaterTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					scheduler: action.NewScheduler(nil, nil, nil),
+					scheduler: action.NewScheduler(nil, nil, nil, nil),
 				},
 			}
 			g := createExampleGarden()

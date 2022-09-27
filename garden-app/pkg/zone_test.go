@@ -1,8 +1,11 @@
 package pkg
 
 import (
+	"reflect"
 	"testing"
 	"time"
+
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 )
 
 func TestZoneEndDated(t *testing.T) {
@@ -72,6 +75,16 @@ func TestZonePatch(t *testing.T) {
 			}},
 		},
 		{
+			"PatchWaterSchedule.WeatherControl.Rain.Threshold",
+			&Zone{WaterSchedule: &WaterSchedule{
+				WeatherControl: &weather.Control{
+					Rain: &weather.RainControl{
+						Threshold: 25.4,
+					},
+				},
+			}},
+		},
+		{
 			"PatchDetails.Description",
 			&Zone{Details: &ZoneDetails{
 				Description: "description",
@@ -89,7 +102,7 @@ func TestZonePatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			p := &Zone{}
 			p.Patch(tt.newZone)
-			if p.WaterSchedule != nil && *p.WaterSchedule != *tt.newZone.WaterSchedule {
+			if p.WaterSchedule != nil && !reflect.DeepEqual(*p.WaterSchedule, *tt.newZone.WaterSchedule) {
 				t.Errorf("Unexpected result for WaterSchedule: expected=%v, actual=%v", tt.newZone, p)
 			}
 			p.WaterSchedule = nil

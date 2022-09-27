@@ -9,6 +9,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -21,6 +22,7 @@ type Config struct {
 	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
 	StorageConfig  storage.Config  `mapstructure:"storage"`
+	WeatherConfig  weather.Config  `mapstructure:"weather"`
 	LogLevel       logrus.Level
 }
 

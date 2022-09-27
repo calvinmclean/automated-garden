@@ -12,6 +12,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
@@ -32,6 +33,7 @@ type GardensResource struct {
 	influxdbClient influxdb.Client
 	mqttClient     mqtt.Client
 	scheduler      action.Scheduler
+	weatherClient  weather.Client
 	config         Config
 }
 
@@ -55,7 +57,7 @@ func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, e
 
 	// Initialize Storage Client
 	logger.WithField("type", config.StorageConfig.Type).Info("initializing storage client")
-	gr.storageClient, err = storage.NewStorageClient(config.StorageConfig)
+	gr.storageClient, err = storage.NewClient(config.StorageConfig)
 	if err != nil {
 		return gr, fmt.Errorf("unable to initialize storage client: %v", err)
 	}
@@ -68,9 +70,15 @@ func NewGardenResource(config Config, logger *logrus.Logger) (GardensResource, e
 	}).Info("initializing InfluxDB client")
 	gr.influxdbClient = influxdb.NewClient(gr.config.InfluxDBConfig)
 
+	// Initialize weather Client
+	gr.weatherClient, err = weather.NewClient(gr.config.WeatherConfig)
+	if err != nil {
+		return gr, fmt.Errorf("unable to initialize weather Client: %v", err)
+	}
+
 	// Initialize Scheduler
 	logger.Info("initializing scheduler")
-	gr.scheduler = action.NewScheduler(gr.storageClient, gr.influxdbClient, gr.mqttClient)
+	gr.scheduler = action.NewScheduler(gr.storageClient, gr.influxdbClient, gr.mqttClient, gr.weatherClient)
 	gr.scheduler.StartAsync()
 
 	// Initialize light schedules for all Gardens

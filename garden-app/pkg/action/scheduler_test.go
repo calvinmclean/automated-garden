@@ -58,7 +58,7 @@ func TestScheduleWaterAction(t *testing.T) {
 	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
 	influxdbClient.On("Close").Return()
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, nil)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 
@@ -85,7 +85,7 @@ func TestResetNextWaterTime(t *testing.T) {
 	mqttClient := new(mqtt.MockClient)
 	logger := logrus.New().WithField("test", "test")
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, nil)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 
@@ -124,7 +124,7 @@ func TestGetNextWaterTime(t *testing.T) {
 	mqttClient := new(mqtt.MockClient)
 	logger := logrus.New().WithField("test", "test")
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, nil)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 
@@ -152,7 +152,7 @@ func TestGetNextWaterTime(t *testing.T) {
 func TestScheduleLightActions(t *testing.T) {
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
 		logger := logrus.New().WithField("test", "test")
-		scheduler := NewScheduler(nil, nil, nil)
+		scheduler := NewScheduler(nil, nil, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -173,7 +173,7 @@ func TestScheduleLightActions(t *testing.T) {
 	t.Run("AdhocOnTimeInPastIsNotUsed", func(t *testing.T) {
 		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil)
+		scheduler := NewScheduler(storageClient, nil, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -304,7 +304,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			logger := logrus.New().WithField("test", "test")
 			storageClient := new(storage.MockClient)
-			scheduler := NewScheduler(storageClient, nil, nil)
+			scheduler := NewScheduler(storageClient, nil, nil, nil)
 			scheduler.StartAsync()
 			defer scheduler.Stop()
 
@@ -351,7 +351,7 @@ func TestScheduleLightDelay(t *testing.T) {
 	t.Run("ErrorDelayingPastNextOffTime", func(t *testing.T) {
 		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil)
+		scheduler := NewScheduler(storageClient, nil, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -382,7 +382,7 @@ func TestScheduleLightDelay(t *testing.T) {
 	t.Run("ErrorDelayingLongerThanLightDuration", func(t *testing.T) {
 		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil)
+		scheduler := NewScheduler(storageClient, nil, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -410,7 +410,7 @@ func TestScheduleLightDelay(t *testing.T) {
 	t.Run("ErrorSettingDelayWithoutOFFState", func(t *testing.T) {
 		logger := logrus.New().WithField("test", "test")
 		storageClient := new(storage.MockClient)
-		scheduler := NewScheduler(storageClient, nil, nil)
+		scheduler := NewScheduler(storageClient, nil, nil, nil)
 		scheduler.StartAsync()
 		defer scheduler.Stop()
 
@@ -442,7 +442,7 @@ func TestRemoveJobsByID(t *testing.T) {
 	mqttClient := new(mqtt.MockClient)
 	logger := logrus.New().WithField("test", "test")
 
-	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient)
+	scheduler := NewScheduler(storageClient, influxdbClient, mqttClient, nil)
 	scheduler.StartAsync()
 	defer scheduler.Stop()
 

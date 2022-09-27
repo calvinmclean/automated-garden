@@ -249,7 +249,7 @@ func TestCreateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
 			}
 
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
@@ -320,7 +320,7 @@ func TestGetAllGardens(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
 			}
 			tt.setupMock(storageClient)
 
@@ -352,7 +352,7 @@ func TestGetGarden(t *testing.T) {
 		gr := GardensResource{
 			storageClient: storageClient,
 			config:        Config{},
-			scheduler:     action.NewScheduler(storageClient, nil, nil),
+			scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
 		}
 		garden := createExampleGarden()
 
@@ -445,7 +445,7 @@ func TestEndDateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -551,7 +551,7 @@ func TestUpdateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				scheduler:     action.NewScheduler(storageClient, nil, nil),
+				scheduler:     action.NewScheduler(storageClient, nil, nil, nil),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -695,7 +695,7 @@ func TestGardenAction(t *testing.T) {
 
 			gr := GardensResource{
 				mqttClient: mqttClient,
-				scheduler:  action.NewScheduler(nil, nil, mqttClient),
+				scheduler:  action.NewScheduler(nil, nil, mqttClient, nil),
 			}
 			garden := createExampleGarden()
 

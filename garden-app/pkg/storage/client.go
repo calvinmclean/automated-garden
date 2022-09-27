@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/configmap"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/yaml"
 	"github.com/rs/xid"
 )
 
@@ -33,13 +35,13 @@ type Client interface {
 	Save() error
 }
 
-// NewStorageClient will use the config to create and return the correct type of storage client
-func NewStorageClient(config Config) (Client, error) {
+// NewClient will use the config to create and return the correct type of storage client
+func NewClient(config Config) (Client, error) {
 	switch config.Type {
 	case "YAML", "yaml":
-		return NewYAMLClient(config)
+		return yaml.NewClient(config.Options)
 	case "ConfigMap", "configmap":
-		return NewConfigMapClient(config)
+		return configmap.NewClient(config.Options)
 	default:
 		return nil, fmt.Errorf("invalid type '%s'", config.Type)
 	}

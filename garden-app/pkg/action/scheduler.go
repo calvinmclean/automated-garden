@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/go-co-op/gocron"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
@@ -37,6 +38,7 @@ type Scheduler interface {
 	StorageClient() storage.Client
 	InfluxDBClient() influxdb.Client
 	MQTTClient() mqtt.Client
+	WeatherClient() weather.Client
 
 	// Functions from the gocron Scheduler
 	StartAsync()
@@ -49,15 +51,17 @@ type scheduler struct {
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
 	mqttClient     mqtt.Client
+	weatherClient  weather.Client
 }
 
 // NewScheduler creates a Scheduler from the
-func NewScheduler(storageClient storage.Client, influxdbClient influxdb.Client, mqttClient mqtt.Client) Scheduler {
+func NewScheduler(storageClient storage.Client, influxdbClient influxdb.Client, mqttClient mqtt.Client, weatherClient weather.Client) Scheduler {
 	return &scheduler{
 		Scheduler:      gocron.NewScheduler(time.Local),
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		mqttClient:     mqttClient,
+		weatherClient:  weatherClient,
 	}
 }
 
@@ -69,6 +73,9 @@ func (s *scheduler) InfluxDBClient() influxdb.Client {
 }
 func (s *scheduler) MQTTClient() mqtt.Client {
 	return s.mqttClient
+}
+func (s *scheduler) WeatherClient() weather.Client {
+	return s.weatherClient
 }
 
 // ScheduleWaterAction will schedule water actions for the Zone based off the CreatedAt date,
