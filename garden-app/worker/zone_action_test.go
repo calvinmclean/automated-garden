@@ -184,15 +184,11 @@ func TestWaterActionExecute(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(51), nil)
 				influxdbClient.On("Close")
+				// No MQTT calls made
 			},
 			nil,
 			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "moisture value 51.00% is above threshold 50%" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
+				assert.NoError(t, err)
 			},
 		},
 		{
@@ -230,11 +226,12 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				// No MQTT calls made
+			},
 			fakeWeatherClient,
 			func(err error, t *testing.T) {
-				assert.Error(t, err)
-				assert.Equal(t, "rain control determined that watering should be skipped", err.Error())
+				assert.NoError(t, err)
 			},
 		},
 		{
