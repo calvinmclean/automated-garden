@@ -21,20 +21,16 @@ func TestZoneAction(t *testing.T) {
 	}
 
 	tests := []struct {
-		name      string
-		action    *action.ZoneAction
-		setupMock func(*mqtt.MockClient, *influxdb.MockClient)
-		assert    func(error, *testing.T)
+		name          string
+		action        *action.ZoneAction
+		setupMock     func(*mqtt.MockClient, *influxdb.MockClient)
+		expectedError string
 	}{
 		{
 			"SuccessfulEmptyZoneAction",
 			&action.ZoneAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
-			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing ZoneAction: %v", err)
-				}
-			},
+			"",
 		},
 		{
 			"SuccessfulZoneActionWithWaterAction",
@@ -47,11 +43,7 @@ func TestZoneAction(t *testing.T) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
-			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing ZoneAction: %v", err)
-				}
-			},
+			"",
 		},
 		{
 			"FailedZoneActionWithWaterAction",
@@ -63,14 +55,7 @@ func TestZoneAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to execute WaterAction: unable to fill MQTT topic template: template error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
-			},
+			"unable to execute WaterAction: unable to fill MQTT topic template: template error",
 		},
 	}
 
@@ -85,7 +70,12 @@ func TestZoneAction(t *testing.T) {
 			tt.setupMock(mqttClient, influxdbClient)
 
 			err := NewWorker(nil, influxdbClient, mqttClient, nil, logrus.New()).ExecuteZoneAction(garden, zone, tt.action)
-			tt.assert(err, t)
+			if tt.expectedError != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError, err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
 		})
@@ -114,7 +104,7 @@ func TestWaterActionExecute(t *testing.T) {
 		zone          *pkg.Zone
 		setupMock     func(*mqtt.MockClient, *influxdb.MockClient)
 		weatherClient weather.Client
-		assert        func(error, *testing.T)
+		expectedError string
 	}{
 		{
 			"Successful",
@@ -127,11 +117,7 @@ func TestWaterActionExecute(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
 			nil,
-			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing WaterAction: %v", err)
-				}
-			},
+			"",
 		},
 		{
 			"TopicTemplateError",
@@ -143,21 +129,19 @@ func TestWaterActionExecute(t *testing.T) {
 				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
 			nil,
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to fill MQTT topic template: template error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
-			},
+			"unable to fill MQTT topic template: template error",
 		},
 		{
 			"SuccessWhenMoistureLessThanMinimum",
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					MinimumMoisture: 50,
+					Interval: "24h",
+					WeatherControl: &weather.Control{
+						SoilMoisture: &weather.SoilMoistureControl{
+							MinimumMoisture: 50,
+						},
+					},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -167,18 +151,19 @@ func TestWaterActionExecute(t *testing.T) {
 				influxdbClient.On("Close")
 			},
 			nil,
-			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing WaterAction: %v", err)
-				}
-			},
+			"",
 		},
 		{
 			"SuccessWhenMoistureGreaterThanMinimum",
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					MinimumMoisture: 50,
+					Interval: "24h",
+					WeatherControl: &weather.Control{
+						SoilMoisture: &weather.SoilMoistureControl{
+							MinimumMoisture: 50,
+						},
+					},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -187,31 +172,29 @@ func TestWaterActionExecute(t *testing.T) {
 				// No MQTT calls made
 			},
 			nil,
-			func(err error, t *testing.T) {
-				assert.NoError(t, err)
-			},
+			"",
 		},
 		{
-			"ErrorInfluxDBClient",
+			"InfluxDBClientErrorStillWaters",
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					MinimumMoisture: 50,
+					Interval: "24h",
+					WeatherControl: &weather.Control{
+						SoilMoisture: &weather.SoilMoistureControl{
+							MinimumMoisture: 50,
+						},
+					},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
+				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
 			nil,
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "error getting Zone's moisture data: influxdb error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
-			},
+			"",
 		},
 		{
 			"SuccessfulRainDelay",
@@ -230,9 +213,7 @@ func TestWaterActionExecute(t *testing.T) {
 				// No MQTT calls made
 			},
 			fakeWeatherClient,
-			func(err error, t *testing.T) {
-				assert.NoError(t, err)
-			},
+			"",
 		},
 		{
 			"SuccessfulNoRainDelay",
@@ -252,9 +233,7 @@ func TestWaterActionExecute(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
 			fakeWeatherClient,
-			func(err error, t *testing.T) {
-				assert.NoError(t, err)
-			},
+			"",
 		},
 	}
 
@@ -265,7 +244,12 @@ func TestWaterActionExecute(t *testing.T) {
 			tt.setupMock(mqttClient, influxdbClient)
 
 			err := NewWorker(nil, influxdbClient, mqttClient, tt.weatherClient, logrus.New()).ExecuteWaterAction(garden, tt.zone, action)
-			tt.assert(err, t)
+			if tt.expectedError != "" {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedError, err.Error())
+			} else {
+				assert.NoError(t, err)
+			}
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
 		})
