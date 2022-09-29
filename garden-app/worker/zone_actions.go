@@ -35,17 +35,23 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 		if err != nil {
 			return fmt.Errorf("error getting Zone's moisture data: %v", err)
 		}
+		w.logger.Infof("soil moisture is %f%%", moisture)
+
 		if moisture > float64(z.WaterSchedule.MinimumMoisture) {
-			return fmt.Errorf("moisture value %.2f%% is above threshold %d%%", moisture, z.WaterSchedule.MinimumMoisture)
+			w.logger.Errorf("moisture value %.2f%% is above threshold %d%%", moisture, z.WaterSchedule.MinimumMoisture)
+			return nil
 		}
 	}
 
 	if w.weatherClient != nil && z.HasWeatherControl() && !input.IgnoreWeather {
+		shouldWater, err := w.shouldWaterZone(z)
 		// Ignore weather errors and proceed with watering
-		shouldWater, _ := w.shouldWaterZone(z)
-		// TODO: Refactor to be able to return warnings so they can be logged without returning an error
+		if err != nil {
+			w.logger.Errorf("unable to determine if zone should be watered: %v", err)
+		}
 		if !shouldWater {
-			return fmt.Errorf("rain control determined that watering should be skipped")
+			w.logger.Info("rain control determined that watering should be skipped")
+			return nil
 		}
 	}
 
@@ -69,13 +75,15 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 func (w *Worker) shouldWaterZone(z *pkg.Zone) (bool, error) {
 	intervalDuration, err := time.ParseDuration(z.WaterSchedule.Interval)
 	if err != nil {
-		return false, err
+		return true, err
 	}
 
 	totalRain, err := w.weatherClient.GetTotalRain(intervalDuration)
 	if err != nil {
-		return false, err
+		return true, err
 	}
+
+	w.logger.Infof("weather client recorded %fmm of rain in the last %s", totalRain, intervalDuration.String())
 
 	// if rain < threshold, still water
 	return totalRain < z.WaterSchedule.WeatherControl.Rain.Threshold, nil
