@@ -26,31 +26,14 @@ func (w *Worker) ExecuteZoneAction(g *pkg.Garden, z *pkg.Zone, input *action.Zon
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
 func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) error {
-	if z.WaterSchedule.MinimumMoisture > 0 && !input.IgnoreMoisture {
-		ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
-		defer cancel()
-
-		defer w.influxdbClient.Close()
-		moisture, err := w.influxdbClient.GetMoisture(ctx, *z.Position, g.TopicPrefix)
-		if err != nil {
-			return fmt.Errorf("error getting Zone's moisture data: %v", err)
-		}
-		w.logger.Infof("soil moisture is %f%%", moisture)
-
-		if moisture > float64(z.WaterSchedule.MinimumMoisture) {
-			w.logger.Errorf("moisture value %.2f%% is above threshold %d%%", moisture, z.WaterSchedule.MinimumMoisture)
-			return nil
-		}
-	}
-
-	if w.weatherClient != nil && z.HasWeatherControl() && !input.IgnoreWeather {
-		shouldWater, err := w.shouldWaterZone(z)
+	if z.HasWeatherControl() {
+		shouldSkip, err := w.shouldSkipWatering(g, z, input)
 		// Ignore weather errors and proceed with watering
 		if err != nil {
-			w.logger.Errorf("unable to determine if zone should be watered: %v", err)
+			w.logger.Errorf("unable to determine if watering should be skipped, continuing to water: %v", err)
 		}
-		if !shouldWater {
-			w.logger.Info("rain control determined that watering should be skipped")
+		if shouldSkip {
+			w.logger.Info("weather control determined that watering should be skipped")
 			return nil
 		}
 	}
@@ -72,7 +55,31 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 	return w.mqttClient.Publish(topic, msg)
 }
 
-func (w *Worker) shouldWaterZone(z *pkg.Zone) (bool, error) {
+func (w *Worker) shouldSkipWatering(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) (bool, error) {
+	if w.weatherClient != nil && z.WaterSchedule.WeatherControl.Rain != nil && !input.IgnoreWeather {
+		skipRain, err := w.shouldRainSkip(z)
+		if err != nil {
+			return false, err
+		}
+		if skipRain {
+			return true, nil
+		}
+	}
+
+	if z.WaterSchedule.WeatherControl.SoilMoisture != nil && z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture > 0 && !input.IgnoreMoisture {
+		skipMoisture, err := w.shouldMoistureSkip(g, z)
+		if err != nil {
+			return false, err
+		}
+		if skipMoisture {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
+func (w *Worker) shouldRainSkip(z *pkg.Zone) (bool, error) {
 	intervalDuration, err := time.ParseDuration(z.WaterSchedule.Interval)
 	if err != nil {
 		return true, err
@@ -82,9 +89,23 @@ func (w *Worker) shouldWaterZone(z *pkg.Zone) (bool, error) {
 	if err != nil {
 		return true, err
 	}
-
 	w.logger.Infof("weather client recorded %fmm of rain in the last %s", totalRain, intervalDuration.String())
 
-	// if rain < threshold, still water
-	return totalRain < z.WaterSchedule.WeatherControl.Rain.Threshold, nil
+	// if rain >= threshold, skip watering
+	return totalRain >= z.WaterSchedule.WeatherControl.Rain.Threshold, nil
+}
+
+func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone) (bool, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
+	defer cancel()
+
+	defer w.influxdbClient.Close()
+	moisture, err := w.influxdbClient.GetMoisture(ctx, *z.Position, g.TopicPrefix)
+	if err != nil {
+		return false, fmt.Errorf("error getting Zone's moisture data: %v", err)
+	}
+	w.logger.Infof("soil moisture is %f%%", moisture)
+
+	// if moisture > minimum, skip watering
+	return moisture > float64(z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture), nil
 }

@@ -33,11 +33,10 @@ type ZoneDetails struct {
 // and optional MinimumMoisture which acts as the threshold the Plant's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
-	Duration        string           `json:"duration" yaml:"duration"`
-	Interval        string           `json:"interval" yaml:"interval"`
-	MinimumMoisture int              `json:"minimum_moisture,omitempty" yaml:"minimum_moisture,omitempty"`
-	StartTime       *time.Time       `json:"start_time" yaml:"start_time"`
-	WeatherControl  *weather.Control `json:"weather_control,omitempty"`
+	Duration       string           `json:"duration" yaml:"duration"`
+	Interval       string           `json:"interval" yaml:"interval"`
+	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
+	WeatherControl *weather.Control `json:"weather_control,omitempty"`
 }
 
 // WaterHistory holds information about a WaterEvent that occurred in the past
@@ -78,9 +77,6 @@ func (z *Zone) Patch(newZone *Zone) {
 		if newZone.WaterSchedule.Interval != "" {
 			z.WaterSchedule.Interval = newZone.WaterSchedule.Interval
 		}
-		if newZone.WaterSchedule.MinimumMoisture != 0 {
-			z.WaterSchedule.MinimumMoisture = newZone.WaterSchedule.MinimumMoisture
-		}
 		if newZone.WaterSchedule.StartTime != nil {
 			z.WaterSchedule.StartTime = newZone.WaterSchedule.StartTime
 		}
@@ -94,6 +90,14 @@ func (z *Zone) Patch(newZone *Zone) {
 				}
 				if newZone.WaterSchedule.WeatherControl.Rain.Threshold != 0 {
 					z.WaterSchedule.WeatherControl.Rain.Threshold = newZone.WaterSchedule.WeatherControl.Rain.Threshold
+				}
+			}
+			if newZone.WaterSchedule.WeatherControl.SoilMoisture != nil {
+				if z.WaterSchedule.WeatherControl.SoilMoisture == nil {
+					z.WaterSchedule.WeatherControl.SoilMoisture = &weather.SoilMoistureControl{}
+				}
+				if newZone.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture != 0 {
+					z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture = newZone.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture
 				}
 			}
 		}
@@ -116,4 +120,16 @@ func (z *Zone) Patch(newZone *Zone) {
 // HasWeatherControl is used to determine if weather conditions should be checked before watering the Zone
 func (z *Zone) HasWeatherControl() bool {
 	return z.WaterSchedule != nil && z.WaterSchedule.WeatherControl != nil
+}
+
+// HasRainControl is used to determine if rain conditions should be checked before watering the Zone
+func (z *Zone) HasRainControl() bool {
+	return z.HasWeatherControl() && z.WaterSchedule.WeatherControl.Rain != nil
+}
+
+// HasSoilMoistureControl is used to determine if soil moisture conditions should be checked before watering the Zone
+func (z *Zone) HasSoilMoistureControl() bool {
+	return z.HasWeatherControl() &&
+		z.WaterSchedule.WeatherControl.SoilMoisture != nil &&
+		z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture > 0
 }

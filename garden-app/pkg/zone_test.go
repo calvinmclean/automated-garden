@@ -63,9 +63,13 @@ func TestZonePatch(t *testing.T) {
 			}},
 		},
 		{
-			"PatchWaterSchedule.MinimumMoisture",
+			"PatchWaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture",
 			&Zone{WaterSchedule: &WaterSchedule{
-				MinimumMoisture: 1,
+				WeatherControl: &weather.Control{
+					SoilMoisture: &weather.SoilMoistureControl{
+						MinimumMoisture: 1,
+					},
+				},
 			}},
 		},
 		{

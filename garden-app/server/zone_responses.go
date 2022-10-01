@@ -32,9 +32,15 @@ func (zr *AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error
 // and hypermedia Links fields
 type ZoneResponse struct {
 	*pkg.Zone
-	Moisture      float64    `json:"moisture,omitempty"`
-	NextWaterTime *time.Time `json:"next_water_time,omitempty"`
-	Links         []Link     `json:"links,omitempty"`
+	WeatherData   *WeatherData `json:"weather_data,omitempty"`
+	NextWaterTime *time.Time   `json:"next_water_time,omitempty"`
+	Links         []Link       `json:"links,omitempty"`
+}
+
+// WeatherData is used to represent the data used for WeatherControl to a user
+type WeatherData struct {
+	RainMM              *float32 `json:"rain_mm,omitempty"`
+	SoilMoisturePercent *float64 `json:"soil_moisture_percent,omitempty"`
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
@@ -64,24 +70,51 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 			},
 		)
 	}
-	moisture := 0.0
+	var weatherData *WeatherData
 	var err error
-	if zone.WaterSchedule.MinimumMoisture > 0 && garden != nil {
-		logger.Debug("getting moisture data for Zone")
-		moisture, err = zr.getMoisture(ctx, garden, zone)
-		if err != nil {
-			// Log moisture error but do not return an error since this isn't critical information
-			logger.WithError(err).Warn("unable to get moisture data for Zone")
-		} else {
-			logger.Debugf("successfully got moisture data for Zone: %f", moisture)
+	if zone.HasWeatherControl() {
+		weatherData = &WeatherData{}
+
+		if zone.HasSoilMoistureControl() && garden != nil {
+			logger.Debug("getting moisture data for Zone")
+			soilMoisture, err := zr.getMoisture(ctx, garden, zone)
+			if err != nil {
+				// Log moisture error but do not return an error since this isn't critical information
+				logger.WithError(err).Warn("unable to get moisture data for Zone")
+			} else {
+				logger.Debugf("successfully got moisture data for Zone: %f", soilMoisture)
+				weatherData.SoilMoisturePercent = &soilMoisture
+			}
+		}
+		if zone.HasRainControl() && zr.weatherClient != nil {
+			logger.Debug("getting rain data for Zone")
+			weatherData.RainMM, err = zr.getRainData(zone)
+			if err != nil {
+				// Log error but do not return an error since this isn't critical information
+				logger.WithError(err).Warn("unable to get rain data for Zone")
+			}
 		}
 	}
+
 	return &ZoneResponse{
 		zone,
-		moisture,
+		weatherData,
 		zr.worker.GetNextWaterTime(zone),
 		links,
 	}
+}
+
+func (zr ZonesResource) getRainData(zone *pkg.Zone) (*float32, error) {
+	intervalDuration, err := time.ParseDuration(zone.WaterSchedule.Interval)
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse WaterSchedule duration for Zone")
+	}
+
+	totalRain, err := zr.weatherClient.GetTotalRain(intervalDuration)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get rain data for Zone")
+	}
+	return &totalRain, nil
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
