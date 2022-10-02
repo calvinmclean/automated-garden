@@ -2,3 +2,5 @@ garden-app
 config.yaml
 plants.yaml
 gardens.yaml
+cover.out
+cover.html

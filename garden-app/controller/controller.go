@@ -60,6 +60,8 @@ type Controller struct {
 	subLogger *logrus.Logger
 
 	quit chan os.Signal
+
+	assertionData
 }
 
 // NewController creates and initializes everything needed to run a Controller based on config
@@ -117,17 +119,6 @@ func NewController(cfg Config) (*Controller, error) {
 	}
 
 	return controller, nil
-}
-
-// CreateAndRun runs the main code of the mock garden-controller by creating MQTT clients and
-// subscribing to each topic
-func CreateAndRun(config Config) {
-	controller, err := NewController(config)
-	if err != nil {
-		controller.logger.WithError(err).Errorf("error creating Controller")
-		os.Exit(1)
-	}
-	controller.Start()
 }
 
 // Start will run the Controller until it is stopped (blocking)

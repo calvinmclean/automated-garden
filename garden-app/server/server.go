@@ -86,17 +86,6 @@ func NewServer(cfg Config) (*Server, error) {
 	}, nil
 }
 
-// CreateAndRun sets up and runs the webserver. This is the main entrypoint to our webserver application
-// and is called by the "server" command
-func CreateAndRun(config Config) {
-	server, err := NewServer(config)
-	if err != nil {
-		server.logger.WithError(err).Errorf("error creating HTTP Server")
-		os.Exit(1)
-	}
-	server.Start()
-}
-
 // Start will run the server until it is stopped (blocking)
 func (s *Server) Start() {
 	go func() {

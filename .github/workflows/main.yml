@@ -55,7 +55,7 @@ jobs:
 
       - name: Test
         working-directory: ./${{ env.PROJECT_NAME }}
-        run: go test ./...
+        run: go test -short ./...
 
   build:
     needs: go

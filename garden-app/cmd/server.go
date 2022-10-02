@@ -27,11 +27,16 @@ func init() {
 func Server(cmd *cobra.Command, args []string) {
 	var config server.Config
 	if err := viper.Unmarshal(&config); err != nil {
-		cmd.PrintErrln("unable to read config from file: ", err)
+		cmd.PrintErrln("unable to read config from file:", err)
 		return
 	}
 	config.LogLevel = parsedLogLevel
 
 	cmd.Printf("Starting garden-app webserver on port %d...\n", config.Port)
-	server.CreateAndRun(config)
+	server, err := server.NewServer(config)
+	if err != nil {
+		cmd.PrintErrln("error creating HTTP Server:", err)
+		return
+	}
+	server.Start()
 }

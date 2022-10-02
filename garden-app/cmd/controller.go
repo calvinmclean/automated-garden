@@ -66,10 +66,15 @@ func init() {
 func Controller(cmd *cobra.Command, args []string) {
 	var config controller.Config
 	if err := viper.Unmarshal(&config); err != nil {
-		cmd.PrintErrln("unable to read config from file: ", err)
+		cmd.PrintErrln("unable to read config from file:", err)
 		return
 	}
 	config.LogLevel = parsedLogLevel
 
-	controller.CreateAndRun(config)
+	controller, err := controller.NewController(config)
+	if err != nil {
+		cmd.PrintErrln("error creating Controller:", err)
+		return
+	}
+	controller.Start()
 }

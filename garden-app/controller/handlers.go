@@ -17,6 +17,9 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 			waterLogger.WithError(err).Error("unable to unmarshal WaterMessage JSON")
 			return
 		}
+
+		c.assertionData.waterActions = append(c.assertionData.waterActions, waterMsg)
+
 		waterLogger.WithFields(logrus.Fields{
 			"zone_id":  waterMsg.ZoneID,
 			"position": waterMsg.Position,
@@ -28,6 +31,8 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 
 func (c *Controller) stopHandler(topic string) paho.MessageHandler {
 	return func(pc paho.Client, msg paho.Message) {
+		c.assertionData.stopActions++
+
 		c.subLogger.WithFields(logrus.Fields{
 			"topic": msg.Topic(),
 		}).Info("received StopAction")
@@ -36,6 +41,8 @@ func (c *Controller) stopHandler(topic string) paho.MessageHandler {
 
 func (c *Controller) stopAllHandler(topic string) paho.MessageHandler {
 	return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
+		c.assertionData.stopAllActions++
+
 		c.subLogger.WithFields(logrus.Fields{
 			"topic": msg.Topic(),
 		}).Info("received StopAllAction")
@@ -51,6 +58,9 @@ func (c *Controller) lightHandler(topic string) paho.MessageHandler {
 			lightLogger.WithError(err).Error("unable to unmarshal LightAction JSON")
 			return
 		}
+
+		c.assertionData.lightActions = append(c.assertionData.lightActions, action)
+
 		lightLogger.WithFields(logrus.Fields{
 			"state": action.State,
 		}).Info("received LightAction")
