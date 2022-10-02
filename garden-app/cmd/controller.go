@@ -71,5 +71,5 @@ func Controller(cmd *cobra.Command, args []string) {
 	}
 	config.LogLevel = parsedLogLevel
 
-	controller.Start(config)
+	controller.CreateAndRun(config)
 }

@@ -47,4 +47,6 @@ func (w *Worker) StartAsync() {
 // Stop stops the Worker's background jobs
 func (w *Worker) Stop() {
 	w.scheduler.Stop()
+	w.mqttClient.Disconnect(100)
+	w.influxdbClient.Close()
 }

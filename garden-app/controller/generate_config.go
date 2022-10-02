@@ -103,7 +103,7 @@ type ZoneConfig struct {
 // GenerateConfig will create config.h and wifi_config.h based on the provided configurations. It can optionally write to files
 // instead of stdout
 func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bool) {
-	logger = config.setupLogger()
+	logger := setupLogger(config.LogLevel)
 
 	if !wifiOnly {
 		logger.Debug("generating 'config.h'")
@@ -112,7 +112,7 @@ func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bo
 			logger.WithError(err).Error("error generating 'config.h'")
 			return
 		}
-		err = writeOutput(mainConfig, "config.h", writeFile, overwrite)
+		err = writeOutput(logger, mainConfig, "config.h", writeFile, overwrite)
 		if err != nil {
 			logger.WithError(err).Error("error generating 'config.h'")
 			return
@@ -126,7 +126,7 @@ func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bo
 			logger.WithError(err).Error("error generating 'wifi_config.h'")
 			return
 		}
-		err = writeOutput(wifiConfig, "wifi_config.h", writeFile, overwrite)
+		err = writeOutput(logger, wifiConfig, "wifi_config.h", writeFile, overwrite)
 		if err != nil {
 			logger.WithError(err).Error("error generating 'wifi_config.h'")
 			return
@@ -134,7 +134,7 @@ func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bo
 	}
 }
 
-func writeOutput(content, filename string, writeFile, overwrite bool) error {
+func writeOutput(logger *logrus.Logger, content, filename string, writeFile, overwrite bool) error {
 	logger.WithFields(logrus.Fields{
 		"filename":       filename,
 		"write_file":     writeFile,

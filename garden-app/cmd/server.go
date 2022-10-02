@@ -33,5 +33,5 @@ func Server(cmd *cobra.Command, args []string) {
 	config.LogLevel = parsedLogLevel
 
 	cmd.Printf("Starting garden-app webserver on port %d...\n", config.Port)
-	server.Run(config)
+	server.CreateAndRun(config)
 }

@@ -10,7 +10,7 @@ import (
 
 func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 	return func(pc paho.Client, msg paho.Message) {
-		waterLogger := subLogger.WithField("topic", topic)
+		waterLogger := c.subLogger.WithField("topic", topic)
 		var waterMsg action.WaterMessage
 		err := json.Unmarshal(msg.Payload(), &waterMsg)
 		if err != nil {
@@ -28,7 +28,7 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 
 func (c *Controller) stopHandler(topic string) paho.MessageHandler {
 	return func(pc paho.Client, msg paho.Message) {
-		subLogger.WithFields(logrus.Fields{
+		c.subLogger.WithFields(logrus.Fields{
 			"topic": msg.Topic(),
 		}).Info("received StopAction")
 	}
@@ -36,7 +36,7 @@ func (c *Controller) stopHandler(topic string) paho.MessageHandler {
 
 func (c *Controller) stopAllHandler(topic string) paho.MessageHandler {
 	return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-		subLogger.WithFields(logrus.Fields{
+		c.subLogger.WithFields(logrus.Fields{
 			"topic": msg.Topic(),
 		}).Info("received StopAllAction")
 	})
@@ -44,7 +44,7 @@ func (c *Controller) stopAllHandler(topic string) paho.MessageHandler {
 
 func (c *Controller) lightHandler(topic string) paho.MessageHandler {
 	return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-		lightLogger := subLogger.WithField("topic", topic)
+		lightLogger := c.subLogger.WithField("topic", topic)
 		var action action.LightAction
 		err := json.Unmarshal(msg.Payload(), &action)
 		if err != nil {
