@@ -56,11 +56,11 @@ func TestScheduleWaterAction(t *testing.T) {
 
 	mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
 	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
+	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
 	worker.StartAsync()
-	defer worker.Stop()
 
 	g := createExampleGarden()
 	z := createExampleZone()
@@ -74,6 +74,7 @@ func TestScheduleWaterAction(t *testing.T) {
 
 	time.Sleep(1000 * time.Millisecond)
 
+	worker.Stop()
 	storageClient.AssertExpectations(t)
 	influxdbClient.AssertExpectations(t)
 	mqttClient.AssertExpectations(t)
@@ -83,10 +84,11 @@ func TestResetNextWaterTime(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
 
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
 	worker.StartAsync()
-	defer worker.Stop()
 
 	g := createExampleGarden()
 	z := createExampleZone()
@@ -112,6 +114,7 @@ func TestResetNextWaterTime(t *testing.T) {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
 	}
 
+	worker.Stop()
 	storageClient.AssertExpectations(t)
 	influxdbClient.AssertExpectations(t)
 	mqttClient.AssertExpectations(t)
@@ -121,10 +124,11 @@ func TestGetNextWaterTime(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
 
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
 	worker.StartAsync()
-	defer worker.Stop()
 
 	g := createExampleGarden()
 	z := createExampleZone()
@@ -142,6 +146,7 @@ func TestGetNextWaterTime(t *testing.T) {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
 	}
 
+	worker.Stop()
 	storageClient.AssertExpectations(t)
 	influxdbClient.AssertExpectations(t)
 	mqttClient.AssertExpectations(t)
@@ -432,10 +437,11 @@ func TestRemoveJobsByID(t *testing.T) {
 	storageClient := new(storage.MockClient)
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
 
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
 	worker.StartAsync()
-	defer worker.Stop()
 
 	g := createExampleGarden()
 	z := createExampleZone()
@@ -458,6 +464,7 @@ func TestRemoveJobsByID(t *testing.T) {
 		t.Errorf("Expected nil but got: %v", nextWaterTime)
 	}
 
+	worker.Stop()
 	storageClient.AssertExpectations(t)
 	influxdbClient.AssertExpectations(t)
 	mqttClient.AssertExpectations(t)

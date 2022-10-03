@@ -1,0 +1,30 @@
+web_server:
+  port: 8080
+mqtt:
+  broker: "localhost"
+  port: 1883
+  client_id: "garden-app-test"
+  water_topic: "{{.Garden}}/command/water"
+  stop_topic: "{{.Garden}}/command/stop"
+  stop_all_topic: "{{.Garden}}/command/stop_all"
+  light_topic: "{{.Garden}}/command/light"
+influxdb:
+  address: "http://localhost:8086"
+  token: "my-secret-token"
+  org: "garden"
+  bucket: "garden"
+storage:
+  type: "YAML"
+  options:
+    filename: "testdata/gardens.yml"
+
+controller:
+  topic_prefix: "test"
+  num_zones: 3
+  moisture_strategy: random
+  moisture_value: 100
+  moisture_interval: 10s
+  publish_water_event: true
+  publish_health: true
+  health_interval: 1s
+  enable_ui: false

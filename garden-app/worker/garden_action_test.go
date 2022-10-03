@@ -209,13 +209,17 @@ func TestLightActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			storageClient := new(storage.MockClient)
 			tt.setupMock(mqttClient, influxdbClient, storageClient)
+			mqttClient.On("Disconnect", uint(100)).Return()
+			influxdbClient.On("Close").Return()
+
 			worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
 			worker.ScheduleLightActions(garden)
 			worker.StartAsync()
-			defer worker.Stop()
 
 			err := worker.ExecuteLightAction(garden, tt.action)
 			tt.assert(err, t)
+
+			worker.Stop()
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
 		})

@@ -53,12 +53,44 @@ jobs:
       - name: Vet Check
         run: test -z "${{ steps.vet.outputs.VET_OUTPUT }}"
 
+  unit_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
       - name: Test
         working-directory: ./${{ env.PROJECT_NAME }}
-        run: go test ./...
+        run: go test -short ./...
+
+  integration_test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+
+      - name: Start containers for integration test
+        working-directory: ./deploy/docker
+        run: docker compose -f docker-compose.test.yml up -d
+
+      - name: Integration Test
+        working-directory: ./${{ env.PROJECT_NAME }}/integration_tests
+        run: sleep 15 && go test -v ./...
+
+      - name: Remove containers for integration test
+        working-directory: ./deploy/docker
+        run: docker compose -f docker-compose.test.yml down
 
   build:
-    needs: go
+    needs: ["unit_test", "integration_test"]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
