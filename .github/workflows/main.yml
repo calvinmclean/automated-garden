@@ -14,7 +14,7 @@ jobs:
   go:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for debug prints
         id: check-print
@@ -22,7 +22,7 @@ jobs:
         run: if [[ -n $(grep -R "fmt.Print" | grep -v vendor | grep -v generate_config\.go) ]]; then echo "Did you forget to remove debug prints?" && false; else echo "All good!"; fi
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
 
@@ -32,7 +32,7 @@ jobs:
       - name: Lint
         id: lint
         working-directory: ./${{ env.PROJECT_NAME }}
-        run: echo "::set-output name=LINT_OUTPUT::$(golint $(go list ./... | grep -v /vendor/))"
+        run: echo "LINT_OUTPUT=$(golint $(go list ./... | grep -v /vendor/))" >> $GITHUB_OUTPUT
 
       - name: Lint Check
         run: test -z "${{ steps.lint.outputs.LINT_OUTPUT }}"
@@ -40,7 +40,7 @@ jobs:
       - name: Format
         id: format
         working-directory: ./${{ env.PROJECT_NAME }}
-        run: echo "::set-output name=FORMAT_OUTPUT::$(gofmt -d -s $(find . -name "*.go" | grep -v /vendor/))"
+        run: echo "FORMAT_OUTPUT=$(gofmt -d -s $(find . -name "*.go" | grep -v /vendor/))" >> $GITHUB_OUTPUT
 
       - name: Format Check
         run: test -z "${{ steps.format.outputs.FORMAT_OUTPUT }}"
@@ -48,7 +48,7 @@ jobs:
       - name: Vet
         id: vet
         working-directory: ./${{ env.PROJECT_NAME }}
-        run: echo "::set-output name=VET_OUTPUT::$(go vet $(go list ./... | grep -v /vendor/))"
+        run: echo "VET_OUTPUT=$(go vet $(go list ./... | grep -v /vendor/))" >> $GITHUB_OUTPUT
 
       - name: Vet Check
         run: test -z "${{ steps.vet.outputs.VET_OUTPUT }}"
@@ -56,10 +56,10 @@ jobs:
   unit_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
 
@@ -70,10 +70,10 @@ jobs:
   integration_test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Go
-        uses: actions/setup-go@v2
+        uses: actions/setup-go@v3
         with:
           go-version: 1.17
 
@@ -93,10 +93,10 @@ jobs:
     needs: ["unit_test", "integration_test"]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -111,7 +111,7 @@ jobs:
             latest=${{ github.ref == 'refs/heads/main' }}
 
       - name: Build and push Docker image
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./${{ env.PROJECT_NAME }}
           push: true
