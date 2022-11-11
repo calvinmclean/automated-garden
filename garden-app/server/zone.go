@@ -190,6 +190,16 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 	zone.Patch(request.Zone)
 	logger.Debugf("zone after patching: %+v", zone)
 
+	// Validate the new WaterSchedule.WeatherControl
+	if zone.WaterSchedule.WeatherControl != nil {
+		err := ValidateWeatherControl(zone.WaterSchedule.WeatherControl)
+		if err != nil {
+			logger.WithError(err).Error("invalid WaterSchedule.WeatherControl after patching")
+			render.Render(w, r, ErrInvalidRequest(err))
+			return
+		}
+	}
+
 	// Save the Zone
 	if err := zr.storageClient.SaveZone(garden.ID, zone); err != nil {
 		logger.WithError(err).Error("unable to save updated Zone")

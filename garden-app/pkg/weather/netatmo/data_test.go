@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestUnmarshalJSON(t *testing.T) {
+func TestWeatherDataUnmarshalJSON(t *testing.T) {
 	input := `{
 	"body": {
 		"1662058800":[
@@ -25,18 +25,18 @@ func TestUnmarshalJSON(t *testing.T) {
 	"time_exec": 0.08324098587036133,
 	"time_server": 1662249790
 }`
-	var rainDataResp rainDataResponse
-	err := json.Unmarshal([]byte(input), &rainDataResp)
+	var weatherDataResp weatherDataResponse
+	err := json.Unmarshal([]byte(input), &weatherDataResp)
 	assert.NoError(t, err)
-	assert.Equal(t, rainData{
+	assert.Equal(t, weatherData{
 		time.Unix(1662058800, 0): 7.9,
 		time.Unix(1662145200, 0): 2.5,
 		time.Unix(1662231600, 0): 0,
-	}, rainDataResp.Body)
+	}, weatherDataResp.Body)
 }
 
-func TestTotal(t *testing.T) {
-	data := rainData{
+func TestWeatherDataTotal(t *testing.T) {
+	data := weatherData{
 		time.Unix(1662058800, 0): 7.9,
 		time.Unix(1662145200, 0): 2.5,
 		time.Unix(1662231600, 0): 0,

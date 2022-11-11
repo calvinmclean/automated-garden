@@ -28,6 +28,9 @@ type Config struct {
 	RainModuleID   string `mapstructure:"rain_module_id"`
 	RainModuleName string `mapstructure:"rain_module_name"`
 
+	OutdoorModuleID   string `mapstructure:"outdoor_module_id"`
+	OutdoorModuleName string `mapstructure:"outdoor_module_name"`
+
 	Authentication *TokenData `mapstructure:"authentication"`
 	ClientID       string     `mapstructure:"client_id"`
 	ClientSecret   string     `mapstructure:"client_secret"`
@@ -65,7 +68,7 @@ func NewClient(options map[string]interface{}) (*Client, error) {
 		return nil, err
 	}
 
-	if client.StationID == "" || client.RainModuleID == "" {
+	if client.StationID == "" || client.RainModuleID == "" || client.OutdoorModuleID == "" {
 		err = client.setDeviceIDs()
 		if err != nil {
 			return nil, err
@@ -140,6 +143,9 @@ func (c *Client) setDeviceIDs() error {
 	if c.RainModuleID == "" && c.RainModuleName == "" {
 		return errors.New("rain_module_id or rain_module_name must be provided")
 	}
+	if c.OutdoorModuleID == "" && c.OutdoorModuleName == "" {
+		return errors.New("outdoor_module_id or outdoor_module_name must be provided")
+	}
 
 	stationData, err := c.getStationData()
 	if err != nil {
@@ -161,61 +167,24 @@ func (c *Client) setDeviceIDs() error {
 	c.StationID = targetStation.ID
 
 	// Find module ID if not provided
-	if c.RainModuleID == "" {
+	if c.RainModuleID == "" || c.OutdoorModuleID == "" {
 		for _, m := range targetStation.Modules {
-			if m.Name == c.RainModuleName {
+			if c.RainModuleID == "" && m.Name == c.RainModuleName {
 				c.RainModuleID = m.ID
+			}
+			if c.OutdoorModuleID == "" && m.Name == c.OutdoorModuleName {
+				c.OutdoorModuleID = m.ID
 			}
 		}
 	}
 	if c.RainModuleID == "" {
 		return fmt.Errorf("no rain module found with name %q", c.RainModuleName)
 	}
+	if c.OutdoorModuleID == "" {
+		return fmt.Errorf("no outdoor module found with name %q", c.OutdoorModuleName)
+	}
 
 	return nil
-}
-
-func (c *Client) getMeasure(dataType, scale string, beginDate time.Time) ([]byte, error) {
-	err := c.refreshToken()
-	if err != nil {
-		return nil, err
-	}
-
-	measureURL := *c.baseURL
-	measureURL.Path = "/api/getmeasure"
-
-	values := measureURL.Query()
-	values.Add("device_id", c.StationID)
-	values.Add("module_id", c.RainModuleID)
-	values.Add("scale", scale)
-	values.Add("optimize", "false")
-	values.Add("real_time", "false")
-	values.Add("type", dataType)
-	values.Add("date_begin", fmt.Sprintf("%d", beginDate.Unix()))
-	measureURL.RawQuery = values.Encode()
-
-	req, err := http.NewRequest(http.MethodGet, measureURL.String(), nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.Authentication.AccessToken))
-	req.Header.Add("Accept", "application/json")
-
-	resp, err := c.Client.Do(req)
-	if err != nil {
-		return nil, err
-	}
-
-	respBody, err := io.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("error reading response body with status %d: %v", resp.StatusCode, err)
-	}
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("received unexpected status %d with body: %s", resp.StatusCode, string(respBody))
-	}
-
-	return respBody, err
 }
 
 func (c *Client) refreshToken() error {

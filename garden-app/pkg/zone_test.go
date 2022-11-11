@@ -33,6 +33,7 @@ func TestZoneEndDated(t *testing.T) {
 
 func TestZonePatch(t *testing.T) {
 	zero := uint(0)
+	float := float32(1)
 	now := time.Now()
 	tests := []struct {
 		name    string
@@ -84,6 +85,18 @@ func TestZonePatch(t *testing.T) {
 				WeatherControl: &weather.Control{
 					Rain: &weather.RainControl{
 						Threshold: 25.4,
+					},
+				},
+			}},
+		},
+		{
+			"PatchWaterSchedule.WeatherControl.Temperature",
+			&Zone{WaterSchedule: &WaterSchedule{
+				WeatherControl: &weather.Control{
+					Temperature: &weather.ScaleControl{
+						BaselineTemperature: &float,
+						Factor:              &float,
+						Range:               &float,
 					},
 				},
 			}},

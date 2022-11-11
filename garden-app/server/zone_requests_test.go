@@ -7,6 +7,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 )
 
@@ -116,6 +117,135 @@ func TestZoneRequest(t *testing.T) {
 			},
 			"missing required name field",
 		},
+		{
+			"EmptyWaterScheduleWeatherControlBaselineTemperature",
+			&ZoneRequest{
+				Zone: &pkg.Zone{
+					Position: &pos,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:  "24h",
+						Duration:  "1000ms",
+						StartTime: &now,
+						WeatherControl: &weather.Control{
+							Temperature: &weather.ScaleControl{
+								Factor: float32Pointer(0.5),
+								Range:  float32Pointer(10),
+							},
+						},
+					},
+					Name: "name",
+				},
+			},
+			"missing required field: water_schedule.weather_control.temperature_control.baseline_temperature",
+		},
+		{
+			"EmptyWaterScheduleWeatherControlFactor",
+			&ZoneRequest{
+				Zone: &pkg.Zone{
+					Position: &pos,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:  "24h",
+						Duration:  "1000ms",
+						StartTime: &now,
+						WeatherControl: &weather.Control{
+							Temperature: &weather.ScaleControl{
+								BaselineTemperature: float32Pointer(27),
+								Range:               float32Pointer(10),
+							},
+						},
+					},
+					Name: "name",
+				},
+			},
+			"missing required field: water_schedule.weather_control.temperature_control.factor",
+		},
+		{
+			"EmptyWaterScheduleWeatherControlRange",
+			&ZoneRequest{
+				Zone: &pkg.Zone{
+					Position: &pos,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:  "24h",
+						Duration:  "1000ms",
+						StartTime: &now,
+						WeatherControl: &weather.Control{
+							Temperature: &weather.ScaleControl{
+								BaselineTemperature: float32Pointer(27),
+								Factor:              float32Pointer(0.5),
+							},
+						},
+					},
+					Name: "name",
+				},
+			},
+			"missing required field: water_schedule.weather_control.temperature_control.range",
+		},
+		{
+			"WaterScheduleWeatherControlInvalidFactorBig",
+			&ZoneRequest{
+				Zone: &pkg.Zone{
+					Position: &pos,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:  "24h",
+						Duration:  "1000ms",
+						StartTime: &now,
+						WeatherControl: &weather.Control{
+							Temperature: &weather.ScaleControl{
+								BaselineTemperature: float32Pointer(27),
+								Factor:              float32Pointer(2),
+								Range:               float32Pointer(10),
+							},
+						},
+					},
+					Name: "name",
+				},
+			},
+			"water_schedule.weather_control.temperature_control.factor must be between 0 and 1",
+		},
+		{
+			"WaterScheduleWeatherControlInvalidFactorSmall",
+			&ZoneRequest{
+				Zone: &pkg.Zone{
+					Position: &pos,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:  "24h",
+						Duration:  "1000ms",
+						StartTime: &now,
+						WeatherControl: &weather.Control{
+							Temperature: &weather.ScaleControl{
+								BaselineTemperature: float32Pointer(27),
+								Factor:              float32Pointer(-1),
+								Range:               float32Pointer(10),
+							},
+						},
+					},
+					Name: "name",
+				},
+			},
+			"water_schedule.weather_control.temperature_control.factor must be between 0 and 1",
+		},
+		{
+			"WaterScheduleWeatherControlInvalidRange",
+			&ZoneRequest{
+				Zone: &pkg.Zone{
+					Position: &pos,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:  "24h",
+						Duration:  "1000ms",
+						StartTime: &now,
+						WeatherControl: &weather.Control{
+							Temperature: &weather.ScaleControl{
+								BaselineTemperature: float32Pointer(27),
+								Factor:              float32Pointer(0.5),
+								Range:               float32Pointer(-1),
+							},
+						},
+					},
+					Name: "name",
+				},
+			},
+			"water_schedule.weather_control.temperature_control.range must be a positive number",
+		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
@@ -127,6 +257,13 @@ func TestZoneRequest(t *testing.T) {
 					Duration:  "1000ms",
 					Interval:  "24h",
 					StartTime: &now,
+					WeatherControl: &weather.Control{
+						Temperature: &weather.ScaleControl{
+							BaselineTemperature: float32Pointer(27),
+							Factor:              float32Pointer(0.5),
+							Range:               float32Pointer(10),
+						},
+					},
 				},
 			},
 		}
@@ -288,4 +425,9 @@ func TestZoneActionRequest(t *testing.T) {
 			}
 		})
 	}
+}
+
+func float32Pointer(n float64) *float32 {
+	f := float32(n)
+	return &f
 }
