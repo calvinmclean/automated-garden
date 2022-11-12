@@ -8,6 +8,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 )
 
@@ -45,7 +46,36 @@ func (z *ZoneRequest) Bind(r *http.Request) error {
 	if z.Name == "" {
 		return errors.New("missing required name field")
 	}
+	if z.WaterSchedule.WeatherControl != nil {
+		err := ValidateWeatherControl(z.WaterSchedule.WeatherControl)
+		if err != nil {
+			return err
+		}
+	}
 
+	return nil
+}
+
+// ValidateWeatherControl validates input for the WeatherControl of a Zone
+func ValidateWeatherControl(wc *weather.Control) error {
+	errStringFormat := "missing required field: water_schedule.weather_control.%s"
+	if wc.Temperature != nil {
+		if wc.Temperature.BaselineTemperature == nil {
+			return fmt.Errorf(errStringFormat, "temperature_control.baseline_temperature")
+		}
+		if wc.Temperature.Factor == nil {
+			return fmt.Errorf(errStringFormat, "temperature_control.factor")
+		}
+		if *wc.Temperature.Factor > float32(1) || *wc.Temperature.Factor < float32(0) {
+			return errors.New("water_schedule.weather_control.temperature_control.factor must be between 0 and 1")
+		}
+		if wc.Temperature.Range == nil {
+			return fmt.Errorf(errStringFormat, "temperature_control.range")
+		}
+		if *wc.Temperature.Range < float32(0) {
+			return errors.New("water_schedule.weather_control.temperature_control.range must be a positive number")
+		}
+	}
 	return nil
 }
 

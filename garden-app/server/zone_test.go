@@ -389,6 +389,13 @@ func TestUpdateZone(t *testing.T) {
 			http.StatusBadRequest,
 		},
 		{
+			"BadRequestInvalidTemperatureControl",
+			func(storageClient *storage.MockClient) {},
+			`{"name":"new name","water_schedule":{"weather_control":{"temperature_control":{"baseline_temperature":27,"factor":-1,"range":10}}}}`,
+			`{"status":"Invalid request.","error":"water_schedule.weather_control.temperature_control.factor must be between 0 and 1"}`,
+			http.StatusBadRequest,
+		},
+		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveZone", mock.Anything, mock.Anything).Return(errors.New("storage error"))

@@ -13,6 +13,27 @@ type MockClient struct {
 	mock.Mock
 }
 
+// GetAverageHighTemperature provides a mock function with given fields: since
+func (_m *MockClient) GetAverageHighTemperature(since time.Duration) (float32, error) {
+	ret := _m.Called(since)
+
+	var r0 float32
+	if rf, ok := ret.Get(0).(func(time.Duration) float32); ok {
+		r0 = rf(since)
+	} else {
+		r0 = ret.Get(0).(float32)
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(time.Duration) error); ok {
+		r1 = rf(since)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetTotalRain provides a mock function with given fields: since
 func (_m *MockClient) GetTotalRain(since time.Duration) (float32, error) {
 	ret := _m.Called(since)

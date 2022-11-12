@@ -45,7 +45,7 @@ type WeatherData struct {
 
 // NewZoneResponse creates a self-referencing ZoneResponse
 func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
-	logger := getLoggerFromContext(ctx)
+	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
 
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	links = append(links,
@@ -112,7 +112,7 @@ func (zr ZonesResource) getRainData(zone *pkg.Zone) (*float32, error) {
 
 	totalRain, err := zr.weatherClient.GetTotalRain(intervalDuration)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get rain data for Zone")
+		return nil, fmt.Errorf("unable to get rain data from weather client: %w", err)
 	}
 	return &totalRain, nil
 }
