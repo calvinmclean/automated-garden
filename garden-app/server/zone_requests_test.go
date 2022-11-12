@@ -136,7 +136,7 @@ func TestZoneRequest(t *testing.T) {
 					Name: "name",
 				},
 			},
-			"missing required field: water_schedule.weather_control.temperature_control.baseline_temperature",
+			"missing required field: water_schedule.weather_control.temperature_control.baseline_value",
 		},
 		{
 			"EmptyWaterScheduleWeatherControlFactor",
@@ -149,8 +149,8 @@ func TestZoneRequest(t *testing.T) {
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
-								BaselineTemperature: float32Pointer(27),
-								Range:               float32Pointer(10),
+								BaselineValue: float32Pointer(27),
+								Range:         float32Pointer(10),
 							},
 						},
 					},
@@ -170,8 +170,8 @@ func TestZoneRequest(t *testing.T) {
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
-								BaselineTemperature: float32Pointer(27),
-								Factor:              float32Pointer(0.5),
+								BaselineValue: float32Pointer(27),
+								Factor:        float32Pointer(0.5),
 							},
 						},
 					},
@@ -191,9 +191,9 @@ func TestZoneRequest(t *testing.T) {
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
-								BaselineTemperature: float32Pointer(27),
-								Factor:              float32Pointer(2),
-								Range:               float32Pointer(10),
+								BaselineValue: float32Pointer(27),
+								Factor:        float32Pointer(2),
+								Range:         float32Pointer(10),
 							},
 						},
 					},
@@ -213,9 +213,9 @@ func TestZoneRequest(t *testing.T) {
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
-								BaselineTemperature: float32Pointer(27),
-								Factor:              float32Pointer(-1),
-								Range:               float32Pointer(10),
+								BaselineValue: float32Pointer(27),
+								Factor:        float32Pointer(-1),
+								Range:         float32Pointer(10),
 							},
 						},
 					},
@@ -235,9 +235,9 @@ func TestZoneRequest(t *testing.T) {
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
-								BaselineTemperature: float32Pointer(27),
-								Factor:              float32Pointer(0.5),
-								Range:               float32Pointer(-1),
+								BaselineValue: float32Pointer(27),
+								Factor:        float32Pointer(0.5),
+								Range:         float32Pointer(-1),
 							},
 						},
 					},
@@ -259,9 +259,9 @@ func TestZoneRequest(t *testing.T) {
 					StartTime: &now,
 					WeatherControl: &weather.Control{
 						Temperature: &weather.ScaleControl{
-							BaselineTemperature: float32Pointer(27),
-							Factor:              float32Pointer(0.5),
-							Range:               float32Pointer(10),
+							BaselineValue: float32Pointer(27),
+							Factor:        float32Pointer(0.5),
+							Range:         float32Pointer(10),
 						},
 					},
 				},

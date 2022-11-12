@@ -75,7 +75,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 	if zone.HasWeatherControl() {
 		weatherData = &WeatherData{}
 
-		if zone.HasSoilMoistureControl() && garden != nil {
+		if zone.WaterSchedule.HasSoilMoistureControl() && garden != nil {
 			logger.Debug("getting moisture data for Zone")
 			soilMoisture, err := zr.getMoisture(ctx, garden, zone)
 			if err != nil {
@@ -86,7 +86,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 				weatherData.SoilMoisturePercent = &soilMoisture
 			}
 		}
-		if zone.HasRainControl() && zr.weatherClient != nil {
+		if zone.WaterSchedule.HasRainControl() && zr.weatherClient != nil {
 			logger.Debug("getting rain data for Zone")
 			weatherData.RainMM, err = zr.getRainData(zone)
 			if err != nil {

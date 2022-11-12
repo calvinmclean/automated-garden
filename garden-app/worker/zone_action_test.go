@@ -91,9 +91,14 @@ func TestWaterActionExecute(t *testing.T) {
 		Duration: 1000,
 	}
 	temperatureControl := &weather.ScaleControl{
-		BaselineTemperature: float32Pointer(70),
-		Factor:              float32Pointer(0.5),
-		Range:               float32Pointer(30),
+		BaselineValue: float32Pointer(70),
+		Factor:        float32Pointer(0.5),
+		Range:         float32Pointer(30),
+	}
+	rainControl := &weather.ScaleControl{
+		BaselineValue: float32Pointer(0),
+		Factor:        float32Pointer(0),
+		Range:         float32Pointer(50),
 	}
 
 	tests := []struct {
@@ -188,41 +193,37 @@ func TestWaterActionExecute(t *testing.T) {
 			"",
 		},
 		{
-			"SuccessfulRainDelay",
+			"SuccessfulRainScaleToZero",
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
 					Interval: "24h",
 					WeatherControl: &weather.Control{
-						Rain: &weather.RainControl{
-							Threshold: 25.4,
-						},
+						Rain: rainControl,
 					},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
-				wc.On("GetTotalRain", mock.Anything).Return(float32(25.4), nil)
+				wc.On("GetTotalRain", mock.Anything).Return(float32(50), nil)
 				// No MQTT calls made
 			},
 			"",
 		},
 		{
-			"SuccessfulNoRainDelay",
+			"SuccessfulNoRainScaling",
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
 					Interval: "24h",
 					WeatherControl: &weather.Control{
-						Rain: &weather.RainControl{
-							Threshold: 25.4,
-						},
+						Rain: rainControl,
 					},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
-				wc.On("GetTotalRain", mock.Anything).Return(float32(14), nil)
+				wc.On("GetTotalRain", mock.Anything).Return(float32(0), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -233,35 +234,32 @@ func TestWaterActionExecute(t *testing.T) {
 				WaterSchedule: &pkg.WaterSchedule{
 					Interval: "24h",
 					WeatherControl: &weather.Control{
-						Rain: &weather.RainControl{
-							Threshold: 25.4,
-						},
+						Rain: rainControl,
 					},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
 				wc.On("GetTotalRain", mock.Anything).Return(float32(0), errors.New("weather client error"))
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
 			},
 			"",
 		},
 		{
-			"RainDelayErrorParsingIntervalStillWaters",
+			"SuccessfulRainPartialScaling",
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "wow",
+					Interval: "24h",
 					WeatherControl: &weather.Control{
-						Rain: &weather.RainControl{
-							Threshold: 25.4,
-						},
+						Rain: rainControl,
 					},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -423,6 +421,50 @@ func TestWaterActionExecute(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
+			},
+			"",
+		},
+		{
+			// Scenario emulating summer where temperature causes increased watering, but
+			// recent rain scales it down again
+			"CompoundScalingSummerRain",
+			&pkg.Zone{
+				Position: uintPointer(0),
+				WaterSchedule: &pkg.WaterSchedule{
+					Interval: "24h",
+					WeatherControl: &weather.Control{
+						Temperature: temperatureControl,
+						Rain:        rainControl,
+					},
+				},
+			},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
+				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(85), nil)
+				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":625,"id":null,"position":0}`)).Return(nil)
+			},
+			"",
+		},
+		{
+			// Scenario emulating winter where temperature causes decreased watering and
+			// recent rain scales it down even more
+			"CompoundScalingWinterRain",
+			&pkg.Zone{
+				Position: uintPointer(0),
+				WaterSchedule: &pkg.WaterSchedule{
+					Interval: "24h",
+					WeatherControl: &weather.Control{
+						Temperature: temperatureControl,
+						Rain:        rainControl,
+					},
+				},
+			},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
+				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(55), nil)
+				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":375,"id":null,"position":0}`)).Return(nil)
 			},
 			"",
 		},

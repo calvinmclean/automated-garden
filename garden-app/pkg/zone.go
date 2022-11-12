@@ -86,10 +86,16 @@ func (z *Zone) Patch(newZone *Zone) {
 			}
 			if newZone.WaterSchedule.WeatherControl.Rain != nil {
 				if z.WaterSchedule.WeatherControl.Rain == nil {
-					z.WaterSchedule.WeatherControl.Rain = &weather.RainControl{}
+					z.WaterSchedule.WeatherControl.Rain = &weather.ScaleControl{}
 				}
-				if newZone.WaterSchedule.WeatherControl.Rain.Threshold != 0 {
-					z.WaterSchedule.WeatherControl.Rain.Threshold = newZone.WaterSchedule.WeatherControl.Rain.Threshold
+				if newZone.WaterSchedule.WeatherControl.Rain.BaselineValue != nil {
+					z.WaterSchedule.WeatherControl.Rain.BaselineValue = newZone.WaterSchedule.WeatherControl.Rain.BaselineValue
+				}
+				if newZone.WaterSchedule.WeatherControl.Rain.Factor != nil {
+					z.WaterSchedule.WeatherControl.Rain.Factor = newZone.WaterSchedule.WeatherControl.Rain.Factor
+				}
+				if newZone.WaterSchedule.WeatherControl.Rain.Range != nil {
+					z.WaterSchedule.WeatherControl.Rain.Range = newZone.WaterSchedule.WeatherControl.Rain.Range
 				}
 			}
 			if newZone.WaterSchedule.WeatherControl.SoilMoisture != nil {
@@ -104,8 +110,8 @@ func (z *Zone) Patch(newZone *Zone) {
 				if z.WaterSchedule.WeatherControl.Temperature == nil {
 					z.WaterSchedule.WeatherControl.Temperature = &weather.ScaleControl{}
 				}
-				if newZone.WaterSchedule.WeatherControl.Temperature.BaselineTemperature != nil {
-					z.WaterSchedule.WeatherControl.Temperature.BaselineTemperature = newZone.WaterSchedule.WeatherControl.Temperature.BaselineTemperature
+				if newZone.WaterSchedule.WeatherControl.Temperature.BaselineValue != nil {
+					z.WaterSchedule.WeatherControl.Temperature.BaselineValue = newZone.WaterSchedule.WeatherControl.Temperature.BaselineValue
 				}
 				if newZone.WaterSchedule.WeatherControl.Temperature.Factor != nil {
 					z.WaterSchedule.WeatherControl.Temperature.Factor = newZone.WaterSchedule.WeatherControl.Temperature.Factor
@@ -134,31 +140,26 @@ func (z *Zone) Patch(newZone *Zone) {
 // HasWeatherControl is used to determine if weather conditions should be checked before watering the Zone
 // This checks that WeatherControl is defined and has at least one type of control configured
 func (z *Zone) HasWeatherControl() bool {
-	return z.HasRainControl() || z.HasSoilMoistureControl() || z.HasEnvironmentControl()
-}
-
-// hasWeatherControl is an internal helper to check if the actual base structs are nil
-func (z *Zone) hasWeatherControl() bool {
 	return z.WaterSchedule != nil &&
-		z.WaterSchedule.WeatherControl != nil
+		(z.WaterSchedule.HasRainControl() || z.WaterSchedule.HasSoilMoistureControl() || z.WaterSchedule.HasTemperatureControl())
 }
 
 // HasRainControl is used to determine if rain conditions should be checked before watering the Zone
-func (z *Zone) HasRainControl() bool {
-	return z.hasWeatherControl() &&
-		z.WaterSchedule.WeatherControl.Rain != nil
+func (ws *WaterSchedule) HasRainControl() bool {
+	return ws.WeatherControl != nil &&
+		ws.WeatherControl.Rain != nil
 }
 
 // HasSoilMoistureControl is used to determine if soil moisture conditions should be checked before watering the Zone
-func (z *Zone) HasSoilMoistureControl() bool {
-	return z.hasWeatherControl() &&
-		z.WaterSchedule.WeatherControl.SoilMoisture != nil &&
-		z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture > 0
+func (ws *WaterSchedule) HasSoilMoistureControl() bool {
+	return ws.WeatherControl != nil &&
+		ws.WeatherControl.SoilMoisture != nil &&
+		ws.WeatherControl.SoilMoisture.MinimumMoisture > 0
 }
 
-// HasEnvironmentControl is used to determine if configuration is available for environmental scaling
-func (z *Zone) HasEnvironmentControl() bool {
-	return z.hasWeatherControl() &&
-		z.WaterSchedule.WeatherControl.Temperature != nil &&
-		*z.WaterSchedule.WeatherControl.Temperature.Factor != 0
+// HasTemperatureControl is used to determine if configuration is available for environmental scaling
+func (ws *WaterSchedule) HasTemperatureControl() bool {
+	return ws.WeatherControl != nil &&
+		ws.WeatherControl.Temperature != nil &&
+		*ws.WeatherControl.Temperature.Factor != 0
 }

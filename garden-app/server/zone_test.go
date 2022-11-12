@@ -215,8 +215,10 @@ func TestGetZone(t *testing.T) {
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 1,
 						},
-						Rain: &weather.RainControl{
-							Threshold: 1,
+						Rain: &weather.ScaleControl{
+							BaselineValue: float32Pointer(0),
+							Factor:        float32Pointer(0),
+							Range:         float32Pointer(1),
 						},
 					},
 				}
@@ -227,7 +229,7 @@ func TestGetZone(t *testing.T) {
 				influxdbClient.On("Close")
 				weatherClient.On("GetTotalRain", mock.Anything).Return(float32(1.5), nil)
 			},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"24h","start_time":null,"weather_control":{"rain_control":{"threshold":1},"moisture_control":{"minimum_moisture":1}}},"weather_data":{"rain_mm":1.5,"soil_moisture_percent":2},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"24h","start_time":null,"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":1},"moisture_control":{"minimum_moisture":1}}},"weather_data":{"rain_mm":1.5,"soil_moisture_percent":2},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"ErrorGettingMoisture",
@@ -391,7 +393,7 @@ func TestUpdateZone(t *testing.T) {
 		{
 			"BadRequestInvalidTemperatureControl",
 			func(storageClient *storage.MockClient) {},
-			`{"name":"new name","water_schedule":{"weather_control":{"temperature_control":{"baseline_temperature":27,"factor":-1,"range":10}}}}`,
+			`{"name":"new name","water_schedule":{"weather_control":{"temperature_control":{"baseline_value":27,"factor":-1,"range":10}}}}`,
 			`{"status":"Invalid request.","error":"water_schedule.weather_control.temperature_control.factor must be between 0 and 1"}`,
 			http.StatusBadRequest,
 		},

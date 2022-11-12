@@ -60,8 +60,8 @@ func (z *ZoneRequest) Bind(r *http.Request) error {
 func ValidateWeatherControl(wc *weather.Control) error {
 	errStringFormat := "missing required field: water_schedule.weather_control.%s"
 	if wc.Temperature != nil {
-		if wc.Temperature.BaselineTemperature == nil {
-			return fmt.Errorf(errStringFormat, "temperature_control.baseline_temperature")
+		if wc.Temperature.BaselineValue == nil {
+			return fmt.Errorf(errStringFormat, "temperature_control.baseline_value")
 		}
 		if wc.Temperature.Factor == nil {
 			return fmt.Errorf(errStringFormat, "temperature_control.factor")

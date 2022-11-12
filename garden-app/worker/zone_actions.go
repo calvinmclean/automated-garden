@@ -26,26 +26,14 @@ func (w *Worker) ExecuteZoneAction(g *pkg.Garden, z *pkg.Zone, input *action.Zon
 // will first check if watering is set to skip and if the moisture value is below the threshold
 // if configured
 func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) error {
-	duration := input.Duration
-
-	if z.HasWeatherControl() {
-		shouldSkip, err := w.shouldSkipWatering(g, z, input)
-		// Ignore weather errors and proceed with watering
-		if err != nil {
-			w.logger.Errorf("unable to determine if watering should be skipped, continuing to water: %v", err)
-		}
-		if shouldSkip {
-			w.logger.Info("weather control determined that watering should be skipped")
-			return nil
-		}
-
-		if z.HasEnvironmentControl() && !input.IgnoreWeather {
-			duration, err = w.scaleWateringDuration(g, z, duration)
-			if err != nil {
-				w.logger.Errorf("unable to determine if watering should scaled, continuing to water with base value: %v", err)
-				duration = input.Duration
-			}
-		}
+	duration, err := w.exerciseWeatherControl(g, z, input)
+	if err != nil {
+		w.logger.Errorf("error executing weather controls, continuing to water: %v", err)
+		duration = input.Duration
+	}
+	if duration == 0 {
+		w.logger.Info("weather control determined that watering should be skipped")
+		return nil
 	}
 
 	msg, err := json.Marshal(action.WaterMessage{
@@ -65,47 +53,32 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 	return w.mqttClient.Publish(topic, msg)
 }
 
-func (w *Worker) shouldSkipWatering(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) (bool, error) {
-	if z.HasRainControl() && !input.IgnoreWeather {
-		skipRain, err := w.shouldRainSkip(z)
-		if err != nil {
-			return false, err
-		}
-		if skipRain {
-			return true, nil
-		}
+func (w *Worker) exerciseWeatherControl(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) (int64, error) {
+	if !z.HasWeatherControl() || input.IgnoreWeather {
+		return input.Duration, nil
 	}
 
-	if z.HasSoilMoistureControl() && !input.IgnoreMoisture {
-		skipMoisture, err := w.shouldMoistureSkip(g, z)
-		if err != nil {
-			return false, err
-		}
-		if skipMoisture {
-			return true, nil
-		}
-	}
-
-	return false, nil
-}
-
-func (w *Worker) shouldRainSkip(z *pkg.Zone) (bool, error) {
-	intervalDuration, err := time.ParseDuration(z.WaterSchedule.Interval)
+	skipMoisture, err := w.shouldMoistureSkip(g, z)
 	if err != nil {
-		return false, fmt.Errorf("error parsing WaterSchedule.Interval as duration: %w", err)
+		return input.Duration, err
+	}
+	if skipMoisture {
+		return 0, nil
 	}
 
-	totalRain, err := w.weatherClient.GetTotalRain(intervalDuration)
+	duration, err := w.scaleWateringDuration(z.WaterSchedule, input.Duration)
 	if err != nil {
-		return true, err
+		return input.Duration, err
 	}
-	w.logger.Infof("weather client recorded %fmm of rain in the last %s", totalRain, intervalDuration.String())
 
-	// if rain >= threshold, skip watering
-	return totalRain >= z.WaterSchedule.WeatherControl.Rain.Threshold, nil
+	return duration, nil
 }
 
 func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone) (bool, error) {
+	if !z.WaterSchedule.HasSoilMoistureControl() {
+		return false, nil
+	}
+
 	ctx, cancel := context.WithTimeout(context.Background(), influxdb.QueryTimeout)
 	defer cancel()
 
@@ -120,19 +93,36 @@ func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone) (bool, error) {
 	return moisture > float64(z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture), nil
 }
 
-func (w *Worker) scaleWateringDuration(g *pkg.Garden, z *pkg.Zone, duration int64) (int64, error) {
-	intervalDuration, err := time.ParseDuration(z.WaterSchedule.Interval)
+func (w *Worker) scaleWateringDuration(ws *pkg.WaterSchedule, duration int64) (int64, error) {
+	scaleFactor := float32(1)
+
+	interval, err := time.ParseDuration(ws.Interval)
 	if err != nil {
 		return duration, fmt.Errorf("error parsing WaterSchedule.Interval as duration: %w", err)
 	}
 
-	avgHighTemp, err := w.weatherClient.GetAverageHighTemperature(intervalDuration)
-	if err != nil {
-		return duration, fmt.Errorf("error getting average high temperatures: %w", err)
+	if ws.HasTemperatureControl() {
+		avgHighTemp, err := w.weatherClient.GetAverageHighTemperature(interval)
+		if err != nil {
+			w.logger.WithError(err).Warn("error getting average high temperatures, continuing")
+		} else {
+			scaleFactor = ws.WeatherControl.Temperature.Scale(avgHighTemp)
+			w.logger.Infof("weather client calculated %fC as the average daily high temperature over the last %s, resulting in scale factor of %f", avgHighTemp, interval.String(), scaleFactor)
+		}
 	}
-	scaleFactor := z.WaterSchedule.WeatherControl.Temperature.Scale(avgHighTemp)
 
-	w.logger.Infof("weather client calculated %fC as the average daily high temperature over the last %s, resulting in scale factor of %f", avgHighTemp, intervalDuration.String(), scaleFactor)
+	if ws.HasRainControl() {
+		totalRain, err := w.weatherClient.GetTotalRain(interval)
+		if err != nil {
+			w.logger.WithError(err).Warn("error getting rain data")
+		} else {
+			rainScaleFactor := ws.WeatherControl.Rain.InvertedScaleDownOnly(totalRain)
+			w.logger.Infof("weather client recorded %fmm of rain in the last %s, resulting in scale factor of %f", totalRain, interval.String(), rainScaleFactor)
+			scaleFactor *= rainScaleFactor
+		}
+	}
+
+	w.logger.Infof("compounded scale factor: %f", scaleFactor)
 
 	return int64(float32(duration) * scaleFactor), nil
 }

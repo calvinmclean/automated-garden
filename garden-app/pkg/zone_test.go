@@ -80,11 +80,13 @@ func TestZonePatch(t *testing.T) {
 			}},
 		},
 		{
-			"PatchWaterSchedule.WeatherControl.Rain.Threshold",
+			"PatchWaterSchedule.WeatherControl.Temperature",
 			&Zone{WaterSchedule: &WaterSchedule{
 				WeatherControl: &weather.Control{
-					Rain: &weather.RainControl{
-						Threshold: 25.4,
+					Rain: &weather.ScaleControl{
+						BaselineValue: &float,
+						Factor:        &float,
+						Range:         &float,
 					},
 				},
 			}},
@@ -94,9 +96,9 @@ func TestZonePatch(t *testing.T) {
 			&Zone{WaterSchedule: &WaterSchedule{
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
-						BaselineTemperature: &float,
-						Factor:              &float,
-						Range:               &float,
+						BaselineValue: &float,
+						Factor:        &float,
+						Range:         &float,
 					},
 				},
 			}},
