@@ -89,6 +89,19 @@ type LightSchedule struct {
 	AdhocOnTime *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
 }
 
+// Patch allows modifying the struct in-place with values from a different instance
+func (ls *LightSchedule) Patch(new *LightSchedule) {
+	if new.Duration != "" {
+		ls.Duration = new.Duration
+	}
+	if new.StartTime != "" {
+		ls.StartTime = new.StartTime
+	}
+	if new.AdhocOnTime == nil {
+		ls.AdhocOnTime = nil
+	}
+}
+
 // Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time
 func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) GardenHealth {
 	lastContact, err := influxdbClient.GetLastContact(ctx, g.TopicPrefix)
@@ -150,15 +163,8 @@ func (g *Garden) Patch(newGarden *Garden) {
 		if g.LightSchedule == nil {
 			g.LightSchedule = &LightSchedule{}
 		}
-		if newGarden.LightSchedule.Duration != "" {
-			g.LightSchedule.Duration = newGarden.LightSchedule.Duration
-		}
-		if newGarden.LightSchedule.StartTime != "" {
-			g.LightSchedule.StartTime = newGarden.LightSchedule.StartTime
-		}
-		if newGarden.LightSchedule.AdhocOnTime == nil {
-			g.LightSchedule.AdhocOnTime = nil
-		}
+		g.LightSchedule.Patch(newGarden.LightSchedule)
+
 		// If both Duration and StartTime are empty, remove the schedule
 		if newGarden.LightSchedule.Duration == "" && newGarden.LightSchedule.StartTime == "" {
 			g.LightSchedule = nil

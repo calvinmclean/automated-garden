@@ -28,6 +28,22 @@ type PlantDetails struct {
 	Count         int    `json:"count,omitempty" yaml:"count,omitempty"`
 }
 
+// Patch allows modifying the struct in-place with values from a different instance
+func (pd *PlantDetails) Patch(new *PlantDetails) {
+	if new.Description != "" {
+		pd.Description = new.Description
+	}
+	if new.Notes != "" {
+		pd.Notes = new.Notes
+	}
+	if new.TimeToHarvest != "" {
+		pd.TimeToHarvest = new.TimeToHarvest
+	}
+	if new.Count != 0 {
+		pd.Count = new.Count
+	}
+}
+
 // EndDated returns true if the Plant is end-dated
 func (p *Plant) EndDated() bool {
 	return p.EndDate != nil && p.EndDate.Before(time.Now())
@@ -54,17 +70,6 @@ func (p *Plant) Patch(newPlant *Plant) {
 		if p.Details == nil {
 			p.Details = &PlantDetails{}
 		}
-		if newPlant.Details.Description != "" {
-			p.Details.Description = newPlant.Details.Description
-		}
-		if newPlant.Details.Notes != "" {
-			p.Details.Notes = newPlant.Details.Notes
-		}
-		if newPlant.Details.TimeToHarvest != "" {
-			p.Details.TimeToHarvest = newPlant.Details.TimeToHarvest
-		}
-		if newPlant.Details.Count != 0 {
-			p.Details.Count = newPlant.Details.Count
-		}
+		p.Details.Patch(newPlant.Details)
 	}
 }
