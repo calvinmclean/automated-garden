@@ -2,15 +2,9 @@ package weather
 
 // Control defines certain parameters and behaviors to influence watering patterns based off weather data
 type Control struct {
-	Rain         *RainControl         `json:"rain_control,omitempty"`
+	Rain         *ScaleControl        `json:"rain_control,omitempty"`
 	SoilMoisture *SoilMoistureControl `json:"moisture_control,omitempty"`
 	Temperature  *ScaleControl        `json:"temperature_control,omitempty"`
-}
-
-// RainControl defines parameters for delaying watering based on recently-recorded rain data. This will skip/delay watering if
-// the rain threshold was exceeded between now and the most recent watering time
-type RainControl struct {
-	Threshold float32 `json:"threshold"`
 }
 
 // SoilMoistureControl defines parameters for delaying watering based on soil moisture data. This will skip watering if the
@@ -40,14 +34,14 @@ type SoilMoistureControl struct {
 // This way, the control doesn't need to know anything about the durations and can just return a multiplier that
 // makes this happen
 type ScaleControl struct {
-	BaselineTemperature *float32 `json:"baseline_temperature"`
-	Factor              *float32 `json:"factor"`
-	Range               *float32 `json:"range"`
+	BaselineValue *float32 `json:"baseline_value"`
+	Factor        *float32 `json:"factor"`
+	Range         *float32 `json:"range"`
 }
 
-// Scale calculates and returns the multiplier based on the input temperature value
-func (sc *ScaleControl) Scale(actualTemperature float32) float32 {
-	diff := actualTemperature - *sc.BaselineTemperature
+// Scale calculates and returns the multiplier based on the input value
+func (sc *ScaleControl) Scale(actualValue float32) float32 {
+	diff := actualValue - *sc.BaselineValue
 	r := *sc.Range
 	if diff > r {
 		diff = r
@@ -56,4 +50,20 @@ func (sc *ScaleControl) Scale(actualTemperature float32) float32 {
 		diff = -r
 	}
 	return (diff/r)*(*sc.Factor) + 1
+}
+
+// InvertedScaleDownOnly calculates and returns the multiplier based on the input value, but is inverted
+// so higher input values cause scaling < 1. Also it will only scale in this direction
+func (sc *ScaleControl) InvertedScaleDownOnly(actualValue float32) float32 {
+	// If the baseline is not reached, just scale 1
+	if actualValue < *sc.BaselineValue {
+		return 1
+	}
+
+	diff := actualValue - *sc.BaselineValue
+	r := *sc.Range
+	if diff > r {
+		diff = r
+	}
+	return 1 - (diff/r)*(1-*sc.Factor)
 }
