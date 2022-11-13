@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
 )
 
@@ -25,6 +26,8 @@ func NewClient(config Config) (Client, error) {
 	switch config.Type {
 	case "netatmo":
 		return netatmo.NewClient(config.Options)
+	case "fake":
+		return fake.NewClient(config.Options)
 	case "":
 		return nil, nil
 	default:
