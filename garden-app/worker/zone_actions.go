@@ -66,7 +66,7 @@ func (w *Worker) exerciseWeatherControl(g *pkg.Garden, z *pkg.Zone, input *actio
 		return 0, nil
 	}
 
-	duration, err := w.scaleWateringDuration(z.WaterSchedule, input.Duration)
+	duration, err := w.ScaleWateringDuration(z.WaterSchedule, input.Duration)
 	if err != nil {
 		return input.Duration, err
 	}
@@ -93,7 +93,8 @@ func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone) (bool, error) {
 	return moisture > float64(z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture), nil
 }
 
-func (w *Worker) scaleWateringDuration(ws *pkg.WaterSchedule, duration int64) (int64, error) {
+// ScaleWateringDuration returns a new watering duration based on weather scaling
+func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration int64) (int64, error) {
 	scaleFactor := float32(1)
 
 	interval, err := time.ParseDuration(ws.Interval)
