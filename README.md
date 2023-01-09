@@ -6,42 +6,38 @@
 [![License](https://img.shields.io/github/license/calvinmclean/automated-garden)](https://github.com/calvinmclean/automated-garden/blob/main/LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/calvinmclean/automated-garden/garden-app.svg)](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app)
 
-This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with multiple gardens.
+This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with multiple irrigation systems.
 
 [See additional documentation here](https://calvinmclean.github.io/automated-garden).
 
-![Garden](docs/_images/garden.jpeg?raw=true)
-
 This system is designed to be flexible for all types of gardening. Here are a few examples of different possible setups:
+  - Traditional irrigation system using 24V AC valves
+  - Backyard vegetable garden
   - Indoor garden with a pump and multiple valves to control watering plants, plus a grow light
   - Indoor seedling germination system with a pump and grow light (fan and heating pad control possibly coming soon)
   - Hydroponics system with one circulation or aeration pump
-  - Outdoor garden with hose spout providing water pressure and multiple valves controlling output to beds
 
-## Components
-This project consists of two main components and supporting services. A centralized Go server is used to control a distributed system of microcontrollers, each representing a Garden with one or more plants.
+## How It Works
 
 ![Garden](docs/_images/FlowDiagram.png?raw=true)
 
-### Garden App
-This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements the following features:
-  - CRUD operations for Gardens and Plants using REST API
-  - Actions to water plants, turn on/off light, and stop watering
-  - Water plants automatically on a cron-based schedule
-  - Monitor health of connected `garden-controllers`
+### Garden Server
+This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements all logic and orchestrates the separate systems.
+
+Key features include:
+  - Intuitive REST API
+  - Actions to water plants and toggle a light
+  - Water plants automatically on a schedule
+  - Aggregate data from connected services and previous actions
 
 ### Garden Controller
-This is contained in the [`garden-controller`](./garden-controller) and is an Arduino/FreeRTOS firmware application intended to be used with an ESP32 microcontroller.
+This Arduino-compatible firmware is contained in the [`garden-controller`](./garden-controller) and is intended to be used with an ESP32. It implements the most basic functionality to control hardware based on messages from the Go application received over MQTT.
 
-The microcontroller is able to send and receive messages using MQTT, a pub/sub message queue for IoT. When watering is completed, the elapsed time is published to MQTT with the intention of being picked up by Telegraf and inserted into InfluxDB. This allows me to monitor when and for how long my plants have been watered using a Grafana dashboard.
-
-Capabilities:
-  - Control pump and valves for one or more plants (only limited by number of output pins)
-  - Queue up water events to water multiple plants one after the other
-  - Publish moisture data to InfluxDB via Telegraf + MQTT
-  - Respond to buttons to water individual plants and cancel watering
-  - Listen on MQTT for watering a plant for specified amount of time, cancel current watering, and clear current watering queue
-  - Publish on MQTT for logging water events in InfluxDB for visualization with Grafana
+Key features include:
+  - Control valves or devices (only limited by number of output pins)
+  - Queue up water events to water multiple zones one after the other
+  - Publish data and logs to InfluxDB via Telegraf + MQTT
+  - Respond to buttons to water individual zones and cancel watering
 
 ## Core Technologies
 - Arduino/FreeRTOS
@@ -50,28 +46,4 @@ Capabilities:
 - InfluxDB
 - Grafana (optional for visualization of InfluxDB data)
 - Telegraf
-
-## Hardware
-In addition to the software, this project consists of hardware for interacting with the real world. Some of this can be 3D printed while the most important parts must be purchased.
-
-3D printed parts:
-  - Case for housing most of the electronics (ESP32, relays, and power connections)
-  - Case and button caps for control buttons
-  - Mount for the 3 water valve solenoids
-  - 1-to-3 splitter for water coming from pump to the valves
-  - Simple clips for organizing the tubing
-  - Watering rings to evenly distribute water in the planters
-  - Mounts for grow light
-
-Purchased parts:
-  - Relays
-  - ESP32
-  - Circuit boards
-  - Tubing (5mm and 8mm)
-  - Submersible water pump
-  - Water tank
-  - 12V DC power supply
-  - Full spectrum grow light
-  - Planters, seeds, soil, etc.
-
-I don't really expect that anyone will try to recreate this project so I haven't provided a whole lot of details on the build, but if you would like any more information or access to STL files please don't hesitate to ask in an issue or email. Thanks! :)
+- Netatmo Weather (optional for weather-based watering)
