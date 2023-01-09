@@ -32,9 +32,10 @@ func (zr *AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error
 // and hypermedia Links fields
 type ZoneResponse struct {
 	*pkg.Zone
-	WeatherData   *WeatherData `json:"weather_data,omitempty"`
-	NextWaterTime *time.Time   `json:"next_water_time,omitempty"`
-	Links         []Link       `json:"links,omitempty"`
+	WeatherData       *WeatherData `json:"weather_data,omitempty"`
+	NextWaterTime     *time.Time   `json:"next_water_time,omitempty"`
+	NextWaterDuration string       `json:"next_water_duration,omitempty"`
+	Links             []Link       `json:"links,omitempty"`
 }
 
 // WeatherData is used to represent the data used for WeatherControl to a user
@@ -96,10 +97,23 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		}
 	}
 
+	nextWateringDuration, err := time.ParseDuration(zone.WaterSchedule.Duration)
+	if err != nil {
+		logger.WithError(err).Warn("unable to determine next water duration")
+	} else if zone.HasWeatherControl() && !zone.EndDated() {
+		wd, err := zr.worker.ScaleWateringDuration(zone.WaterSchedule, int64(nextWateringDuration))
+		if err != nil {
+			logger.WithError(err).Warn("unable to determine water duration scale")
+		} else {
+			nextWateringDuration = time.Duration(wd)
+		}
+	}
+
 	return &ZoneResponse{
 		zone,
 		weatherData,
 		zr.worker.GetNextWaterTime(zone),
+		nextWateringDuration.String(),
 		links,
 	}
 }
