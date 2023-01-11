@@ -69,7 +69,7 @@ func NewServer(cfg Config) (*Server, error) {
 
 	// Configure HTTP metrics
 	r.Use(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
-		Recorder: metrics.NewRecorder(metrics.Config{}),
+		Recorder: metrics.NewRecorder(metrics.Config{Prefix: "garden_app"}),
 	})))
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 

@@ -18,14 +18,14 @@ services:
   telegraf:
     image: "telegraf"
     volumes:
-      - "./telegraf:/etc/telegraf"
+      - "./configs/telegraf:/etc/telegraf"
     env_file:
       - env_file
 
   mqtt:
     image: "eclipse-mosquitto:2.0"
     volumes:
-      - "./mosquitto:/mosquitto/config"
+      - "./configs/mosquitto:/mosquitto/config"
     ports:
       - "1883:1883"
       - "9001:9001"

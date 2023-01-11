@@ -10,9 +10,9 @@ containers: {
   if !args.dependenciesOnly {
     "garden-app": {
       // image: "ghcr.io/calvinmclean/garden-app"
-      build: "../../garden-app"
+      build: "../garden-app"
       command: #"server --config /app/configs/config.yaml"#
-      ports: publish: "80/http"
+      ports: publish: "8080/http"
       dirs: {
         "/app/configs": "./configs/garden-app"
       }
@@ -68,12 +68,23 @@ containers: {
       "GF_SECURITY_ADMIN_PASSWORD": localData.influxdb.adminPassword
       "GF_PATHS_PROVISIONING": localData.grafana.pathsProvisioning
     }
+    dirs: {
+      "/etc/grafana/provisioning": "./configs/grafana"
+    }
+  }
+
+  prometheus: {
+    image: "prom/prometheus"
+    ports: publish: "9090/http"
+    dirs: {
+      "/etc/prometheus": "./configs/prometheus"
+    }
   }
   
   if args.mockController && !args.dependenciesOnly {
     "garden-controller": {
       // image: "ghcr.io/calvinmclean/garden-app"
-      build: "../../garden-app"
+      build: "../garden-app"
       command: [
         "controller",
         "--config=/app/configs/config.yaml",

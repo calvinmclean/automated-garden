@@ -1,5 +1,4 @@
 apiVersion: 1
-
 datasources:
   - name: InfluxDB
     type: influxdb
@@ -12,3 +11,8 @@ datasources:
       organization: ${INFLUXDB_ORG}
       defaultBucket: ${INFLUXDB_BUCKET}
       tlsSkipVerify: true
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    uid: prometheus_uuid
