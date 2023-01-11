@@ -17,9 +17,11 @@ require (
 	github.com/magiconair/properties v1.8.4 // indirect
 	github.com/mitchellh/mapstructure v1.4.1
 	github.com/pelletier/go-toml v1.8.1 // indirect
+	github.com/prometheus/client_golang v1.14.0 // indirect
 	github.com/rivo/tview v0.0.0-20211029142923-a4acb08f513e
 	github.com/rs/xid v1.2.1
 	github.com/sirupsen/logrus v1.8.1
+	github.com/slok/go-http-metrics v0.10.0
 	github.com/smartystreets/assertions v1.2.0 // indirect
 	github.com/spf13/afero v1.6.0 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
@@ -28,7 +30,6 @@ require (
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.8.0
 	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
-	golang.org/x/sys v0.0.0-20220503163025-988cb79eb6c6 // indirect
 	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
