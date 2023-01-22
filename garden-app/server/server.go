@@ -17,7 +17,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
+	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
+	metrics_middleware "github.com/slok/go-http-metrics/middleware"
+	"github.com/slok/go-http-metrics/middleware/std"
 )
 
 // Config holds all the options and sub-configs for the server
@@ -62,6 +66,12 @@ func NewServer(cfg Config) (*Server, error) {
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(middleware.Timeout(3 * time.Second))
+
+	// Configure HTTP metrics
+	r.Use(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
+		Recorder: metrics.NewRecorder(metrics.Config{Prefix: "garden_app"}),
+	})))
+	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	// RESTy routes for Garden and Plant API
 	gardenResource, err := NewGardenResource(cfg, logger)

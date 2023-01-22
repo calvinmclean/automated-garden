@@ -1,0 +1,28 @@
+web_server:
+  port: 8080
+mqtt:
+  broker: "mqtt"
+  port: 1883
+  client_id: "garden-app-acorn"
+  water_topic: "{{.Garden}}/command/water"
+  stop_topic: "{{.Garden}}/command/stop"
+  stop_all_topic: "{{.Garden}}/command/stop_all"
+  light_topic: "{{.Garden}}/command/light"
+influxdb:
+  address: "http://influxdb:8086"
+  token: "my-secret-token"
+  org: "garden"
+  bucket: "garden"
+storage:
+  type: "YAML"
+  options:
+    filename: "/app/configs/gardens.yaml"
+controller:
+  topic_prefix: "seeds"
+  num_zones: 3
+  moisture_strategy: increasing
+  moisture_value: 0
+  moisture_interval: 30s
+  publish_water_event: true
+  publish_health: true
+  health_interval: 1m

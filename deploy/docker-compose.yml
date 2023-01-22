@@ -1,0 +1,67 @@
+version: "3.8"
+services:
+  grafana:
+    image: "grafana/grafana:latest"
+    ports:
+      - "3000:3000"
+    volumes:
+      - "grafana:/var/lib/grafana"
+      - "./configs/grafana/datasources:/etc/grafana/provisioning/datasources"
+      - "./configs/grafana/dashboards:/etc/grafana/provisioning/dashboards"
+    env_file:
+      - env_file
+
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - "./configs/prometheus:/etc/prometheus"
+
+  influxdb:
+    image: "quay.io/influxdb/influxdb:v2.0.2"
+    ports:
+      - "8086:8086"
+    volumes:
+      - "influxdb:/var/lib/influxd"
+
+  influxdb_setup:
+    image: "quay.io/influxdb/influxdb:v2.0.2"
+    volumes:
+      - "./influxdb_setup:/entrypoint"
+    command: "/entrypoint/entrypoint.sh"
+    depends_on:
+      - influxdb
+    env_file:
+      - env_file
+
+  telegraf:
+    image: "telegraf"
+    volumes:
+      - "./configs/telegraf:/etc/telegraf"
+    env_file:
+      - env_file
+
+  mqtt:
+    image: "eclipse-mosquitto:2.0"
+    volumes:
+      - "./configs/mosquitto:/mosquitto/config"
+    ports:
+      - "1883:1883"
+      - "9001:9001"
+
+  garden-app:
+    image: "ghcr.io/calvinmclean/garden-app:metrics"
+    build: "../garden-app"
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./configs/garden-app:/app/configs"
+    command:
+      - "server"
+      - "--config"
+      - "/app/configs/config.yaml"
+
+volumes:
+  influxdb:
+  grafana:
