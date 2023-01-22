@@ -29,894 +29,512 @@
     "liveNow": false,
     "panels": [
         {
-            "datasource": {
-                "type": "influxdb",
-                "uid": "8OpyRPuMz"
-            },
-            "description": "log events published by the garden-controller are collected and displayed here",
+            "collapsed": false,
             "gridPos": {
-                "h": 8,
-                "w": 12,
+                "h": 1,
+                "w": 24,
                 "x": 0,
                 "y": 0
             },
-            "id": 9,
-            "options": {
-                "dedupStrategy": "none",
-                "enableLogDetails": true,
-                "prettifyLogMessage": false,
-                "showCommonLabels": false,
-                "showLabels": true,
-                "showTime": true,
-                "sortOrder": "Descending",
-                "wrapLogMessage": false
-            },
-            "pluginVersion": "7.5.4",
-            "targets": [
-                {
-                    "datasource": {
-                        "type": "influxdb",
-                        "uid": "8OpyRPuMz"
-                    },
-                    "groupBy": [
-                        {
-                            "params": [
-                                "$__interval"
-                            ],
-                            "type": "time"
-                        },
-                        {
-                            "params": [
-                                "null"
-                            ],
-                            "type": "fill"
-                        }
-                    ],
-                    "orderByTime": "ASC",
-                    "policy": "default",
-                    "query": "from(bucket: \"water\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"logs\")\n  |> filter(fn: (r) => r[\"_field\"] == \"message\")\n  |> filter(fn: (r) => r[\"topic\"] == \"garden/data/logs\" or r[\"topic\"] == \"aerogarden/data/logs\")\n",
-                    "queryType": "randomWalk",
-                    "refId": "A",
-                    "resultFormat": "time_series",
-                    "select": [
-                        [
-                            {
-                                "params": [
-                                    "value"
-                                ],
-                                "type": "field"
-                            },
-                            {
-                                "params": [],
-                                "type": "mean"
-                            }
-                        ]
-                    ],
-                    "tags": []
-                }
-            ],
-            "title": "Garden Controller Logs",
-            "type": "logs"
+            "id": 11,
+            "panels": [],
+            "title": "Watering Data",
+            "type": "row"
         },
         {
-            "aliasColors": {},
-            "bars": false,
-            "dashLength": 10,
-            "dashes": false,
             "datasource": {
                 "type": "influxdb",
-                "uid": "8OpyRPuMz"
+                "uid": "influxdb_uuid"
             },
             "description": "This shows the frequency and duration of watering plants",
             "fieldConfig": {
-                "defaults": {},
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"0\", topic=\"garden/data/water\"}"
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "fillOpacity": 80,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
                         },
-                        "properties": [
+                        "lineWidth": 1,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
                             {
-                                "id": "displayName",
-                                "value": "Plant 0 (Green Onion)"
+                                "color": "green",
+                                "value": null
                             }
                         ]
                     },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"1\", topic=\"garden/data/water\"}"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Plant 1 (Cilantro)"
-                            }
-                        ]
-                    },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"2\", topic=\"garden/data/water\"}"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Plant 2 (Tomato)"
-                            }
-                        ]
-                    }
-                ]
+                    "unit": "ms"
+                },
+                "overrides": []
             },
-            "fill": 1,
-            "fillGradient": 0,
             "gridPos": {
                 "h": 11,
                 "w": 24,
                 "x": 0,
-                "y": 8
+                "y": 1
             },
-            "hiddenSeries": false,
             "id": 2,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": false,
-                "max": true,
-                "min": true,
-                "rightSide": false,
-                "show": true,
-                "total": true,
-                "values": true
-            },
-            "lines": false,
-            "linewidth": 1,
-            "nullPointMode": "null",
             "options": {
-                "alertThreshold": false
+                "barRadius": 0,
+                "barWidth": 0.97,
+                "groupWidth": 0.7,
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "orientation": "auto",
+                "showValue": "auto",
+                "stacking": "none",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                },
+                "xTickLabelRotation": 0,
+                "xTickLabelSpacing": 0
             },
-            "percentage": false,
-            "pluginVersion": "9.3.1",
-            "pointradius": 5,
-            "points": true,
-            "renderer": "flot",
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
+            "pluginVersion": "9.3.2",
             "targets": [
                 {
                     "datasource": {
                         "type": "influxdb",
-                        "uid": "8OpyRPuMz"
+                        "uid": "influxdb_uuid"
                     },
-                    "groupBy": [
-                        {
-                            "params": [
-                                "$__interval"
-                            ],
-                            "type": "time"
-                        },
-                        {
-                            "params": [
-                                "null"
-                            ],
-                            "type": "fill"
-                        }
-                    ],
-                    "orderByTime": "ASC",
-                    "policy": "default",
-                    "query": "from(bucket: \"water\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> yield(name: \"mean\")",
-                    "queryType": "randomWalk",
-                    "refId": "A",
-                    "resultFormat": "time_series",
-                    "select": [
-                        [
-                            {
-                                "params": [
-                                    "value"
-                                ],
-                                "type": "field"
-                            },
-                            {
-                                "params": [],
-                                "type": "mean"
-                            }
-                        ]
-                    ],
-                    "tags": []
+                    "query": "from(bucket: \"garden\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> filter(fn: (r) => r[\"topic\"] == \"${garden}/data/water\")\n  |> yield(name: \"mean\")\n  ",
+                    "refId": "A"
                 }
             ],
-            "thresholds": [],
-            "timeRegions": [],
             "title": "Watering Log (lines)",
-            "tooltip": {
-                "shared": true,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "mode": "time",
-                "show": true,
-                "values": []
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:62",
-                    "format": "ms",
-                    "logBase": 1,
-                    "show": true
-                },
-                {
-                    "$$hashKey": "object:63",
-                    "format": "short",
-                    "logBase": 1,
-                    "show": false
-                }
-            ],
-            "yaxis": {
-                "align": false
-            }
+            "type": "barchart"
         },
         {
-            "aliasColors": {},
-            "bars": true,
-            "dashLength": 10,
-            "dashes": false,
             "datasource": {
                 "type": "influxdb",
-                "uid": "8OpyRPuMz"
+                "uid": "influxdb_uuid"
             },
             "description": "This shows the average watering duration for each plant",
             "fieldConfig": {
-                "defaults": {},
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    },
+                    "unit": "ms"
+                },
                 "overrides": [
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"0\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 1"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 0 (Green Onion)"
+                                "value": "Zone 1"
                             }
                         ]
                     },
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"1\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 2"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 1 (Cilantro)"
+                                "value": "Zone 2"
                             }
                         ]
                     },
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"2\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 3"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 2 (Tomato)"
+                                "value": "Zone 3"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byRegexp",
+                            "options": "_value 4"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Zone 4"
                             }
                         ]
                     }
                 ]
             },
-            "fill": 1,
-            "fillGradient": 0,
             "gridPos": {
                 "h": 9,
-                "w": 6,
+                "w": 8,
                 "x": 0,
-                "y": 19
+                "y": 12
             },
-            "hiddenSeries": false,
             "id": 4,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": false,
-                "max": true,
-                "min": true,
-                "rightSide": false,
-                "show": false,
-                "total": true,
-                "values": true
-            },
-            "lines": false,
-            "linewidth": 1,
-            "nullPointMode": "null",
             "options": {
-                "alertThreshold": false
+                "displayMode": "gradient",
+                "minVizHeight": 10,
+                "minVizWidth": 0,
+                "orientation": "horizontal",
+                "reduceOptions": {
+                    "calcs": [
+                        "mean"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showUnfilled": true
             },
-            "percentage": false,
-            "pluginVersion": "9.3.1",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
+            "pluginVersion": "9.3.2",
             "targets": [
                 {
                     "datasource": {
                         "type": "influxdb",
-                        "uid": "8OpyRPuMz"
+                        "uid": "influxdb_uuid"
                     },
-                    "groupBy": [
-                        {
-                            "params": [
-                                "$__interval"
-                            ],
-                            "type": "time"
-                        },
-                        {
-                            "params": [
-                                "null"
-                            ],
-                            "type": "fill"
-                        }
-                    ],
-                    "orderByTime": "ASC",
-                    "policy": "default",
-                    "query": "from(bucket: \"water\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> yield(name: \"mean\")",
-                    "queryType": "randomWalk",
-                    "refId": "A",
-                    "resultFormat": "time_series",
-                    "select": [
-                        [
-                            {
-                                "params": [
-                                    "value"
-                                ],
-                                "type": "field"
-                            },
-                            {
-                                "params": [],
-                                "type": "mean"
-                            }
-                        ]
-                    ],
-                    "tags": []
+                    "query": "from(bucket: \"garden\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> filter(fn: (r) => r[\"topic\"] == \"${garden}/data/water\")\n  |> keep(columns: [\"_value\", \"zone\"])\n  |> yield(name: \"mean\")\n",
+                    "refId": "A"
                 }
             ],
-            "thresholds": [],
-            "timeRegions": [],
             "title": "Watering Averages",
-            "tooltip": {
-                "shared": false,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "mode": "series",
-                "show": true,
-                "values": [
-                    "avg"
-                ]
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:62",
-                    "format": "ms",
-                    "logBase": 1,
-                    "show": true
-                },
-                {
-                    "$$hashKey": "object:63",
-                    "format": "short",
-                    "logBase": 1,
-                    "show": false
-                }
-            ],
-            "yaxis": {
-                "align": false
-            }
+            "type": "bargauge"
         },
         {
-            "aliasColors": {},
-            "bars": true,
-            "dashLength": 10,
-            "dashes": false,
             "datasource": {
                 "type": "influxdb",
-                "uid": "8OpyRPuMz"
+                "uid": "influxdb_uuid"
             },
             "description": "This shows the total watering time for each plant",
             "fieldConfig": {
-                "defaults": {},
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    },
+                    "unit": "ms"
+                },
                 "overrides": [
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"0\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 1"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 0 (Green Onion)"
+                                "value": "Zone 1"
                             }
                         ]
                     },
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"1\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 2"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 1 (Cilantro)"
+                                "value": "Zone 2"
                             }
                         ]
                     },
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"2\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 3"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 2 (Tomato)"
+                                "value": "Zone 3"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byRegexp",
+                            "options": "_value 4"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Zone 4"
                             }
                         ]
                     }
                 ]
             },
-            "fill": 1,
-            "fillGradient": 0,
             "gridPos": {
                 "h": 9,
-                "w": 6,
-                "x": 6,
-                "y": 19
+                "w": 8,
+                "x": 8,
+                "y": 12
             },
-            "hiddenSeries": false,
             "id": 5,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": false,
-                "max": true,
-                "min": true,
-                "rightSide": false,
-                "show": false,
-                "total": true,
-                "values": true
-            },
-            "lines": false,
-            "linewidth": 1,
-            "nullPointMode": "null",
             "options": {
-                "alertThreshold": false
+                "displayMode": "gradient",
+                "minVizHeight": 10,
+                "minVizWidth": 0,
+                "orientation": "vertical",
+                "reduceOptions": {
+                    "calcs": [
+                        "sum"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showUnfilled": true
             },
-            "percentage": false,
-            "pluginVersion": "9.3.1",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
+            "pluginVersion": "9.3.2",
             "targets": [
                 {
                     "datasource": {
                         "type": "influxdb",
-                        "uid": "8OpyRPuMz"
+                        "uid": "influxdb_uuid"
                     },
-                    "groupBy": [
-                        {
-                            "params": [
-                                "$__interval"
-                            ],
-                            "type": "time"
-                        },
-                        {
-                            "params": [
-                                "null"
-                            ],
-                            "type": "fill"
-                        }
-                    ],
-                    "orderByTime": "ASC",
-                    "policy": "default",
-                    "query": "from(bucket: \"water\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> yield(name: \"mean\")",
-                    "queryType": "randomWalk",
-                    "refId": "A",
-                    "resultFormat": "time_series",
-                    "select": [
-                        [
-                            {
-                                "params": [
-                                    "value"
-                                ],
-                                "type": "field"
-                            },
-                            {
-                                "params": [],
-                                "type": "mean"
-                            }
-                        ]
-                    ],
-                    "tags": []
+                    "query": "from(bucket: \"garden\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"topic\"] == \"${garden}/data/water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> keep(columns: [\"_value\", \"zone\"])\n  |> sum()",
+                    "refId": "A"
                 }
             ],
-            "thresholds": [],
-            "timeRegions": [],
             "title": "Watering Totals",
-            "tooltip": {
-                "shared": false,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "mode": "series",
-                "show": true,
-                "values": [
-                    "total"
-                ]
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:62",
-                    "format": "ms",
-                    "logBase": 1,
-                    "show": true
-                },
-                {
-                    "$$hashKey": "object:63",
-                    "format": "short",
-                    "logBase": 1,
-                    "show": false
-                }
-            ],
-            "yaxis": {
-                "align": false
-            }
+            "type": "bargauge"
         },
         {
-            "aliasColors": {},
-            "bars": true,
-            "dashLength": 10,
-            "dashes": false,
             "datasource": {
                 "type": "influxdb",
-                "uid": "8OpyRPuMz"
+                "uid": "influxdb_uuid"
             },
             "description": "This shows the total occurrences of watering for each plant",
             "fieldConfig": {
-                "defaults": {},
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            }
+                        ]
+                    }
+                },
                 "overrides": [
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"0\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 1"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 0 (Green Onion)"
+                                "value": "Zone 1"
                             }
                         ]
                     },
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"1\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 2"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 1 (Cilantro)"
+                                "value": "Zone 2"
                             }
                         ]
                     },
                     {
                         "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"2\", topic=\"garden/data/water\"}"
+                            "id": "byRegexp",
+                            "options": "_value 3"
                         },
                         "properties": [
                             {
                                 "id": "displayName",
-                                "value": "Plant 2 (Tomato)"
+                                "value": "Zone 3"
+                            }
+                        ]
+                    },
+                    {
+                        "matcher": {
+                            "id": "byRegexp",
+                            "options": "_value 4"
+                        },
+                        "properties": [
+                            {
+                                "id": "displayName",
+                                "value": "Zone 4"
                             }
                         ]
                     }
                 ]
             },
-            "fill": 1,
-            "fillGradient": 0,
             "gridPos": {
                 "h": 9,
-                "w": 6,
-                "x": 12,
-                "y": 19
+                "w": 8,
+                "x": 16,
+                "y": 12
             },
-            "hiddenSeries": false,
             "id": 6,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": false,
-                "max": true,
-                "min": true,
-                "rightSide": false,
-                "show": false,
-                "total": true,
-                "values": true
-            },
-            "lines": false,
-            "linewidth": 1,
-            "nullPointMode": "null",
             "options": {
-                "alertThreshold": false
+                "displayMode": "lcd",
+                "minVizHeight": 10,
+                "minVizWidth": 0,
+                "orientation": "horizontal",
+                "reduceOptions": {
+                    "calcs": [
+                        "lastNotNull"
+                    ],
+                    "fields": "",
+                    "values": false
+                },
+                "showUnfilled": true
             },
-            "percentage": false,
-            "pluginVersion": "9.3.1",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
+            "pluginVersion": "9.3.2",
             "targets": [
                 {
                     "datasource": {
                         "type": "influxdb",
-                        "uid": "8OpyRPuMz"
+                        "uid": "influxdb_uuid"
                     },
-                    "groupBy": [
-                        {
-                            "params": [
-                                "$__interval"
-                            ],
-                            "type": "time"
-                        },
-                        {
-                            "params": [
-                                "null"
-                            ],
-                            "type": "fill"
-                        }
-                    ],
-                    "orderByTime": "ASC",
-                    "policy": "default",
-                    "query": "from(bucket: \"water\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> yield(name: \"mean\")",
-                    "queryType": "randomWalk",
-                    "refId": "A",
-                    "resultFormat": "time_series",
-                    "select": [
-                        [
-                            {
-                                "params": [
-                                    "value"
-                                ],
-                                "type": "field"
-                            },
-                            {
-                                "params": [],
-                                "type": "mean"
-                            }
-                        ]
-                    ],
-                    "tags": []
+                    "query": "from(bucket: \"garden\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> filter(fn: (r) => r[\"topic\"] == \"${garden}/data/water\")\n  |> keep(columns: [\"_value\", \"zone\"])\n  |> count()",
+                    "refId": "A"
                 }
             ],
-            "thresholds": [],
-            "timeRegions": [],
             "title": "Watering Count",
-            "tooltip": {
-                "shared": false,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "mode": "series",
-                "show": true,
-                "values": [
-                    "count"
-                ]
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:62",
-                    "decimals": 0,
-                    "format": "none",
-                    "label": "",
-                    "logBase": 1,
-                    "show": true
-                },
-                {
-                    "$$hashKey": "object:63",
-                    "format": "short",
-                    "logBase": 1,
-                    "show": false
-                }
-            ],
-            "yaxis": {
-                "align": false
-            }
+            "type": "bargauge"
         },
         {
-            "aliasColors": {},
-            "bars": true,
-            "dashLength": 10,
-            "dashes": false,
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 21
+            },
+            "id": 13,
+            "panels": [],
+            "title": "Health/Logs",
+            "type": "row"
+        },
+        {
             "datasource": {
                 "type": "influxdb",
-                "uid": "8OpyRPuMz"
+                "uid": "influxdb_uuid"
             },
-            "description": "This shows the max watering time for each plant",
+            "description": "Shows health report times",
             "fieldConfig": {
-                "defaults": {},
-                "overrides": [
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"0\", topic=\"garden/data/water\"}"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Plant 0 (Green Onion)"
-                            }
-                        ]
+                "defaults": {
+                    "color": {
+                        "mode": "continuous-GrYlRd"
                     },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"1\", topic=\"garden/data/water\"}"
-                        },
-                        "properties": [
-                            {
-                                "id": "displayName",
-                                "value": "Plant 1 (Cilantro)"
-                            }
-                        ]
+                    "custom": {
+                        "fillOpacity": 70,
+                        "lineWidth": 1
                     },
-                    {
-                        "matcher": {
-                            "id": "byName",
-                            "options": "millis {host=\"61609a69e833\", plant=\"2\", topic=\"garden/data/water\"}"
-                        },
-                        "properties": [
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
                             {
-                                "id": "displayName",
-                                "value": "Plant 2 (Tomato)"
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
                             }
                         ]
                     }
-                ]
+                },
+                "overrides": []
             },
-            "fill": 1,
-            "fillGradient": 0,
             "gridPos": {
-                "h": 9,
-                "w": 6,
-                "x": 18,
-                "y": 19
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 22
             },
-            "hiddenSeries": false,
-            "id": 7,
-            "legend": {
-                "alignAsTable": true,
-                "avg": true,
-                "current": false,
-                "max": true,
-                "min": true,
-                "rightSide": false,
-                "show": false,
-                "total": true,
-                "values": true
-            },
-            "lines": false,
-            "linewidth": 1,
-            "nullPointMode": "null",
+            "id": 15,
             "options": {
-                "alertThreshold": false
+                "colWidth": 0.9,
+                "legend": {
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "rowHeight": 0.9,
+                "showValue": "auto",
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
             },
-            "percentage": false,
-            "pluginVersion": "9.3.1",
-            "pointradius": 2,
-            "points": false,
-            "renderer": "flot",
-            "seriesOverrides": [],
-            "spaceLength": 10,
-            "stack": false,
-            "steppedLine": false,
             "targets": [
                 {
                     "datasource": {
                         "type": "influxdb",
-                        "uid": "8OpyRPuMz"
+                        "uid": "influxdb_uuid"
                     },
-                    "groupBy": [
-                        {
-                            "params": [
-                                "$__interval"
-                            ],
-                            "type": "time"
-                        },
-                        {
-                            "params": [
-                                "null"
-                            ],
-                            "type": "fill"
-                        }
-                    ],
-                    "orderByTime": "ASC",
-                    "policy": "default",
-                    "query": "from(bucket: \"water\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"water\")\n  |> filter(fn: (r) => r[\"_field\"] == \"millis\")\n  |> yield(name: \"mean\")",
-                    "queryType": "randomWalk",
-                    "refId": "A",
-                    "resultFormat": "time_series",
-                    "select": [
-                        [
-                            {
-                                "params": [
-                                    "value"
-                                ],
-                                "type": "field"
-                            },
-                            {
-                                "params": [],
-                                "type": "mean"
-                            }
-                        ]
-                    ],
-                    "tags": []
+                    "query": "from(bucket: \"garden\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r[\"_measurement\"] == \"health\")\n  |> filter(fn: (r) => r[\"_field\"] == \"garden\")\n  |> filter(fn: (r) => r[\"topic\"] == \"${garden}/data/health\")\n  |> yield(name: \"last\")",
+                    "refId": "A"
                 }
             ],
-            "thresholds": [],
-            "timeRegions": [],
-            "title": "Watering Max",
-            "tooltip": {
-                "shared": false,
-                "sort": 0,
-                "value_type": "individual"
-            },
-            "type": "graph",
-            "xaxis": {
-                "mode": "series",
-                "show": true,
-                "values": [
-                    "max"
-                ]
-            },
-            "yaxes": [
-                {
-                    "$$hashKey": "object:62",
-                    "format": "ms",
-                    "logBase": 1,
-                    "show": true
-                },
-                {
-                    "$$hashKey": "object:63",
-                    "format": "short",
-                    "logBase": 1,
-                    "show": false
-                }
-            ],
-            "yaxis": {
-                "align": false
-            }
+            "title": "Controller Uptime",
+            "type": "status-history"
         }
     ],
     "refresh": false,
@@ -924,16 +542,49 @@
     "style": "dark",
     "tags": [],
     "templating": {
-        "list": []
+        "list": [
+            {
+                "current": {
+                    "selected": true,
+                    "text": "garden",
+                    "value": "garden"
+                },
+                "hide": 0,
+                "includeAll": false,
+                "multi": false,
+                "name": "garden",
+                "options": [
+                    {
+                        "selected": true,
+                        "text": "garden",
+                        "value": "garden"
+                    },
+                    {
+                        "selected": true,
+                        "text": "seeds",
+                        "value": "seeds"
+                    },
+                    {
+                        "selected": true,
+                        "text": "seed-garden",
+                        "value": "seed-garden"
+                    }
+                ],
+                "query": "garden,seeds,seed-garden",
+                "queryValue": "",
+                "skipUrlSync": false,
+                "type": "custom"
+            }
+        ]
     },
     "time": {
-        "from": "now-7d",
+        "from": "now-24h",
         "to": "now"
     },
     "timepicker": {},
     "timezone": "",
     "title": "Garden Dashboard",
     "uid": "aavEJk0Gz",
-    "version": 4,
+    "version": 12,
     "weekStart": ""
 }

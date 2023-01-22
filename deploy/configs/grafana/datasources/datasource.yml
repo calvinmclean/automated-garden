@@ -4,6 +4,7 @@ datasources:
     type: influxdb
     access: proxy
     url: http://influxdb:8086
+    uid: influxdb_uuid
     secureJsonData:
       token: ${INFLUXDB_TOKEN}
     jsonData:

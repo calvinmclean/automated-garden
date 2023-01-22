@@ -51,7 +51,7 @@ services:
       - "9001:9001"
 
   garden-app:
-    image: "ghcr.io/calvinmclean/garden-app:metrics"
+    image: "ghcr.io/calvinmclean/garden-app:latest"
     build: "../garden-app"
     ports:
       - "8080:8080"

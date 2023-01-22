@@ -67,6 +67,9 @@ containers: {
       "GF_SECURITY_ADMIN_USER": localData.influxdb.adminUser
       "GF_SECURITY_ADMIN_PASSWORD": localData.influxdb.adminPassword
       "GF_PATHS_PROVISIONING": localData.grafana.pathsProvisioning
+      "INFLUXDB_TOKEN": localData.influxdb.token
+      "INFLUXDB_ORG": localData.influxdb.org
+      "INFLUXDB_BUCKET": localData.influxdb.bucket
     }
     dirs: {
       "/etc/grafana/provisioning": "./configs/grafana"
