@@ -3,7 +3,6 @@ package worker
 import (
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/metrics"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -34,7 +33,7 @@ type Worker struct {
 	weatherClient  weather.Client
 	scheduler      *gocron.Scheduler
 	logger         *logrus.Entry
-	metrics        *metrics.Metrics
+	metrics        []prometheus.Collector
 }
 
 // NewWorker creates a Worker with specified clients
@@ -52,24 +51,26 @@ func NewWorker(
 		weatherClient:  weatherClient,
 		scheduler:      gocron.NewScheduler(time.Local),
 		logger:         logger.WithField("source", "worker"),
-		metrics:        metrics.New(scheduleJobsGauge, schedulerErrors),
+		metrics:        []prometheus.Collector{scheduleJobsGauge, schedulerErrors},
 	}
 }
 
 // StartAsync starts the Worker's background jobs
 func (w *Worker) StartAsync() {
 	w.scheduler.StartAsync()
-	w.metrics.Register()
+	prometheus.MustRegister(w.metrics...)
 }
 
 // Stop stops the Worker's background jobs
 func (w *Worker) Stop() {
 	w.scheduler.Stop()
-	w.metrics.Unregister()
 	if w.mqttClient != nil {
 		w.mqttClient.Disconnect(100)
 	}
 	if w.influxdbClient != nil {
 		w.influxdbClient.Close()
+	}
+	for _, c := range w.metrics {
+		prometheus.Unregister(c)
 	}
 }
