@@ -19,7 +19,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
-	metrics "github.com/slok/go-http-metrics/metrics/prometheus"
+	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
 )
@@ -69,7 +69,7 @@ func NewServer(cfg Config) (*Server, error) {
 
 	// Configure HTTP metrics
 	r.Use(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
-		Recorder: metrics.NewRecorder(metrics.Config{Prefix: "garden_app"}),
+		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
 	})))
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
