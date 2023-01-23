@@ -24,7 +24,6 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 2,
     "links": [],
     "liveNow": false,
     "panels": [
@@ -57,16 +56,26 @@
                         "axisColorMode": "text",
                         "axisLabel": "",
                         "axisPlacement": "auto",
-                        "fillOpacity": 80,
+                        "barAlignment": 0,
+                        "drawStyle": "bars",
+                        "fillOpacity": 100,
                         "gradientMode": "none",
                         "hideFrom": {
                             "legend": false,
                             "tooltip": false,
                             "viz": false
                         },
+                        "lineInterpolation": "linear",
                         "lineWidth": 1,
+                        "pointSize": 5,
                         "scaleDistribution": {
                             "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
                         },
                         "thresholdsStyle": {
                             "mode": "off"
@@ -94,24 +103,16 @@
             },
             "id": 2,
             "options": {
-                "barRadius": 0,
-                "barWidth": 0.97,
-                "groupWidth": 0.7,
                 "legend": {
                     "calcs": [],
                     "displayMode": "list",
                     "placement": "bottom",
                     "showLegend": true
                 },
-                "orientation": "auto",
-                "showValue": "auto",
-                "stacking": "none",
                 "tooltip": {
                     "mode": "single",
                     "sort": "none"
-                },
-                "xTickLabelRotation": 0,
-                "xTickLabelSpacing": 0
+                }
             },
             "pluginVersion": "9.3.2",
             "targets": [
@@ -125,7 +126,7 @@
                 }
             ],
             "title": "Watering Log (lines)",
-            "type": "barchart"
+            "type": "timeseries"
         },
         {
             "datasource": {
@@ -560,12 +561,12 @@
                         "value": "garden"
                     },
                     {
-                        "selected": true,
+                        "selected": false,
                         "text": "seeds",
                         "value": "seeds"
                     },
                     {
-                        "selected": true,
+                        "selected": false,
                         "text": "seed-garden",
                         "value": "seed-garden"
                     }
@@ -585,6 +586,6 @@
     "timezone": "",
     "title": "Garden Dashboard",
     "uid": "aavEJk0Gz",
-    "version": 12,
+    "version": 1,
     "weekStart": ""
 }
