@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/patrickmn/go-cache"
 )
 
 const (
@@ -48,7 +49,8 @@ type TokenData struct {
 type Client struct {
 	*Config
 	*http.Client
-	baseURL *url.URL
+	baseURL       *url.URL
+	responseCache *cache.Cache
 }
 
 // NewClient creates a new Netatmo API client from configuration
@@ -74,6 +76,8 @@ func NewClient(options map[string]interface{}) (*Client, error) {
 			return nil, err
 		}
 	}
+
+	client.responseCache = cache.New(1*time.Minute, 1*time.Minute)
 
 	return client, nil
 }
