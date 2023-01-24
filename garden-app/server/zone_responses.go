@@ -61,8 +61,14 @@ type TemperatureData struct {
 func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
 	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
 
+	response := &ZoneResponse{
+		Zone:          zone,
+		Links:         links,
+		NextWaterTime: zr.worker.GetNextWaterTime(zone),
+	}
+
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
-	links = append(links,
+	response.Links = append(response.Links,
 		Link{
 			"self",
 			fmt.Sprintf("%s%s/%s", gardenPath, zoneBasePath, zone.ID),
@@ -73,7 +79,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		},
 	)
 	if !zone.EndDated() {
-		links = append(links,
+		response.Links = append(response.Links,
 			Link{
 				"action",
 				fmt.Sprintf("%s%s/%s/action", gardenPath, zoneBasePath, zone.ID),
@@ -84,10 +90,9 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 			},
 		)
 	}
-	var weatherData *WeatherData
-	var err error
+
 	if zone.HasWeatherControl() {
-		weatherData = &WeatherData{}
+		response.WeatherData = zr.getWeatherData(ctx, zone)
 
 		if zone.WaterSchedule.HasSoilMoistureControl() && garden != nil {
 			logger.Debug("getting moisture data for Zone")
@@ -96,31 +101,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 				logger.WithError(err).Warn("unable to get moisture data for Zone")
 			} else {
 				logger.Debugf("successfully got moisture data for Zone: %f", soilMoisture)
-				weatherData.SoilMoisturePercent = &soilMoisture
-			}
-		}
-
-		interval, err := time.ParseDuration(zone.WaterSchedule.Interval)
-		if err != nil {
-			logger.WithError(err).Warn("unable to parse WaterSchedule interval duration")
-		}
-		if zone.WaterSchedule.HasRainControl() && zr.weatherClient != nil {
-			logger.Debug("getting rain data for Zone")
-			weatherData.Rain = &RainData{}
-			weatherData.Rain.MM, err = zr.getRainData(zone)
-			if err != nil {
-				logger.WithError(err).Warn("unable to get rain data for Zone")
-			} else {
-				weatherData.Rain.ScaleFactor = zone.WaterSchedule.WeatherControl.Rain.InvertedScaleDownOnly(weatherData.Rain.MM)
-			}
-		}
-		if zone.WaterSchedule.HasTemperatureControl() && zr.weatherClient != nil {
-			weatherData.Temperature = &TemperatureData{}
-			weatherData.Temperature.Celcius, err = zr.weatherClient.GetAverageHighTemperature(interval)
-			if err != nil {
-				logger.WithError(err).Warn("unable to get average high temperature from weather client")
-			} else {
-				weatherData.Temperature.ScaleFactor = zone.WaterSchedule.WeatherControl.Temperature.Scale(weatherData.Temperature.Celcius)
+				response.WeatherData.SoilMoisturePercent = &soilMoisture
 			}
 		}
 	}
@@ -136,14 +117,41 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 			nextWateringDuration = time.Duration(wd)
 		}
 	}
+	response.NextWaterDuration = nextWateringDuration.String()
 
-	return &ZoneResponse{
-		zone,
-		weatherData,
-		zr.worker.GetNextWaterTime(zone),
-		nextWateringDuration.String(),
-		links,
+	return response
+}
+
+func (zr ZonesResource) getWeatherData(ctx context.Context, zone *pkg.Zone) *WeatherData {
+	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
+	weatherData := &WeatherData{}
+
+	interval, err := time.ParseDuration(zone.WaterSchedule.Interval)
+	if err != nil {
+		logger.WithError(err).Warn("unable to parse WaterSchedule interval duration")
 	}
+
+	if zone.WaterSchedule.HasRainControl() && zr.weatherClient != nil {
+		logger.Debug("getting rain data for Zone")
+		weatherData.Rain = &RainData{}
+		weatherData.Rain.MM, err = zr.getRainData(zone)
+		if err != nil {
+			logger.WithError(err).Warn("unable to get rain data for Zone")
+		} else {
+			weatherData.Rain.ScaleFactor = zone.WaterSchedule.WeatherControl.Rain.InvertedScaleDownOnly(weatherData.Rain.MM)
+		}
+	}
+
+	if zone.WaterSchedule.HasTemperatureControl() && zr.weatherClient != nil {
+		weatherData.Temperature = &TemperatureData{}
+		weatherData.Temperature.Celcius, err = zr.weatherClient.GetAverageHighTemperature(interval)
+		if err != nil {
+			logger.WithError(err).Warn("unable to get average high temperature from weather client")
+		} else {
+			weatherData.Temperature.ScaleFactor = zone.WaterSchedule.WeatherControl.Temperature.Scale(weatherData.Temperature.Celcius)
+		}
+	}
+	return weatherData
 }
 
 func (zr ZonesResource) getRainData(zone *pkg.Zone) (float32, error) {

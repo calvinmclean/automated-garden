@@ -211,6 +211,7 @@ func TestGetZone(t *testing.T) {
 				zone := createExampleZone()
 				zone.WaterSchedule = &pkg.WaterSchedule{
 					Interval: "24h",
+					Duration: "1h",
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 1,
@@ -235,7 +236,7 @@ func TestGetZone(t *testing.T) {
 				weatherClient.On("GetTotalRain", mock.Anything).Return(float32(12.7), nil)
 				weatherClient.On("GetAverageHighTemperature", mock.Anything).Return(float32(35), nil)
 			},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"","interval":"24h","start_time":null,"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4},"moisture_control":{"minimum_moisture":1},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10}}},"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celcius":35,"scale_factor":1.25},"soil_moisture_percent":2},"next_water_duration":"0s","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1h","interval":"24h","start_time":null,"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4},"moisture_control":{"minimum_moisture":1},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10}}},"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celcius":35,"scale_factor":1.25},"soil_moisture_percent":2},"next_water_duration":"37m30.000039936s","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"ErrorGettingMoisture",

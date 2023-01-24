@@ -25,7 +25,6 @@ func getLoggerFromContext(ctx context.Context) *logrus.Entry {
 		return logger
 	}
 	logger := logrus.New().WithField("", "")
-	logger.Info("created new logger due to missing context key")
 	return logger
 }
 
