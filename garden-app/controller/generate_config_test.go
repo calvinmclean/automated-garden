@@ -24,7 +24,6 @@ func TestGenerateMainConfig(t *testing.T) {
 							ValvePin: "GPIO_NUM_16",
 						},
 					},
-					NumZones:         1,
 					TopicPrefix:      "garden",
 					DefaultWaterTime: 5 * time.Second,
 				},
@@ -79,7 +78,6 @@ func TestGenerateMainConfig(t *testing.T) {
 							MoistureSensorPin: "GPIO_NUM_36",
 						},
 					},
-					NumZones:             1,
 					TopicPrefix:          "garden",
 					DefaultWaterTime:     5 * time.Second,
 					LightPin:             "GPIO_NUM_32",
@@ -158,7 +156,6 @@ func TestGenerateMainConfig(t *testing.T) {
 							ValvePin: "GPIO_NUM_16",
 						},
 					},
-					NumZones:         1,
 					TopicPrefix:      "garden",
 					DefaultWaterTime: 5 * time.Second,
 					DisableWatering:  true,
@@ -198,6 +195,70 @@ func TestGenerateMainConfig(t *testing.T) {
 #define DISABLE_WATERING
 #define NUM_ZONES 1
 #define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX } }
+#define DEFAULT_WATER_TIME 5000
+
+#endif
+`,
+		},
+		{
+			"MultipleZonesNoSpecialFeatures",
+			Config{
+				NestedConfig: NestedConfig{
+					Zones: []ZoneConfig{
+						{
+							PumpPin:  "GPIO_NUM_18",
+							ValvePin: "GPIO_NUM_16",
+						},
+						{
+							PumpPin:  "GPIO_NUM_18",
+							ValvePin: "GPIO_NUM_16",
+						},
+						{
+							PumpPin:  "GPIO_NUM_18",
+							ValvePin: "GPIO_NUM_16",
+						},
+						{
+							PumpPin:  "GPIO_NUM_18",
+							ValvePin: "GPIO_NUM_16",
+						},
+					},
+					TopicPrefix:      "garden",
+					DefaultWaterTime: 5 * time.Second,
+				},
+				MQTTConfig: mqtt.Config{
+					Broker: "localhost",
+					Port:   1883,
+				},
+			},
+			`#ifndef config_h
+#define config_h
+
+#define TOPIC_PREFIX "garden"
+
+#define QUEUE_SIZE 10
+
+#define ENABLE_WIFI
+#ifdef ENABLE_WIFI
+#define MQTT_ADDRESS "localhost"
+#define MQTT_PORT 1883
+#define MQTT_CLIENT_NAME TOPIC_PREFIX
+#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
+#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
+#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
+#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
+#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
+#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
+
+#define ENABLE_MQTT_LOGGING
+#ifdef ENABLE_MQTT_LOGGING
+#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
+#endif
+
+#define JSON_CAPACITY 48
+#endif
+
+#define NUM_ZONES 4
+#define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX }, { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX }, { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX }, { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX } }
 #define DEFAULT_WATER_TIME 5000
 
 #endif

@@ -51,8 +51,8 @@ const (
 {{ if .DisableWatering }}
 #define DISABLE_WATERING
 {{ end -}}
-#define NUM_ZONES {{ .NumZones }}
-#define ZONES { {{ range $p := .Zones }}{ {{ $p.PumpPin }}, {{ $p.ValvePin }}, {{ or $p.ButtonPin "GPIO_NUM_MAX" }}, {{ or $p.MoistureSensorPin "GPIO_NUM_MAX" }} }{{ end }} }
+#define NUM_ZONES {{ len .Zones }}
+#define ZONES { {{ range $index, $z := .Zones }}{{if $index}}, {{end}}{ {{ $z.PumpPin }}, {{ $z.ValvePin }}, {{ or $z.ButtonPin "GPIO_NUM_MAX" }}, {{ or $z.MoistureSensorPin "GPIO_NUM_MAX" }} }{{ end }} }
 #define DEFAULT_WATER_TIME {{ milliseconds  .DefaultWaterTime }}
 
 {{ if .LightPin }}
