@@ -7,6 +7,7 @@ import (
 	"time"
 
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/prometheus/client_golang/prometheus"
 )
 
 const (
@@ -37,6 +38,28 @@ const (
 |> yield(name: "last")`
 )
 
+var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+	Namespace: "garden_app",
+	Name:      "influxdb_client_duration_seconds",
+	Help:      "summary of influxdb client calls",
+}, []string{"function"})
+
+// Client is an interface that allows querying InfluxDB for data
+type Client interface {
+	GetMoisture(context.Context, uint, string) (float64, error)
+	GetLastContact(context.Context, string) (time.Time, error)
+	GetWaterHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
+	influxdb2.Client
+}
+
+// Config holds configuration values for connecting the the InfluxDB server
+type Config struct {
+	Address string `mapstructure:"address"`
+	Token   string `mapstructure:"token"`
+	Org     string `mapstructure:"org"`
+	Bucket  string `mapstructure:"bucket"`
+}
+
 // queryData is used to fill out any of the query templates
 type queryData struct {
 	Bucket       string
@@ -57,30 +80,15 @@ func (q queryData) Render(queryTemplate string) (string, error) {
 	return queryBytes.String(), nil
 }
 
-// Client is an interface that allows querying InfluxDB for data
-type Client interface {
-	GetMoisture(context.Context, uint, string) (float64, error)
-	GetLastContact(context.Context, string) (time.Time, error)
-	GetWaterHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
-	influxdb2.Client
-}
-
 // client wraps an InfluxDB2 Client and our custom config
 type client struct {
 	influxdb2.Client
 	config Config
 }
 
-// Config holds configuration values for connecting the the InfluxDB server
-type Config struct {
-	Address string `mapstructure:"address"`
-	Token   string `mapstructure:"token"`
-	Org     string `mapstructure:"org"`
-	Bucket  string `mapstructure:"bucket"`
-}
-
 // NewClient creates an InfluxDB client from the viper config
 func NewClient(config Config) Client {
+	prometheus.MustRegister(influxDBClientSummary)
 	return &client{
 		influxdb2.NewClient(config.Address, config.Token),
 		config,
@@ -89,6 +97,9 @@ func NewClient(config Config) Client {
 
 // GetMoisture returns the plant's average soil moisture in the last 15 minutes
 func (client *client) GetMoisture(ctx context.Context, zonePosition uint, topicPrefix string) (result float64, err error) {
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetMoisture"))
+	defer timer.ObserveDuration()
+
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:       client.config.Bucket,
@@ -116,6 +127,9 @@ func (client *client) GetMoisture(ctx context.Context, zonePosition uint, topicP
 }
 
 func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (result time.Time, err error) {
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetLastContact"))
+	defer timer.ObserveDuration()
+
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:      client.config.Bucket,
@@ -144,6 +158,9 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (r
 
 // GetWaterHistory gets recent water events for a specific Plant
 func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, topicPrefix string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetWaterHistory"))
+	defer timer.ObserveDuration()
+
 	// Prepare query
 	queryString, err := queryData{
 		Bucket:       client.config.Bucket,
