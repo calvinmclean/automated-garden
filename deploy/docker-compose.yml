@@ -15,6 +15,8 @@ services:
     image: prom/prometheus
     ports:
       - "9090:9090"
+    extra_hosts:
+      - "garden-app:192.168.5.2" # IP address may change
     volumes:
       - "./configs/prometheus:/etc/prometheus"
 
@@ -49,18 +51,17 @@ services:
     ports:
       - "1883:1883"
       - "9001:9001"
-
-  garden-app:
-    image: "ghcr.io/calvinmclean/garden-app:latest"
-    build: "../garden-app"
-    ports:
-      - "8080:8080"
-    volumes:
-      - "./configs/garden-app:/app/configs"
-    command:
-      - "server"
-      - "--config"
-      - "/app/configs/config.yaml"
+  # garden-app:
+  #   image: "ghcr.io/calvinmclean/garden-app:latest"
+  #   build: "../garden-app"
+  #   ports:
+  #     - "8080:8080"
+  #   volumes:
+  #     - "./configs/garden-app:/app/configs"
+  #   command:
+  #     - "server"
+  #     - "--config"
+  #     - "/app/configs/config.yaml"
 
 volumes:
   influxdb:

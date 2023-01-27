@@ -33,7 +33,6 @@ type Worker struct {
 	weatherClient  weather.Client
 	scheduler      *gocron.Scheduler
 	logger         *logrus.Entry
-	metrics        []prometheus.Collector
 }
 
 // NewWorker creates a Worker with specified clients
@@ -51,14 +50,16 @@ func NewWorker(
 		weatherClient:  weatherClient,
 		scheduler:      gocron.NewScheduler(time.Local),
 		logger:         logger.WithField("source", "worker"),
-		metrics:        []prometheus.Collector{scheduleJobsGauge, schedulerErrors},
 	}
 }
 
 // StartAsync starts the Worker's background jobs
 func (w *Worker) StartAsync() {
 	w.scheduler.StartAsync()
-	prometheus.MustRegister(w.metrics...)
+	prometheus.MustRegister(
+		scheduleJobsGauge,
+		schedulerErrors,
+	)
 }
 
 // Stop stops the Worker's background jobs
@@ -70,7 +71,7 @@ func (w *Worker) Stop() {
 	if w.influxdbClient != nil {
 		w.influxdbClient.Close()
 	}
-	for _, c := range w.metrics {
-		prometheus.Unregister(c)
-	}
+
+	prometheus.Unregister(scheduleJobsGauge)
+	prometheus.Unregister(schedulerErrors)
 }

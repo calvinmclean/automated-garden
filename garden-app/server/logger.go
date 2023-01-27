@@ -25,6 +25,9 @@ func loggerMiddleware(logger *logrus.Entry) func(next http.Handler) http.Handler
 
 			t1 := time.Now()
 			defer func() {
+				if r.URL.Path == "/metrics" {
+					return
+				}
 				httpLogger.WithFields(logrus.Fields{
 					"status":        ww.Status(),
 					"bytes_written": ww.BytesWritten(),

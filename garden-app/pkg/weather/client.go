@@ -6,7 +6,15 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
+	"github.com/patrickmn/go-cache"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var weatherClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+	Namespace: "garden_app",
+	Name:      "weather_client_duration_seconds",
+	Help:      "summary of weather client calls",
+}, []string{"function", "cached"})
 
 // Config is used to identify and configure a client type
 type Config struct {
@@ -25,12 +33,74 @@ type Client interface {
 func NewClient(config Config) (Client, error) {
 	switch config.Type {
 	case "netatmo":
-		return netatmo.NewClient(config.Options)
+		return newMetricsWrapperClient(netatmo.NewClient(config.Options))
 	case "fake":
-		return fake.NewClient(config.Options)
+		return newMetricsWrapperClient(fake.NewClient(config.Options))
 	case "":
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("invalid type '%s'", config.Type)
 	}
+}
+
+// clientWrapper wraps any other implementation of the interface in order to add basic Prometheus summary metrics
+// and caching
+type clientWrapper struct {
+	Client
+	responseCache *cache.Cache
+}
+
+// newMetricsWrapperClient returns the input error as-is and the input client wrapped with a Prometheus metrics
+// collector. It is intended to directly wrap functions to create other clients
+func newMetricsWrapperClient(client Client, err error) (Client, error) {
+	prometheus.MustRegister(weatherClientSummary)
+	return &clientWrapper{client, cache.New(5*time.Minute, 1*time.Minute)}, err
+}
+
+// GetTotalRain ...
+func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
+	now := time.Now()
+	cached := false
+	defer func() {
+		weatherClientSummary.WithLabelValues("GetTotalRain", fmt.Sprintf("%t", cached)).Observe(time.Since(now).Seconds())
+	}()
+
+	cacheKey := fmt.Sprintf("total_rain_%d", since)
+	cachedData, found := c.responseCache.Get(cacheKey)
+	if found {
+		cached = true
+		return cachedData.(float32), nil
+	}
+
+	totalRain, err := c.Client.GetTotalRain(since)
+	if err != nil {
+		return 0, err
+	}
+	c.responseCache.Set(cacheKey, totalRain, cache.DefaultExpiration)
+
+	return totalRain, nil
+}
+
+// GetAverageHighTemperature ...
+func (c *clientWrapper) GetAverageHighTemperature(since time.Duration) (float32, error) {
+	now := time.Now()
+	cached := false
+	defer func() {
+		weatherClientSummary.WithLabelValues("GetAverageHighTemperature", fmt.Sprintf("%t", cached)).Observe(time.Since(now).Seconds())
+	}()
+
+	cacheKey := fmt.Sprintf("avg_temp_%d", since)
+	cachedData, found := c.responseCache.Get(cacheKey)
+	if found {
+		cached = true
+		return cachedData.(float32), nil
+	}
+
+	avgTemp, err := c.Client.GetAverageHighTemperature(since)
+	if err != nil {
+		return 0, err
+	}
+	c.responseCache.Set(cacheKey, avgTemp, cache.DefaultExpiration)
+
+	return avgTemp, nil
 }

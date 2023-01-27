@@ -23,6 +23,16 @@ c9i98glvqc7km2vasfig:
         duration: 30s
         interval: 24h
         start_time: 2022-04-23T08:00:00-07:00
+        weathercontrol:
+          rain:
+            baselinevalue: 0
+            factor: 1
+            range: 25.4
+          soilmoisture: null
+          temperature:
+            baselinevalue: 27
+            factor: 0.5
+            range: 10
   max_zones: 1
   created_at: 2022-04-23T17:05:22.245112-07:00
   light_schedule:
