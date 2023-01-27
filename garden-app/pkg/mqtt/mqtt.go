@@ -7,7 +7,14 @@ import (
 	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	"github.com/prometheus/client_golang/prometheus"
 )
+
+var mqttClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+	Namespace: "garden_app",
+	Name:      "mqtt_client_duration_seconds",
+	Help:      "summary of MQTT client calls",
+}, []string{"function", "topic"})
 
 // Config is used to read the necessary configuration values from a YAML file
 type Config struct {
@@ -64,11 +71,16 @@ func NewClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...To
 		}
 	}
 	opts.DefaultPublishHandler = defaultHandler
+
+	prometheus.MustRegister(mqttClientSummary)
 	return &client{Client: mqtt.NewClient(opts), Config: config}, nil
 }
 
 // Connect uses the MQTT Client's Connect function but returns the error instead of Token
 func (c *client) Connect() error {
+	timer := prometheus.NewTimer(mqttClientSummary.WithLabelValues("Connect", ""))
+	defer timer.ObserveDuration()
+
 	if c.Client.IsConnected() {
 		return nil
 	}
@@ -79,6 +91,9 @@ func (c *client) Connect() error {
 
 // Publish will send the message to the specified MQTT topic
 func (c *client) Publish(topic string, message []byte) error {
+	timer := prometheus.NewTimer(mqttClientSummary.WithLabelValues("Publish", topic))
+	defer timer.ObserveDuration()
+
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	if len(topic) == 0 {
