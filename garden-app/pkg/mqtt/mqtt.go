@@ -2,6 +2,7 @@ package mqtt
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"html/template"
 	"sync"
@@ -72,7 +73,11 @@ func NewClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...To
 	}
 	opts.DefaultPublishHandler = defaultHandler
 
-	prometheus.MustRegister(mqttClientSummary)
+	err := prometheus.Register(mqttClientSummary)
+	if err != nil && errors.Is(err, prometheus.AlreadyRegisteredError{}) {
+		return nil, err
+	}
+
 	return &client{Client: mqtt.NewClient(opts), Config: config}, nil
 }
 
