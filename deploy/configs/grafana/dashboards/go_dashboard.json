@@ -37,6 +37,578 @@
                 "x": 0,
                 "y": 0
             },
+            "id": 29,
+            "panels": [],
+            "title": "Clients",
+            "type": "row"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus_uuid"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 1
+            },
+            "id": 34,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus_uuid"
+                    },
+                    "editorMode": "code",
+                    "expr": "rate(garden_app_influxdb_client_duration_seconds_count[$__rate_interval])",
+                    "interval": "",
+                    "legendFormat": "{{function}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Rate of InfluxDB Client Calls",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus_uuid"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 1
+            },
+            "id": 36,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus_uuid"
+                    },
+                    "editorMode": "code",
+                    "expr": "garden_app_influxdb_client_duration_seconds_sum/garden_app_influxdb_client_duration_seconds_count",
+                    "legendFormat": "{{function}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Average InfluxDB Function Execution Timing",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus_uuid"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 9
+            },
+            "id": 35,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus_uuid"
+                    },
+                    "editorMode": "code",
+                    "expr": "sum(rate(garden_app_weather_client_duration_seconds_count[$__rate_interval])) by (function)",
+                    "legendFormat": "{{function}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Rate of Weather Client Calls",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus_uuid"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 9
+            },
+            "id": 33,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus_uuid"
+                    },
+                    "editorMode": "code",
+                    "expr": "garden_app_weather_client_duration_seconds_sum/garden_app_weather_client_duration_seconds_count",
+                    "legendFormat": "{{function}},cached={{cached}}",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Average Weather Function Execution Timing",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus_uuid"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 0,
+                "y": 17
+            },
+            "id": 32,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus_uuid"
+                    },
+                    "editorMode": "code",
+                    "expr": "rate(garden_app_mqtt_client_duration_seconds_count[$__rate_interval])",
+                    "legendFormat": "{{function}}({{topic}})",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Rate of MQTT Client Calls",
+            "type": "timeseries"
+        },
+        {
+            "datasource": {
+                "type": "prometheus",
+                "uid": "prometheus_uuid"
+            },
+            "description": "",
+            "fieldConfig": {
+                "defaults": {
+                    "color": {
+                        "mode": "palette-classic"
+                    },
+                    "custom": {
+                        "axisCenteredZero": false,
+                        "axisColorMode": "text",
+                        "axisLabel": "",
+                        "axisPlacement": "auto",
+                        "barAlignment": 0,
+                        "drawStyle": "line",
+                        "fillOpacity": 0,
+                        "gradientMode": "none",
+                        "hideFrom": {
+                            "legend": false,
+                            "tooltip": false,
+                            "viz": false
+                        },
+                        "lineInterpolation": "linear",
+                        "lineWidth": 1,
+                        "pointSize": 5,
+                        "scaleDistribution": {
+                            "type": "linear"
+                        },
+                        "showPoints": "auto",
+                        "spanNulls": false,
+                        "stacking": {
+                            "group": "A",
+                            "mode": "none"
+                        },
+                        "thresholdsStyle": {
+                            "mode": "off"
+                        }
+                    },
+                    "mappings": [],
+                    "thresholds": {
+                        "mode": "absolute",
+                        "steps": [
+                            {
+                                "color": "green",
+                                "value": null
+                            },
+                            {
+                                "color": "red",
+                                "value": 80
+                            }
+                        ]
+                    }
+                },
+                "overrides": []
+            },
+            "gridPos": {
+                "h": 8,
+                "w": 12,
+                "x": 12,
+                "y": 17
+            },
+            "id": 31,
+            "options": {
+                "legend": {
+                    "calcs": [],
+                    "displayMode": "list",
+                    "placement": "bottom",
+                    "showLegend": true
+                },
+                "tooltip": {
+                    "mode": "single",
+                    "sort": "none"
+                }
+            },
+            "targets": [
+                {
+                    "datasource": {
+                        "type": "prometheus",
+                        "uid": "prometheus_uuid"
+                    },
+                    "editorMode": "code",
+                    "expr": "garden_app_mqtt_client_duration_seconds_sum/garden_app_mqtt_client_duration_seconds_count",
+                    "legendFormat": "{{function}}({{topic}})",
+                    "range": true,
+                    "refId": "A"
+                }
+            ],
+            "title": "Average MQTT Function Execution Timing",
+            "type": "timeseries"
+        },
+        {
+            "collapsed": false,
+            "gridPos": {
+                "h": 1,
+                "w": 24,
+                "x": 0,
+                "y": 25
+            },
             "id": 21,
             "panels": [],
             "title": "Worker",
@@ -74,7 +646,7 @@
                 "h": 8,
                 "w": 7,
                 "x": 0,
-                "y": 1
+                "y": 26
             },
             "id": 19,
             "options": {
@@ -91,7 +663,7 @@
                 },
                 "showUnfilled": true
             },
-            "pluginVersion": "9.3.2",
+            "pluginVersion": "9.2.5",
             "targets": [
                 {
                     "datasource": {
@@ -139,7 +711,7 @@
                 "h": 8,
                 "w": 7,
                 "x": 7,
-                "y": 1
+                "y": 26
             },
             "id": 23,
             "options": {
@@ -154,7 +726,7 @@
                 "showThresholdLabels": false,
                 "showThresholdMarkers": true
             },
-            "pluginVersion": "9.3.2",
+            "pluginVersion": "9.2.5",
             "targets": [
                 {
                     "datasource": {
@@ -177,7 +749,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 9
+                "y": 34
             },
             "id": 27,
             "panels": [],
@@ -247,7 +819,7 @@
                 "h": 5,
                 "w": 24,
                 "x": 0,
-                "y": 10
+                "y": 35
             },
             "id": 25,
             "options": {
@@ -261,7 +833,7 @@
                 },
                 "showHeader": true
             },
-            "pluginVersion": "9.3.2",
+            "pluginVersion": "9.2.5",
             "targets": [
                 {
                     "datasource": {
@@ -284,7 +856,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 15
+                "y": 40
             },
             "id": 14,
             "title": "HTTP Stats",
@@ -336,8 +908,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -352,7 +923,7 @@
                 "h": 8,
                 "w": 12,
                 "x": 0,
-                "y": 16
+                "y": 41
             },
             "id": 10,
             "options": {
@@ -399,8 +970,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -440,7 +1010,7 @@
                 "h": 8,
                 "w": 6,
                 "x": 12,
-                "y": 16
+                "y": 41
             },
             "id": 16,
             "options": {
@@ -457,7 +1027,7 @@
                 },
                 "showUnfilled": true
             },
-            "pluginVersion": "9.3.2",
+            "pluginVersion": "9.2.5",
             "targets": [
                 {
                     "datasource": {
@@ -490,8 +1060,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             }
                         ]
                     }
@@ -502,7 +1071,7 @@
                 "h": 8,
                 "w": 6,
                 "x": 18,
-                "y": 16
+                "y": 41
             },
             "id": 17,
             "options": {
@@ -519,7 +1088,7 @@
                 },
                 "showUnfilled": true
             },
-            "pluginVersion": "9.3.2",
+            "pluginVersion": "9.2.5",
             "targets": [
                 {
                     "datasource": {
@@ -542,7 +1111,7 @@
                 "h": 1,
                 "w": 24,
                 "x": 0,
-                "y": 24
+                "y": 49
             },
             "id": 12,
             "panels": [],
@@ -594,8 +1163,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -611,7 +1179,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 25
+                "y": 50
             },
             "id": 1,
             "links": [],
@@ -705,8 +1273,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -722,7 +1289,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 25
+                "y": 50
             },
             "id": 4,
             "links": [],
@@ -813,8 +1380,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -843,7 +1409,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 32
+                "y": 57
             },
             "id": 2,
             "links": [],
@@ -959,8 +1525,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -989,7 +1554,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 32
+                "y": 57
             },
             "id": 5,
             "links": [],
@@ -1105,8 +1670,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1122,7 +1686,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 39
+                "y": 64
             },
             "id": 3,
             "links": [],
@@ -1201,8 +1765,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1218,7 +1781,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 39
+                "y": 64
             },
             "id": 6,
             "links": [],
@@ -1276,9 +1839,6 @@
                         "lineWidth": 1,
                         "scaleDistribution": {
                             "type": "linear"
-                        },
-                        "thresholdsStyle": {
-                            "mode": "off"
                         }
                     },
                     "mappings": [],
@@ -1286,8 +1846,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1302,7 +1861,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 0,
-                "y": 46
+                "y": 71
             },
             "id": 7,
             "links": [],
@@ -1393,8 +1952,7 @@
                         "mode": "absolute",
                         "steps": [
                             {
-                                "color": "green",
-                                "value": null
+                                "color": "green"
                             },
                             {
                                 "color": "red",
@@ -1410,7 +1968,7 @@
                 "h": 7,
                 "w": 12,
                 "x": 12,
-                "y": 46
+                "y": 71
             },
             "id": 8,
             "links": [],
@@ -1453,7 +2011,7 @@
         "list": [
             {
                 "current": {
-                    "selected": true,
+                    "selected": false,
                     "text": "garden-app",
                     "value": "garden-app"
                 },
@@ -1526,7 +2084,7 @@
         ]
     },
     "time": {
-        "from": "now-1m",
+        "from": "now-15m",
         "to": "now"
     },
     "timepicker": {
@@ -1557,6 +2115,6 @@
     "timezone": "browser",
     "title": "Garden App",
     "uid": "cLoJFxhVz",
-    "version": 1,
+    "version": 3,
     "weekStart": ""
 }
