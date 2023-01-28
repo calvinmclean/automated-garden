@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"time"
 
@@ -95,6 +96,10 @@ func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone) (bool, error) {
 
 // ScaleWateringDuration returns a new watering duration based on weather scaling
 func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration int64) (int64, error) {
+	if w.weatherClient == nil {
+		return 0, errors.New("unable to scale watering duration with no weather.Client")
+	}
+
 	scaleFactor := float32(1)
 
 	interval, err := time.ParseDuration(ws.Interval)
@@ -105,7 +110,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration int64) (i
 	if ws.HasTemperatureControl() {
 		avgHighTemp, err := w.weatherClient.GetAverageHighTemperature(interval)
 		if err != nil {
-			w.logger.WithError(err).Warn("error getting average high temperatures, continuing")
+			w.logger.WithError(err).Warn("error getting average high temperatures")
 		} else {
 			scaleFactor = ws.WeatherControl.Temperature.Scale(avgHighTemp)
 			w.logger.Infof("weather client calculated %fC as the average daily high temperature over the last %s, resulting in scale factor of %f", avgHighTemp, interval.String(), scaleFactor)
