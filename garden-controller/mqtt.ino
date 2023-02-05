@@ -2,6 +2,7 @@ void setupMQTT() {
     // Connect to MQTT
     client.setServer(MQTT_ADDRESS, MQTT_PORT);
     client.setCallback(processIncomingMessage);
+    client.setKeepAlive(MQTT_KEEPALIVE);
 
     // Initialize publisher Queue
     waterPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
