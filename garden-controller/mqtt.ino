@@ -40,6 +40,10 @@ void setupWifi() {
     }
 
     printf("Wifi connected...\n");
+
+    // Create event handler tp recpnnect to WiFi
+    WiFi.onEvent(wifiDisconnectHandler, SYSTEM_EVENT_STA_DISCONNECTED);
+
 }
 
 /*
@@ -193,4 +197,8 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         changeLight(le);
 #endif
     }
+}
+
+void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
+    ESP.restart();
 }
