@@ -2,9 +2,6 @@ module github.com/calvinmclean/automated-garden/garden-app
 
 go 1.16
 
-// Security upgrade/fix
-require github.com/gogo/protobuf v1.3.2 // indirect
-
 require (
 	github.com/deepmap/oapi-codegen v1.10.1 // indirect
 	github.com/eclipse/paho.mqtt.golang v1.3.5
@@ -30,10 +27,9 @@ require (
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.8.0
-	golang.org/x/net v0.0.0-20220421235706-1d1ef9303861 // indirect
-	golang.org/x/term v0.0.0-20220411215600-e5f449aeb171
+	golang.org/x/term v0.3.0
 	gopkg.in/ini.v1 v1.62.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1
-	k8s.io/apimachinery v0.19.9
-	k8s.io/client-go v0.19.9
+	k8s.io/apimachinery v0.26.1
+	k8s.io/client-go v0.26.1
 )
