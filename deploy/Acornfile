@@ -16,6 +16,11 @@ containers: {
       dirs: {
         "/app/configs": "./configs/garden-app"
       }
+      env: {
+        "GARDEN_APP_WEATHER_OPTIONS_CLIENT_ID": "secret://weather-client/id"
+        "GARDEN_APP_WEATHER_OPTIONS_AUTHENTICATION_ACCESS_TOKEN": "secret://weather-client/access_token"
+        "GARDEN_APP_WEATHER_OPTIONS_AUTHENTICATION_REFRESH_TOKEN": "secret://weather-client/refresh_token"
+      }
       dependsOn: ["mqtt", "influxdb"]
     }
   }
@@ -138,6 +143,17 @@ localData: {
   grafana: {
     pathsProvisioning: "/etc/grafana/provisioning"
   }
+}
+
+secrets: {
+    "weather-client": {
+        type: "opaque"
+        data: {
+            "id":            "" // optional
+            "access_token":  "" // optional
+            "refresh_token": "" // optional
+        }
+    }
 }
 
 profiles: {
