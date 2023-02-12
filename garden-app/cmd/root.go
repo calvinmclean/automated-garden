@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"os"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
@@ -27,6 +28,10 @@ func Execute() error {
 }
 
 func init() {
+	viper.SetEnvPrefix("GARDEN_APP")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
 	cobra.OnInitialize(initConfig, parseLogLevel)
 
 	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "config.yaml", "path to config file")
@@ -45,8 +50,6 @@ func initConfig() {
 	if configFilename != "" {
 		viper.SetConfigFile(configFilename)
 	}
-
-	viper.AutomaticEnv()
 
 	if err := viper.ReadInConfig(); err == nil {
 		log.Debugf("Using config file: %s", viper.ConfigFileUsed())
