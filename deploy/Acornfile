@@ -146,14 +146,14 @@ localData: {
 }
 
 secrets: {
-    "weather-client": {
-        type: "opaque"
-        data: {
-            "id":            "" // optional
-            "access_token":  "" // optional
-            "refresh_token": "" // optional
-        }
+  "weather-client": {
+    type: "opaque"
+    data: {
+      "id":            "" // optional
+      "access_token":  "" // optional
+      "refresh_token": "" // optional
     }
+  }
 }
 
 profiles: {
