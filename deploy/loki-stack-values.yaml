@@ -29,3 +29,10 @@ promtail:
       # overwite default pipeline stage to use docker because that's how it works on rancher desktop
       pipelineStages:
         - docker: {}
+        - match:
+            selector: '{app=~"garden-app|garden-controller"}'
+            stages:
+              - json:
+                  expressions:
+                    level: level
+                    msg: msg

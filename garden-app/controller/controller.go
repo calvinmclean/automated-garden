@@ -23,7 +23,7 @@ import (
 type Config struct {
 	MQTTConfig   mqtt.Config `mapstructure:"mqtt"`
 	NestedConfig `mapstructure:"controller"`
-	LogConfig    server.LogConfig `mapstructure:"log_"`
+	LogConfig    server.LogConfig `mapstructure:"log"`
 }
 
 // NestedConfig is an unfortunate struct that I had to create to have this nested under the 'controller' key
