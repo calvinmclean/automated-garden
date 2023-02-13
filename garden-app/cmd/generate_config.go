@@ -40,7 +40,6 @@ func GenerateConfig(cmd *cobra.Command, args []string) {
 		cmd.PrintErrln("unable to read config from file: ", err)
 		return
 	}
-	config.LogLevel = parsedLogLevel
 
 	controller.GenerateConfig(config, writeFile, wifiOnly, configOnly, overwrite)
 }

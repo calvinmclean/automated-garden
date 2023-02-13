@@ -25,8 +25,19 @@ kubectl apply -k deploy/dev
 This mostly uses the same files as the K8s directory through links, but has a few differences since it doesn't include the persistent volume claims.
 
 ## Kind
+
 The `kind-cluster.yaml` can be used to start a Kind Cluster with the necessary ports mapped for these services and configured `NodePorts`.
 
 ```shell
 kind create cluster --config kind-cluster.yaml
+```
+
+## Loki
+
+In order to use Loki, install using Helm with the `loki-stack-values.yaml` values file:
+
+```shell
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install loki grafana/loki-stack -n loki --create-namespace -f loki-stack-values.yml
 ```

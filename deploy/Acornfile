@@ -79,6 +79,9 @@ containers: {
     dirs: {
       "/etc/grafana/provisioning": "./configs/grafana"
     }
+    files: {
+      "/etc/grafana/provisioning/datasources/loki.yaml": "secret://loki-datasource/template"
+    }
   }
 
   prometheus: {
@@ -154,6 +157,23 @@ secrets: {
       "refresh_token": "" // optional
     }
   }
+
+  // Loki datasource is added separately here so the same config files can be used for docker-compose
+  "loki-datasource": {
+    type: "template"
+    data: {
+      template: """
+      apiVersion: 1
+      datasources:
+        - name: Loki
+          type: loki
+          access: proxy
+          url: http://loki.loki.svc.cluster.local:3100
+          jsonData:
+            maxLines: 1000
+      """
+    }
+}
 }
 
 profiles: {

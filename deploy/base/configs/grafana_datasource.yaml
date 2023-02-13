@@ -11,3 +11,9 @@ datasources:
       organization: ${INFLUXDB_ORG}
       defaultBucket: ${INFLUXDB_BUCKET}
       tlsSkipVerify: true
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki.loki.svc.cluster.local:3100
+    jsonData:
+      maxLines: 1000

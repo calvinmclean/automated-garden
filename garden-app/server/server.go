@@ -31,7 +31,7 @@ type Config struct {
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
 	StorageConfig  storage.Config  `mapstructure:"storage"`
 	WeatherConfig  weather.Config  `mapstructure:"weather"`
-	LogLevel       logrus.Level
+	LogConfig      LogConfig       `mapstructure:"log"`
 }
 
 // WebConfig is used to allow reading the "web_server" section into the main Config struct
@@ -50,12 +50,8 @@ type Server struct {
 // NewServer creates and initializes all server resources based on config
 func NewServer(cfg Config) (*Server, error) {
 	baseLogger := logrus.New()
-	baseLogger.SetFormatter(&logrus.TextFormatter{
-		DisableColors: false,
-		ForceColors:   true,
-		FullTimestamp: true,
-	})
-	baseLogger.SetLevel(cfg.LogLevel)
+	baseLogger.SetFormatter(cfg.LogConfig.GetFormatter())
+	baseLogger.SetLevel(cfg.LogConfig.GetLogLevel())
 	logger := baseLogger.WithField("source", "server")
 
 	r := chi.NewRouter()
