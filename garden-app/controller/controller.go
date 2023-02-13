@@ -12,6 +12,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/server"
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-co-op/gocron"
 	"github.com/rivo/tview"
@@ -22,7 +23,7 @@ import (
 type Config struct {
 	MQTTConfig   mqtt.Config `mapstructure:"mqtt"`
 	NestedConfig `mapstructure:"controller"`
-	LogLevel     logrus.Level
+	LogConfig    server.LogConfig `mapstructure:"log"`
 }
 
 // NestedConfig is an unfortunate struct that I had to create to have this nested under the 'controller' key
@@ -71,9 +72,9 @@ func NewController(cfg Config) (*Controller, error) {
 		quit:   make(chan os.Signal, 1),
 	}
 
-	controller.logger = setupLogger(cfg.LogLevel)
-	controller.subLogger = setupLogger(cfg.LogLevel)
-	controller.pubLogger = setupLogger(cfg.LogLevel)
+	controller.logger = setupLogger(cfg.LogConfig)
+	controller.subLogger = setupLogger(cfg.LogConfig)
+	controller.pubLogger = setupLogger(cfg.LogConfig)
 
 	if controller.EnableUI {
 		controller.app = controller.setupUI()
@@ -175,14 +176,10 @@ func (c *Controller) Stop() {
 }
 
 // setupLogger creates and configures a logger with colors and specified log level
-func setupLogger(level logrus.Level) *logrus.Logger {
+func setupLogger(cfg server.LogConfig) *logrus.Logger {
 	l := logrus.New()
-	l.SetFormatter(&logrus.TextFormatter{
-		DisableColors: false,
-		ForceColors:   true,
-		FullTimestamp: true,
-	})
-	l.SetLevel(level)
+	l.SetFormatter(cfg.GetFormatter())
+	l.SetLevel(cfg.GetLogLevel())
 	return l
 }
 

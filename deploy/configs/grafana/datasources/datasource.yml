@@ -17,3 +17,9 @@ datasources:
     access: proxy
     url: http://prometheus:9090
     uid: prometheus_uuid
+  - name: Loki
+    type: loki
+    access: proxy
+    url: http://loki.loki.svc.cluster.local:3100
+    jsonData:
+      maxLines: 1000

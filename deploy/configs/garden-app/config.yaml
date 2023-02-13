@@ -1,3 +1,6 @@
+log:
+  level: info
+  format: text
 web_server:
   port: 8080
 mqtt:

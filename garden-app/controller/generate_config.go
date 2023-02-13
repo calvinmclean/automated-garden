@@ -103,7 +103,7 @@ type ZoneConfig struct {
 // GenerateConfig will create config.h and wifi_config.h based on the provided configurations. It can optionally write to files
 // instead of stdout
 func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bool) {
-	logger := setupLogger(config.LogLevel)
+	logger := setupLogger(config.LogConfig)
 
 	if !wifiOnly {
 		logger.Debug("generating 'config.h'")

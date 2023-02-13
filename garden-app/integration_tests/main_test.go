@@ -76,12 +76,12 @@ func getConfigs(t *testing.T) (server.Config, controller.Config) {
 	var serverConfig server.Config
 	err = viper.Unmarshal(&serverConfig)
 	require.NoError(t, err)
-	serverConfig.LogLevel = logrus.DebugLevel
+	serverConfig.LogConfig.Level = logrus.DebugLevel.String()
 
 	var controllerConfig controller.Config
 	err = viper.Unmarshal(&controllerConfig)
 	require.NoError(t, err)
-	controllerConfig.LogLevel = logrus.DebugLevel
+	controllerConfig.LogConfig.Level = logrus.DebugLevel.String()
 
 	return serverConfig, controllerConfig
 }
