@@ -279,7 +279,7 @@ func TestGenerateWifiConfig(t *testing.T) {
 	config, err := generateWiFiConfig(WifiConfig{
 		SSID:     "ssid",
 		Password: "password",
-	})
+	}, false)
 	assert.NoError(t, err)
 	assert.Equal(t, `#ifndef wifi_config_h
 #define wifi_config_h

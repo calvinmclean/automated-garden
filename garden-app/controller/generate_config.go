@@ -8,8 +8,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/AlecAivazis/survey/v2"
 	"github.com/sirupsen/logrus"
-	"golang.org/x/term"
 )
 
 const (
@@ -102,8 +102,16 @@ type ZoneConfig struct {
 
 // GenerateConfig will create config.h and wifi_config.h based on the provided configurations. It can optionally write to files
 // instead of stdout
-func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bool) {
+func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite, interactive bool) {
 	logger := setupLogger(config.LogConfig)
+
+	if interactive {
+		err := configSurvey(&config)
+		if err != nil {
+			logger.WithError(err).Error("error with interactive survey")
+			return
+		}
+	}
 
 	if !wifiOnly {
 		logger.Debug("generating 'config.h'")
@@ -121,7 +129,7 @@ func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite bo
 
 	if !configOnly {
 		logger.Debug("generating 'wifi_config.h'")
-		wifiConfig, err := generateWiFiConfig(config.WifiConfig)
+		wifiConfig, err := generateWiFiConfig(config.WifiConfig, interactive)
 		if err != nil {
 			logger.WithError(err).Error("error generating 'wifi_config.h'")
 			return
@@ -182,15 +190,28 @@ func generateMainConfig(config Config) (string, error) {
 	return removeExtraNewlines(result.String()), nil
 }
 
-func generateWiFiConfig(config WifiConfig) (string, error) {
-	if config.Password == "" {
-		fmt.Print("WiFi password: ")
-		password, err := term.ReadPassword(int(os.Stdin.Fd()))
-		if err != nil {
-			return "", nil
+func generateWiFiConfig(config WifiConfig, interactive bool) (string, error) {
+	if interactive || config.Password == "" {
+		qs := []*survey.Question{
+			{
+				Name: "ssid",
+				Prompt: &survey.Input{
+					Message: "WiFi SSID",
+					Default: config.SSID,
+				},
+				Validate: survey.Required,
+			},
+			{
+				Name:     "password",
+				Prompt:   &survey.Password{Message: "Password"},
+				Validate: survey.Required,
+			},
 		}
 
-		config.Password = string(password)
+		err := survey.Ask(qs, &config)
+		if err != nil {
+			return "", fmt.Errorf("error in survey response: %w", err)
+		}
 	}
 
 	t := template.Must(template.New("wifi_config.h").Parse(wifiConfigTemplate))
@@ -204,4 +225,112 @@ func generateWiFiConfig(config WifiConfig) (string, error) {
 
 func removeExtraNewlines(input string) string {
 	return regexp.MustCompile(`(?m)^\n{2,}`).ReplaceAllLiteralString(input, "\n")
+}
+
+func configSurvey(config *Config) error {
+	qs := []*survey.Question{
+		{
+			Name: "topic_prefix",
+			Prompt: &survey.Input{
+				Message: "Topic Prefix",
+				Default: config.TopicPrefix,
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "mqtt_address",
+			Prompt: &survey.Input{
+				Message: "MQTT Address",
+				Default: config.MQTTConfig.Broker,
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "mqtt_port",
+			Prompt: &survey.Input{
+				Message: "MQTT Port",
+				Default: fmt.Sprintf("%d", config.MQTTConfig.Port),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "publish_health",
+			Prompt: &survey.Input{
+				Message: "Enable health publishing?",
+				Default: fmt.Sprintf("%t", config.PublishHealth),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "health_interval", // TODO: only ask this if publish_health is true
+			Prompt: &survey.Input{
+				Message: "Health publishing interval",
+				Default: config.HealthInterval.String(),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "disable_watering",
+			Prompt: &survey.Input{
+				Message: "Disable watering",
+				Default: fmt.Sprintf("%t", config.DisableWatering),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "default_water_time",
+			Prompt: &survey.Input{
+				Message: "Default water time",
+				Default: config.DefaultWaterTime.String(),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "light_pin",
+			Prompt: &survey.Input{
+				Message: "Light pin (optional)",
+				Default: config.LightPin,
+			},
+		},
+		{
+			Name: "enable_buttons",
+			Prompt: &survey.Input{
+				Message: "Enable buttons",
+				Default: fmt.Sprintf("%t", config.EnableButtons),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "stop_water_button", // TODO: only if enable_buttons is true
+			Prompt: &survey.Input{
+				Message: "Stop watering button pin",
+				Default: config.StopButtonPin,
+			},
+		},
+		{
+			Name: "enable_moisture_sensor",
+			Prompt: &survey.Input{
+				Message: "Enable moisture sensor",
+				Default: fmt.Sprintf("%t", config.EnableMoistureSensor),
+			},
+			Validate: survey.Required,
+		},
+		{
+			Name: "moisture_interval", // TODO: only if enable_moisture_sensor is true
+			Prompt: &survey.Input{
+				Message: "Moisture reading interval",
+				Default: config.MoistureInterval.String(),
+			},
+		},
+	}
+
+	err := survey.Ask(qs, config)
+	if err != nil {
+		return fmt.Errorf("error in survey response: %w", err)
+	}
+
+	config.MQTTConfig.Broker = config.MQTTAddress
+	config.MQTTConfig.Port = config.MQTTPort
+
+	return nil
 }

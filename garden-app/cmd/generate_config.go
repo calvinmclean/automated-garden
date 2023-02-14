@@ -7,11 +7,12 @@ import (
 )
 
 var (
-	wifiSSID   string
-	writeFile  bool
-	wifiOnly   bool
-	configOnly bool
-	overwrite  bool
+	wifiSSID    string
+	writeFile   bool
+	wifiOnly    bool
+	configOnly  bool
+	overwrite   bool
+	interactive bool
 
 	generateConfigCommand = &cobra.Command{
 		Use:   "generate-config",
@@ -29,6 +30,7 @@ func init() {
 	generateConfigCommand.Flags().BoolVar(&wifiOnly, "wifi-only", false, "only generate wifi_config.h")
 	generateConfigCommand.Flags().BoolVar(&configOnly, "config-only", false, "only generate config.h")
 	generateConfigCommand.Flags().BoolVarP(&overwrite, "force", "f", false, "overwrite files if they already exist")
+	generateConfigCommand.Flags().BoolVarP(&interactive, "interactive", "i", false, "guided prompts help you setup the configuration")
 
 	controllerCommand.AddCommand(generateConfigCommand)
 }
@@ -41,5 +43,5 @@ func GenerateConfig(cmd *cobra.Command, args []string) {
 		return
 	}
 
-	controller.GenerateConfig(config, writeFile, wifiOnly, configOnly, overwrite)
+	controller.GenerateConfig(config, writeFile, wifiOnly, configOnly, overwrite, interactive)
 }
