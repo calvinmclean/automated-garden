@@ -94,47 +94,59 @@ type WifiConfig struct {
 
 // ZoneConfig has the configuration details for controlling hardware pins
 type ZoneConfig struct {
-	PumpPin           string `mapstructure:"pump_pin"`
-	ValvePin          string `mapstructure:"valve_pin"`
-	ButtonPin         string `mapstructure:"button_pin"`
-	MoistureSensorPin string `mapstructure:"moisture_sensor_pin"`
+	PumpPin           string `mapstructure:"pump_pin" survey:"pump_pin"`
+	ValvePin          string `mapstructure:"valve_pin" survey:"valve_pin"`
+	ButtonPin         string `mapstructure:"button_pin" survey:"button_pin"`
+	MoistureSensorPin string `mapstructure:"moisture_sensor_pin" survey:"moisture_sensor_pin"`
 }
 
 // GenerateConfig will create config.h and wifi_config.h based on the provided configurations. It can optionally write to files
 // instead of stdout
-func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite, interactive bool) {
+func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, overwrite, interactive bool) {
 	logger := setupLogger(config.LogConfig)
 
 	if interactive {
-		err := configSurvey(&config)
+		err := survey.AskOne(&survey.Confirm{
+			Message: "Generate 'config.h'?",
+			Default: genMainConfig,
+		}, &genMainConfig)
 		if err != nil {
-			logger.WithError(err).Error("error with interactive survey")
+			logger.WithError(err).Error("survey error")
 			return
 		}
 	}
-
-	if !wifiOnly {
+	if genMainConfig {
 		logger.Debug("generating 'config.h'")
-		mainConfig, err := generateMainConfig(config)
+		mainConfig, err := generateMainConfig(config, interactive)
 		if err != nil {
 			logger.WithError(err).Error("error generating 'config.h'")
 			return
 		}
-		err = writeOutput(logger, mainConfig, "config.h", writeFile, overwrite)
+		err = writeOutput(logger, mainConfig, "config.h", writeFile, overwrite, interactive)
 		if err != nil {
 			logger.WithError(err).Error("error generating 'config.h'")
 			return
 		}
 	}
 
-	if !configOnly {
+	if interactive {
+		err := survey.AskOne(&survey.Confirm{
+			Message: "Generate 'wifi_config.h'?",
+			Default: genWifiConfig,
+		}, &genWifiConfig)
+		if err != nil {
+			logger.WithError(err).Error("survey error")
+			return
+		}
+	}
+	if genWifiConfig {
 		logger.Debug("generating 'wifi_config.h'")
 		wifiConfig, err := generateWiFiConfig(config.WifiConfig, interactive)
 		if err != nil {
 			logger.WithError(err).Error("error generating 'wifi_config.h'")
 			return
 		}
-		err = writeOutput(logger, wifiConfig, "wifi_config.h", writeFile, overwrite)
+		err = writeOutput(logger, wifiConfig, "wifi_config.h", writeFile, overwrite, interactive)
 		if err != nil {
 			logger.WithError(err).Error("error generating 'wifi_config.h'")
 			return
@@ -142,19 +154,42 @@ func GenerateConfig(config Config, writeFile, wifiOnly, configOnly, overwrite, i
 	}
 }
 
-func writeOutput(logger *logrus.Logger, content, filename string, writeFile, overwrite bool) error {
+func writeOutput(logger *logrus.Logger, content, filename string, writeFile, overwrite, interactive bool) error {
 	logger.WithFields(logrus.Fields{
 		"filename":       filename,
 		"write_file":     writeFile,
 		"overwrite_file": overwrite,
 	}).Debug("writing output to file")
+
+	if interactive {
+		err := survey.AskOne(&survey.Confirm{
+			Message: fmt.Sprintf("Write generated config to %q?", filename),
+			Default: writeFile,
+		}, &writeFile)
+		if err != nil {
+			return err
+		}
+	}
+
 	file := os.Stdout
 	// if configured to write to a file, replace os.Stdout with file
 	if writeFile {
 		// if overwrite is false, first check if file exists and error if it does
 		if !overwrite {
-			if _, err := os.Stat(filename); err == nil {
-				return fmt.Errorf("file %q exists, use --force to overwrite", filename)
+			_, err := os.Stat(filename)
+			if err == nil {
+				if interactive {
+					err := survey.AskOne(&survey.Confirm{
+						Message: fmt.Sprintf("Overwrite existing %q?", filename),
+						Default: overwrite,
+					}, &overwrite)
+					if err != nil {
+						return err
+					}
+				}
+				if !overwrite {
+					return fmt.Errorf("file %q exists, use --force to overwrite", filename)
+				}
 			}
 		}
 
@@ -172,7 +207,14 @@ func writeOutput(logger *logrus.Logger, content, filename string, writeFile, ove
 	return nil
 }
 
-func generateMainConfig(config Config) (string, error) {
+func generateMainConfig(config Config, interactive bool) (string, error) {
+	if interactive {
+		err := configPrompts(&config)
+		if err != nil {
+			return "", err
+		}
+	}
+
 	milliseconds := func(interval time.Duration) string {
 		return fmt.Sprintf("%d", interval.Milliseconds())
 	}
@@ -191,23 +233,29 @@ func generateMainConfig(config Config) (string, error) {
 }
 
 func generateWiFiConfig(config WifiConfig, interactive bool) (string, error) {
-	if interactive || config.Password == "" {
-		qs := []*survey.Question{
-			{
-				Name: "ssid",
-				Prompt: &survey.Input{
-					Message: "WiFi SSID",
-					Default: config.SSID,
-				},
-				Validate: survey.Required,
+	qs := []*survey.Question{
+		{
+			Name: "ssid",
+			Prompt: &survey.Input{
+				Message: "WiFi SSID",
+				Default: config.SSID,
 			},
-			{
-				Name:     "password",
-				Prompt:   &survey.Password{Message: "Password"},
-				Validate: survey.Required,
-			},
-		}
+			Validate: survey.Required,
+		},
+		{
+			Name:     "password",
+			Prompt:   &survey.Password{Message: "Password"},
+			Validate: survey.Required,
+		},
+	}
 
+	// if not interactive, but password is missing, turn interactive with password question only
+	if config.Password == "" && !interactive {
+		qs = qs[1:]
+		interactive = true
+	}
+
+	if interactive {
 		err := survey.Ask(qs, &config)
 		if err != nil {
 			return "", fmt.Errorf("error in survey response: %w", err)
@@ -227,7 +275,44 @@ func removeExtraNewlines(input string) string {
 	return regexp.MustCompile(`(?m)^\n{2,}`).ReplaceAllLiteralString(input, "\n")
 }
 
-func configSurvey(config *Config) error {
+func configPrompts(config *Config) error {
+	err := mqttPrompts(config)
+	if err != nil {
+		return fmt.Errorf("error completing MQTT prompts: %w", err)
+	}
+
+	err = wateringPrompts(config)
+	if err != nil {
+		return fmt.Errorf("error completing watering prompts: %w", err)
+	}
+
+	err = zonePrompts(config)
+	if err != nil {
+		return fmt.Errorf("error completing zone prompts: %w", err)
+	}
+
+	err = survey.AskOne(&survey.Input{
+		Message: "Light pin (optional)",
+		Default: config.LightPin,
+	}, config.LightPin)
+	if err != nil {
+		return fmt.Errorf("error completing light pin prompt: %w", err)
+	}
+
+	err = buttonPrompts(config)
+	if err != nil {
+		return fmt.Errorf("error completing button prompts: %w", err)
+	}
+
+	err = moisturePrompts(config)
+	if err != nil {
+		return fmt.Errorf("error completing moisture prompts: %w", err)
+	}
+
+	return nil
+}
+
+func mqttPrompts(config *Config) error {
 	qs := []*survey.Question{
 		{
 			Name: "topic_prefix",
@@ -261,14 +346,74 @@ func configSurvey(config *Config) error {
 			},
 			Validate: survey.Required,
 		},
+	}
+	err := survey.Ask(qs, config)
+	if err != nil {
+		return fmt.Errorf("error in survey response: %w", err)
+	}
+
+	config.MQTTConfig.Broker = config.MQTTAddress
+	config.MQTTConfig.Port = config.MQTTPort
+
+	if config.PublishHealth {
+		err = survey.AskOne(&survey.Input{
+			Message: "Health publishing interval",
+			Default: config.HealthInterval.String(),
+		}, config.HealthInterval)
+		if err != nil {
+			return fmt.Errorf("error in survey response: %w", err)
+		}
+	}
+
+	return nil
+}
+
+func buttonPrompts(config *Config) error {
+	err := survey.AskOne(&survey.Input{
+		Message: "Enable buttons",
+		Default: fmt.Sprintf("%t", config.EnableButtons),
+	}, config.EnableButtons)
+	if err != nil {
+		return err
+	}
+
+	if !config.EnableButtons {
+		return nil
+	}
+
+	return survey.AskOne(&survey.Input{
+		Message: "Stop watering button pin",
+		Default: config.StopButtonPin,
+	}, config.StopButtonPin)
+}
+
+func moisturePrompts(config *Config) error {
+	err := survey.AskOne(&survey.Input{
+		Message: "Enable moisture sensor",
+		Default: fmt.Sprintf("%t", config.EnableMoistureSensor),
+	}, config.EnableMoistureSensor)
+	if err != nil {
+		return err
+	}
+
+	if !config.EnableMoistureSensor {
+		return nil
+	}
+
+	qs := []*survey.Question{
 		{
-			Name: "health_interval", // TODO: only ask this if publish_health is true
+			Name: "moisture_interval",
 			Prompt: &survey.Input{
-				Message: "Health publishing interval",
-				Default: config.HealthInterval.String(),
+				Message: "Moisture reading interval",
+				Default: config.MoistureInterval.String(),
 			},
-			Validate: survey.Required,
 		},
+	}
+	return survey.Ask(qs, config)
+}
+
+func wateringPrompts(config *Config) error {
+	qs := []*survey.Question{
 		{
 			Name: "disable_watering",
 			Prompt: &survey.Input{
@@ -285,52 +430,62 @@ func configSurvey(config *Config) error {
 			},
 			Validate: survey.Required,
 		},
-		{
-			Name: "light_pin",
-			Prompt: &survey.Input{
-				Message: "Light pin (optional)",
-				Default: config.LightPin,
-			},
-		},
-		{
-			Name: "enable_buttons",
-			Prompt: &survey.Input{
-				Message: "Enable buttons",
-				Default: fmt.Sprintf("%t", config.EnableButtons),
-			},
-			Validate: survey.Required,
-		},
-		{
-			Name: "stop_water_button", // TODO: only if enable_buttons is true
-			Prompt: &survey.Input{
-				Message: "Stop watering button pin",
-				Default: config.StopButtonPin,
-			},
-		},
-		{
-			Name: "enable_moisture_sensor",
-			Prompt: &survey.Input{
-				Message: "Enable moisture sensor",
-				Default: fmt.Sprintf("%t", config.EnableMoistureSensor),
-			},
-			Validate: survey.Required,
-		},
-		{
-			Name: "moisture_interval", // TODO: only if enable_moisture_sensor is true
-			Prompt: &survey.Input{
-				Message: "Moisture reading interval",
-				Default: config.MoistureInterval.String(),
-			},
-		},
 	}
+	return survey.Ask(qs, config)
+}
 
-	err := survey.Ask(qs, config)
-	if err != nil {
-		return fmt.Errorf("error in survey response: %w", err)
+func zonePrompts(config *Config) error {
+	addAnotherZone := true
+	for addAnotherZone {
+		err := survey.AskOne(&survey.Confirm{
+			Message: fmt.Sprintf("You currently have %d Zones configured. Would you like to add another?", len(config.Zones)),
+		}, &addAnotherZone)
+		if err != nil {
+			return err
+		}
+
+		if !addAnotherZone {
+			break
+		}
+
+		qs := []*survey.Question{
+			{
+				Name: "pump_pin",
+				Prompt: &survey.Input{
+					Message: "\tPump pin",
+				},
+				Validate: survey.Required,
+			},
+			{
+				Name: "valve_pin",
+				Prompt: &survey.Input{
+					Message: "\tValve pin",
+				},
+				Validate: survey.Required,
+			},
+			{
+				Name: "button_pin",
+				Prompt: &survey.Input{
+					Message: "\tButton pin",
+					Default: "GPIO_NUM_MAX",
+				},
+			},
+			{
+				Name: "moisture_sensor_pin",
+				Prompt: &survey.Input{
+					Message: "\tMoisture sensor pin",
+					Default: "GPIO_NUM_MAX",
+				},
+			},
+		}
+
+		var zc ZoneConfig
+		err = survey.Ask(qs, &zc)
+		if err != nil {
+			return err
+		}
+		config.Zones = append(config.Zones, zc)
 	}
-
-	config.MQTTConfig.Broker = config.MQTTAddress
-	config.MQTTConfig.Port = config.MQTTPort
 
 	return nil
 }
