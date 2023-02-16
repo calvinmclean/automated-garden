@@ -1,4 +1,9 @@
-version: "3.8"
+# Profiles:
+#   - test: run just the services required for integration testing
+#   - run-local: run required services + extras like Grafana and Prometheus
+#   - demo: run everything, including an instance of garden-app and garden-controller
+
+version: "3.9"
 services:
   grafana:
     image: "grafana/grafana:latest"
@@ -10,6 +15,9 @@ services:
       - "./configs/grafana/dashboards:/etc/grafana/provisioning/dashboards"
     env_file:
       - env_file
+    profiles:
+      - run-local
+      - demo
 
   prometheus:
     image: prom/prometheus
@@ -19,6 +27,9 @@ services:
       - "garden-app:192.168.5.2" # IP address may change
     volumes:
       - "./configs/prometheus:/etc/prometheus"
+    profiles:
+      - run-local
+      - demo
 
   influxdb:
     image: "quay.io/influxdb/influxdb:v2.0.2"
@@ -26,7 +37,11 @@ services:
       - "8086:8086"
     volumes:
       - "influxdb:/var/lib/influxd"
+    profiles:
+      - test
+      - run-local
 
+      - demo
   influxdb_setup:
     image: "quay.io/influxdb/influxdb:v2.0.2"
     volumes:
@@ -36,6 +51,10 @@ services:
       - influxdb
     env_file:
       - env_file
+    profiles:
+      - test
+      - run-local
+      - demo
 
   telegraf:
     image: "telegraf"
@@ -43,6 +62,10 @@ services:
       - "./configs/telegraf:/etc/telegraf"
     env_file:
       - env_file
+    profiles:
+      - test
+      - run-local
+      - demo
 
   mqtt:
     image: "eclipse-mosquitto:2.0"
@@ -51,17 +74,33 @@ services:
     ports:
       - "1883:1883"
       - "9001:9001"
-  # garden-app:
-  #   image: "ghcr.io/calvinmclean/garden-app:latest"
-  #   build: "../garden-app"
-  #   ports:
-  #     - "8080:8080"
-  #   volumes:
-  #     - "./configs/garden-app:/app/configs"
-  #   command:
-  #     - "server"
-  #     - "--config"
-  #     - "/app/configs/config.yaml"
+    profiles:
+      - test
+      - run-local
+      - demo
+
+  garden-app:
+    image: "ghcr.io/calvinmclean/garden-app:latest"
+    ports:
+      - "8080:8080"
+    volumes:
+      - "./configs/garden-app:/app/configs"
+    command:
+      - "server"
+      - "--config=/app/configs/config.yaml"
+    profiles:
+      - demo
+
+  garden-controller:
+    image: "ghcr.io/calvinmclean/garden-app:latest"
+    volumes:
+      - "./configs/garden-app:/app/configs"
+    command:
+      - "controller"
+      - "--config=/app/configs/config.yaml"
+      - "--enable-ui=false"
+    profiles:
+      - demo
 
 volumes:
   influxdb:

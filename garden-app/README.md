@@ -2,9 +2,9 @@
 This is a Go application with a CLI and web backend for working with the garden controller.
 
 ## Getting Started
-1. Go to `/deploy/docker` directory and start up all services
+1. Go to `/deploy` directory and start up all services
     ```shell
-    docker compose up
+    docker compose --profile demo up
     ```
 2. Create a `config.yaml` file from the provided example
     ```shell

@@ -21,7 +21,7 @@ storage:
   options:
     filename: "/app/configs/gardens.yaml"
 controller:
-  topic_prefix: "seeds"
+  topic_prefix: "garden"
   num_zones: 3
   moisture_strategy: increasing
   moisture_value: 0
