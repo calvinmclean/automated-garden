@@ -268,7 +268,7 @@ func TestGenerateMainConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			config, err := generateMainConfig(tt.config)
+			config, err := generateMainConfig(tt.config, false)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedOutput, config)
 		})
@@ -279,7 +279,7 @@ func TestGenerateWifiConfig(t *testing.T) {
 	config, err := generateWiFiConfig(WifiConfig{
 		SSID:     "ssid",
 		Password: "password",
-	})
+	}, false)
 	assert.NoError(t, err)
 	assert.Equal(t, `#ifndef wifi_config_h
 #define wifi_config_h

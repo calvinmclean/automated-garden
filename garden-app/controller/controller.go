@@ -29,25 +29,28 @@ type Config struct {
 // NestedConfig is an unfortunate struct that I had to create to have this nested under the 'controller' key
 // in the YAML config
 type NestedConfig struct {
-	TopicPrefix       string        `mapstructure:"topic_prefix"`
-	NumZones          int           `mapstructure:"num_zones"`
-	MoistureStrategy  string        `mapstructure:"moisture_strategy"`
-	MoistureValue     int           `mapstructure:"moisture_value"`
-	MoistureInterval  time.Duration `mapstructure:"moisture_interval"`
-	PublishWaterEvent bool          `mapstructure:"publish_water_event"`
-	PublishHealth     bool          `mapstructure:"publish_health"`
-	HealthInterval    time.Duration `mapstructure:"health_interval"`
-	EnableUI          bool          `mapstructure:"enable_ui"`
+	TopicPrefix       string        `mapstructure:"topic_prefix" survey:"topic_prefix"`
+	NumZones          int           `mapstructure:"num_zones" survey:"num_zones"`
+	MoistureStrategy  string        `mapstructure:"moisture_strategy" survey:"moisture_strategy"`
+	MoistureValue     int           `mapstructure:"moisture_value" survey:"moisture_value"`
+	MoistureInterval  time.Duration `mapstructure:"moisture_interval" survey:"moisture_interval"`
+	PublishWaterEvent bool          `mapstructure:"publish_water_event" survey:"publish_water_event"`
+	PublishHealth     bool          `mapstructure:"publish_health" survey:"publish_health"`
+	HealthInterval    time.Duration `mapstructure:"health_interval" survey:"health_interval"`
+	EnableUI          bool          `mapstructure:"enable_ui" survey:"enable_ui"`
 
 	// Configs only used for generate-config
-	WifiConfig           `mapstructure:"wifi"`
-	Zones                []ZoneConfig  `mapstructure:"zones"`
-	DefaultWaterTime     time.Duration `mapstructure:"default_water_time"`
-	EnableButtons        bool          `mapstructure:"enable_buttons"`
-	EnableMoistureSensor bool          `mapstructure:"enable_moisture_sensor"`
-	LightPin             string        `mapstructure:"light_pin"`
-	StopButtonPin        string        `mapstructure:"stop_water_button"`
-	DisableWatering      bool          `mapstructure:"disable_watering"`
+	WifiConfig           `mapstructure:"wifi" survey:"wifi"`
+	Zones                []ZoneConfig  `mapstructure:"zones" survey:"zones"`
+	DefaultWaterTime     time.Duration `mapstructure:"default_water_time" survey:"default_water_time"`
+	EnableButtons        bool          `mapstructure:"enable_buttons" survey:"enable_buttons"`
+	EnableMoistureSensor bool          `mapstructure:"enable_moisture_sensor" survey:"enable_moisture_sensor"`
+	LightPin             string        `mapstructure:"light_pin" survey:"light_pin"`
+	StopButtonPin        string        `mapstructure:"stop_water_button" survey:"stop_water_button"`
+	DisableWatering      bool          `mapstructure:"disable_watering" survey:"disable_watering"`
+
+	MQTTAddress string `survey:"mqtt_address"`
+	MQTTPort    int    `survey:"mqtt_port"`
 }
 
 // Controller struct holds the necessary data for running the mock garden-controller
