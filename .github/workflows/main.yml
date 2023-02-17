@@ -79,7 +79,7 @@ jobs:
 
       - name: Start containers for integration test
         working-directory: ./deploy
-        run: docker compose -f docker-compose.test.yml up -d
+        run: docker compose --profile test up -d
 
       - name: Integration Test
         working-directory: ./${{ env.PROJECT_NAME }}/integration_tests
@@ -87,7 +87,7 @@ jobs:
 
       - name: Remove containers for integration test
         working-directory: ./deploy
-        run: docker compose -f docker-compose.test.yml down
+        run: docker compose --profile test down
 
   build:
     needs: ["unit_test", "integration_test"]
