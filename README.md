@@ -83,7 +83,8 @@ Use Docker Compose to easily run everything and try it out! This will run all se
 
 4. Water a Zone for 3 seconds
   ```shell
-  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0/action -d '{"water": {"duration": 3000}}'
+  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0/action \
+    -d '{"water": {"duration": 3000}}'
   ```
 
 5. Now access Grafana dashboards at http://localhost:3000 and login as `admin/adminadmin`
