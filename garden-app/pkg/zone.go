@@ -88,7 +88,7 @@ func (zd *ZoneDetails) Patch(new *ZoneDetails) {
 // and optional MinimumMoisture which acts as the threshold the Plant's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
-	Duration       string           `json:"duration" yaml:"duration"`
+	Duration       *Duration        `json:"duration" yaml:"duration"`
 	Interval       string           `json:"interval" yaml:"interval"`
 	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty"`
@@ -96,7 +96,7 @@ type WaterSchedule struct {
 
 // Patch allows modifying the struct in-place with values from a different instance
 func (ws *WaterSchedule) Patch(new *WaterSchedule) {
-	if new.Duration != "" {
+	if new.Duration != nil {
 		ws.Duration = new.Duration
 	}
 	if new.Interval != "" {

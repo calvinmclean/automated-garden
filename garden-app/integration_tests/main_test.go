@@ -150,7 +150,7 @@ func GardenTests(t *testing.T) {
 				TopicPrefix: "test",
 				MaxZones:    &maxZones,
 				LightSchedule: &pkg.LightSchedule{
-					Duration:  "14h",
+					Duration:  &pkg.Duration{14 * time.Hour},
 					StartTime: startTime.Format(pkg.LightTimeFormat),
 				},
 			},
@@ -167,7 +167,7 @@ func GardenTests(t *testing.T) {
 			fmt.Sprintf("/gardens/%s/action", g.ID.String()),
 			action.GardenAction{Light: &action.LightAction{
 				State:       pkg.LightStateOff,
-				ForDuration: "1s",
+				ForDuration: &pkg.Duration{time.Second},
 			}},
 			&struct{}{},
 		)
@@ -187,7 +187,7 @@ func GardenTests(t *testing.T) {
 
 		// Check for light action turning it off, plus adhoc schedule to turn it back on
 		c.AssertLightActions(t,
-			action.LightAction{State: pkg.LightStateOff, ForDuration: "1s"},
+			action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{time.Second}},
 			action.LightAction{State: pkg.LightStateOn},
 		)
 	})
@@ -198,7 +198,7 @@ func GardenTests(t *testing.T) {
 		status, err := makeRequest(http.MethodPatch, "/gardens/c9i98glvqc7km2vasfig", pkg.Garden{
 			LightSchedule: &pkg.LightSchedule{
 				StartTime: newStartTime.Format(pkg.LightTimeFormat),
-				Duration:  "1s",
+				Duration:  &pkg.Duration{time.Second},
 			},
 		}, &g)
 		assert.NoError(t, err)
@@ -246,7 +246,7 @@ func ZoneTests(t *testing.T) {
 			http.MethodPost,
 			"/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0/action",
 			action.ZoneAction{Water: &action.WaterAction{
-				Duration: (time.Second * 3).Milliseconds(),
+				Duration: &pkg.Duration{time.Second * 3},
 			}},
 			&struct{}{},
 		)
@@ -287,7 +287,7 @@ func ZoneTests(t *testing.T) {
 		status, err := makeRequest(http.MethodPatch, "/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0", pkg.Zone{
 			WaterSchedule: &pkg.WaterSchedule{
 				StartTime: &newStartTime,
-				Duration:  "1s",
+				Duration:  &pkg.Duration{time.Second},
 			},
 		}, &z)
 		assert.NoError(t, err)

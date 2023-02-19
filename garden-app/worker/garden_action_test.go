@@ -114,7 +114,7 @@ func TestLightActionExecute(t *testing.T) {
 		Name:        "garden",
 		TopicPrefix: "garden",
 		LightSchedule: &pkg.LightSchedule{
-			Duration:  "15h",
+			Duration:  &pkg.Duration{15 * time.Hour},
 			StartTime: "23:00:00-07:00",
 		},
 		CreatedAt: &now,
@@ -141,7 +141,7 @@ func TestLightActionExecute(t *testing.T) {
 		},
 		{
 			"SuccessfulWithDelay",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: "30s"},
+			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
@@ -155,7 +155,7 @@ func TestLightActionExecute(t *testing.T) {
 		},
 		{
 			"LightDelayError",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: "30s"},
+			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
@@ -172,7 +172,7 @@ func TestLightActionExecute(t *testing.T) {
 		},
 		{
 			"PublishError",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: "30s"},
+			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(errors.New("publish error"))

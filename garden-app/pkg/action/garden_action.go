@@ -15,7 +15,7 @@ type GardenAction struct {
 // the current state if left empty.
 type LightAction struct {
 	State       pkg.LightState `json:"state"`
-	ForDuration string         `json:"for_duration"`
+	ForDuration *pkg.Duration  `json:"for_duration"`
 }
 
 // StopAction is an action for stopping watering of a Plant. It doesn't stop watering a specific Plant, only what is

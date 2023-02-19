@@ -106,11 +106,9 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		}
 	}
 
-	nextWateringDuration, err := time.ParseDuration(zone.WaterSchedule.Duration)
-	if err != nil {
-		logger.WithError(err).Warn("unable to determine next water duration")
-	} else if zone.HasWeatherControl() && !zone.EndDated() {
-		wd, err := zr.worker.ScaleWateringDuration(zone.WaterSchedule, int64(nextWateringDuration))
+	nextWateringDuration := zone.WaterSchedule.Duration.Duration
+	if zone.HasWeatherControl() && !zone.EndDated() {
+		wd, err := zr.worker.ScaleWateringDuration(zone.WaterSchedule, nextWateringDuration)
 		if err != nil {
 			logger.WithError(err).Warn("unable to determine water duration scale")
 		} else {

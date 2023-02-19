@@ -109,7 +109,7 @@ func TestGardenPatch(t *testing.T) {
 		{
 			"PatchLightSchedule.Duration",
 			&Garden{LightSchedule: &LightSchedule{
-				Duration: "2h",
+				Duration: &Duration{2 * time.Hour},
 			}},
 		},
 		{
@@ -146,7 +146,7 @@ func TestGardenPatch(t *testing.T) {
 		g := &Garden{
 			LightSchedule: &LightSchedule{
 				StartTime: "START TIME",
-				Duration:  "2h",
+				Duration:  &Duration{2 * time.Hour},
 			},
 		}
 		g.Patch(&Garden{LightSchedule: &LightSchedule{}})

@@ -55,7 +55,7 @@ func TestZoneRequest(t *testing.T) {
 					Name:     "zone",
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Duration: "1000ms",
+						Duration: &pkg.Duration{time.Second},
 					},
 				},
 			},
@@ -82,26 +82,11 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval: "24h",
-						Duration: "1000ms",
+						Duration: &pkg.Duration{time.Second},
 					},
 				},
 			},
 			"missing required water_schedule.start_time field",
-		},
-		{
-			"InvalidDurationStringError",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Name:     "zone",
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
-						Duration:  "NOT A DURATION",
-						StartTime: &now,
-					},
-				},
-			},
-			"invalid duration format for water_schedule.duration: NOT A DURATION",
 		},
 		{
 			"EmptyNameError",
@@ -110,7 +95,7 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
-						Duration:  "1000ms",
+						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 					},
 				},
@@ -124,7 +109,7 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
-						Duration:  "1000ms",
+						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
@@ -145,7 +130,7 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
-						Duration:  "1000ms",
+						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
@@ -166,7 +151,7 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
-						Duration:  "1000ms",
+						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
@@ -187,7 +172,7 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
-						Duration:  "1000ms",
+						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
@@ -209,7 +194,7 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
-						Duration:  "1000ms",
+						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
@@ -231,7 +216,7 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
 						Interval:  "24h",
-						Duration:  "1000ms",
+						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
 							Temperature: &weather.ScaleControl{
@@ -254,7 +239,7 @@ func TestZoneRequest(t *testing.T) {
 				Name:     "zone",
 				Position: &pos,
 				WaterSchedule: &pkg.WaterSchedule{
-					Duration:  "1000ms",
+					Duration:  &pkg.Duration{time.Second},
 					Interval:  "24h",
 					StartTime: &now,
 					WeatherControl: &weather.Control{
@@ -313,17 +298,6 @@ func TestUpdateZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{ID: xid.New()},
 			},
 			"updating ID is not allowed",
-		},
-		{
-			"InvalidWaterScheduleDurationError",
-			&UpdateZoneRequest{
-				Zone: &pkg.Zone{
-					WaterSchedule: &pkg.WaterSchedule{
-						Duration: "NOT A DURATION",
-					},
-				},
-			},
-			"invalid duration format for water_schedule.duration: NOT A DURATION",
 		},
 		{
 			"StartTimeInPastError",

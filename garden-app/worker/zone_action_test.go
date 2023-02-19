@@ -3,6 +3,7 @@ package worker
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
@@ -36,7 +37,7 @@ func TestZoneAction(t *testing.T) {
 			"SuccessfulZoneActionWithWaterAction",
 			&action.ZoneAction{
 				Water: &action.WaterAction{
-					Duration: 1000,
+					Duration: &pkg.Duration{1000},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -49,7 +50,7 @@ func TestZoneAction(t *testing.T) {
 			"FailedZoneActionWithWaterAction",
 			&action.ZoneAction{
 				Water: &action.WaterAction{
-					Duration: 1000,
+					Duration: &pkg.Duration{1000},
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
@@ -88,7 +89,7 @@ func TestWaterActionExecute(t *testing.T) {
 		TopicPrefix: "garden",
 	}
 	action := &action.WaterAction{
-		Duration: 1000,
+		Duration: &pkg.Duration{time.Second},
 	}
 	temperatureControl := &weather.ScaleControl{
 		BaselineValue: float32Pointer(70),
@@ -215,6 +216,7 @@ func TestWaterActionExecute(t *testing.T) {
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
 					Interval: "24h",
+					Duration: &pkg.Duration{time.Second},
 					WeatherControl: &weather.Control{
 						Rain: rainControl,
 					},

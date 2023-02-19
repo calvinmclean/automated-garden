@@ -57,7 +57,7 @@ func (w *Worker) ExecuteLightAction(g *pkg.Garden, input *action.LightAction) er
 	}
 
 	// If this is a LightAction with specified duration, additional steps are necessary
-	if input != nil && input.ForDuration != "" {
+	if input != nil && input.ForDuration != nil {
 		err := w.ScheduleLightDelay(g, input)
 		if err != nil {
 			return fmt.Errorf("unable to handle light delay: %v", err)

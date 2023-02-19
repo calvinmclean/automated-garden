@@ -84,14 +84,14 @@ type GardenHealth struct {
 // LightSchedule allows the user to control when the Garden light is turned on and off
 // "Time" should be in the format of LightTimeFormat constant ("15:04:05-07:00")
 type LightSchedule struct {
-	Duration    string     `json:"duration" yaml:"duration"`
+	Duration    *Duration  `json:"duration" yaml:"duration"`
 	StartTime   string     `json:"start_time" yaml:"start_time"`
 	AdhocOnTime *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
 func (ls *LightSchedule) Patch(new *LightSchedule) {
-	if new.Duration != "" {
+	if new.Duration != nil {
 		ls.Duration = new.Duration
 	}
 	if new.StartTime != "" {
@@ -166,7 +166,7 @@ func (g *Garden) Patch(newGarden *Garden) {
 		g.LightSchedule.Patch(newGarden.LightSchedule)
 
 		// If both Duration and StartTime are empty, remove the schedule
-		if newGarden.LightSchedule.Duration == "" && newGarden.LightSchedule.StartTime == "" {
+		if newGarden.LightSchedule.Duration == nil && newGarden.LightSchedule.StartTime == "" {
 			g.LightSchedule = nil
 		}
 	}
