@@ -89,7 +89,7 @@ func (zd *ZoneDetails) Patch(new *ZoneDetails) {
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
 	Duration       *Duration        `json:"duration" yaml:"duration"`
-	Interval       string           `json:"interval" yaml:"interval"`
+	Interval       *Duration        `json:"interval" yaml:"interval"`
 	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty"`
 }
@@ -99,7 +99,7 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) {
 	if new.Duration != nil {
 		ws.Duration = new.Duration
 	}
-	if new.Interval != "" {
+	if new.Interval != nil {
 		ws.Interval = new.Interval
 	}
 	if new.StartTime != nil {

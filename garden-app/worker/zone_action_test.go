@@ -136,7 +136,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 50,
@@ -157,7 +157,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 50,
@@ -177,7 +177,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 50,
@@ -198,7 +198,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Rain: rainControl,
 					},
@@ -215,7 +215,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					Duration: &pkg.Duration{time.Second},
 					WeatherControl: &weather.Control{
 						Rain: rainControl,
@@ -234,7 +234,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Rain: rainControl,
 					},
@@ -252,7 +252,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Rain: rainControl,
 					},
@@ -270,7 +270,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -288,7 +288,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -306,7 +306,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -324,7 +324,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -342,7 +342,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -360,7 +360,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -378,7 +378,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -396,7 +396,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 					},
@@ -410,30 +410,13 @@ func TestWaterActionExecute(t *testing.T) {
 			"",
 		},
 		{
-			"ErrorParsingIntervalForTemperatureControlStillWaters",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "wow",
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
 			// Scenario emulating summer where temperature causes increased watering, but
 			// recent rain scales it down again
 			"CompoundScalingSummerRain",
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 						Rain:        rainControl,
@@ -455,7 +438,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{
-					Interval: "24h",
+					Interval: &pkg.Duration{time.Hour * 24},
 					WeatherControl: &weather.Control{
 						Temperature: temperatureControl,
 						Rain:        rainControl,
