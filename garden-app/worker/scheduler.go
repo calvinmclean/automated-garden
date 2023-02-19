@@ -25,17 +25,11 @@ func (w *Worker) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 	logger := w.contextLogger(g, z)
 	logger.Infof("creating scheduled Job for watering Zone: %+v", *z.WaterSchedule)
 
-	// Read Zone's Interval string into a Duration
-	interval, err := time.ParseDuration(z.WaterSchedule.Interval)
-	if err != nil {
-		return err
-	}
-
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(zoneLabels(z)...).Inc()
 	waterAction := &action.WaterAction{Duration: z.WaterSchedule.Duration}
-	_, err = w.scheduler.
-		Every(interval).
+	_, err := w.scheduler.
+		Every(z.WaterSchedule.Interval.Duration).
 		StartAt(*z.WaterSchedule.StartTime).
 		Tag("zone").
 		Tag(z.ID.String()).
@@ -45,7 +39,7 @@ func (w *Worker) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 			schedulerErrors.WithLabelValues(zoneLabels(z)...).Inc()
 
 			jobLogger.Infof("executing WaterAction for %d ms", waterAction.Duration)
-			err = w.ExecuteWaterAction(g, z, waterAction)
+			err := w.ExecuteWaterAction(g, z, waterAction)
 			if err != nil {
 				jobLogger.Errorf("error executing scheduled zone water action: %v", err)
 				schedulerErrors.WithLabelValues(zoneLabels(z)...).Inc()

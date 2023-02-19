@@ -68,7 +68,7 @@ func TestZoneRequest(t *testing.T) {
 					Name:     "zone",
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval: "24h",
+						Interval: &pkg.Duration{time.Hour * 24},
 					},
 				},
 			},
@@ -81,7 +81,7 @@ func TestZoneRequest(t *testing.T) {
 					Name:     "zone",
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval: "24h",
+						Interval: &pkg.Duration{time.Hour * 24},
 						Duration: &pkg.Duration{time.Second},
 					},
 				},
@@ -94,7 +94,7 @@ func TestZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
+						Interval:  &pkg.Duration{time.Hour * 24},
 						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 					},
@@ -108,7 +108,7 @@ func TestZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
+						Interval:  &pkg.Duration{time.Hour * 24},
 						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
@@ -129,7 +129,7 @@ func TestZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
+						Interval:  &pkg.Duration{time.Hour * 24},
 						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
@@ -150,7 +150,7 @@ func TestZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
+						Interval:  &pkg.Duration{time.Hour * 24},
 						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
@@ -171,7 +171,7 @@ func TestZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
+						Interval:  &pkg.Duration{time.Hour * 24},
 						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
@@ -193,7 +193,7 @@ func TestZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
+						Interval:  &pkg.Duration{time.Hour * 24},
 						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
@@ -215,7 +215,7 @@ func TestZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{
 					Position: &pos,
 					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  "24h",
+						Interval:  &pkg.Duration{time.Hour * 24},
 						Duration:  &pkg.Duration{time.Second},
 						StartTime: &now,
 						WeatherControl: &weather.Control{
@@ -240,7 +240,7 @@ func TestZoneRequest(t *testing.T) {
 				Position: &pos,
 				WaterSchedule: &pkg.WaterSchedule{
 					Duration:  &pkg.Duration{time.Second},
-					Interval:  "24h",
+					Interval:  &pkg.Duration{time.Hour * 24},
 					StartTime: &now,
 					WeatherControl: &weather.Control{
 						Temperature: &weather.ScaleControl{

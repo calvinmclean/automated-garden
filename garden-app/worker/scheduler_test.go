@@ -43,7 +43,7 @@ func createExampleZone() *pkg.Zone {
 		Position:  &p,
 		WaterSchedule: &pkg.WaterSchedule{
 			Duration:  &pkg.Duration{time.Second},
-			Interval:  "24h",
+			Interval:  &pkg.Duration{time.Hour * 24},
 			StartTime: &createdAt,
 		},
 	}

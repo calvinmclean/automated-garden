@@ -30,7 +30,7 @@ func (z *ZoneRequest) Bind(r *http.Request) error {
 	if z.WaterSchedule == nil {
 		return errors.New("missing required water_schedule field")
 	}
-	if z.WaterSchedule.Interval == "" {
+	if z.WaterSchedule.Interval == nil {
 		return errors.New("missing required water_schedule.interval field")
 	}
 	if z.WaterSchedule.Duration == nil {

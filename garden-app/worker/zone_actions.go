@@ -102,28 +102,23 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration time.Dura
 
 	scaleFactor := float32(1)
 
-	interval, err := time.ParseDuration(ws.Interval)
-	if err != nil {
-		return duration, fmt.Errorf("error parsing WaterSchedule.Interval as duration: %w", err)
-	}
-
 	if ws.HasTemperatureControl() {
-		avgHighTemp, err := w.weatherClient.GetAverageHighTemperature(interval)
+		avgHighTemp, err := w.weatherClient.GetAverageHighTemperature(ws.Interval.Duration)
 		if err != nil {
 			w.logger.WithError(err).Warn("error getting average high temperatures")
 		} else {
 			scaleFactor = ws.WeatherControl.Temperature.Scale(avgHighTemp)
-			w.logger.Infof("weather client calculated %fC as the average daily high temperature over the last %s, resulting in scale factor of %f", avgHighTemp, interval.String(), scaleFactor)
+			w.logger.Infof("weather client calculated %fC as the average daily high temperature over the last %s, resulting in scale factor of %f", avgHighTemp, ws.Interval.String(), scaleFactor)
 		}
 	}
 
 	if ws.HasRainControl() {
-		totalRain, err := w.weatherClient.GetTotalRain(interval)
+		totalRain, err := w.weatherClient.GetTotalRain(ws.Interval.Duration)
 		if err != nil {
 			w.logger.WithError(err).Warn("error getting rain data")
 		} else {
 			rainScaleFactor := ws.WeatherControl.Rain.InvertedScaleDownOnly(totalRain)
-			w.logger.Infof("weather client recorded %fmm of rain in the last %s, resulting in scale factor of %f", totalRain, interval.String(), rainScaleFactor)
+			w.logger.Infof("weather client recorded %fmm of rain in the last %s, resulting in scale factor of %f", totalRain, ws.Interval.String(), rainScaleFactor)
 			scaleFactor *= rainScaleFactor
 		}
 	}
