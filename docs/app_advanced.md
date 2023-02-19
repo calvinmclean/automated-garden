@@ -12,39 +12,14 @@ Additional functionality comes from the following commands:
 - Reliable scheduled actions using [`gocron`](https://github.com/go-co-op/gocron) for watering and lighting
 - Connect to MQTT to publish messages to distributed controllers
 - Connect to InfluxDB to read time-series data that comes from controllers
-
-## Code Organization
-- `pkg`: contains models and other core code necessary for the application's functionality that may be used by other packages
-    - `pkg/influxdb`: interacts with InfluxDB to make queries
-    - `pkg/mqtt`: connects to MQTT for publish/subscribe
-    - `pkg/storage`: provides a generic `Client` interface and various implementations for storing data
-- `cmd`: this is the entrypoint to the application that contains code using the popular [`spf13/cobra` CLI library](https://github.com/spf13/cobra) to configure different commands and flags. Logic in this package is minimal and it will just configure CLI options and call the relevant package's startup function
-- `server`: contains code for implementing the HTTP API and running scheduled actions
-- `controller`: contains code for running the mock `garden-controller` that behaves as-if it is an embedded device, and other controller-related commands
-
-Configuration is at the core of the application. Each package provides its own `Config` struct that encapsulates all the necessary options. The config file is read by the command code and then passed into the actual startup code of relevant packages. This allows for easily keeping all configurations in a `config.yaml` file that is read at application startup.
+- Integrated with external Weather APIs to influence watering based on recent data
 
 ## Server
 This section goes into additional details of the main functionality of the `garden-app`, which is the `server` command.
 
 ### Usage
 ```shell
-garden-app server
-```
-```shell
-Usage:
-  garden-app server [flags]
-
-Aliases:
-  server, run
-
-Flags:
-  -h, --help       help for server
-      --port int   port to run Application server on (default 80)
-
-Global Flags:
-      --config string      path to config file (default "config.yaml")
-  -l, --log-level string   level of logging to display (default "info")
+garden-app server --help
 ```
 
 ### Configuration
@@ -53,10 +28,11 @@ The [`server.Config`](https://pkg.go.dev/github.com/calvinmclean/automated-garde
   - [`influxdb.Config`](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb#Config)
   - [`mqtt.Config`](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt#Config)
   - [`storage.Config`](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app/pkg/storage#Config)
+  - [`weather.Config`](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app/pkg/weather#Config)
 
 These encapsulated `Config` structs allow the `server` to easily create the various clients by passing those configs to the package.
 
-Please see the [API reference](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app/server#Config) for the most up-to-date information about configurations.
+Please see the [API reference](https://github.com/calvinmclean/automated-garden/blob/main/garden-app/api/openapi.yaml) for the most up-to-date information about configurations.
 
 Example YAML config file:
 ```yaml
@@ -91,6 +67,33 @@ The `pkg/storage` package defines a `Client` interface and multiple implementati
     - Requires a `ConfigMap` name and key to access the data
 
 This setup will allow for easily adding more storage clients in the future.
+
+### Weather Client
+`pkg/weather` defines a `Client` interface. Currently there is only an implementation for Netatmo weather stations which can be setup with a configuration like this:
+
+```yaml
+weather:
+  type: "netatmo"
+  options:
+    # The following names are defaults if you have one of each type in your Netatmo account
+    station_name: "Weather Station"
+    rain_module_name: "Smart Rain Gauge"
+    outdoor_module_name: "Outdoor Module"
+    authentication:
+      access_token: "<access_token>"
+      refresh_token: "<refresh_token>"
+    client_id: "<client_id>"
+    client_secret: "<client_id>"
+```
+
+The `authentication`, `client_id`, and `client_secret` configuration values can be found by following [the official Netatmo authentication guide](https://dev.netatmo.com/apidocumentation/oauth).
+
+If you would rather use precise device IDs or the default names d not work, you can explore the [Netatmo API](https://dev.netatmo.com/apidocumentation/weather). Configuration with device IDs looks like:
+```yaml
+station_id: "<station_mac_address>"
+rain_module_id: "<rain_module_mac_address>"
+outdoor_module_id: "<outdoor_module_mac_address>"
+```
 
 ### Kubernetes
 It is possible to run this project on Kubernetes and I highly recommend this because you can easily manage all services in the cluster and quickly redeploy the `garden-app` for updates. [K3s](https://k3s.io) is a simple single-node cluster that can be run on a Raspberry Pi.
@@ -129,36 +132,7 @@ The `controller` command behaves as a mock `garden-controller` that makes it eas
 
 ### Usage
 ```shell
-garden-app controller
-```
-```shell
-Usage:
-  garden-app controller [flags]
-  garden-app controller [command]
-
-Aliases:
-  controller, controller run
-
-Available Commands:
-  generate-config Generate config.h and wifi_config.h files for garden-controller
-
-Flags:
-      --enable-ui                    Enable tview UI for nicer output (default true)
-      --health-interval duration     Interval between health data publishing (default 1m0s)
-  -h, --help                         help for controller
-      --moisture-interval duration   Interval between moisture data publishing (default 10s)
-      --moisture-strategy string     Strategy for creating moisture data (default "random")
-      --moisture-value int           The value, or starting value, to use for moisture data publishing (default 100)
-      --publish-health               Whether or not to publish health data every minute (default true)
-      --publish-water-event          Whether or not watering events should be published for logging (default true)
-  -t, --topic string                 MQTT topic prefix of the garden-controller (default "test-garden")
-  -z, --zones int                    Number of Zones for which moisture data should be emulated
-
-Global Flags:
-      --config string      path to config file (default "config.yaml")
-  -l, --log-level string   level of logging to display (default "info")
-
-Use "garden-app controller [command] --help" for more information about a command.
+garden-app controller --help
 ```
 
 ### Configuration

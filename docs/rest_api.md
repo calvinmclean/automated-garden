@@ -112,6 +112,7 @@ It is important to note that it must correspond directly to a Zone in the `garde
 		"start_time": "2022-04-23T08:00:00-07:00"
 	},
 	"next_water_time": "2022-04-24T08:00:00-07:00",
+	"next_water_duration": "2m0s",
 	"links": [
 		{
 			"rel": "self",

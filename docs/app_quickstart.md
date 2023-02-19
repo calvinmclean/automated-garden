@@ -1,62 +1,42 @@
 # Garden App
 The `garden-app` is a Go server application that provides a REST API for managing Gardens, Zones and Plants.
 
-## Getting Started
-1. Clone the repository
-    ```shell
-    git clone https://github.com/calvinmclean/automated-garden.git
-    ```
-1. Go to `automated-garden/deploy/docker` directory and start up all services
-    ```shell
-    cd automated-garden/deploy/docker
-    docker compose up -d
-    ```
-1. Navigate to `automated-garden/garden-app`
-    ```shell
-    cd ../../garden-app
-    ```
-1. Create a `config.yaml` file from the provided example
-    ```shell
-    cp config.yaml.example config.yaml
-    ```
-1. Optional: Create a `gardens.yaml` file from the provided example (skip this step for a fresh start)
-    ```shell
-    cp gardens.yaml.example gardens.yaml
-    ```
-1. Run the server:
-    ```shell
-    go run main.go server
-    ```
-    or
-    ```shell
-    go install .
-    garden-app server
-    ```
+## Quickstart/Demo
 
-## Use a Mock Controller
-The `garden-app` includes a `controller` subcommand that makes it easier to test without an acual `garden-controller`. This can also be useful to try things out without having to setup the embedded hardware!
+Use Docker Compose to easily run everything and try it out! This will run all services the `garden-app` depends on, plus an instance of the `garden-app` and a mock `garden-controller`.
 
-This guide assumes you already completed the preceding section to run the `garden-app server` and used the included `garden.yaml.example`.
+1. Clone this repository
+  ```shell
+  git clone https://github.com/calvinmclean/automated-garden.git
+  cd automated-garden
+  ```
 
-1. If not done already, install the `garden-app` command:
-    ```shell
-    go install .
-    ```
-1. Run the mock controller with the topic prefix `test-garden`
-    ```shell
-    garden-app controller --topic test-garden
-    ```
-1. Water the Zone to see output in the mock controller
-    ```shell
-    curl --request POST \
-        --url http://localhost/gardens/c22tmvucie6n6gdrpal0/zones/c3ucvu06n88pt1dom670/action \
-        --header 'Content-Type: application/json' \
-        --data '{
-            "water": {
-                "duration": 2000
-            }
-        }'
-    ```
+2. Run Docker Compose and wait a bit for everything to start up
+  ```shell
+  docker compose -f deploy/docker-compose.yml --profile demo up
+  ```
 
-## Advanced
-See the [advanced section](app_advanced.md) for more detailed documentation and instructions for running in Kubernetes.
+3. Try out some `curl` commands to see what is available in the API
+  ```shell
+  # list all Gardens
+  curl -s localhost:8080/gardens | jq
+
+  # get a specific Garden
+  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig | jq
+
+  # get all Zones that are a part of this Garden
+  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig/zones | jq
+  ```
+  - You may notice that these responses all contain a `links` array with the full API routes for other endpoints related to the resources. Go ahead and follow some of these links to learn more about the available API!
+
+4. Water a Zone for 3 seconds
+  ```shell
+  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0/action \
+    -d '{"water": {"duration": 3000}}'
+  ```
+
+5. Now access Grafana dashboards at http://localhost:3000 and login as `admin/adminadmin`
+  - The "Garden App" dashboard contains application metrics for resource usage, HTTP stats, and others
+  - The "Garden Dashboard" dashboard contains more interesting data that comes from the `garden-controller` to show uptime and a watering history. You should see the recent 3 second watering event here
+
+And that's it! I encourage you to check out the additional documentation for more detailed API usage and to learn about all of the things that are possible.

@@ -3,8 +3,6 @@ The hardware setups for this can vary wildly depending on your use-case and avai
 
 See the Examples section for more detailed guides on certain setups.
 
-Once I have designed a PCB for this project, I can provide a more detailed hardware setup guide.
-
 ## Purchased Parts
 Parts that may need to be purchased for this project can include:
 - Water pumps
