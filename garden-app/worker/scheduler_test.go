@@ -16,7 +16,7 @@ import (
 
 func createExampleGarden() *pkg.Garden {
 	two := uint(2)
-	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	return &pkg.Garden{
 		Name:        "test-garden",
@@ -24,27 +24,27 @@ func createExampleGarden() *pkg.Garden {
 		MaxZones:    &two,
 		ID:          id,
 		Zones:       map[xid.ID]*pkg.Zone{},
-		CreatedAt:   &time,
+		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
-			Duration:  "15h",
+			Duration:  &pkg.Duration{15 * time.Hour},
 			StartTime: "22:00:01-07:00",
 		},
 	}
 }
 
 func createExampleZone() *pkg.Zone {
-	time, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	p := uint(0)
 	return &pkg.Zone{
 		Name:      "test zone",
 		ID:        id,
-		CreatedAt: &time,
+		CreatedAt: &createdAt,
 		Position:  &p,
 		WaterSchedule: &pkg.WaterSchedule{
-			Duration:  "1000ms",
+			Duration:  &pkg.Duration{time.Second},
 			Interval:  "24h",
-			StartTime: &time,
+			StartTime: &createdAt,
 		},
 	}
 }
@@ -234,7 +234,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: "30m",
+					ForDuration: &pkg.Duration{30 * time.Minute},
 				},
 			},
 			true,
@@ -251,11 +251,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: "30m",
+					ForDuration: &pkg.Duration{30 * time.Minute},
 				},
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: "30m",
+					ForDuration: &pkg.Duration{30 * time.Minute},
 				},
 			},
 			true,
@@ -272,7 +272,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: "30m",
+					ForDuration: &pkg.Duration{30 * time.Minute},
 				},
 			},
 			false,
@@ -289,11 +289,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: "30m",
+					ForDuration: &pkg.Duration{30 * time.Minute},
 				},
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: "30m",
+					ForDuration: &pkg.Duration{30 * time.Minute},
 				},
 			},
 			false,
@@ -357,7 +357,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		g := createExampleGarden()
 		// Set StartTime and Duration so NextOffTime is soon
 		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(pkg.LightTimeFormat)
-		g.LightSchedule.Duration = "1h2m"
+		g.LightSchedule.Duration = &pkg.Duration{1*time.Hour + 2*time.Minute}
 
 		err := worker.ScheduleLightActions(g)
 		if err != nil {
@@ -367,7 +367,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		// Now request delay
 		err = worker.ScheduleLightDelay(g, &action.LightAction{
 			State:       pkg.LightStateOff,
-			ForDuration: "30m",
+			ForDuration: &pkg.Duration{30 * time.Minute},
 		})
 		if err == nil {
 			t.Errorf("Expected error but got nil")
@@ -394,7 +394,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		// Now request delay
 		err = worker.ScheduleLightDelay(g, &action.LightAction{
 			State:       pkg.LightStateOff,
-			ForDuration: "16h",
+			ForDuration: &pkg.Duration{16 * time.Hour},
 		})
 		if err == nil {
 			t.Errorf("Expected error but got nil")
@@ -421,7 +421,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		// Now request delay
 		err = worker.ScheduleLightDelay(g, &action.LightAction{
 			State:       pkg.LightStateOn,
-			ForDuration: "30m",
+			ForDuration: &pkg.Duration{30 * time.Minute},
 		})
 		if err == nil {
 			t.Errorf("Expected error but got nil")

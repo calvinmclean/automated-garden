@@ -33,12 +33,8 @@ func (z *ZoneRequest) Bind(r *http.Request) error {
 	if z.WaterSchedule.Interval == "" {
 		return errors.New("missing required water_schedule.interval field")
 	}
-	if z.WaterSchedule.Duration == "" {
+	if z.WaterSchedule.Duration == nil {
 		return errors.New("missing required water_schedule.duration field")
-	}
-	// Check that Duration is valid Duration
-	if _, err := time.ParseDuration(z.WaterSchedule.Duration); err != nil {
-		return fmt.Errorf("invalid duration format for water_schedule.duration: %s", z.WaterSchedule.Duration)
 	}
 	if z.WaterSchedule.StartTime == nil {
 		return errors.New("missing required water_schedule.start_time field")
@@ -100,12 +96,6 @@ func (z *UpdateZoneRequest) Bind(r *http.Request) error {
 	}
 
 	if z.Zone.WaterSchedule != nil {
-		// Check that Duration is valid Duration
-		if z.WaterSchedule.Duration != "" {
-			if _, err := time.ParseDuration(z.WaterSchedule.Duration); err != nil {
-				return fmt.Errorf("invalid duration format for water_schedule.duration: %s", z.WaterSchedule.Duration)
-			}
-		}
 		// Check that StartTime is in the future
 		if z.WaterSchedule.StartTime != nil && time.Since(*z.WaterSchedule.StartTime) > 0 {
 			return fmt.Errorf("unable to set water_schedule.start_time to time in the past")

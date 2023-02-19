@@ -54,7 +54,7 @@ func TestZonePatch(t *testing.T) {
 		{
 			"PatchWaterSchedule.Duration",
 			&Zone{WaterSchedule: &WaterSchedule{
-				Duration: "1000ms",
+				Duration: &Duration{time.Second},
 			}},
 		},
 		{

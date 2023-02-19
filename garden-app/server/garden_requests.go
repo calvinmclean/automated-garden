@@ -41,19 +41,15 @@ func (g *GardenRequest) Bind(r *http.Request) error {
 		return errors.New("cannot add or modify Plants with this request")
 	}
 	if g.LightSchedule != nil {
-		if g.LightSchedule.Duration == "" {
+		if g.LightSchedule.Duration == nil {
 			return errors.New("missing required light_schedule.duration field")
 		}
+
 		// Check that Duration is valid Duration
-		if g.LightSchedule.Duration != "" {
-			d, err := time.ParseDuration(g.LightSchedule.Duration)
-			if err != nil {
-				return fmt.Errorf("invalid duration format for light_schedule.duration: %s", g.LightSchedule.Duration)
-			}
-			if d >= 24*time.Hour {
-				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
-			}
+		if g.LightSchedule.Duration.Duration >= 24*time.Hour {
+			return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
 		}
+
 		if g.LightSchedule.StartTime == "" {
 			return errors.New("missing required light_schedule.start_time field")
 		}
@@ -94,12 +90,8 @@ func (g *UpdateGardenRequest) Bind(r *http.Request) error {
 
 	if g.LightSchedule != nil {
 		// Check that Duration is valid Duration
-		if g.LightSchedule.Duration != "" {
-			d, err := time.ParseDuration(g.LightSchedule.Duration)
-			if err != nil {
-				return fmt.Errorf("invalid duration format for light_schedule.duration: %s", g.LightSchedule.Duration)
-			}
-			if d >= 24*time.Hour {
+		if g.LightSchedule.Duration != nil {
+			if g.LightSchedule.Duration.Duration >= 24*time.Hour {
 				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
 			}
 		}
@@ -127,11 +119,9 @@ func (action *GardenActionRequest) Bind(r *http.Request) error {
 	if action == nil || action.GardenAction == nil || (action.Light == nil && action.Stop == nil) {
 		return errors.New("missing required action fields")
 	}
-	if action.Light != nil && len(action.Light.ForDuration) > 0 {
-		// Read delay Duration string into a time.Duration
-		_, err := time.ParseDuration(action.Light.ForDuration)
-		if err != nil {
-			return fmt.Errorf("invalid duration format for action.light.for_duration: %s", action.Light.ForDuration)
+	if action.Light != nil && action.Light.ForDuration != nil {
+		if action.Light.ForDuration.Duration < 0 {
+			return errors.New("delay duration must be greater than 0")
 		}
 	}
 	return nil

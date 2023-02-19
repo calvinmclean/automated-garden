@@ -31,15 +31,9 @@ func (w *Worker) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 		return err
 	}
 
-	// Read Zone's Interval string into a Duration
-	duration, err := time.ParseDuration(z.WaterSchedule.Duration)
-	if err != nil {
-		return err
-	}
-
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(zoneLabels(z)...).Inc()
-	waterAction := &action.WaterAction{Duration: duration.Milliseconds()}
+	waterAction := &action.WaterAction{Duration: z.WaterSchedule.Duration}
 	_, err = w.scheduler.
 		Every(interval).
 		StartAt(*z.WaterSchedule.StartTime).
@@ -94,12 +88,6 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil)
 	logger.Infof("creating scheduled Jobs for lighting Garden: %+v", *g.LightSchedule)
 
-	// Read Garden's Duration string into a time.Duration
-	duration, err := time.ParseDuration(g.LightSchedule.Duration)
-	if err != nil {
-		return err
-	}
-
 	// Parse Gardens's LightSchedule.Time (has no "date")
 	lightTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
 	if err != nil {
@@ -144,7 +132,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	}
 	_, err = w.scheduler.
 		Every(lightInterval).
-		StartAt(startDate.Add(duration)).
+		StartAt(startDate.Add(g.LightSchedule.Duration.Duration)).
 		Tag("garden").
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOff.String()).
@@ -222,19 +210,8 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		return errors.New("unable to use delay when state is not OFF")
 	}
 
-	// Read delay Duration string into a time.Duration
-	delayDuration, err := time.ParseDuration(input.ForDuration)
-	if err != nil {
-		return err
-	}
-
-	lightScheduleDuration, err := time.ParseDuration(g.LightSchedule.Duration)
-	if err != nil {
-		return err
-	}
-
 	// Don't allow delaying longer than LightSchedule.Duration
-	if delayDuration > lightScheduleDuration {
+	if input.ForDuration.Duration > g.LightSchedule.Duration.Duration {
 		return errors.New("unable to execute delay that lasts longer than light_schedule")
 	}
 
@@ -255,19 +232,19 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 	// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on.
 	// No need to change any schedules
 	if nextOffTime.Before(*nextOnTime) {
-		logger.Debugf("next OFF time is before next ON time; setting schedule to turn light back on in %v", delayDuration)
+		logger.Debugf("next OFF time is before next ON time; setting schedule to turn light back on in %v", input.ForDuration.Duration)
 		now := time.Now()
 
 		// Don't allow a delayDuration that will occur after nextOffTime
-		if nextOffTime.Before(now.Add(delayDuration)) {
+		if nextOffTime.Before(now.Add(input.ForDuration.Duration)) {
 			return errors.New("unable to schedule delay that extends past the light turning back on")
 		}
 
-		adhocTime = now.Add(delayDuration)
+		adhocTime = now.Add(input.ForDuration.Duration)
 	} else {
 		// If nextOffTime is after nextOnTime, then light was not ON yet and we need to reschedule the regular ON time
 		// and schedule nextOnTime + delay
-		logger.Debugf("next OFF time is after next ON time; delaying next ON time by %v", delayDuration)
+		logger.Debugf("next OFF time is after next ON time; delaying next ON time by %v", input.ForDuration.Duration)
 
 		nextOnJob, err := w.getNextLightJob(g, pkg.LightStateOn, false)
 		if err != nil {
@@ -282,13 +259,13 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		}
 
 		// Add new ON schedule with action.Light.ForDuration that executes once
-		adhocTime = nextOnTime.Add(delayDuration)
+		adhocTime = nextOnTime.Add(input.ForDuration.Duration)
 	}
 	logger.Debugf("saving adhoc on time to Garden: %v", adhocTime)
 
 	// Add new lightSchedule with AdhocTime and Save Garden
 	g.LightSchedule.AdhocOnTime = &adhocTime
-	err = w.scheduleAdhocLightAction(g)
+	err := w.scheduleAdhocLightAction(g)
 	if err != nil {
 		return err
 	}

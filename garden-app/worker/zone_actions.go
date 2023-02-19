@@ -30,7 +30,7 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 	duration, err := w.exerciseWeatherControl(g, z, input)
 	if err != nil {
 		w.logger.Errorf("error executing weather controls, continuing to water: %v", err)
-		duration = input.Duration
+		duration = input.Duration.Duration
 	}
 	if duration == 0 {
 		w.logger.Info("weather control determined that watering should be skipped")
@@ -38,7 +38,7 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 	}
 
 	msg, err := json.Marshal(action.WaterMessage{
-		Duration: duration,
+		Duration: duration.Milliseconds(),
 		ZoneID:   z.ID,
 		Position: *z.Position,
 	})
@@ -54,22 +54,22 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 	return w.mqttClient.Publish(topic, msg)
 }
 
-func (w *Worker) exerciseWeatherControl(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) (int64, error) {
+func (w *Worker) exerciseWeatherControl(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) (time.Duration, error) {
 	if !z.HasWeatherControl() || input.IgnoreWeather {
-		return input.Duration, nil
+		return input.Duration.Duration, nil
 	}
 
 	skipMoisture, err := w.shouldMoistureSkip(g, z)
 	if err != nil {
-		return input.Duration, err
+		return 0, err
 	}
 	if skipMoisture {
 		return 0, nil
 	}
 
-	duration, err := w.ScaleWateringDuration(z.WaterSchedule, input.Duration)
+	duration, err := w.ScaleWateringDuration(z.WaterSchedule, input.Duration.Duration)
 	if err != nil {
-		return input.Duration, err
+		return 0, err
 	}
 
 	return duration, nil
@@ -95,7 +95,7 @@ func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone) (bool, error) {
 }
 
 // ScaleWateringDuration returns a new watering duration based on weather scaling
-func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration int64) (int64, error) {
+func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration time.Duration) (time.Duration, error) {
 	if w.weatherClient == nil {
 		return 0, errors.New("unable to scale watering duration with no weather.Client")
 	}
@@ -130,5 +130,5 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration int64) (i
 
 	w.logger.Infof("compounded scale factor: %f", scaleFactor)
 
-	return int64(float32(duration) * scaleFactor), nil
+	return time.Duration(float32(duration) * scaleFactor), nil
 }
