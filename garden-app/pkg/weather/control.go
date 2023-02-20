@@ -39,14 +39,14 @@ type SoilMoistureControl struct {
 }
 
 // ScaleControl is a generic struct that enables scaling
-// BaselineTemperature is the value that scaling starts at
+// BaselineValue is the value that scaling starts at
 // Range is the most extreme value that scaling will go to (used as max/min)
 // Factor is the maximum amount that this will scale by. This must be between 0 and 1, where 0 is no scaling and 1 scale by the full proportion of the range
-// When a measured value is equal to or greater than the BaselineTemperature, factor is used to scale up the current value based
-// on the proportion of the difference between current value and BaselineTemperature to the Range
+// When a measured value is equal to or greater than the BaselineValue, factor is used to scale up the current value based
+// on the proportion of the difference between current value and BaselineValue to the Range
 //
 // For example:
-// BaselineTemperature: 90, Factor: 0.5, Range: 30, WaterDuration: 30m
+// BaselineValue: 90, Factor: 0.5, Range: 30, WaterDuration: 30m
 //   - Input 100 degrees: (100 - 90)/30 * 0.5 + 1 = 1.1666666667 => water 35m
 //   - Input 120 degrees: (120 - 90)/30 * 0.5 + 1 = 1.5, max scaling
 //   - Input 130 degrees: (130 - 90)/30 * 0.5 + 1 = 1.6666666667 => greater than factor of 0.5, so we cut off at 1.5 and water 45m

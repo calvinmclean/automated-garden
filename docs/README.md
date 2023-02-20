@@ -1,29 +1,92 @@
 # Automated Garden
-> A complete system for managing real-world Gardens with a central server application and distributed IoT devices.
 
-## What it is
-The `automated-garden` allows you to manage on or more Gardens through a user-friendly REST API. The project is flexible and configurable, allowing you to easily build and manage different types of gardens all through one application. Here are a few ideas of different gardens:
+[![Go Report Card](https://goreportcard.com/badge/github.com/calvinmclean/automated-garden)](https://goreportcard.com/report/github.com/calvinmclean/automated-garden)
+[![GitHub go.mod Go version (subdirectory of monorepo)](https://img.shields.io/github/go-mod/go-version/calvinmclean/automated-garden?filename=garden-app%2Fgo.mod)](https://github.com/calvinmclean/automated-garden/blob/main/garden-app/go.mod)
+![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/calvinmclean/automated-garden/main.yml?branch=main)
+[![License](https://img.shields.io/github/license/calvinmclean/automated-garden)](https://github.com/calvinmclean/automated-garden/blob/main/LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/calvinmclean/automated-garden/garden-app.svg)](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app)
 
-Never worry about manually watering your plants or dealing with confusing irrigation timers again!
+This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with multiple irrigation systems.
 
-`garden-app` refers to the central server for managing Plants, Zones and Gardens.
+**If you have any question at all, please reach out and I would love to chat about the project!**
 
-`garden-controller` refers to the IoT devices attached to each physical Garden.
+This system is designed to be flexible for all types of gardening. Here are a few examples of different possible setups:
+  - Traditional irrigation system using 24V AC valves
+  - Backyard vegetable garden
+  - Indoor garden with a pump and multiple valves to control watering plants, plus a grow light
+  - Indoor seedling germination system with a pump and grow light (fan and heating pad control possibly coming soon)
+  - Hydroponics system with one circulation or aeration pump
 
-## Features
-- Water zones on a schedule
-- Control lighting for indoor gardens on a schedule
-- Collect soil moisture data (can be used to control watering)
-- Fully-configurable Arduino project allowing for easy and flexible setup without code changes
-- Monitor health of connected gardens from the central server
-- Message-queue based action ensure controlling your garden will succeed even if `garden-controller` connection is unreliable
-- Collected logs of all events so you can make sure watering is never missed
+## How It Works
+
+![Garden](_images/FlowDiagram.png?raw=true)
+
+### Garden Server
+This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements all logic and orchestrates the separate systems.
+
+Key features include:
+  - Intuitive REST API
+  - Actions to water plants and toggle a light
+  - Water plants automatically on a schedule
+  - Aggregate data from connected services and previous actions
+  - Scale watering based on external weather API
+
+### Garden Controller
+This Arduino-compatible firmware is contained in the [`garden-controller`](./garden-controller) and is intended to be used with an ESP32. It implements the most basic functionality to control hardware based on messages from the Go application received over MQTT.
+
+Key features include:
+  - Control valves or devices (only limited by number of output pins)
+  - Queue up water events to water multiple zones one after the other
+  - Publish data and logs to InfluxDB via Telegraf + MQTT
+  - Respond to buttons to water individual zones and cancel watering
 
 ## Core Technologies
+- Arduino/FreeRTOS
+- Go
+- MQTT
+- InfluxDB
+- Telegraf
+- Netatmo Weather (optional for weather-based watering)
+- Grafana (optional for visualization of data)
+- Prometheus (optional for metrics)
+- Loki + Promtail (optional for log aggregation)
 
-- **Arduino/FreeRTOS**: used to manage all of the complex operations that must be handled by the individual `garden-controllers`
-- **Go**: used to create a reliable and lightweight central server application and command-line interface
-- **MQTT**: message queue designed specifically for IoT applications. This allows a single server to exercise control over many distributed devices without having to know specific details about each connected device
-- **InfluxDB**: a time-series database that allows for logging event and sensor data
-- **Telegraf**: a thin layer that adapts MQTT messages to InfluxDB data points. This allows the `garden-controller` to publish data to InfluxDB in a reliable and simple way
-- **Grafana**: allows for nice visualizations of data stored in InfluxDB
+## Quickstart/Demo
+
+Use Docker Compose to easily run everything and try it out! This will run all services the `garden-app` depends on, plus an instance of the `garden-app` and a mock `garden-controller`.
+
+1. Clone this repository
+  ```shell
+  git clone https://github.com/calvinmclean/automated-garden.git
+  cd automated-garden
+  ```
+
+2. Run Docker Compose and wait a bit for everything to start up
+  ```shell
+  docker compose -f deploy/docker-compose.yml --profile demo up
+  ```
+
+3. Try out some `curl` commands to see what is available in the API
+  ```shell
+  # list all Gardens
+  curl -s localhost:8080/gardens | jq
+
+  # get a specific Garden
+  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig | jq
+
+  # get all Zones that are a part of this Garden
+  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig/zones | jq
+  ```
+  - You may notice that these responses all contain a `links` array with the full API routes for other endpoints related to the resources. Go ahead and follow some of these links to learn more about the available API!
+
+4. Water a Zone for 3 seconds
+  ```shell
+  curl -s localhost:8080/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0/action \
+    -d '{"water": {"duration": 3000}}'
+  ```
+
+5. Now access Grafana dashboards at http://localhost:3000 and login as `admin/adminadmin`
+  - The "Garden App" dashboard contains application metrics for resource usage, HTTP stats, and others
+  - The "Garden Dashboard" dashboard contains more interesting data that comes from the `garden-controller` to show uptime and a watering history. You should see the recent 3 second watering event here
+
+And that's it! I encourage you to check out the additional documentation for more detailed API usage and to learn about all of the things that are possible.

@@ -3,7 +3,7 @@ info:
   description: |-
     This is an OpenAPI Specification for https://github.com/calvinmclean/automated-garden/tree/main/garden-app
 
-    It allows managing and interacting with Gardens and Plants for this application.
+    It allows managing and interacting with Gardens, Zones and Plants for this application.
 
   title: Garden App - OpenAPI
   version: 1.0.0
@@ -710,6 +710,11 @@ components:
               description: the number of active (not end-dated) Plants in this Garden
               example: 1
               minimum: 0
+            num_zones:
+              type: integer
+              description: the number of active (not end-dated) Zones in this Garden
+              example: 1
+              minimum: 0
             plants:
               description: link specifically for the collection of Plants
               allOf:
@@ -813,20 +818,78 @@ components:
           format: duration
           description: amount of time, as a Duration string, to wait between scheduled watering
           example: 72h
-        minimum_moisture:
-          type: integer
-          minimum: 0
-          maximum: 100
-          description: this is a percentage representing the threshold that the Plant's moisture must be below to enable a WaterAction
-          example: 50
         start_time:
           type: string
           format: date-time
           description: time that the watering interval should be started at
+        weather_control:
+          $ref: "#/components/schemas/ScaleControl"
+          description: control watering based on weather data. Requires a configured weather client
       required:
         - duration
         - interval
         - start_time
+
+    WeatherControl:
+      type: object
+      properties:
+        rain_control:
+          $ref: "#/components/schemas/ScaleControl"
+          description: |
+            scale watering based on total rainfall between now and the last scheduled watering
+            time (even if watering was skipped at the last scheduled time). This uses an "inverted scale"
+            so higher input values cause scaling < 1. Also it will only scale in this direction. Values
+            are in millimeters. The example configuration will scale to zero if rainfall >= 25.4mm (1 in)
+          example:
+            baseline_value: 0
+            factor: 1
+            range: 25.4
+        temperature_control:
+          $ref: "#/components/schemas/ScaleControl"
+          description: |
+            scale watering based on recent average high temeperatures. Values are in degrees Celcius. With
+            the example configuration, an average high of 18C will result in scaling factor of 0.55
+          example:
+            baseline_value: 27
+            factor: 0.5
+            range: 10
+        moisture_control:
+          type: object
+          description: skip watering based on temperature measurements
+          properties:
+            minimum_moisture:
+              type: integer
+              minimum: 0
+              maximum: 100
+              description: |
+                this is a percentage representing the threshold that the Plant's moisture must be
+                below to enable a WaterAction
+              example: 50
+
+    ScaleControl:
+      type: object
+      description: |
+        ScaleControl is a generic type that allows for a flexible configuration to
+        control scaling of watering duration based on external factors.
+      properties:
+        baseline_value:
+          type: number
+          format: float
+          description: this is the value where scaling starts from
+        factor:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 0
+          description: |
+            maximum amount that this will scale by. The value must be between 0 and 1,
+            where 0 is no scaling and 1 scale by the full proportion of the range
+        range:
+          type: number
+          format: float
+          description: |
+            the most extreme value (when added to baseline_value) that scaling will be 
+            affected by (used as max/min)
 
     Zone:
       type: object
@@ -909,10 +972,15 @@ components:
               type: string
               description: time of the next scheduled watering
               format: date-time
-            moisture:
-              type: number
-              format: float
-              description: moisture percentage of a Zone with a soil moisture sensor
+            next_water_duration:
+              type: string
+              description: |
+                duration of the next scheduled watering. If WeatherControl is enabled, this will adjust for scaling based on
+                currently-available data
+              format: duration
+              example: 10m0s
+            weather_data:
+              $ref: "#/components/schemas/link"
             links:
               type: array
               items:
@@ -933,6 +1001,39 @@ components:
         - name
         - position
         - water_schedule
+
+    WeatherData:
+      type: object
+      description: used in ZoneResponse to show recent weather data and scaling factors
+      properties:
+        rain:
+          type: object
+          description: recent rainfall (in millimeters) and resulting scale factor
+          properties:
+            mm:
+              type: number
+              format: float
+              description: total rainfall since last watering (in millimeters)
+            scale_factor:
+              type: number
+              format: float
+              description: scale factor calculated by WeatherControl setup and recent rain data
+        average_temperature:
+          type: object
+          description: data about the average daily high temperatures
+          properties:
+            celcius:
+              type: number
+              format: float
+              description: average high daily temperatures since last watering (in degrees celcius)
+            scale_factor:
+              type: number
+              format: float
+              description: scale factor calculated by WeatherControl setup and recent temperature data
+        soil_moisture_percent:
+          type: number
+          format: float
+          description: moisture percentage of a Zone with a soil moisture sensor
 
     WaterHistoryResponse:
       type: object

@@ -3,6 +3,7 @@
 * Getting Started
     * [Garden App](app_quickstart.md)
     * [Garden Controller](controller_quickstart.md)
+    * [Weather Control](weather_control.md)
     * [Hardware](hardware_quickstart.md)
 
 * Advanced
