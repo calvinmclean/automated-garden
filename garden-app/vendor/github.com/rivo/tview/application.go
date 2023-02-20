@@ -60,9 +60,9 @@ type queuedUpdate struct {
 // The following command displays a primitive p on the screen until Ctrl-C is
 // pressed:
 //
-//   if err := tview.NewApplication().SetRoot(p, true).Run(); err != nil {
-//       panic(err)
-//   }
+//	if err := tview.NewApplication().SetRoot(p, true).Run(); err != nil {
+//	    panic(err)
+//	}
 type Application struct {
 	sync.RWMutex
 
@@ -181,6 +181,7 @@ func (a *Application) SetScreen(screen tcell.Screen) *Application {
 		// Run() has not been called yet.
 		a.screen = screen
 		a.Unlock()
+		screen.Init()
 		return a
 	}
 
@@ -460,8 +461,8 @@ func (a *Application) fireMouseActions(event *tcell.EventMouse) (consumed, isMou
 			if buttons&buttonEvent.button != 0 {
 				fire(buttonEvent.down)
 			} else {
-				fire(buttonEvent.up)
-				if !clickMoved {
+				fire(buttonEvent.up) // A user override might set event to nil.
+				if !clickMoved && event != nil {
 					if a.lastMouseClick.Add(DoubleClickInterval).Before(time.Now()) {
 						fire(buttonEvent.click)
 						a.lastMouseClick = time.Now()
@@ -696,9 +697,9 @@ func (a *Application) ResizeToFullScreen(p Primitive) *Application {
 	return a
 }
 
-// SetFocus sets the focus on a new primitive. All key events will be redirected
-// to that primitive. Callers must ensure that the primitive will handle key
-// events.
+// SetFocus sets the focus to a new primitive. All key events will be directed
+// down the hierarchy (starting at the root) until a primitive handles them,
+// which per default goes towards the focused primitive.
 //
 // Blur() will be called on the previously focused primitive. Focus() will be
 // called on the new primitive.

@@ -8,6 +8,7 @@ import (
 	"context"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	http2 "github.com/influxdata/influxdb-client-go/v2/api/http"
@@ -61,6 +62,8 @@ type WriteAPIImpl struct {
 	writeInfoCh  chan writeBuffInfoReq
 	writeOptions *write.Options
 	closingMu    *sync.Mutex
+	// more appropriate Bool type from sync/atomic cannot be used because it is available since go 1.19
+	isErrChReader int32
 }
 
 type writeBuffInfoReq struct {
@@ -71,6 +74,7 @@ type writeBuffInfoReq struct {
 func NewWriteAPI(org string, bucket string, service http2.Service, writeOptions *write.Options) *WriteAPIImpl {
 	w := &WriteAPIImpl{
 		service:      iwrite.NewService(org, bucket, service, writeOptions),
+		errCh:        make(chan error, 1),
 		writeBuffer:  make([]string, 0, writeOptions.BatchSize()+1),
 		writeCh:      make(chan *iwrite.Batch),
 		bufferCh:     make(chan string),
@@ -100,18 +104,18 @@ func (w *WriteAPIImpl) SetWriteFailedCallback(cb WriteFailedCallback) {
 
 // Errors returns a channel for reading errors which occurs during async writes.
 // Must be called before performing any writes for errors to be collected.
-// The chan is unbuffered and must be drained or the writer will block.
+// New error is skipped when channel is not read.
 func (w *WriteAPIImpl) Errors() <-chan error {
-	if w.errCh == nil {
-		w.errCh = make(chan error)
-	}
+	w.setErrChanRead()
 	return w.errCh
 }
 
-// Flush forces all pending writes from the buffer to be sent
+// Flush forces all pending writes from the buffer to be sent.
+// Flush also tries sending batches from retry queue without additional retrying.
 func (w *WriteAPIImpl) Flush() {
 	w.bufferFlush <- struct{}{}
 	w.waitForFlushing()
+	w.service.Flush()
 }
 
 func (w *WriteAPIImpl) waitForFlushing() {
@@ -166,10 +170,17 @@ x:
 func (w *WriteAPIImpl) flushBuffer() {
 	if len(w.writeBuffer) > 0 {
 		log.Info("sending batch")
-		batch := iwrite.NewBatch(buffer(w.writeBuffer), w.writeOptions.RetryInterval(), w.writeOptions.MaxRetryTime())
+		batch := iwrite.NewBatch(buffer(w.writeBuffer), w.writeOptions.MaxRetryTime())
 		w.writeCh <- batch
 		w.writeBuffer = w.writeBuffer[:0]
 	}
+}
+func (w *WriteAPIImpl) isErrChanRead() bool {
+	return atomic.LoadInt32(&w.isErrChReader) > 0
+}
+
+func (w *WriteAPIImpl) setErrChanRead() {
+	atomic.StoreInt32(&w.isErrChReader, 1)
 }
 
 func (w *WriteAPIImpl) writeProc() {
@@ -179,8 +190,12 @@ x:
 		select {
 		case batch := <-w.writeCh:
 			err := w.service.HandleWrite(context.Background(), batch)
-			if err != nil && w.errCh != nil {
-				w.errCh <- err
+			if err != nil && w.isErrChanRead() {
+				select {
+				case w.errCh <- err:
+				default:
+					log.Warn("Cannot write error to error channel, it is not read")
+				}
 			}
 		case <-w.writeStop:
 			log.Info("Write proc: received stop")
@@ -219,11 +234,8 @@ func (w *WriteAPIImpl) Close() {
 		close(w.bufferInfoCh)
 		w.writeCh = nil
 
-		// close errors if open
-		if w.errCh != nil {
-			close(w.errCh)
-			w.errCh = nil
-		}
+		close(w.errCh)
+		w.errCh = nil
 	}
 }
 
