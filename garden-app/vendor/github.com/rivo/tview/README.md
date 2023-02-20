@@ -3,17 +3,19 @@
 [![PkgGoDev](https://pkg.go.dev/badge/github.com/rivo/tview)](https://pkg.go.dev/github.com/rivo/tview)
 [![Go Report](https://img.shields.io/badge/go%20report-A%2B-brightgreen.svg)](https://goreportcard.com/report/github.com/rivo/tview)
 
-This Go package provides commonly needed components for terminal based user interfaces.
+This Go package provides commonly used components for terminal based user interfaces.
 
 ![Screenshot](tview.gif)
 
 Among these components are:
 
-- __Input forms__ (include __input/password fields__, __drop-down selections__, __checkboxes__, and __buttons__)
+- __Input forms__ (including __text input__, __selections__, __checkboxes__, and __buttons__)
 - Navigable multi-color __text views__
+- Editable multi-line __text areas__
 - Sophisticated navigable __table views__
 - Flexible __tree views__
 - Selectable __lists__
+- __Images__
 - __Grid__, __Flexbox__ and __page layouts__
 - Modal __message windows__
 - An __application__ wrapper
@@ -53,10 +55,8 @@ For a presentation highlighting this package, compile and run the program found 
 
 - [IRCCloud Terminal Client](https://github.com/termoose/irccloud)
 - [Window manager for `tview`](https://github.com/epiclabs-io/winman)
-- [Password manager](https://github.com/7onetella/password)
 - [CLI bookmark manager](https://github.com/Endi1/drawer)
 - [A caving database interface written in Go](https://github.com/IdlePhysicist/cave-logger)
-- [App for rental of electic bikes](https://github.com/MrDienns/bike-commerce)
 - [Interactive file browse and exec any command.](https://github.com/bannzai/itree)
 - [A simple CRM](https://github.com/broadcastle/crm)
 - [Terminal UI for todist](https://github.com/cyberdummy/todoista)
@@ -81,7 +81,6 @@ For a presentation highlighting this package, compile and run the program found 
 - [A simple Kanban board for your terminal](https://github.com/witchard/toukan)
 - [The personal information dashboard for your terminal. ](https://github.com/wtfutil/wtf)
 - [MySQL database to Golang struct](https://github.com/xxjwxc/gormt)
-- [Cryptowatch Go SDK](https://github.com/y3sh/cw-sdk-go)
 - [Discord, TUI and SIXEL.](https://gitlab.com/diamondburned/6cord)
 - [A CLI Audio Player](https://www.github.com/dhulihan/grump)
 - [GLab, a GitLab CLI tool](https://gitlab.com/profclems/glab)
@@ -97,6 +96,22 @@ For a presentation highlighting this package, compile and run the program found 
 - [gobit: binance intelligence terminal](https://github.com/infl00p/gobit)
 - [viddy: A modern watch command](https://github.com/sachaos/viddy)
 - [s3surfer: CLI tool for browsing S3 bucket and download objects interactively](https://github.com/hirose31/s3surfer)
+- [libgen-tui: A terminal UI for downloading books from Library Genesis](https://github.com/audstanley/libgen-tui)
+- [kubectl-lazy: kubectl plugin to easy to view pod](https://github.com/togettoyou/kubectl-lazy)
+- [podman-tui: podman user interface](https://github.com/containers/podman-tui)
+- [tvxwidgets: tview extra widgets](https://github.com/navidys/tvxwidgets)
+- [Domino card game on terminal](https://github.com/gusti-andika/card-domino.git)
+- [goaround: Query stackoverflow API and get results on terminal](https://github.com/glendsoza/goaround)
+- [resto: a CLI app can send pretty HTTP & API requests with TUI](https://github.com/abdfnx/resto)
+- [twad: a WAD launcher for the terminal](https://github.com/zmnpl/twad)
+- [pacseek: A TUI for searching and installing Arch Linux packages](https://github.com/moson-mo/pacseek)
+- [7GUIs demo](https://github.com/letientai299/7guis/tree/master/tui)
+- [tuihub: A utility hub/dashboard for personal use](https://github.com/ashis0013/tuihub)
+- [l'oggo: A terminal app for structured log streaming (GCP stack driver, k8s, local streaming)](https://github.com/aurc/loggo)
+- [reminder: Terminal based interactive app for organising tasks with minimal efforts.](https://github.com/goyalmunish/reminder)
+- [tufw: A terminal UI for ufw.](https://github.com/peltho/tufw)
+- [gh: the GitHub CLI](https://github.com/cli/cli)
+- [piptui: Terminal UI to manage pip packages](https://github.com/glendsoza/piptui/)
 
 ## Documentation
 
@@ -105,6 +120,10 @@ Refer to https://pkg.go.dev/github.com/rivo/tview for the package's documentatio
 ## Dependencies
 
 This package is based on [github.com/gdamore/tcell](https://github.com/gdamore/tcell) (and its dependencies) as well as on [github.com/rivo/uniseg](https://github.com/rivo/uniseg).
+
+## Sponsor this Project
+
+[Become a Sponsor on GitHub](https://github.com/sponsors/rivo?metadata_source=tview_readme) to further this project!
 
 ## Versioning and Backwards-Compatibility
 

@@ -1,6 +1,8 @@
 package tview
 
 import (
+	"strings"
+
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -87,8 +89,8 @@ func (m *Modal) SetDoneFunc(handler func(buttonIndex int, buttonLabel string)) *
 }
 
 // SetText sets the message text of the window. The text may contain line
-// breaks. Note that words are wrapped, too, based on the final size of the
-// window.
+// breaks but color tag states will not transfer to following lines. Note that
+// words are wrapped, too, based on the final size of the window.
 func (m *Modal) SetText(text string) *Modal {
 	m.text = text
 	return m
@@ -146,7 +148,7 @@ func (m *Modal) Draw(screen tcell.Screen) {
 	// Calculate the width of this modal.
 	buttonsWidth := 0
 	for _, button := range m.form.buttons {
-		buttonsWidth += TaggedStringWidth(button.label) + 4 + 2
+		buttonsWidth += TaggedStringWidth(button.text) + 4 + 2
 	}
 	buttonsWidth -= 2
 	screenWidth, screenHeight := screen.Size()
@@ -158,7 +160,15 @@ func (m *Modal) Draw(screen tcell.Screen) {
 
 	// Reset the text and find out how wide it is.
 	m.frame.Clear()
-	lines := WordWrap(m.text, width)
+	var lines []string
+	for _, line := range strings.Split(m.text, "\n") {
+		if len(line) == 0 {
+			lines = append(lines, "")
+			continue
+		}
+		lines = append(lines, WordWrap(line, width)...)
+	}
+	//lines := WordWrap(m.text, width)
 	for _, line := range lines {
 		m.frame.AddText(line, true, AlignCenter, m.textColor)
 	}
@@ -180,7 +190,7 @@ func (m *Modal) MouseHandler() func(action MouseAction, event *tcell.EventMouse,
 	return m.WrapMouseHandler(func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
 		// Pass mouse events on to the form.
 		consumed, capture = m.form.MouseHandler()(action, event, setFocus)
-		if !consumed && action == MouseLeftClick && m.InRect(event.Position()) {
+		if !consumed && action == MouseLeftDown && m.InRect(event.Position()) {
 			setFocus(m)
 			consumed = true
 		}

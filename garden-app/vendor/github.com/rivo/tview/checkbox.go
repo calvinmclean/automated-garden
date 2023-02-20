@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/gdamore/tcell/v2"
+	"github.com/rivo/uniseg"
 )
 
 // Checkbox implements a simple box for boolean values which can be checked and
@@ -129,6 +130,11 @@ func (c *Checkbox) GetFieldWidth() int {
 	return 1
 }
 
+// GetFieldHeight returns this primitive's field height.
+func (c *Checkbox) GetFieldHeight() int {
+	return 1
+}
+
 // SetChangedFunc sets a handler which is called when the checked state of this
 // checkbox was changed by the user. The handler function receives the new
 // state.
@@ -169,13 +175,13 @@ func (c *Checkbox) Draw(screen tcell.Screen) {
 	// Draw label.
 	if c.labelWidth > 0 {
 		labelWidth := c.labelWidth
-		if labelWidth > rightLimit-x {
-			labelWidth = rightLimit - x
+		if labelWidth > width {
+			labelWidth = width
 		}
 		Print(screen, c.label, x, y, labelWidth, AlignLeft, c.labelColor)
 		x += labelWidth
 	} else {
-		_, drawnWidth := Print(screen, c.label, x, y, rightLimit-x, AlignLeft, c.labelColor)
+		_, drawnWidth := Print(screen, c.label, x, y, width, AlignLeft, c.labelColor)
 		x += drawnWidth
 	}
 
@@ -184,7 +190,7 @@ func (c *Checkbox) Draw(screen tcell.Screen) {
 	if c.HasFocus() {
 		fieldStyle = fieldStyle.Background(c.fieldTextColor).Foreground(c.fieldBackgroundColor)
 	}
-	checkboxWidth := stringWidth(c.checkedString)
+	checkboxWidth := uniseg.StringWidth(c.checkedString)
 	checkedString := c.checkedString
 	if !c.checked {
 		checkedString = strings.Repeat(" ", checkboxWidth)
@@ -226,13 +232,17 @@ func (c *Checkbox) MouseHandler() func(action MouseAction, event *tcell.EventMou
 		}
 
 		// Process mouse event.
-		if action == MouseLeftClick && y == rectY {
-			setFocus(c)
-			c.checked = !c.checked
-			if c.changed != nil {
-				c.changed(c.checked)
+		if y == rectY {
+			if action == MouseLeftDown {
+				setFocus(c)
+				consumed = true
+			} else if action == MouseLeftClick {
+				c.checked = !c.checked
+				if c.changed != nil {
+					c.changed(c.checked)
+				}
+				consumed = true
 			}
-			consumed = true
 		}
 
 		return
