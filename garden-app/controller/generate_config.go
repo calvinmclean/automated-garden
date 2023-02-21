@@ -242,12 +242,16 @@ func generateWiFiConfig(config WifiConfig, interactive bool) (string, error) {
 			Prompt: &survey.Input{
 				Message: "WiFi SSID",
 				Default: config.SSID,
+				Help:    "this is the name of your WiFi network",
 			},
 			Validate: survey.Required,
 		},
 		{
-			Name:     "password",
-			Prompt:   &survey.Password{Message: "Password"},
+			Name: "password",
+			Prompt: &survey.Password{
+				Message: "Password",
+				Help:    "this is your WiFi password",
+			},
 			Validate: survey.Required,
 		},
 	}
@@ -297,7 +301,8 @@ func configPrompts(config *Config) error {
 	err = survey.AskOne(&survey.Input{
 		Message: "Light pin (optional)",
 		Default: config.LightPin,
-	}, config.LightPin)
+		Help:    "this is the identifier for the pin that controls a relay attached to a light source",
+	}, &config.LightPin)
 	if err != nil {
 		return fmt.Errorf("error completing light pin prompt: %w", err)
 	}
@@ -322,6 +327,8 @@ func mqttPrompts(config *Config) error {
 			Prompt: &survey.Input{
 				Message: "Topic Prefix",
 				Default: config.TopicPrefix,
+				Help: "this prefix will be used for all MQTT pub/sub topics. It is used to associate data " +
+					"and commands with this particular controller. It is also used for the client ID and must be unique",
 			},
 			Validate: survey.Required,
 		},
@@ -330,6 +337,7 @@ func mqttPrompts(config *Config) error {
 			Prompt: &survey.Input{
 				Message: "MQTT Address",
 				Default: config.MQTTConfig.Broker,
+				Help:    "IP address of the MQTT broker",
 			},
 			Validate: survey.Required,
 		},
@@ -338,6 +346,7 @@ func mqttPrompts(config *Config) error {
 			Prompt: &survey.Input{
 				Message: "MQTT Port",
 				Default: fmt.Sprintf("%d", config.MQTTConfig.Port),
+				Help:    "port of the MQTT broker",
 			},
 			Validate: survey.Required,
 		},
@@ -346,6 +355,7 @@ func mqttPrompts(config *Config) error {
 			Prompt: &survey.Input{
 				Message: "Enable health publishing?",
 				Default: fmt.Sprintf("%t", config.PublishHealth),
+				Help:    "control whether or not healh publishing is enabled. Enable it unless you have a good reason not to",
 			},
 			Validate: survey.Required,
 		},
@@ -362,7 +372,8 @@ func mqttPrompts(config *Config) error {
 		err = survey.AskOne(&survey.Input{
 			Message: "Health publishing interval",
 			Default: config.HealthInterval.String(),
-		}, config.HealthInterval)
+			Help:    "how often to publish health message. Use the default unless you have good reason not to",
+		}, &config.HealthInterval)
 		if err != nil {
 			return fmt.Errorf("error in survey response: %w", err)
 		}
@@ -375,7 +386,8 @@ func buttonPrompts(config *Config) error {
 	err := survey.AskOne(&survey.Input{
 		Message: "Enable buttons",
 		Default: fmt.Sprintf("%t", config.EnableButtons),
-	}, config.EnableButtons)
+		Help:    "allow the use of buttons for controlling watering using the default water time",
+	}, &config.EnableButtons)
 	if err != nil {
 		return err
 	}
@@ -387,14 +399,16 @@ func buttonPrompts(config *Config) error {
 	return survey.AskOne(&survey.Input{
 		Message: "Stop watering button pin",
 		Default: config.StopButtonPin,
-	}, config.StopButtonPin)
+		Help:    "pin identifier of the button to use for stopping current watering",
+	}, &config.StopButtonPin)
 }
 
 func moisturePrompts(config *Config) error {
 	err := survey.AskOne(&survey.Input{
 		Message: "Enable moisture sensor",
 		Default: fmt.Sprintf("%t", config.EnableMoistureSensor),
-	}, config.EnableMoistureSensor)
+		Help:    "enable moisture data publishing",
+	}, &config.EnableMoistureSensor)
 	if err != nil {
 		return err
 	}
@@ -409,6 +423,7 @@ func moisturePrompts(config *Config) error {
 			Prompt: &survey.Input{
 				Message: "Moisture reading interval",
 				Default: config.MoistureInterval.String(),
+				Help:    "how often to read and publish moisture data for each configured sensor",
 			},
 		},
 	}
@@ -422,6 +437,7 @@ func wateringPrompts(config *Config) error {
 			Prompt: &survey.Input{
 				Message: "Disable watering",
 				Default: fmt.Sprintf("%t", config.DisableWatering),
+				Help:    "do not allow watering. Only used by sensor-only gardens",
 			},
 			Validate: survey.Required,
 		},
@@ -430,6 +446,7 @@ func wateringPrompts(config *Config) error {
 			Prompt: &survey.Input{
 				Message: "Default water time",
 				Default: config.DefaultWaterTime.String(),
+				Help:    "default time (in milliseconds) to use for watering if button is used or command is missing value",
 			},
 			Validate: survey.Required,
 		},
@@ -456,6 +473,7 @@ func zonePrompts(config *Config) error {
 				Name: "pump_pin",
 				Prompt: &survey.Input{
 					Message: "\tPump pin",
+					Help:    "pin identifier for the relay controlling a pump or main valve",
 				},
 				Validate: survey.Required,
 			},
@@ -463,6 +481,7 @@ func zonePrompts(config *Config) error {
 				Name: "valve_pin",
 				Prompt: &survey.Input{
 					Message: "\tValve pin",
+					Help:    "pin identifier used for controlling a valve",
 				},
 				Validate: survey.Required,
 			},
@@ -471,6 +490,7 @@ func zonePrompts(config *Config) error {
 				Prompt: &survey.Input{
 					Message: "\tButton pin",
 					Default: "GPIO_NUM_MAX",
+					Help:    "pin identifier for a button that controls this zone (GPIO_NUM_MAX to disable)",
 				},
 			},
 			{
@@ -478,6 +498,7 @@ func zonePrompts(config *Config) error {
 				Prompt: &survey.Input{
 					Message: "\tMoisture sensor pin",
 					Default: "GPIO_NUM_MAX",
+					Help:    "pin identifier for a moisture sensor that corresponds to this zone (GPIO_NUM_MAX to disable)",
 				},
 			},
 		}
