@@ -35,8 +35,8 @@ func createExampleZone() *pkg.Zone {
 		ID:        id,
 		CreatedAt: &createdAt,
 		WaterSchedule: &pkg.WaterSchedule{
-			Duration:  &pkg.Duration{time.Second},
-			Interval:  &pkg.Duration{time.Hour * 24},
+			Duration:  &pkg.Duration{Duration: time.Second},
+			Interval:  &pkg.Duration{Duration: time.Hour * 24},
 			StartTime: &createdAt,
 		},
 	}
@@ -191,7 +191,7 @@ func TestGetZone(t *testing.T) {
 			func() *pkg.Zone {
 				zone := createExampleZone()
 				zone.WaterSchedule = &pkg.WaterSchedule{
-					Duration: &pkg.Duration{time.Second},
+					Duration: &pkg.Duration{Duration: time.Second},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 1,
@@ -211,8 +211,8 @@ func TestGetZone(t *testing.T) {
 			func() *pkg.Zone {
 				zone := createExampleZone()
 				zone.WaterSchedule = &pkg.WaterSchedule{
-					Interval: &pkg.Duration{time.Hour * 24},
-					Duration: &pkg.Duration{time.Hour},
+					Interval: &pkg.Duration{Duration: time.Hour * 24},
+					Duration: &pkg.Duration{Duration: time.Hour},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 1,
@@ -244,7 +244,7 @@ func TestGetZone(t *testing.T) {
 			func() *pkg.Zone {
 				zone := createExampleZone()
 				zone.WaterSchedule = &pkg.WaterSchedule{
-					Duration: &pkg.Duration{time.Second},
+					Duration: &pkg.Duration{Duration: time.Second},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
 							MinimumMoisture: 1,

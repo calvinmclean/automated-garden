@@ -37,7 +37,7 @@ func createExampleGarden() *pkg.Garden {
 		Zones:       map[xid.ID]*pkg.Zone{},
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
-			Duration:  &pkg.Duration{15 * time.Hour},
+			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
 			StartTime: "22:00:01-07:00",
 		},
 	}
