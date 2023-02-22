@@ -112,7 +112,6 @@ func (gr GardensResource) routes(pr PlantsResource, zr ZonesResource) chi.Router
 			r.Use(gr.restrictEndDatedMiddleware)
 
 			r.Post("/action", gr.gardenAction)
-			r.Get("/health", gr.getGardenHealth)
 			r.Mount(plantBasePath, pr.routes())
 			r.Mount(zoneBasePath, zr.routes())
 		})
@@ -366,24 +365,6 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 
 	if err := render.Render(w, r, gr.NewGardenResponse(r.Context(), garden)); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
-		render.Render(w, r, ErrRender(err))
-	}
-}
-
-// getGardenHealth responds with the Garden's health status bsed on querying InfluxDB for self-reported status
-func (gr GardensResource) getGardenHealth(w http.ResponseWriter, r *http.Request) {
-	logger := getLoggerFromContext(r.Context())
-	logger.Info("received request to get Garden health")
-
-	defer gr.influxdbClient.Close()
-
-	garden := getGardenFromContext(r.Context())
-	health := garden.Health(r.Context(), gr.influxdbClient)
-
-	logger.Debugf("retrieved Garden health data: %+v", health)
-
-	if err := render.Render(w, r, GardenHealthResponse{health}); err != nil {
-		logger.WithError(err).Error("unable to render GardenHealthResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }

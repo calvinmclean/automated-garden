@@ -223,21 +223,6 @@ func GardenTests(t *testing.T) {
 			action.LightAction{State: pkg.LightStateOff},
 		)
 	})
-	t.Run("GetGardenHealth", func(t *testing.T) {
-		// This test needs a few repeats to get a reliable pass, which is fine
-		retries := 0
-
-		var health server.GardenHealthResponse
-		for retries < 5 && health.Status != "UP" {
-			time.Sleep(300 * time.Millisecond)
-
-			status, err := makeRequest(http.MethodGet, "/gardens/c9i98glvqc7km2vasfig/health", nil, &health)
-			assert.NoError(t, err)
-			assert.Equal(t, http.StatusOK, status)
-		}
-
-		assert.Equal(t, "UP", health.Status)
-	})
 }
 
 func ZoneTests(t *testing.T) {

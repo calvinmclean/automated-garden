@@ -197,37 +197,38 @@ func TestGardenRestrictEndDatedMiddleware(t *testing.T) {
 func TestCreateGarden(t *testing.T) {
 	tests := []struct {
 		name           string
-		setupMock      func(*storage.MockClient)
+		setupMock      func(*storage.MockClient, *influxdb.MockClient)
 		body           string
 		expectedRegexp string
 		code           int
 	}{
 		{
 			"Successful",
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+				influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			},
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"ErrorNegativeMaxPlants",
-			func(storageClient *storage.MockClient) {},
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {},
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones":-2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
 			`{"status":"Invalid request.","error":"json: cannot unmarshal number -2 into Go struct field GardenRequest.max_zones of type uint"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorInvalidRequestBody",
-			func(storageClient *storage.MockClient) {},
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {},
 			"{}",
 			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"StorageClientError",
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
 			},
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2}`,
@@ -236,7 +237,7 @@ func TestCreateGarden(t *testing.T) {
 		},
 		{
 			"ErrorBadRequestInvalidStartTime",
-			func(storageClient *storage.MockClient) {},
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {},
 			`{"name":"test-garden", "topic_prefix":"test-garden", "max_zones": 1,"light_schedule": {"duration":"1h","start_time":"NOT A TIME"}}`,
 			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
 			http.StatusBadRequest,
@@ -246,11 +247,13 @@ func TestCreateGarden(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient := new(storage.MockClient)
-			tt.setupMock(storageClient)
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupMock(storageClient, influxdbClient)
 			gr := GardensResource{
-				storageClient: storageClient,
-				config:        Config{},
-				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+				storageClient:  storageClient,
+				influxdbClient: influxdbClient,
+				config:         Config{},
+				worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 			}
 
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
@@ -272,6 +275,7 @@ func TestCreateGarden(t *testing.T) {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
 			}
 			storageClient.AssertExpectations(t)
+			influxdbClient.AssertExpectations(t)
 		})
 	}
 }
@@ -282,32 +286,34 @@ func TestGetAllGardens(t *testing.T) {
 	tests := []struct {
 		name           string
 		targetURL      string
-		setupMock      func(*storage.MockClient)
+		setupMock      func(*storage.MockClient, *influxdb.MockClient)
 		expectedRegexp string
 		status         int
 	}{
 		{
 			"SuccessfulEndDatedFalse",
 			"/gardens",
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("GetGardens", false).Return(gardens, nil)
+				influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			},
-			`{"gardens":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfulEndDatedTrue",
 			"/gardens?end_dated=true",
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("GetGardens", true).Return(gardens, nil)
+				influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			},
-			`{"gardens":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"gardens":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
 			"StorageClientError",
 			"/gardens",
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("GetGardens", false).Return([]*pkg.Garden{}, errors.New("storage client error"))
 			},
 			`{"status":"Error rendering response.","error":"storage client error"}`,
@@ -318,12 +324,14 @@ func TestGetAllGardens(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient := new(storage.MockClient)
+			influxdbClient := new(influxdb.MockClient)
 			gr := GardensResource{
-				storageClient: storageClient,
-				config:        Config{},
-				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+				storageClient:  storageClient,
+				influxdbClient: influxdbClient,
+				config:         Config{},
+				worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 			}
-			tt.setupMock(storageClient)
+			tt.setupMock(storageClient, influxdbClient)
 
 			r := httptest.NewRequest("GET", tt.targetURL, nil)
 			w := httptest.NewRecorder()
@@ -350,10 +358,13 @@ func TestGetAllGardens(t *testing.T) {
 func TestGetGarden(t *testing.T) {
 	t.Run("Successful", func(t *testing.T) {
 		storageClient := new(storage.MockClient)
+		influxdbClient := new(influxdb.MockClient)
+		influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 		gr := GardensResource{
-			storageClient: storageClient,
-			config:        Config{},
-			worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+			storageClient:  storageClient,
+			influxdbClient: influxdbClient,
+			config:         Config{},
+			worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 		}
 		garden := createExampleGarden()
 
@@ -376,6 +387,7 @@ func TestGetGarden(t *testing.T) {
 			t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(gardenJSON))
 		}
 		storageClient.AssertExpectations(t)
+		influxdbClient.AssertExpectations(t)
 	})
 }
 
@@ -482,7 +494,7 @@ func TestUpdateGarden(t *testing.T) {
 	tests := []struct {
 		name           string
 		garden         *pkg.Garden
-		setupMock      func(*storage.MockClient)
+		setupMock      func(*storage.MockClient, *influxdb.MockClient)
 		body           string
 		expectedRegexp string
 		status         int
@@ -490,37 +502,40 @@ func TestUpdateGarden(t *testing.T) {
 		{
 			"Successful",
 			createExampleGarden(),
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+				influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			},
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfullyRemoveLightSchedule",
 			createExampleGarden(),
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+				influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			},
 			`{"name": "new name","light_schedule": {}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfullyAddLightSchedule",
 			gardenWithoutLight,
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(nil)
+				influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			},
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"health","href":"/gardens/[0-9a-v]{20}/health"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"StorageClientError",
 			createExampleGarden(),
-			func(storageClient *storage.MockClient) {
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {
 				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
 			},
 			`{"name": "new name"}`,
@@ -530,7 +545,7 @@ func TestUpdateGarden(t *testing.T) {
 		{
 			"ErrorInvalidRequestBody",
 			createExampleGarden(),
-			func(storageClient *storage.MockClient) {},
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {},
 			"{}",
 			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
 			http.StatusBadRequest,
@@ -538,7 +553,7 @@ func TestUpdateGarden(t *testing.T) {
 		{
 			"ErrorReducingMaxZones",
 			gardenWithZone,
-			func(storageClient *storage.MockClient) {},
+			func(storageClient *storage.MockClient, influxdbClient *influxdb.MockClient) {},
 			`{"max_zones": 1}`,
 			`{"status":"Invalid request.","error":"unable to set max_zones less than current num_zones=2"}`,
 			http.StatusBadRequest,
@@ -548,11 +563,13 @@ func TestUpdateGarden(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient := new(storage.MockClient)
-			tt.setupMock(storageClient)
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupMock(storageClient, influxdbClient)
 			gr := GardensResource{
-				storageClient: storageClient,
-				config:        Config{},
-				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+				storageClient:  storageClient,
+				influxdbClient: influxdbClient,
+				config:         Config{},
+				worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -578,73 +595,73 @@ func TestUpdateGarden(t *testing.T) {
 	}
 }
 
-func TestGetGardenHealth(t *testing.T) {
-	now := time.Now()
-	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
-	tests := []struct {
-		name           string
-		time           time.Time
-		err            error
-		expectedStatus string
-	}{
-		{
-			"UP",
-			now,
-			nil,
-			"UP",
-		},
-		{
-			"DOWN",
-			fiveMinutesAgo,
-			nil,
-			"DOWN",
-		},
-		{
-			"N/A",
-			now,
-			errors.New("influxdb error"),
-			"N/A",
-		},
-	}
+// func TestGetGardenHealth(t *testing.T) {
+// 	now := time.Now()
+// 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
+// 	tests := []struct {
+// 		name           string
+// 		time           time.Time
+// 		err            error
+// 		expectedStatus string
+// 	}{
+// 		{
+// 			"UP",
+// 			now,
+// 			nil,
+// 			"UP",
+// 		},
+// 		{
+// 			"DOWN",
+// 			fiveMinutesAgo,
+// 			nil,
+// 			"DOWN",
+// 		},
+// 		{
+// 			"N/A",
+// 			now,
+// 			errors.New("influxdb error"),
+// 			"N/A",
+// 		},
+// 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			storageClient := new(storage.MockClient)
-			influxdbClient := new(influxdb.MockClient)
-			gr := GardensResource{
-				storageClient:  storageClient,
-				influxdbClient: influxdbClient,
-				config:         Config{},
-			}
-			garden := createExampleGarden()
-			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(tt.time, tt.err)
-			influxdbClient.On("Close")
+// 	for _, tt := range tests {
+// 		t.Run(tt.name, func(t *testing.T) {
+// 			storageClient := new(storage.MockClient)
+// 			influxdbClient := new(influxdb.MockClient)
+// 			gr := GardensResource{
+// 				storageClient:  storageClient,
+// 				influxdbClient: influxdbClient,
+// 				config:         Config{},
+// 			}
+// 			garden := createExampleGarden()
+// 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(tt.time, tt.err)
+// 			influxdbClient.On("Close")
 
-			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
-			r := httptest.NewRequest("GET", "/health", nil).WithContext(ctx)
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(gr.getGardenHealth)
+// 			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
+// 			r := httptest.NewRequest("GET", "/health", nil).WithContext(ctx)
+// 			w := httptest.NewRecorder()
+// 			h := http.HandlerFunc(gr.getGardenHealth)
 
-			h.ServeHTTP(w, r)
+// 			h.ServeHTTP(w, r)
 
-			// check HTTP response status code
-			if w.Code != http.StatusOK {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
-			}
+// 			// check HTTP response status code
+// 			if w.Code != http.StatusOK {
+// 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
+// 			}
 
-			// check HTTP response body
-			var actual GardenHealthResponse
-			err := json.Unmarshal(w.Body.Bytes(), &actual)
-			if err != nil {
-				t.Errorf("Unexpected error unmarshaling GardenHealthResponse: %v", err)
-			}
-			if actual.Status != tt.expectedStatus {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual.Status, tt.expectedStatus)
-			}
-			storageClient.AssertExpectations(t)
-		})
-	}
-}
+// 			// check HTTP response body
+// 			var actual GardenHealthResponse
+// 			err := json.Unmarshal(w.Body.Bytes(), &actual)
+// 			if err != nil {
+// 				t.Errorf("Unexpected error unmarshaling GardenHealthResponse: %v", err)
+// 			}
+// 			if actual.Status != tt.expectedStatus {
+// 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual.Status, tt.expectedStatus)
+// 			}
+// 			storageClient.AssertExpectations(t)
+// 		})
+// 	}
+// }
 
 func TestGardenAction(t *testing.T) {
 	tests := []struct {

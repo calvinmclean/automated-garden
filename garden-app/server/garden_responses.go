@@ -13,12 +13,13 @@ import (
 // and hypermedia Links fields
 type GardenResponse struct {
 	*pkg.Garden
-	NextLightAction *NextLightAction `json:"next_light_action,omitempty"`
-	NumPlants       uint             `json:"num_plants"`
-	NumZones        uint             `json:"num_zones"`
-	Plants          Link             `json:"plants"`
-	Zones           Link             `json:"zones"`
-	Links           []Link           `json:"links,omitempty"`
+	NextLightAction *NextLightAction  `json:"next_light_action,omitempty"`
+	Health          *pkg.GardenHealth `json:"health,omitempty"`
+	NumPlants       uint              `json:"num_plants"`
+	NumZones        uint              `json:"num_zones"`
+	Plants          Link              `json:"plants"`
+	Zones           Link              `json:"zones"`
+	Links           []Link            `json:"links,omitempty"`
 }
 
 // NextLightAction contains the time and state for the next scheduled LightAction
@@ -44,55 +45,57 @@ func (gr GardensResource) NewGardenResponse(ctx context.Context, garden *pkg.Gar
 			fmt.Sprintf("%s/%s", gardenBasePath, garden.ID),
 		},
 	)
-	if !garden.EndDated() {
-		response.Links = append(response.Links,
-			Link{
-				"health",
-				fmt.Sprintf("%s/%s/health", gardenBasePath, garden.ID),
-			},
-			Link{
-				"plants",
-				plantsPath,
-			},
-			Link{
-				"zones",
-				zonesPath,
-			},
-			Link{
-				"action",
-				fmt.Sprintf("%s/%s/action", gardenBasePath, garden.ID),
-			},
-		)
 
-		if garden.LightSchedule != nil {
-			nextOnTime := gr.worker.GetNextLightTime(garden, pkg.LightStateOn)
-			nextOffTime := gr.worker.GetNextLightTime(garden, pkg.LightStateOff)
-			if nextOnTime != nil && nextOffTime != nil {
-				// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
-				if nextOnTime.Before(*nextOffTime) {
-					response.NextLightAction = &NextLightAction{
-						Time:  nextOnTime,
-						State: pkg.LightStateOn,
-					}
-				} else {
-					response.NextLightAction = &NextLightAction{
-						Time:  nextOffTime,
-						State: pkg.LightStateOff,
-					}
-				}
-			} else if nextOnTime != nil {
+	if garden.EndDated() {
+		return response
+	}
+
+	response.Links = append(response.Links,
+		Link{
+			"plants",
+			plantsPath,
+		},
+		Link{
+			"zones",
+			zonesPath,
+		},
+		Link{
+			"action",
+			fmt.Sprintf("%s/%s/action", gardenBasePath, garden.ID),
+		},
+	)
+
+	response.Health = garden.Health(ctx, gr.influxdbClient)
+
+	if garden.LightSchedule != nil {
+		nextOnTime := gr.worker.GetNextLightTime(garden, pkg.LightStateOn)
+		nextOffTime := gr.worker.GetNextLightTime(garden, pkg.LightStateOff)
+		if nextOnTime != nil && nextOffTime != nil {
+			// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
+			if nextOnTime.Before(*nextOffTime) {
 				response.NextLightAction = &NextLightAction{
 					Time:  nextOnTime,
 					State: pkg.LightStateOn,
 				}
-			} else if nextOffTime != nil {
+			} else {
 				response.NextLightAction = &NextLightAction{
 					Time:  nextOffTime,
 					State: pkg.LightStateOff,
 				}
 			}
+		} else if nextOnTime != nil {
+			response.NextLightAction = &NextLightAction{
+				Time:  nextOnTime,
+				State: pkg.LightStateOn,
+			}
+		} else if nextOffTime != nil {
+			response.NextLightAction = &NextLightAction{
+				Time:  nextOffTime,
+				State: pkg.LightStateOff,
+			}
 		}
 	}
+
 	return response
 }
 
@@ -119,16 +122,5 @@ func (gr GardensResource) NewAllGardensResponse(ctx context.Context, gardens []*
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
 func (pr *AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
-
-// GardenHealthResponse allpws for returning GardenHealth in an HTTP response
-type GardenHealthResponse struct {
-	pkg.GardenHealth
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (gh GardenHealthResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
