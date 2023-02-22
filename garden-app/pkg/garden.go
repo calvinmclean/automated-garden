@@ -103,17 +103,17 @@ func (ls *LightSchedule) Patch(new *LightSchedule) {
 }
 
 // Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time
-func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) GardenHealth {
+func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) *GardenHealth {
 	lastContact, err := influxdbClient.GetLastContact(ctx, g.TopicPrefix)
 	if err != nil {
-		return GardenHealth{
+		return &GardenHealth{
 			Status:  "N/A",
 			Details: err.Error(),
 		}
 	}
 
 	if lastContact.IsZero() {
-		return GardenHealth{
+		return &GardenHealth{
 			Status:  "DOWN",
 			Details: "no last contact time available",
 		}
@@ -128,10 +128,10 @@ func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) Gar
 		status = "DOWN"
 	}
 
-	return GardenHealth{
+	return &GardenHealth{
 		Status:      status,
 		LastContact: &lastContact,
-		Details:     fmt.Sprintf("last contact from Garden was %v ago", between),
+		Details:     fmt.Sprintf("last contact from Garden was %v ago", between.Truncate(time.Millisecond)),
 	}
 }
 

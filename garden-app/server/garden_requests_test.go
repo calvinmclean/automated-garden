@@ -227,7 +227,7 @@ func TestGardenRequest(t *testing.T) {
 					TopicPrefix: "garden",
 					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
-						Duration: &pkg.Duration{time.Minute},
+						Duration: &pkg.Duration{Duration: time.Minute},
 					},
 				},
 			},
@@ -241,7 +241,7 @@ func TestGardenRequest(t *testing.T) {
 					TopicPrefix: "garden",
 					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
-						Duration: &pkg.Duration{25 * time.Hour},
+						Duration: &pkg.Duration{Duration: 25 * time.Hour},
 					},
 				},
 			},
@@ -255,7 +255,7 @@ func TestGardenRequest(t *testing.T) {
 					TopicPrefix: "garden",
 					MaxZones:    &one,
 					LightSchedule: &pkg.LightSchedule{
-						Duration:  &pkg.Duration{time.Minute},
+						Duration:  &pkg.Duration{Duration: time.Minute},
 						StartTime: "NOT A TIME",
 					},
 				},
@@ -381,7 +381,7 @@ func TestUpdateGardenRequest(t *testing.T) {
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
 					LightSchedule: &pkg.LightSchedule{
-						Duration: &pkg.Duration{25 * time.Hour},
+						Duration: &pkg.Duration{Duration: 25 * time.Hour},
 					},
 				},
 			},

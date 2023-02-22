@@ -140,46 +140,6 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/GardenAction"
-  /gardens/{gardenID}/health:
-    get:
-      tags:
-        - gardens
-      summary: Get Garden health
-      description: |
-        This allows getting information about a Garden's health status.
-        The `garden-controller` periodically reports that it is up by publishing to MQTT which writes a data point in InfluxDB via Telegraf.
-        A Garden is considered "UP" if it has reported within the last 5 minutes.
-      operationId: getGardenHealth
-      parameters:
-        - $ref: "#/components/parameters/GardenID"
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/GardenHealth"
-              examples:
-                UP:
-                  value:
-                    status: UP
-                    last_contact: "2021-11-21T02:13:53.539Z"
-                DOWN:
-                  value:
-                    status: DOWN
-                    details: last contact from Garden was 4h ago
-                    last_contact: "2021-11-21T02:13:53.539Z"
-                DOWN (no contact):
-                  value:
-                    status: DOWN
-                    details: no last contact time available
-                    last_contact: "2021-11-21T02:13:53.539Z"
-                N/A:
-                  value:
-                    status: N/A
-                    details: error connecting to InfluxDB
-        "400":
-          description: Bad Request
   /gardens/{gardenID}/plants:
     post:
       tags:
@@ -705,6 +665,8 @@ components:
                   description: date-time of the next action
                 state:
                   $ref: "#/components/schemas/LightState"
+            health:
+              $ref: "#/components/schemas/GardenHealth"
             num_plants:
               type: integer
               description: the number of active (not end-dated) Plants in this Garden
