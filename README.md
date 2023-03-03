@@ -54,7 +54,6 @@ Key features include:
 - Loki + Promtail (optional for log aggregation)
 
 ## Quickstart/Demo
-
 Use Docker Compose to easily run everything and try it out! This will run all services the `garden-app` depends on, plus an instance of the `garden-app` and a mock `garden-controller`.
 
 1. Clone this repository
@@ -92,3 +91,6 @@ Use Docker Compose to easily run everything and try it out! This will run all se
   - The "Garden Dashboard" dashboard contains more interesting data that comes from the `garden-controller` to show uptime and a watering history. You should see the recent 3 second watering event here
 
 And that's it! I encourage you to check out the additional documentation for more detailed API usage and to learn about all of the things that are possible.
+
+## iOS App
+An iOS app is included that runs on iPhone and iPad to interact with the backend in a user-friendly way. You can import into Xcode and run on your device. Open the settings in the app (top right corner) to configure your server's address.
