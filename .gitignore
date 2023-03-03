@@ -2,3 +2,8 @@ wifi_config.h
 .DS_Store
 .vscode
 *_notes.md
+
+# iOS App
+*.xcuserstate
+project.xcworkspace/
+xcuserdata/
