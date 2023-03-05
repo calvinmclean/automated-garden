@@ -125,7 +125,7 @@ func (zr ZonesResource) getWeatherData(ctx context.Context, zone *pkg.Zone) *Wea
 	weatherData := &WeatherData{}
 	var err error
 
-	if zone.WaterSchedule.HasRainControl() && zr.weatherClient != nil {
+	if zone.WaterSchedule.HasRainControl() {
 		logger.Debug("getting rain data for Zone")
 		weatherData.Rain = &RainData{}
 		weatherData.Rain.MM, err = zr.getRainData(zone)
@@ -136,9 +136,10 @@ func (zr ZonesResource) getWeatherData(ctx context.Context, zone *pkg.Zone) *Wea
 		}
 	}
 
-	if zone.WaterSchedule.HasTemperatureControl() && zr.weatherClient != nil {
+	if zone.WaterSchedule.HasTemperatureControl() {
+		logger.Debug("getting average high temperature for Zone")
 		weatherData.Temperature = &TemperatureData{}
-		weatherData.Temperature.Celcius, err = zr.weatherClient.GetAverageHighTemperature(zone.WaterSchedule.Interval.Duration)
+		weatherData.Temperature.Celcius, err = zr.getTemperatureData(zone)
 		if err != nil {
 			logger.WithError(err).Warn("unable to get average high temperature from weather client")
 		} else {
@@ -149,11 +150,29 @@ func (zr ZonesResource) getWeatherData(ctx context.Context, zone *pkg.Zone) *Wea
 }
 
 func (zr ZonesResource) getRainData(zone *pkg.Zone) (float32, error) {
-	totalRain, err := zr.weatherClient.GetTotalRain(zone.WaterSchedule.Interval.Duration)
+	weatherClient, err := zr.storageClient.GetWeatherClient(zone.WaterSchedule.WeatherControl.Rain.ClientID)
+	if err != nil {
+		return 0, fmt.Errorf("error getting WeatherClient for RainControl: %w", err)
+	}
+
+	totalRain, err := weatherClient.GetTotalRain(zone.WaterSchedule.Interval.Duration)
 	if err != nil {
 		return 0, fmt.Errorf("unable to get rain data from weather client: %w", err)
 	}
 	return totalRain, nil
+}
+
+func (zr ZonesResource) getTemperatureData(zone *pkg.Zone) (float32, error) {
+	weatherClient, err := zr.storageClient.GetWeatherClient(zone.WaterSchedule.WeatherControl.Temperature.ClientID)
+	if err != nil {
+		return 0, fmt.Errorf("error getting WeatherClient for TemperatureControl: %w", err)
+	}
+
+	avgTemperature, err := weatherClient.GetAverageHighTemperature(zone.WaterSchedule.Interval.Duration)
+	if err != nil {
+		return 0, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
+	}
+	return avgTemperature, nil
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing

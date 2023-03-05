@@ -139,7 +139,7 @@ func (ws *WaterSchedule) HasRainControl() bool {
 func (ws *WaterSchedule) HasSoilMoistureControl() bool {
 	return ws.WeatherControl != nil &&
 		ws.WeatherControl.SoilMoisture != nil &&
-		ws.WeatherControl.SoilMoisture.MinimumMoisture > 0
+		ws.WeatherControl.SoilMoisture.MinimumMoisture != nil
 }
 
 // HasTemperatureControl is used to determine if configuration is available for environmental scaling

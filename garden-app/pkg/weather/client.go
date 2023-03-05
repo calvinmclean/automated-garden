@@ -16,30 +16,52 @@ var weatherClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 	Help:      "summary of weather client calls",
 }, []string{"function", "cached"})
 
-// Config is used to identify and configure a client type
-type Config struct {
-	Type    string                 `mapstructure:"type"`
-	Options map[string]interface{} `mapstructure:"options"`
-}
-
 // Client is an interface defining the possible methods used to interact with the weather client APIs
 type Client interface {
 	GetTotalRain(since time.Duration) (float32, error)
 	GetAverageHighTemperature(since time.Duration) (float32, error)
 }
 
-// NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
+// Config is used to identify and configure a client type
+type Config struct {
+	Type    string                 `mapstructure:"type"`
+	Options map[string]interface{} `mapstructure:"options"`
+}
+
+// GetTotalRain is a wrapper/shortcut that allows a Config to be used as a Client. It will first
+// the actual client from the configured values, then get data
+func (c *Config) GetTotalRain(since time.Duration) (float32, error) {
+	client, err := c.newClient()
+	if err != nil {
+		return 0, fmt.Errorf("error creating client for rain data: %w", err)
+	}
+
+	return client.GetTotalRain(since)
+}
+
+// GetAverageHighTemperature is a wrapper/shortcut that allows a Config to be used as a Client. It will first
+// create the actual client from the configured values, then get data
+func (c *Config) GetAverageHighTemperature(since time.Duration) (float32, error) {
+	client, err := c.newClient()
+	if err != nil {
+		return 0, fmt.Errorf("error creating client for temperature data: %w", err)
+	}
+
+	return client.GetAverageHighTemperature(since)
+}
+
+// newClient will use the config to create and return the correct type of weather client. If no type is provided, this will
 // return a nil client rather than an error since Weather client is not required
-func NewClient(config Config) (Client, error) {
-	switch config.Type {
+func (c *Config) newClient() (Client, error) {
+	switch c.Type {
 	case "netatmo":
-		return newMetricsWrapperClient(netatmo.NewClient(config.Options))
+		return newMetricsWrapperClient(netatmo.NewClient(c.Options))
 	case "fake":
-		return newMetricsWrapperClient(fake.NewClient(config.Options))
+		return newMetricsWrapperClient(fake.NewClient(c.Options))
 	case "":
 		return nil, nil
 	default:
-		return nil, fmt.Errorf("invalid type '%s'", config.Type)
+		return nil, fmt.Errorf("invalid type '%s'", c.Type)
 	}
 }
 

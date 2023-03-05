@@ -26,7 +26,7 @@ func createExampleGarden() *pkg.Garden {
 		Zones:       map[xid.ID]*pkg.Zone{},
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
-			Duration:  &pkg.Duration{15 * time.Hour},
+			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
 			StartTime: "22:00:01-07:00",
 		},
 	}
@@ -42,8 +42,8 @@ func createExampleZone() *pkg.Zone {
 		CreatedAt: &createdAt,
 		Position:  &p,
 		WaterSchedule: &pkg.WaterSchedule{
-			Duration:  &pkg.Duration{time.Second},
-			Interval:  &pkg.Duration{time.Hour * 24},
+			Duration:  &pkg.Duration{Duration: time.Second},
+			Interval:  &pkg.Duration{Duration: time.Hour * 24},
 			StartTime: &createdAt,
 		},
 	}
@@ -59,7 +59,7 @@ func TestScheduleWaterAction(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
 	g := createExampleGarden()
@@ -87,7 +87,7 @@ func TestResetNextWaterTime(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
 	g := createExampleGarden()
@@ -127,7 +127,7 @@ func TestGetNextWaterTime(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
 	g := createExampleGarden()
@@ -154,7 +154,7 @@ func TestGetNextWaterTime(t *testing.T) {
 
 func TestScheduleLightActions(t *testing.T) {
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
-		worker := NewWorker(nil, nil, nil, nil, logrus.New())
+		worker := NewWorker(nil, nil, nil, logrus.New())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -174,7 +174,7 @@ func TestScheduleLightActions(t *testing.T) {
 	})
 	t.Run("AdhocOnTimeInPastIsNotUsed", func(t *testing.T) {
 		storageClient := new(storage.MockClient)
-		worker := NewWorker(storageClient, nil, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, logrus.New())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -234,7 +234,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: &pkg.Duration{30 * time.Minute},
+					ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 				},
 			},
 			true,
@@ -251,11 +251,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: &pkg.Duration{30 * time.Minute},
+					ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 				},
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: &pkg.Duration{30 * time.Minute},
+					ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 				},
 			},
 			true,
@@ -272,7 +272,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: &pkg.Duration{30 * time.Minute},
+					ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 				},
 			},
 			false,
@@ -289,11 +289,11 @@ func TestScheduleLightDelay(t *testing.T) {
 			[]*action.LightAction{
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: &pkg.Duration{30 * time.Minute},
+					ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 				},
 				{
 					State:       pkg.LightStateOff,
-					ForDuration: &pkg.Duration{30 * time.Minute},
+					ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 				},
 			},
 			false,
@@ -304,7 +304,7 @@ func TestScheduleLightDelay(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient := new(storage.MockClient)
-			worker := NewWorker(storageClient, nil, nil, nil, logrus.New())
+			worker := NewWorker(storageClient, nil, nil, logrus.New())
 			worker.StartAsync()
 			defer worker.Stop()
 
@@ -350,14 +350,14 @@ func TestScheduleLightDelay(t *testing.T) {
 
 	t.Run("ErrorDelayingPastNextOffTime", func(t *testing.T) {
 		storageClient := new(storage.MockClient)
-		worker := NewWorker(storageClient, nil, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, logrus.New())
 		worker.StartAsync()
 		defer worker.Stop()
 
 		g := createExampleGarden()
 		// Set StartTime and Duration so NextOffTime is soon
 		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(pkg.LightTimeFormat)
-		g.LightSchedule.Duration = &pkg.Duration{1*time.Hour + 2*time.Minute}
+		g.LightSchedule.Duration = &pkg.Duration{Duration: 1*time.Hour + 2*time.Minute}
 
 		err := worker.ScheduleLightActions(g)
 		if err != nil {
@@ -367,7 +367,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		// Now request delay
 		err = worker.ScheduleLightDelay(g, &action.LightAction{
 			State:       pkg.LightStateOff,
-			ForDuration: &pkg.Duration{30 * time.Minute},
+			ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 		})
 		if err == nil {
 			t.Errorf("Expected error but got nil")
@@ -380,7 +380,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 	t.Run("ErrorDelayingLongerThanLightDuration", func(t *testing.T) {
 		storageClient := new(storage.MockClient)
-		worker := NewWorker(storageClient, nil, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, logrus.New())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -394,7 +394,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		// Now request delay
 		err = worker.ScheduleLightDelay(g, &action.LightAction{
 			State:       pkg.LightStateOff,
-			ForDuration: &pkg.Duration{16 * time.Hour},
+			ForDuration: &pkg.Duration{Duration: 16 * time.Hour},
 		})
 		if err == nil {
 			t.Errorf("Expected error but got nil")
@@ -407,7 +407,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 	t.Run("ErrorSettingDelayWithoutOFFState", func(t *testing.T) {
 		storageClient := new(storage.MockClient)
-		worker := NewWorker(storageClient, nil, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, logrus.New())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -421,7 +421,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		// Now request delay
 		err = worker.ScheduleLightDelay(g, &action.LightAction{
 			State:       pkg.LightStateOn,
-			ForDuration: &pkg.Duration{30 * time.Minute},
+			ForDuration: &pkg.Duration{Duration: 30 * time.Minute},
 		})
 		if err == nil {
 			t.Errorf("Expected error but got nil")
@@ -440,7 +440,7 @@ func TestRemoveJobsByID(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
 	g := createExampleGarden()

@@ -3,7 +3,6 @@ package worker
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"time"
 
@@ -91,19 +90,20 @@ func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone) (bool, error) {
 	w.logger.Infof("soil moisture is %f%%", moisture)
 
 	// if moisture > minimum, skip watering
-	return moisture > float64(z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture), nil
+	return moisture > float64(*z.WaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture), nil
 }
 
 // ScaleWateringDuration returns a new watering duration based on weather scaling
 func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration time.Duration) (time.Duration, error) {
-	if w.weatherClient == nil {
-		return 0, errors.New("unable to scale watering duration with no weather.Client")
-	}
-
 	scaleFactor := float32(1)
 
 	if ws.HasTemperatureControl() {
-		avgHighTemp, err := w.weatherClient.GetAverageHighTemperature(ws.Interval.Duration)
+		weatherClient, err := w.storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
+		if err != nil {
+			return 0, fmt.Errorf("error getting WeatherClient for TemperatureControl: %w", err)
+		}
+
+		avgHighTemp, err := weatherClient.GetAverageHighTemperature(ws.Interval.Duration)
 		if err != nil {
 			w.logger.WithError(err).Warn("error getting average high temperatures")
 		} else {
@@ -113,7 +113,12 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule, duration time.Dura
 	}
 
 	if ws.HasRainControl() {
-		totalRain, err := w.weatherClient.GetTotalRain(ws.Interval.Duration)
+		weatherClient, err := w.storageClient.GetWeatherClient(ws.WeatherControl.Rain.ClientID)
+		if err != nil {
+			return 0, fmt.Errorf("error getting WeatherClient for RainControl: %w", err)
+		}
+
+		totalRain, err := weatherClient.GetTotalRain(ws.Interval.Duration)
 		if err != nil {
 			w.logger.WithError(err).Warn("error getting rain data")
 		} else {

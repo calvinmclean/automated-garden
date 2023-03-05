@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 	"gopkg.in/yaml.v3"
 )
@@ -220,3 +221,8 @@ func (c *Client) update() error {
 	}
 	return nil
 }
+
+func (c *Client) GetWeatherClient(xid.ID) (*weather.Config, error)  { return nil, nil }
+func (c *Client) GetWeatherClients(bool) ([]*weather.Config, error) { return nil, nil }
+func (c *Client) SaveWeatherClient(*weather.Config) error           { return nil }
+func (c *Client) DeleteWeatherClient(xid.ID) error                  { return nil }

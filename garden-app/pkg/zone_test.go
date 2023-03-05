@@ -33,6 +33,7 @@ func TestZoneEndDated(t *testing.T) {
 
 func TestZonePatch(t *testing.T) {
 	zero := uint(0)
+	one := 1
 	float := float32(1)
 	now := time.Now()
 	tests := []struct {
@@ -68,7 +69,7 @@ func TestZonePatch(t *testing.T) {
 			&Zone{WaterSchedule: &WaterSchedule{
 				WeatherControl: &weather.Control{
 					SoilMoisture: &weather.SoilMoistureControl{
-						MinimumMoisture: 1,
+						MinimumMoisture: &one,
 					},
 				},
 			}},

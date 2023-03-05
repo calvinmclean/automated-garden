@@ -174,6 +174,8 @@ func TestZoneRestrictEndDatedMiddleware(t *testing.T) {
 }
 
 func TestGetZone(t *testing.T) {
+	one := 1
+
 	tests := []struct {
 		name      string
 		zone      func() *pkg.Zone
@@ -194,7 +196,7 @@ func TestGetZone(t *testing.T) {
 					Duration: &pkg.Duration{Duration: time.Second},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
-							MinimumMoisture: 1,
+							MinimumMoisture: &one,
 						},
 					},
 				}
@@ -215,7 +217,7 @@ func TestGetZone(t *testing.T) {
 					Duration: &pkg.Duration{Duration: time.Hour},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
-							MinimumMoisture: 1,
+							MinimumMoisture: &one,
 						},
 						Rain: &weather.ScaleControl{
 							BaselineValue: float32Pointer(0),
@@ -247,7 +249,7 @@ func TestGetZone(t *testing.T) {
 					Duration: &pkg.Duration{Duration: time.Second},
 					WeatherControl: &weather.Control{
 						SoilMoisture: &weather.SoilMoistureControl{
-							MinimumMoisture: 1,
+							MinimumMoisture: &one,
 						},
 					},
 				}
@@ -268,8 +270,7 @@ func TestGetZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					weatherClient:  weatherClient,
-					worker:         worker.NewWorker(nil, influxdbClient, nil, weatherClient, logrus.New()),
+					worker:         worker.NewWorker(nil, influxdbClient, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -345,7 +346,7 @@ func TestZoneAction(t *testing.T) {
 
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					worker: worker.NewWorker(nil, nil, mqttClient, nil, logrus.New()),
+					worker: worker.NewWorker(nil, nil, mqttClient, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -425,7 +426,7 @@ func TestUpdateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
+					worker:        worker.NewWorker(nil, nil, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -513,7 +514,7 @@ func TestEndDateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
+					worker:        worker.NewWorker(nil, nil, nil, logrus.New()),
 				},
 			}
 
@@ -546,7 +547,7 @@ func TestEndDateZone(t *testing.T) {
 func TestGetAllZones(t *testing.T) {
 	pr := ZonesResource{
 		GardensResource: GardensResource{
-			worker: worker.NewWorker(nil, nil, nil, nil, logrus.New()),
+			worker: worker.NewWorker(nil, nil, nil, logrus.New()),
 		},
 	}
 	garden := createExampleGarden()
@@ -679,7 +680,7 @@ func TestCreateZone(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+					worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 				},
 			}
 
@@ -825,7 +826,7 @@ func TestGetNextWaterTime(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := ZonesResource{
 				GardensResource: GardensResource{
-					worker: worker.NewWorker(nil, nil, nil, nil, logrus.New()),
+					worker: worker.NewWorker(nil, nil, nil, logrus.New()),
 				},
 			}
 			g := createExampleGarden()
