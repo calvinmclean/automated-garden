@@ -67,8 +67,15 @@ func NewServer(cfg Config) (*Server, error) {
 	})))
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
+	// Initialize Storage Client
+	logger.WithField("type", cfg.StorageConfig.Type).Info("initializing storage client")
+	storageClient, err := storage.NewClient(cfg.StorageConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
+	}
+
 	// RESTy routes for Garden and Plant API
-	gardenResource, err := NewGardenResource(cfg, logger)
+	gardenResource, err := NewGardenResource(cfg, logger, storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}

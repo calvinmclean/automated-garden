@@ -8,6 +8,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
+	"github.com/rs/xid"
 )
 
 var weatherClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
@@ -24,8 +25,15 @@ type Client interface {
 
 // Config is used to identify and configure a client type
 type Config struct {
-	Type    string                 `mapstructure:"type"`
-	Options map[string]interface{} `mapstructure:"options"`
+	ID      xid.ID                 `json:"id" yaml:"id"`
+	Type    string                 `json:"type" yaml:"type"`
+	EndDate *time.Time             `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	Options map[string]interface{} `json:"options" yaml:"options"`
+}
+
+// EndDated returns true if the Config is end-dated
+func (c *Config) EndDated() bool {
+	return c.EndDate != nil && c.EndDate.Before(time.Now())
 }
 
 // GetTotalRain is a wrapper/shortcut that allows a Config to be used as a Client. It will first

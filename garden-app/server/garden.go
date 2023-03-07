@@ -32,9 +32,10 @@ type GardensResource struct {
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, logger *logrus.Entry) (GardensResource, error) {
+func NewGardenResource(config Config, logger *logrus.Entry, storageClient storage.Client) (GardensResource, error) {
 	gr := GardensResource{
-		config: config,
+		config:        config,
+		storageClient: storageClient,
 	}
 
 	// Initialize MQTT Client
@@ -46,13 +47,6 @@ func NewGardenResource(config Config, logger *logrus.Entry) (GardensResource, er
 	mqttClient, err := mqtt.NewClient(gr.config.MQTTConfig, nil)
 	if err != nil {
 		return gr, fmt.Errorf("unable to initialize MQTT client: %v", err)
-	}
-
-	// Initialize Storage Client
-	logger.WithField("type", config.StorageConfig.Type).Info("initializing storage client")
-	gr.storageClient, err = storage.NewClient(config.StorageConfig)
-	if err != nil {
-		return gr, fmt.Errorf("unable to initialize storage client: %v", err)
 	}
 
 	// Initialize InfluxDB Client

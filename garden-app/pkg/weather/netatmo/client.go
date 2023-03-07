@@ -22,25 +22,25 @@ const (
 // If RainModuleID is not provided, RainModuleName is used to get it from the API
 // For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
 type Config struct {
-	StationID   string `mapstructure:"station_id"`
-	StationName string `mapstructure:"station_name"`
+	StationID   string `json:"station_id" yaml:"station_id" mapstructure:"station_id"`
+	StationName string `json:"station_name" yaml:"station_name" mapstructure:"station_name"`
 
-	RainModuleID   string `mapstructure:"rain_module_id"`
-	RainModuleName string `mapstructure:"rain_module_name"`
+	RainModuleID   string `json:"rain_module_id" yaml:"rain_module_id" mapstructure:"rain_module_id"`
+	RainModuleName string `json:"rain_module_name" yaml:"rain_module_name" mapstructure:"rain_module_name"`
 
-	OutdoorModuleID   string `mapstructure:"outdoor_module_id"`
-	OutdoorModuleName string `mapstructure:"outdoor_module_name"`
+	OutdoorModuleID   string `json:"outdoor_module_id" yaml:"outdoor_module_id" mapstructure:"outdoor_module_id"`
+	OutdoorModuleName string `json:"outdoor_module_name" yaml:"outdoor_module_name" mapstructure:"outdoor_module_name"`
 
-	Authentication *TokenData `mapstructure:"authentication"`
-	ClientID       string     `mapstructure:"client_id"`
-	ClientSecret   string     `mapstructure:"client_secret"`
+	Authentication *TokenData `json:"authentication" yaml:"authentication" mapstructure:"authentication"`
+	ClientID       string     `json:"client_id" yaml:"client_id" mapstructure:"client_id"`
+	ClientSecret   string     `json:"client_secret" yaml:"client_secret" mapstructure:"client_secret"`
 }
 
 // TokenData contains information returned by Netatmo auth API
 type TokenData struct {
-	AccessToken    string `mapstructure:"access_token" json:"access_token"`
-	RefreshToken   string `mapstructure:"refresh_token" json:"refresh_token"`
-	ExpiresIn      int    `mapstructure:"expires_in" json:"expires_in"`
+	AccessToken    string `json:"access_token" yaml:"access_token" mapstructure:"access_token"`
+	RefreshToken   string `json:"refresh_token" yaml:"refresh_token" mapstructure:"refresh_token"`
+	ExpiresIn      int    `json:"expires_in" yaml:"expires_in" mapstructure:"expires_in"`
 	ExpirationDate time.Time
 }
 
