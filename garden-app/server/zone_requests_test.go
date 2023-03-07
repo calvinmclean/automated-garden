@@ -9,6 +9,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneRequest(t *testing.T) {
@@ -121,7 +122,7 @@ func TestZoneRequest(t *testing.T) {
 					Name: "name",
 				},
 			},
-			"missing required field: water_schedule.weather_control.temperature_control.baseline_value",
+			"error validating weather_control: error validating temperature_control: missing required field: baseline_value",
 		},
 		{
 			"EmptyWaterScheduleWeatherControlFactor",
@@ -142,7 +143,7 @@ func TestZoneRequest(t *testing.T) {
 					Name: "name",
 				},
 			},
-			"missing required field: water_schedule.weather_control.temperature_control.factor",
+			"error validating weather_control: error validating temperature_control: missing required field: factor",
 		},
 		{
 			"EmptyWaterScheduleWeatherControlRange",
@@ -163,7 +164,29 @@ func TestZoneRequest(t *testing.T) {
 					Name: "name",
 				},
 			},
-			"missing required field: water_schedule.weather_control.temperature_control.range",
+			"error validating weather_control: error validating temperature_control: missing required field: range",
+		},
+		{
+			"EmptyWaterScheduleWeatherControlClientID",
+			&ZoneRequest{
+				Zone: &pkg.Zone{
+					Position: &pos,
+					WaterSchedule: &pkg.WaterSchedule{
+						Interval:  &pkg.Duration{Duration: time.Hour * 24},
+						Duration:  &pkg.Duration{Duration: time.Second},
+						StartTime: &now,
+						WeatherControl: &weather.Control{
+							Temperature: &weather.ScaleControl{
+								BaselineValue: float32Pointer(27),
+								Factor:        float32Pointer(0.5),
+								Range:         float32Pointer(10),
+							},
+						},
+					},
+					Name: "name",
+				},
+			},
+			"error validating weather_control: error validating temperature_control: missing required field: client_id",
 		},
 		{
 			"WaterScheduleWeatherControlInvalidFactorBig",
@@ -185,7 +208,7 @@ func TestZoneRequest(t *testing.T) {
 					Name: "name",
 				},
 			},
-			"water_schedule.weather_control.temperature_control.factor must be between 0 and 1",
+			"error validating weather_control: error validating temperature_control: factor must be between 0 and 1",
 		},
 		{
 			"WaterScheduleWeatherControlInvalidFactorSmall",
@@ -207,7 +230,7 @@ func TestZoneRequest(t *testing.T) {
 					Name: "name",
 				},
 			},
-			"water_schedule.weather_control.temperature_control.factor must be between 0 and 1",
+			"error validating weather_control: error validating temperature_control: factor must be between 0 and 1",
 		},
 		{
 			"WaterScheduleWeatherControlInvalidRange",
@@ -229,7 +252,7 @@ func TestZoneRequest(t *testing.T) {
 					Name: "name",
 				},
 			},
-			"water_schedule.weather_control.temperature_control.range must be a positive number",
+			"error validating weather_control: error validating temperature_control: range must be a positive number",
 		},
 	}
 
@@ -247,6 +270,7 @@ func TestZoneRequest(t *testing.T) {
 							BaselineValue: float32Pointer(27),
 							Factor:        float32Pointer(0.5),
 							Range:         float32Pointer(10),
+							ClientID:      xid.New(),
 						},
 					},
 				},
@@ -254,21 +278,14 @@ func TestZoneRequest(t *testing.T) {
 		}
 		r := httptest.NewRequest("", "/", nil)
 		err := pr.Bind(r)
-		if err != nil {
-			t.Errorf("Unexpected error reading ZoneRequest JSON: %v", err)
-		}
+		assert.NoError(t, err)
 	})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest("", "/", nil)
 			err := tt.pr.Bind(r)
-			if err == nil {
-				t.Error("Expected error reading ZoneRequest JSON, but none occurred")
-				return
-			}
-			if err.Error() != tt.err {
-				t.Errorf("Unexpected error string: %v", err)
-			}
+			assert.Error(t, err)
+			assert.Equal(t, tt.err, err.Error())
 		})
 	}
 }

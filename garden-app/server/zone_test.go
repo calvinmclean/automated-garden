@@ -179,7 +179,7 @@ func TestGetZone(t *testing.T) {
 	tests := []struct {
 		name      string
 		zone      func() *pkg.Zone
-		setupMock func(*influxdb.MockClient, *weather.MockClient)
+		setupMock func(*influxdb.MockClient, *weather.MockClient) // TODO: mock storage client
 		expected  string
 	}{
 		{

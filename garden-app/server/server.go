@@ -74,7 +74,7 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
 	}
 
-	// RESTy routes for Garden and Plant API
+	// Create API routes/handlers
 	gardenResource, err := NewGardenResource(cfg, logger, storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
@@ -138,6 +138,22 @@ func NewServer(cfg Config) (*Server, error) {
 					})
 				})
 			})
+		})
+	})
+
+	weatherClientsResource, err := NewWeatherClientsResource(logger, storageClient)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
+	}
+	r.Route(weatherClientsBasePath, func(r chi.Router) {
+		// r.Post("/", weatherClientsResource.createWeatherClient)
+		// r.Get("/", weatherClientsResource.getAllWeatherClients)
+		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {
+			r.Use(weatherClientsResource.weatherClientContextMiddleware)
+
+			r.Get("/", weatherClientsResource.getWeatherClient)
+			// r.Patch("/", weatherClientsResource.updateWeatherClient)
+			// r.Delete("/", weatherClientsResource.endDateWeatherClient)
 		})
 	})
 
