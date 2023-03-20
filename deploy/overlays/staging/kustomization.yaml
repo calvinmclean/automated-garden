@@ -7,3 +7,4 @@ patchesStrategicMerge:
   - grafana.yaml
   - influxdb.yaml
   - mosquitto.yaml
+  - prometheus.yaml

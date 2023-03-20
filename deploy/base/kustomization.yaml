@@ -7,6 +7,9 @@ configMapGenerator:
       - configs/gardens.yaml
     options:
       disableNameSuffixHash: true
+  - name: prometheus-config
+    files:
+      - configs/prometheus.yml
   - name: mosquitto-config
     files:
       - configs/mosquitto.conf
@@ -36,3 +39,4 @@ resources:
   - mosquitto.yaml
   - telegraf.yaml
   - rbac.yaml
+  - prometheus.yaml

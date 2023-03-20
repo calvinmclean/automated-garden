@@ -4,6 +4,7 @@ datasources:
     type: influxdb
     access: proxy
     url: http://influxdb:8086
+    uid: influxdb_uuid
     secureJsonData:
       token: ${INFLUXDB_TOKEN}
     jsonData:
@@ -17,3 +18,8 @@ datasources:
     url: http://loki.loki.svc.cluster.local:3100
     jsonData:
       maxLines: 1000
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    uid: prometheus_uuid
