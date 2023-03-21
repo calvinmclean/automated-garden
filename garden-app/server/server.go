@@ -146,7 +146,7 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
 	r.Route(weatherClientsBasePath, func(r chi.Router) {
-		// r.Post("/", weatherClientsResource.createWeatherClient)
+		r.Post("/", weatherClientsResource.createWeatherClient)
 		r.Get("/", weatherClientsResource.getAllWeatherClients)
 
 		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {

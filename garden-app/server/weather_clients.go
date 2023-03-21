@@ -96,3 +96,36 @@ func (wc WeatherClientsResource) getWeatherClient(w http.ResponseWriter, r *http
 		render.Render(w, r, ErrRender(err))
 	}
 }
+
+func (wc WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *http.Request) {
+	logger := getLoggerFromContext(r.Context())
+	logger.Info("received request to create new WeatherClient")
+
+	request := &WeatherClientRequest{}
+	if err := render.Bind(r, request); err != nil {
+		logger.WithError(err).Error("invalid request to create WeatherClient")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	weatherClientConfig := request.Config
+	logger.Debugf("request to create WeatherClient: %+v", weatherClientConfig)
+
+	// Assign values to fields that may not be set in the request
+	weatherClientConfig.ID = xid.New()
+	logger.Debugf("new WeatherClient ID: %v", weatherClientConfig.ID)
+
+	// Save the WeatherClient
+	logger.Debug("saving WeatherClient")
+	if err := wc.storageClient.SaveWeatherClientConfig(weatherClientConfig); err != nil {
+		logger.WithError(err).Error("unable to save WeatherClient Config")
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	if err := render.Render(w, r, wc.NewWeatherClientResponse(r.Context(), weatherClientConfig)); err != nil {
+		logger.WithError(err).Error("unable to render WeatherClientResponse")
+		render.Render(w, r, ErrRender(err))
+	}
+}
