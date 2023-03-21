@@ -33,10 +33,11 @@ type Client interface {
 	SavePlant(xid.ID, *pkg.Plant) error
 	DeletePlant(xid.ID, xid.ID) error
 
-	GetWeatherClient(xid.ID) (*weather.Config, error)
-	GetWeatherClients(bool) ([]*weather.Config, error)
-	SaveWeatherClient(*weather.Config) error
-	DeleteWeatherClient(xid.ID) error
+	GetWeatherClient(xid.ID) (weather.Client, error)
+	GetWeatherClientConfig(xid.ID) (*weather.Config, error)
+	GetWeatherClientConfigs(bool) ([]*weather.Config, error)
+	SaveWeatherClientConfig(*weather.Config) error
+	DeleteWeatherClientConfig(xid.ID) error
 }
 
 // NewClient will use the config to create and return the correct type of storage client

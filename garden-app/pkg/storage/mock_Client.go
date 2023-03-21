@@ -43,8 +43,8 @@ func (_m *MockClient) DeletePlant(_a0 xid.ID, _a1 xid.ID) error {
 	return r0
 }
 
-// DeleteWeatherClient provides a mock function with given fields: _a0
-func (_m *MockClient) DeleteWeatherClient(_a0 xid.ID) error {
+// DeleteWeatherClientConfig provides a mock function with given fields: _a0
+func (_m *MockClient) DeleteWeatherClientConfig(_a0 xid.ID) error {
 	ret := _m.Called(_a0)
 
 	var r0 error
@@ -164,7 +164,30 @@ func (_m *MockClient) GetPlants(_a0 xid.ID, _a1 bool) ([]*pkg.Plant, error) {
 }
 
 // GetWeatherClient provides a mock function with given fields: _a0
-func (_m *MockClient) GetWeatherClient(_a0 xid.ID) (*weather.Config, error) {
+func (_m *MockClient) GetWeatherClient(_a0 xid.ID) (weather.Client, error) {
+	ret := _m.Called(_a0)
+
+	var r0 weather.Client
+	if rf, ok := ret.Get(0).(func(xid.ID) weather.Client); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(weather.Client)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func(xid.ID) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
+// GetWeatherClientConfig provides a mock function with given fields: _a0
+func (_m *MockClient) GetWeatherClientConfig(_a0 xid.ID) (*weather.Config, error) {
 	ret := _m.Called(_a0)
 
 	var r0 *weather.Config
@@ -186,8 +209,8 @@ func (_m *MockClient) GetWeatherClient(_a0 xid.ID) (*weather.Config, error) {
 	return r0, r1
 }
 
-// GetWeatherClients provides a mock function with given fields: _a0
-func (_m *MockClient) GetWeatherClients(_a0 bool) ([]*weather.Config, error) {
+// GetWeatherClientConfigs provides a mock function with given fields: _a0
+func (_m *MockClient) GetWeatherClientConfigs(_a0 bool) ([]*weather.Config, error) {
 	ret := _m.Called(_a0)
 
 	var r0 []*weather.Config
@@ -283,8 +306,8 @@ func (_m *MockClient) SavePlant(_a0 xid.ID, _a1 *pkg.Plant) error {
 	return r0
 }
 
-// SaveWeatherClient provides a mock function with given fields: _a0
-func (_m *MockClient) SaveWeatherClient(_a0 *weather.Config) error {
+// SaveWeatherClientConfig provides a mock function with given fields: _a0
+func (_m *MockClient) SaveWeatherClientConfig(_a0 *weather.Config) error {
 	ret := _m.Called(_a0)
 
 	var r0 error

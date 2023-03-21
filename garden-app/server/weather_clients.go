@@ -44,20 +44,20 @@ func (wc WeatherClientsResource) weatherClientContextMiddleware(next http.Handle
 			return
 		}
 
-		weatherClient, err := wc.storageClient.GetWeatherClient(weatherClientID)
+		weatherClientConfig, err := wc.storageClient.GetWeatherClientConfig(weatherClientID)
 		if err != nil {
 			logger.WithError(err).Error("unable to get WeatherClient")
 			render.Render(w, r, InternalServerError(err))
 			return
 		}
-		if weatherClient == nil {
+		if weatherClientConfig == nil {
 			logger.Info("WeatherClient not found")
 			render.Render(w, r, ErrNotFoundResponse)
 			return
 		}
-		logger.Debugf("found WeatherClient: %+v", weatherClient)
+		logger.Debugf("found WeatherClient: %+v", weatherClientConfig)
 
-		ctx = newContextWithWeatherClient(ctx, weatherClient)
+		ctx = newContextWithWeatherClient(ctx, weatherClientConfig)
 		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -69,15 +69,15 @@ func (wc WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r *
 	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
 	logger.Info("received request to get all WeatherClients")
 
-	weatherClients, err := wc.storageClient.GetWeatherClients(getEndDated)
+	weatherClientConfigs, err := wc.storageClient.GetWeatherClientConfigs(getEndDated)
 	if err != nil {
 		logger.WithError(err).Error("unable to get all WeatherClients")
 		render.Render(w, r, ErrRender(err))
 		return
 	}
-	logger.Debugf("found %d WeatherClients", len(weatherClients))
+	logger.Debugf("found %d WeatherClients", len(weatherClientConfigs))
 
-	if err := render.Render(w, r, wc.NewAllWeatherClientsResponse(r.Context(), weatherClients)); err != nil {
+	if err := render.Render(w, r, wc.NewAllWeatherClientsResponse(r.Context(), weatherClientConfigs)); err != nil {
 		logger.WithError(err).Error("unable to render AllWeatherClientsResponse")
 		render.Render(w, r, ErrRender(err))
 	}

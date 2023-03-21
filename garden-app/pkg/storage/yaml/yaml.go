@@ -21,8 +21,8 @@ type Client struct {
 }
 
 type clientData struct {
-	Gardens        map[xid.ID]*pkg.Garden     `yaml:"gardens"`
-	WeatherClients map[xid.ID]*weather.Config `yaml:"weather_clients"`
+	Gardens              map[xid.ID]*pkg.Garden     `yaml:"gardens"`
+	WeatherClientConfigs map[xid.ID]*weather.Config `yaml:"weather_clients"`
 }
 
 // NewClient will read the plants from the file and store them in a map
@@ -32,8 +32,8 @@ func NewClient(options map[string]string) (*Client, error) {
 	}
 	client := &Client{
 		data: clientData{
-			Gardens:        map[xid.ID]*pkg.Garden{},
-			WeatherClients: map[xid.ID]*weather.Config{},
+			Gardens:              map[xid.ID]*pkg.Garden{},
+			WeatherClientConfigs: map[xid.ID]*weather.Config{},
 		},
 		filename: options["filename"],
 		Options:  options,
