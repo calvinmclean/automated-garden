@@ -30,21 +30,6 @@ func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
 	}, nil
 }
 
-// routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
-func (pr PlantsResource) routes() chi.Router {
-	r := chi.NewRouter()
-	r.Post("/", pr.createPlant)
-	r.Get("/", pr.getAllPlants)
-	r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
-		r.Use(pr.plantContextMiddleware)
-
-		r.Get("/", pr.getPlant)
-		r.Patch("/", pr.updatePlant)
-		r.Delete("/", pr.endDatePlant)
-	})
-	return r
-}
-
 // plantContextMiddleware middleware is used to load a Plant object from the URL
 // parameters passed through as the request. In case the Plant could not be found,
 // we stop here and return a 404.
