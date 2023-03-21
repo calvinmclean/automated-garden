@@ -82,7 +82,59 @@ func NewServer(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
-	r.Mount(gardenBasePath, gardenResource.routes(plantsResource, zonesResource))
+
+	r.Route(gardenBasePath, func(r chi.Router) {
+		r.Post("/", gardenResource.createGarden)
+		r.Get("/", gardenResource.getAllGardens)
+
+		r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
+			r.Use(gardenResource.gardenContextMiddleware)
+
+			r.Get("/", gardenResource.getGarden)
+			r.Patch("/", gardenResource.updateGarden)
+			r.Delete("/", gardenResource.endDateGarden)
+
+			// Add new middleware to restrict certain paths to non-end-dated Gardens
+			r.Route("/", func(r chi.Router) {
+				r.Use(gardenResource.restrictEndDatedMiddleware)
+				r.Post("/action", gardenResource.gardenAction)
+
+				r.Route(plantBasePath, func(r chi.Router) {
+					r.Post("/", plantsResource.createPlant)
+					r.Get("/", plantsResource.getAllPlants)
+
+					r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
+						r.Use(plantsResource.plantContextMiddleware)
+
+						r.Get("/", plantsResource.getPlant)
+						r.Patch("/", plantsResource.updatePlant)
+						r.Delete("/", plantsResource.endDatePlant)
+					})
+				})
+
+				r.Route(zoneBasePath, func(r chi.Router) {
+					r.Post("/", zonesResource.createZone)
+					r.Get("/", zonesResource.getAllZones)
+
+					r.Route(fmt.Sprintf("/{%s}", zonePathParam), func(r chi.Router) {
+						r.Use(zonesResource.zoneContextMiddleware)
+
+						r.Get("/", zonesResource.getZone)
+						r.Patch("/", zonesResource.updateZone)
+						r.Delete("/", zonesResource.endDateZone)
+
+						// Add new middleware to restrict certain paths to non-end-dated Zones
+						r.Route("/", func(r chi.Router) {
+							r.Use(zonesResource.restrictEndDatedMiddleware)
+
+							r.Post("/action", zonesResource.zoneAction)
+							r.Get("/history", zonesResource.waterHistory)
+						})
+					})
+				})
+			})
+		})
+	})
 
 	return &Server{
 		&http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: r},

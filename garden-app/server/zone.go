@@ -58,29 +58,6 @@ func NewZonesResource(gr GardensResource, logger *logrus.Entry) (ZonesResource, 
 	return zr, err
 }
 
-// routes creates all of the routing that is prefixed by "/zone" for interacting with Zone resources
-func (zr ZonesResource) routes() chi.Router {
-	r := chi.NewRouter()
-	r.Post("/", zr.createZone)
-	r.Get("/", zr.getAllZones)
-	r.Route(fmt.Sprintf("/{%s}", zonePathParam), func(r chi.Router) {
-		r.Use(zr.zoneContextMiddleware)
-
-		r.Get("/", zr.getZone)
-		r.Patch("/", zr.updateZone)
-		r.Delete("/", zr.endDateZone)
-
-		// Add new middleware to restrict certain paths to non-end-dated Zones
-		r.Route("/", func(r chi.Router) {
-			r.Use(zr.restrictEndDatedMiddleware)
-
-			r.Post("/action", zr.zoneAction)
-			r.Get("/history", zr.waterHistory)
-		})
-	})
-	return r
-}
-
 // restrictEndDatedMiddleware will return a 400 response if the requested Zone is end-dated
 func (zr ZonesResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

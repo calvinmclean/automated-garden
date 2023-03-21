@@ -95,30 +95,6 @@ func NewGardenResource(config Config, logger *logrus.Entry) (GardensResource, er
 	return gr, nil
 }
 
-// routes creates all of the routing that is prefixed by "/plant" for interacting with Plant resources
-func (gr GardensResource) routes(pr PlantsResource, zr ZonesResource) chi.Router {
-	r := chi.NewRouter()
-	r.Post("/", gr.createGarden)
-	r.Get("/", gr.getAllGardens)
-	r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
-		r.Use(gr.gardenContextMiddleware)
-
-		r.Get("/", gr.getGarden)
-		r.Patch("/", gr.updateGarden)
-		r.Delete("/", gr.endDateGarden)
-
-		// Add new middleware to restrict certain paths to non-end-dated Gardens
-		r.Route("/", func(r chi.Router) {
-			r.Use(gr.restrictEndDatedMiddleware)
-
-			r.Post("/action", gr.gardenAction)
-			r.Mount(plantBasePath, pr.routes())
-			r.Mount(zoneBasePath, zr.routes())
-		})
-	})
-	return r
-}
-
 // restrictEndDatedMiddleware will return a 400 response if the requested Garden is end-dated
 func (gr GardensResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
