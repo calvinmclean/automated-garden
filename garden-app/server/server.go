@@ -147,7 +147,8 @@ func NewServer(cfg Config) (*Server, error) {
 	}
 	r.Route(weatherClientsBasePath, func(r chi.Router) {
 		// r.Post("/", weatherClientsResource.createWeatherClient)
-		// r.Get("/", weatherClientsResource.getAllWeatherClients)
+		r.Get("/", weatherClientsResource.getAllWeatherClients)
+
 		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {
 			r.Use(weatherClientsResource.weatherClientContextMiddleware)
 

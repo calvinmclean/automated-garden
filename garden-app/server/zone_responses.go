@@ -23,7 +23,7 @@ func (zr ZonesResource) NewAllZonesResponse(ctx context.Context, zones []*pkg.Zo
 	return &AllZonesResponse{zoneResponses}
 }
 
-// Render will take the map of Zones and convert it to a list for a more RESTy response
+// Render ...
 func (zr *AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }

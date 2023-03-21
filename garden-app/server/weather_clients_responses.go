@@ -32,3 +32,22 @@ func (wc WeatherClientsResource) NewWeatherClientResponse(ctx context.Context, w
 func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
+
+// AllWeatherClientResponse is a simple struct being used to render and return a list of all WeatherClients
+type AllWeatherClientsResponse struct {
+	WeatherClients []*WeatherClientResponse `json:"weather_clients"`
+}
+
+// NewAllWeatherClientsResponse will create an AllWeatherClientResponse from a list of Zones
+func (wc WeatherClientsResource) NewAllWeatherClientsResponse(ctx context.Context, weatherClients []*weather.Config) *AllWeatherClientsResponse {
+	weatherClientResponses := []*WeatherClientResponse{}
+	for _, c := range weatherClients {
+		weatherClientResponses = append(weatherClientResponses, wc.NewWeatherClientResponse(ctx, c))
+	}
+	return &AllWeatherClientsResponse{weatherClientResponses}
+}
+
+// Render ...
+func (wr *AllWeatherClientsResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
