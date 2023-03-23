@@ -11,11 +11,19 @@ import (
 	"github.com/rs/xid"
 )
 
-var weatherClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
-	Namespace: "garden_app",
-	Name:      "weather_client_duration_seconds",
-	Help:      "summary of weather client calls",
-}, []string{"function", "cached"})
+var (
+	responseCache = cache.New(5*time.Minute, 1*time.Minute)
+
+	weatherClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
+		Namespace: "garden_app",
+		Name:      "weather_client_duration_seconds",
+		Help:      "summary of weather client calls",
+	}, []string{"function", "cached"})
+)
+
+func init() {
+	prometheus.MustRegister(weatherClientSummary)
+}
 
 // Client is an interface defining the possible methods used to interact with the weather client APIs
 type Client interface {
@@ -32,15 +40,20 @@ type Config struct {
 
 // NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
 // return a nil client rather than an error since Weather client is not required
-func NewClient(c *Config) (Client, error) {
+func NewClient(c *Config) (client Client, err error) {
 	switch c.Type {
 	case "netatmo":
-		return newMetricsWrapperClient(netatmo.NewClient(c.Options))
+		client, err = netatmo.NewClient(c.Options)
 	case "fake":
-		return newMetricsWrapperClient(fake.NewClient(c.Options))
+		client, err = fake.NewClient(c.Options)
 	default:
-		return nil, fmt.Errorf("invalid type '%s'", c.Type)
+		err = fmt.Errorf("invalid type '%s'", c.Type)
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	return newMetricsWrapperClient(client, c), nil
 }
 
 // Patch allows modifying an existing Config with fields from a new one
@@ -58,14 +71,13 @@ func (c *Config) Patch(newConfig *Config) {
 // and caching
 type clientWrapper struct {
 	Client
-	responseCache *cache.Cache
+	*Config
 }
 
-// newMetricsWrapperClient returns the input error as-is and the input client wrapped with a Prometheus metrics
-// collector. It is intended to directly wrap functions to create other clients
-func newMetricsWrapperClient(client Client, err error) (Client, error) {
-	prometheus.MustRegister(weatherClientSummary)
-	return &clientWrapper{client, cache.New(5*time.Minute, 1*time.Minute)}, err
+// newMetricsWrapperClient returns the input client wrapped with a Prometheus metrics collector. It is intended to
+// directly wrap functions to create other clients
+func newMetricsWrapperClient(client Client, config *Config) Client {
+	return &clientWrapper{client, config}
 }
 
 // GetTotalRain ...
@@ -76,8 +88,8 @@ func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
 		weatherClientSummary.WithLabelValues("GetTotalRain", fmt.Sprintf("%t", cached)).Observe(time.Since(now).Seconds())
 	}()
 
-	cacheKey := fmt.Sprintf("total_rain_%d", since)
-	cachedData, found := c.responseCache.Get(cacheKey)
+	cacheKey := fmt.Sprintf("total_rain_%d_%s", since, c.Config.ID)
+	cachedData, found := responseCache.Get(cacheKey)
 	if found {
 		cached = true
 		return cachedData.(float32), nil
@@ -87,7 +99,7 @@ func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
 	if err != nil {
 		return 0, err
 	}
-	c.responseCache.Set(cacheKey, totalRain, cache.DefaultExpiration)
+	responseCache.Set(cacheKey, totalRain, cache.DefaultExpiration)
 
 	return totalRain, nil
 }
@@ -100,8 +112,8 @@ func (c *clientWrapper) GetAverageHighTemperature(since time.Duration) (float32,
 		weatherClientSummary.WithLabelValues("GetAverageHighTemperature", fmt.Sprintf("%t", cached)).Observe(time.Since(now).Seconds())
 	}()
 
-	cacheKey := fmt.Sprintf("avg_temp_%d", since)
-	cachedData, found := c.responseCache.Get(cacheKey)
+	cacheKey := fmt.Sprintf("avg_temp_%d_%s", since, c.Config.ID)
+	cachedData, found := responseCache.Get(cacheKey)
 	if found {
 		cached = true
 		return cachedData.(float32), nil
@@ -111,7 +123,7 @@ func (c *clientWrapper) GetAverageHighTemperature(since time.Duration) (float32,
 	if err != nil {
 		return 0, err
 	}
-	c.responseCache.Set(cacheKey, avgTemp, cache.DefaultExpiration)
+	responseCache.Set(cacheKey, avgTemp, cache.DefaultExpiration)
 
 	return avgTemp, nil
 }
