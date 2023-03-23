@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
@@ -31,7 +33,7 @@ func NewWeatherClientsResource(logger *logrus.Entry, storageClient storage.Clien
 	return wc, nil
 }
 
-func (wc WeatherClientsResource) weatherClientContextMiddleware(next http.Handler) http.Handler {
+func (wcr WeatherClientsResource) weatherClientContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -44,7 +46,7 @@ func (wc WeatherClientsResource) weatherClientContextMiddleware(next http.Handle
 			return
 		}
 
-		weatherClientConfig, err := wc.storageClient.GetWeatherClientConfig(weatherClientID)
+		weatherClientConfig, err := wcr.storageClient.GetWeatherClientConfig(weatherClientID)
 		if err != nil {
 			logger.WithError(err).Error("unable to get WeatherClient")
 			render.Render(w, r, InternalServerError(err))
@@ -63,11 +65,11 @@ func (wc WeatherClientsResource) weatherClientContextMiddleware(next http.Handle
 	})
 }
 
-func (wc WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r *http.Request) {
+func (wcr WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get all WeatherClients")
 
-	weatherClientConfigs, err := wc.storageClient.GetWeatherClientConfigs()
+	weatherClientConfigs, err := wcr.storageClient.GetWeatherClientConfigs()
 	if err != nil {
 		logger.WithError(err).Error("unable to get all WeatherClients")
 		render.Render(w, r, ErrRender(err))
@@ -75,27 +77,27 @@ func (wc WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r *
 	}
 	logger.Debugf("found %d WeatherClients", len(weatherClientConfigs))
 
-	if err := render.Render(w, r, wc.NewAllWeatherClientsResponse(r.Context(), weatherClientConfigs)); err != nil {
+	if err := render.Render(w, r, wcr.NewAllWeatherClientsResponse(r.Context(), weatherClientConfigs)); err != nil {
 		logger.WithError(err).Error("unable to render AllWeatherClientsResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func (wc WeatherClientsResource) getWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (wcr WeatherClientsResource) getWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get WeatherClients")
 
 	weatherClient := getWeatherClientFromContext(r.Context())
 	logger.Debugf("responding with WeatherClients: %+v", weatherClient)
 
-	gardenResponse := wc.NewWeatherClientResponse(r.Context(), weatherClient)
+	gardenResponse := wcr.NewWeatherClientResponse(r.Context(), weatherClient)
 	if err := render.Render(w, r, gardenResponse); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func (wc WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (wcr WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new WeatherClient")
 
@@ -115,20 +117,20 @@ func (wc WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *h
 
 	// Save the WeatherClient
 	logger.Debug("saving WeatherClient")
-	if err := wc.storageClient.SaveWeatherClientConfig(weatherClientConfig); err != nil {
+	if err := wcr.storageClient.SaveWeatherClientConfig(weatherClientConfig); err != nil {
 		logger.WithError(err).Error("unable to save WeatherClient Config")
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, wc.NewWeatherClientResponse(r.Context(), weatherClientConfig)); err != nil {
+	if err := render.Render(w, r, wcr.NewWeatherClientResponse(r.Context(), weatherClientConfig)); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func (wc WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (wcr WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update WeatherClient")
 
@@ -146,15 +148,73 @@ func (wc WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *h
 
 	// Save the WeatherClient
 	logger.Debug("saving WeatherClient")
-	if err := wc.storageClient.SaveWeatherClientConfig(weatherClient); err != nil {
+	if err := wcr.storageClient.SaveWeatherClientConfig(weatherClient); err != nil {
 		logger.WithError(err).Error("unable to save WeatherClient Config")
 		render.Render(w, r, InternalServerError(err))
 		return
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, wc.NewWeatherClientResponse(r.Context(), weatherClient)); err != nil {
+	if err := render.Render(w, r, wcr.NewWeatherClientResponse(r.Context(), weatherClient)); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
 	}
+}
+
+// deleteWeatherClient will delete the WeatherClient config from storage
+func (wcr WeatherClientsResource) deleteWeatherClient(w http.ResponseWriter, r *http.Request) {
+	logger := getLoggerFromContext(r.Context())
+	logger.Info("received request to delete a WeatherClient")
+
+	weatherClient := getWeatherClientFromContext(r.Context())
+
+	// Unable to delete a WeatherClient that is being used by Zones
+	err := wcr.checkIfClientIsBeingUsed(weatherClient)
+	if err != nil {
+		logger.WithError(err).Error("unable to delete WeatherClient used by Zone")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
+	if err := wcr.storageClient.DeleteWeatherClientConfig(weatherClient.ID); err != nil {
+		logger.WithError(err).Error("unable to delete WeatherClient")
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	if err := render.Render(w, r, wcr.NewWeatherClientResponse(r.Context(), weatherClient)); err != nil {
+		logger.WithError(err).Error("unable to render WeatherClientResponse")
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+func (wcr *WeatherClientsResource) checkIfClientIsBeingUsed(weatherClient *weather.Config) error {
+	gardens, err := wcr.storageClient.GetGardens(false)
+	if err != nil {
+		return fmt.Errorf("unable to get all Gardens: %w", err)
+	}
+
+	for _, g := range gardens {
+		zones, err := wcr.storageClient.GetZones(g.ID, false)
+		if err != nil {
+			return fmt.Errorf("unable to get all Zones for Garden %q: %w", g.ID, err)
+		}
+
+		for _, z := range zones {
+			if z.HasWeatherControl() {
+				if z.WaterSchedule.HasRainControl() {
+					if z.WaterSchedule.WeatherControl.Rain.ClientID == weatherClient.ID {
+						return fmt.Errorf("unable to delete WeatherClient used by Rain control in Zone %q (in garden %q): %w", z.ID, g.ID, err)
+					}
+				}
+				if z.WaterSchedule.HasTemperatureControl() {
+					if z.WaterSchedule.WeatherControl.Temperature.ClientID == weatherClient.ID {
+						return fmt.Errorf("unable to delete WeatherClient used by Temperature control in Zone %q (in garden %q): %w", z.ID, g.ID, err)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
 }

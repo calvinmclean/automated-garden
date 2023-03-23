@@ -13,7 +13,7 @@ type WeatherClientResponse struct {
 	Links []Link `json:"links,omitempty"`
 }
 
-func (wc WeatherClientsResource) NewWeatherClientResponse(ctx context.Context, weatherClient *weather.Config, links ...Link) *WeatherClientResponse {
+func (wcr WeatherClientsResource) NewWeatherClientResponse(ctx context.Context, weatherClient *weather.Config, links ...Link) *WeatherClientResponse {
 	response := &WeatherClientResponse{
 		Config: weatherClient,
 	}
@@ -39,10 +39,10 @@ type AllWeatherClientsResponse struct {
 }
 
 // NewAllWeatherClientsResponse will create an AllWeatherClientResponse from a list of Zones
-func (wc WeatherClientsResource) NewAllWeatherClientsResponse(ctx context.Context, weatherClients []*weather.Config) *AllWeatherClientsResponse {
+func (wcr WeatherClientsResource) NewAllWeatherClientsResponse(ctx context.Context, weatherClients []*weather.Config) *AllWeatherClientsResponse {
 	weatherClientResponses := []*WeatherClientResponse{}
 	for _, c := range weatherClients {
-		weatherClientResponses = append(weatherClientResponses, wc.NewWeatherClientResponse(ctx, c))
+		weatherClientResponses = append(weatherClientResponses, wcr.NewWeatherClientResponse(ctx, c))
 	}
 	return &AllWeatherClientsResponse{weatherClientResponses}
 }
