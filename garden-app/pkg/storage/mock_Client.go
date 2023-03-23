@@ -209,13 +209,13 @@ func (_m *MockClient) GetWeatherClientConfig(_a0 xid.ID) (*weather.Config, error
 	return r0, r1
 }
 
-// GetWeatherClientConfigs provides a mock function with given fields: _a0
-func (_m *MockClient) GetWeatherClientConfigs(_a0 bool) ([]*weather.Config, error) {
-	ret := _m.Called(_a0)
+// GetWeatherClientConfigs provides a mock function with given fields:
+func (_m *MockClient) GetWeatherClientConfigs() ([]*weather.Config, error) {
+	ret := _m.Called()
 
 	var r0 []*weather.Config
-	if rf, ok := ret.Get(0).(func(bool) []*weather.Config); ok {
-		r0 = rf(_a0)
+	if rf, ok := ret.Get(0).(func() []*weather.Config); ok {
+		r0 = rf()
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]*weather.Config)
@@ -223,8 +223,8 @@ func (_m *MockClient) GetWeatherClientConfigs(_a0 bool) ([]*weather.Config, erro
 	}
 
 	var r1 error
-	if rf, ok := ret.Get(1).(func(bool) error); ok {
-		r1 = rf(_a0)
+	if rf, ok := ret.Get(1).(func() error); ok {
+		r1 = rf()
 	} else {
 		r1 = ret.Error(1)
 	}

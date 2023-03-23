@@ -31,7 +31,7 @@ func (c *Client) GetWeatherClientConfig(id xid.ID) (*weather.Config, error) {
 	return c.data.WeatherClientConfigs[id], nil
 }
 
-func (c *Client) GetWeatherClientConfigs(getEndDated bool) ([]*weather.Config, error) {
+func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
 
@@ -41,9 +41,7 @@ func (c *Client) GetWeatherClientConfigs(getEndDated bool) ([]*weather.Config, e
 	}
 	result := []*weather.Config{}
 	for _, wc := range c.data.WeatherClientConfigs {
-		if getEndDated || !wc.EndDated() {
-			result = append(result, wc)
-		}
+		result = append(result, wc)
 	}
 	return result, nil
 }

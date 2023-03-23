@@ -6,9 +6,10 @@ import (
 	"net/http"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/rs/xid"
 )
 
-// WeatherClientRequest wraps a Zone into a request so we can handle Bind/Render in this package
+// WeatherClientRequest wraps a WeatherClient config into a request so we can handle Bind/Render in this package
 type WeatherClientRequest struct {
 	*weather.Config
 }
@@ -29,6 +30,25 @@ func (wc *WeatherClientRequest) Bind(r *http.Request) error {
 	_, err := weather.NewClient(wc.Config)
 	if err != nil {
 		return fmt.Errorf("failed to create valid client using config: %w", err)
+	}
+
+	return nil
+}
+
+// UpdateWeatherClientRequest wraps a WeatherClient config into a request so we can handle Bind/Render in this package
+// It has different validation than the WeatherClientRequest
+type UpdateWeatherClientRequest struct {
+	*weather.Config
+}
+
+// Bind is used to make this struct compatible with the go-chi webserver for reading incoming
+// JSON requests
+func (wc *UpdateWeatherClientRequest) Bind(r *http.Request) error {
+	if wc == nil || wc.Config == nil {
+		return errors.New("missing required WeatherClient fields")
+	}
+	if wc.ID != xid.NilID() {
+		return errors.New("updating ID is not allowed")
 	}
 
 	return nil

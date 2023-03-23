@@ -27,13 +27,7 @@ type Client interface {
 type Config struct {
 	ID      xid.ID                 `json:"id" yaml:"id"`
 	Type    string                 `json:"type" yaml:"type"`
-	EndDate *time.Time             `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	Options map[string]interface{} `json:"options" yaml:"options"`
-}
-
-// EndDated returns true if the Config is end-dated
-func (c *Config) EndDated() bool {
-	return c.EndDate != nil && c.EndDate.Before(time.Now())
 }
 
 // NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
@@ -46,6 +40,17 @@ func NewClient(c *Config) (Client, error) {
 		return newMetricsWrapperClient(fake.NewClient(c.Options))
 	default:
 		return nil, fmt.Errorf("invalid type '%s'", c.Type)
+	}
+}
+
+// Patch allows modifying an existing Config with fields from a new one
+func (c *Config) Patch(newConfig *Config) {
+	if newConfig.Type != "" {
+		c.Type = newConfig.Type
+	}
+
+	for k, v := range newConfig.Options {
+		c.Options[k] = v
 	}
 }
 

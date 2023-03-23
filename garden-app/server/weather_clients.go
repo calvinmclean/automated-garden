@@ -64,12 +64,10 @@ func (wc WeatherClientsResource) weatherClientContextMiddleware(next http.Handle
 }
 
 func (wc WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r *http.Request) {
-	getEndDated := r.URL.Query().Get("end_dated") == "true"
-
-	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
+	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get all WeatherClients")
 
-	weatherClientConfigs, err := wc.storageClient.GetWeatherClientConfigs(getEndDated)
+	weatherClientConfigs, err := wc.storageClient.GetWeatherClientConfigs()
 	if err != nil {
 		logger.WithError(err).Error("unable to get all WeatherClients")
 		render.Render(w, r, ErrRender(err))
@@ -125,6 +123,37 @@ func (wc WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *h
 
 	render.Status(r, http.StatusCreated)
 	if err := render.Render(w, r, wc.NewWeatherClientResponse(r.Context(), weatherClientConfig)); err != nil {
+		logger.WithError(err).Error("unable to render WeatherClientResponse")
+		render.Render(w, r, ErrRender(err))
+	}
+}
+
+func (wc WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *http.Request) {
+	logger := getLoggerFromContext(r.Context())
+	logger.Info("received request to update WeatherClient")
+
+	request := &UpdateWeatherClientRequest{}
+	if err := render.Bind(r, request); err != nil {
+		logger.WithError(err).Error("invalid request to update WeatherClient")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+	logger.Debugf("request to update WeatherClient: %+v", request.Config)
+
+	weatherClient := getWeatherClientFromContext(r.Context())
+
+	weatherClient.Patch(request.Config)
+
+	// Save the WeatherClient
+	logger.Debug("saving WeatherClient")
+	if err := wc.storageClient.SaveWeatherClientConfig(weatherClient); err != nil {
+		logger.WithError(err).Error("unable to save WeatherClient Config")
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	render.Status(r, http.StatusCreated)
+	if err := render.Render(w, r, wc.NewWeatherClientResponse(r.Context(), weatherClient)); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
 	}

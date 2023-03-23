@@ -35,7 +35,7 @@ type Client interface {
 
 	GetWeatherClient(xid.ID) (weather.Client, error)
 	GetWeatherClientConfig(xid.ID) (*weather.Config, error)
-	GetWeatherClientConfigs(bool) ([]*weather.Config, error)
+	GetWeatherClientConfigs() ([]*weather.Config, error)
 	SaveWeatherClientConfig(*weather.Config) error
 	DeleteWeatherClientConfig(xid.ID) error
 }

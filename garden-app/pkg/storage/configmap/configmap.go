@@ -257,8 +257,8 @@ func (c *Client) update() error {
 	return nil
 }
 
-func (c *Client) GetWeatherClient(xid.ID) (weather.Client, error)         { return nil, nil }
-func (c *Client) GetWeatherClientConfig(xid.ID) (*weather.Config, error)  { return nil, nil }
-func (c *Client) GetWeatherClientConfigs(bool) ([]*weather.Config, error) { return nil, nil }
-func (c *Client) SaveWeatherClientConfig(*weather.Config) error           { return nil }
-func (c *Client) DeleteWeatherClientConfig(xid.ID) error                  { return nil }
+func (c *Client) GetWeatherClient(xid.ID) (weather.Client, error)        { return nil, nil }
+func (c *Client) GetWeatherClientConfig(xid.ID) (*weather.Config, error) { return nil, nil }
+func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error)    { return nil, nil }
+func (c *Client) SaveWeatherClientConfig(*weather.Config) error          { return nil }
+func (c *Client) DeleteWeatherClientConfig(xid.ID) error                 { return nil }
