@@ -74,6 +74,11 @@ type Garden struct {
 	LightSchedule *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
 }
 
+// String...
+func (g *Garden) String() string {
+	return fmt.Sprintf("%+v", *g)
+}
+
 // GardenHealth holds information about the Garden controller's health status
 type GardenHealth struct {
 	Status      string     `json:"status,omitempty"`
@@ -87,6 +92,11 @@ type LightSchedule struct {
 	Duration    *Duration  `json:"duration" yaml:"duration"`
 	StartTime   string     `json:"start_time" yaml:"start_time"`
 	AdhocOnTime *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
+}
+
+// String...
+func (ls *LightSchedule) String() string {
+	return fmt.Sprintf("%+v", *ls)
 }
 
 // Patch allows modifying the struct in-place with values from a different instance

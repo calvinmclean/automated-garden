@@ -1,6 +1,8 @@
 package action
 
 import (
+	"fmt"
+
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/rs/xid"
 )
@@ -9,6 +11,11 @@ import (
 // received as one request
 type ZoneAction struct {
 	Water *WaterAction `json:"water"`
+}
+
+// String...
+func (action *ZoneAction) String() string {
+	return fmt.Sprintf("%+v", *action.Water)
 }
 
 // WaterAction is an action for watering a Zone for the specified amount of time
@@ -23,4 +30,9 @@ type WaterMessage struct {
 	Duration int64  `json:"duration"`
 	ZoneID   xid.ID `json:"id"`
 	Position uint   `json:"position"`
+}
+
+// String...
+func (m *WaterMessage) String() string {
+	return fmt.Sprintf("%+v", *m)
 }
