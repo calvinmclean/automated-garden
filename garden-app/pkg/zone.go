@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
@@ -20,6 +21,11 @@ type Zone struct {
 	CreatedAt     *time.Time     `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate       *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WaterSchedule *WaterSchedule `json:"water_schedule,omitempty" yaml:"water_schedule,omitempty"`
+}
+
+// String...
+func (z *Zone) String() string {
+	return fmt.Sprintf("%+v", *z)
 }
 
 // EndDated returns true if the Zone is end-dated
@@ -74,6 +80,11 @@ type ZoneDetails struct {
 	Notes       string `json:"notes,omitempty" yaml:"notes,omitempty"`
 }
 
+// String...
+func (zd *ZoneDetails) String() string {
+	return fmt.Sprintf("%+v", *zd)
+}
+
 // Patch allows modifying the struct in-place with values from a different instance
 func (zd *ZoneDetails) Patch(new *ZoneDetails) {
 	if new.Description != "" {
@@ -92,6 +103,11 @@ type WaterSchedule struct {
 	Interval       *Duration        `json:"interval" yaml:"interval"`
 	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty"`
+}
+
+// String...
+func (ws *WaterSchedule) String() string {
+	return fmt.Sprintf("%+v", *ws)
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
