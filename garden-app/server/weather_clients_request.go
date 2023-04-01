@@ -27,7 +27,7 @@ func (wc *WeatherClientRequest) Bind(r *http.Request) error {
 		return errors.New("missing required options field")
 	}
 
-	_, err := weather.NewClient(wc.Config)
+	_, err := weather.NewClient(wc.Config, func(map[string]interface{}) error { return nil })
 	if err != nil {
 		return fmt.Errorf("failed to create valid client using config: %w", err)
 	}

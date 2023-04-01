@@ -17,7 +17,14 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 	}
 
 	// TODO: Do i need nil check? write test for it
-	return weather.NewClient(c.data.WeatherClientConfigs[id])
+	return weather.NewClient(c.data.WeatherClientConfigs[id], func(weatherClientOptions map[string]interface{}) error {
+		// storageCallback will update the options with the value in the input and then save
+		c.m.Lock()
+		defer c.m.Unlock()
+
+		c.data.WeatherClientConfigs[id].Options = weatherClientOptions
+		return c.save()
+	})
 }
 
 func (c *Client) GetWeatherClientConfig(id xid.ID) (*weather.Config, error) {

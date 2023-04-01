@@ -38,25 +38,26 @@ type Config struct {
 
 // TokenData contains information returned by Netatmo auth API
 type TokenData struct {
-	AccessToken    string `json:"access_token" yaml:"access_token" mapstructure:"access_token"`
-	RefreshToken   string `json:"refresh_token" yaml:"refresh_token" mapstructure:"refresh_token"`
-	ExpiresIn      int    `json:"expires_in" yaml:"expires_in" mapstructure:"expires_in"`
-	ExpirationDate time.Time
+	AccessToken    string    `json:"access_token" yaml:"access_token" mapstructure:"access_token"`
+	RefreshToken   string    `json:"refresh_token" yaml:"refresh_token" mapstructure:"refresh_token"`
+	ExpiresIn      int       `json:"expires_in" yaml:"expires_in" mapstructure:"expires_in"`
+	ExpirationDate time.Time `json:"expiration_date" yaml:"expiration_date" mapstructure:"expiration_date"`
 }
 
 // Client is used to interact with Netatmo API
 type Client struct {
 	*Config
 	*http.Client
-	baseURL *url.URL
+	baseURL         *url.URL
+	storageCallback func(map[string]interface{}) error
 }
 
 // NewClient creates a new Netatmo API client from configuration
 // If StationID is not provided, StationName is used to get it from the API
 // If RainModuleID is not provided, RainModuleName is used to get it from the API
 // For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
-func NewClient(options map[string]interface{}) (*Client, error) {
-	client := &Client{Client: http.DefaultClient}
+func NewClient(options map[string]interface{}, storageCallback func(map[string]interface{}) error) (*Client, error) {
+	client := &Client{Client: http.DefaultClient, storageCallback: storageCallback}
 
 	err := mapstructure.Decode(options, &client.Config)
 	if err != nil {
@@ -216,9 +217,30 @@ func (c *Client) refreshToken() error {
 
 	err = json.Unmarshal(respBody, c.Authentication)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to unmarshal refresh token response body: %w", err)
 	}
 	c.Authentication.ExpirationDate = time.Now().Add(time.Duration(c.Authentication.ExpiresIn) * time.Second)
+
+	// Use storage callback to save new authentication details
+	err = c.storageCallback(map[string]interface{}{
+		"station_id":          c.Config.StationID,
+		"station_name":        c.Config.StationName,
+		"rain_module_id":      c.Config.RainModuleID,
+		"rain_module_name":    c.Config.RainModuleName,
+		"outdoor_module_id":   c.Config.OutdoorModuleID,
+		"outdoor_module_name": c.Config.OutdoorModuleName,
+		"authentication": map[string]interface{}{
+			"access_token":    c.Config.Authentication.AccessToken,
+			"refresh_token":   c.Config.Authentication.RefreshToken,
+			"expires_in":      c.Config.Authentication.ExpiresIn,
+			"expiration_date": c.Config.Authentication.ExpirationDate,
+		},
+		"client_id":     c.Config.ClientID,
+		"client_secret": c.Config.ClientSecret,
+	})
+	if err != nil {
+		return fmt.Errorf("error executing storage callback to store new tokens: %w", err)
+	}
 
 	return nil
 }
