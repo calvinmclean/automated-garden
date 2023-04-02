@@ -105,8 +105,7 @@ type ZoneConfig struct {
 func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, overwrite, interactive bool) {
 	logger := setupLogger(config.LogConfig)
 
-	switch {
-	case interactive:
+	if interactive {
 		err := survey.AskOne(&survey.Confirm{
 			Message: "Generate 'config.h'?",
 			Default: genMainConfig,
@@ -115,9 +114,9 @@ func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, over
 			logger.WithError(err).Error("survey error")
 			return
 		}
-		fallthrough
+	}
 
-	case genMainConfig:
+	if genMainConfig {
 		logger.Debug("generating 'config.h'")
 		mainConfig, err := generateMainConfig(config, interactive)
 		if err != nil {
@@ -129,9 +128,9 @@ func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, over
 			logger.WithError(err).Error("error generating 'config.h'")
 			return
 		}
-		fallthrough
+	}
 
-	case interactive:
+	if interactive {
 		err := survey.AskOne(&survey.Confirm{
 			Message: "Generate 'wifi_config.h'?",
 			Default: genWifiConfig,
@@ -140,9 +139,9 @@ func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, over
 			logger.WithError(err).Error("survey error")
 			return
 		}
-		fallthrough
+	}
 
-	case genWifiConfig:
+	if genWifiConfig {
 		logger.Debug("generating 'wifi_config.h'")
 		wifiConfig, err := generateWiFiConfig(config.WifiConfig, interactive)
 		if err != nil {
