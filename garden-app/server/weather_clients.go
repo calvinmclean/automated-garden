@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
@@ -85,10 +86,10 @@ func (wcr WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r 
 
 func (wcr WeatherClientsResource) getWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
-	logger.Info("received request to get WeatherClients")
+	logger.Info("received request to get WeatherClient")
 
 	weatherClient := getWeatherClientFromContext(r.Context())
-	logger.Debugf("responding with WeatherClients: %+v", weatherClient)
+	logger.Debugf("responding with WeatherClient: %+v", weatherClient)
 
 	gardenResponse := wcr.NewWeatherClientResponse(r.Context(), weatherClient)
 	if err := render.Render(w, r, gardenResponse); err != nil {
@@ -217,4 +218,46 @@ func (wcr *WeatherClientsResource) checkIfClientIsBeingUsed(weatherClient *weath
 	}
 
 	return nil
+}
+
+func (wcr WeatherClientsResource) testWeatherClient(w http.ResponseWriter, r *http.Request) {
+	logger := getLoggerFromContext(r.Context())
+	logger.Info("received request to test WeatherClient")
+
+	weatherClient := getWeatherClientFromContext(r.Context())
+
+	wc, err := wcr.storageClient.GetWeatherClient(weatherClient.ID)
+	if err != nil {
+		logger.WithError(err).Error("unable to get WeatherClient")
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	rd, err := wc.GetTotalRain(72 * time.Hour)
+	if err != nil {
+		logger.WithError(err).Error("unable to get total rain in the last 72 hours")
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	td, err := wc.GetAverageHighTemperature(72 * time.Hour)
+	if err != nil {
+		logger.WithError(err).Error("unable to get average high temperature in the last 72 hours")
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+
+	resp := &WeatherClientTestResponse{WeatherData: WeatherData{
+		Rain: &RainData{
+			MM: rd,
+		},
+		Temperature: &TemperatureData{
+			Celcius: td,
+		},
+	}}
+
+	if err := render.Render(w, r, resp); err != nil {
+		logger.WithError(err).Error("unable to render WeatherClientResponse")
+		render.Render(w, r, ErrRender(err))
+	}
 }

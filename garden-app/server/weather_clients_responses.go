@@ -51,3 +51,13 @@ func (wcr WeatherClientsResource) NewAllWeatherClientsResponse(ctx context.Conte
 func (wr *AllWeatherClientsResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
+
+// WeatherClientTestResponse is used to return WeatherData from testing that the client works
+type WeatherClientTestResponse struct {
+	WeatherData
+}
+
+// Render ...
+func (resp *WeatherClientTestResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}

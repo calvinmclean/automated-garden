@@ -155,6 +155,8 @@ func NewServer(cfg Config) (*Server, error) {
 			r.Get("/", weatherClientsResource.getWeatherClient)
 			r.Patch("/", weatherClientsResource.updateWeatherClient)
 			r.Delete("/", weatherClientsResource.deleteWeatherClient)
+
+			r.Get("/test", weatherClientsResource.testWeatherClient)
 		})
 	})
 
