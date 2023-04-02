@@ -9,7 +9,9 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -91,15 +93,18 @@ func TestWaterActionExecute(t *testing.T) {
 	action := &action.WaterAction{
 		Duration: &pkg.Duration{Duration: time.Second},
 	}
+	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	temperatureControl := &weather.ScaleControl{
 		BaselineValue: float32Pointer(70),
 		Factor:        float32Pointer(0.5),
 		Range:         float32Pointer(30),
+		ClientID:      weatherClientID,
 	}
 	rainControl := &weather.ScaleControl{
 		BaselineValue: float32Pointer(0),
 		Factor:        float32Pointer(0),
 		Range:         float32Pointer(50),
+		ClientID:      weatherClientID,
 	}
 
 	fifty := 50
@@ -107,7 +112,7 @@ func TestWaterActionExecute(t *testing.T) {
 	tests := []struct {
 		name          string
 		zone          *pkg.Zone
-		setupMock     func(*mqtt.MockClient, *influxdb.MockClient, *weather.MockClient)
+		setupMock     func(*mqtt.MockClient, *influxdb.MockClient, *weather.MockClient, *storage.MockClient)
 		expectedError string
 	}{
 		{
@@ -116,7 +121,7 @@ func TestWaterActionExecute(t *testing.T) {
 				Position:      uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
@@ -128,7 +133,7 @@ func TestWaterActionExecute(t *testing.T) {
 				Position:      uintPointer(0),
 				WaterSchedule: &pkg.WaterSchedule{},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
 			"unable to fill MQTT topic template: template error",
@@ -146,7 +151,7 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), nil)
@@ -167,7 +172,7 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(51), nil)
 				influxdbClient.On("Close")
 				// No MQTT calls made
@@ -187,7 +192,7 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), errors.New("influxdb error"))
@@ -206,7 +211,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetTotalRain", mock.Anything).Return(float32(50), nil)
 				// No MQTT calls made
 			},
@@ -224,7 +230,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetTotalRain", mock.Anything).Return(float32(0), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
@@ -242,7 +249,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetTotalRain", mock.Anything).Return(float32(0), errors.New("weather client error"))
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
@@ -260,7 +268,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
@@ -278,7 +287,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(70), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
@@ -296,7 +306,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(85), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1250,"id":null,"position":0}`)).Return(nil)
@@ -314,7 +325,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(100), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":null,"position":0}`)).Return(nil)
@@ -332,7 +344,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(120), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":null,"position":0}`)).Return(nil)
@@ -350,7 +363,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(55), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":750,"id":null,"position":0}`)).Return(nil)
@@ -368,7 +382,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(40), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
@@ -386,7 +401,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(0), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
@@ -404,7 +420,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(0), errors.New("weather client error"))
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
@@ -425,7 +442,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(85), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
@@ -447,7 +465,8 @@ func TestWaterActionExecute(t *testing.T) {
 					},
 				},
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
 				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
 				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(55), nil)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
@@ -462,9 +481,10 @@ func TestWaterActionExecute(t *testing.T) {
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
 			wc := new(weather.MockClient)
-			tt.setupMock(mqttClient, influxdbClient, wc)
+			sc := new(storage.MockClient)
+			tt.setupMock(mqttClient, influxdbClient, wc, sc)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, logrus.New()).ExecuteWaterAction(garden, tt.zone, action)
+			err := NewWorker(sc, influxdbClient, mqttClient, logrus.New()).ExecuteWaterAction(garden, tt.zone, action)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
@@ -474,6 +494,7 @@ func TestWaterActionExecute(t *testing.T) {
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
 			wc.AssertExpectations(t)
+			sc.AssertExpectations(t)
 		})
 	}
 }

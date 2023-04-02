@@ -27,6 +27,7 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 	})
 }
 
+// GetWeatherClientConfig returns the WeatherClient's configuration value for the provided ID
 func (c *Client) GetWeatherClientConfig(id xid.ID) (*weather.Config, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -38,6 +39,7 @@ func (c *Client) GetWeatherClientConfig(id xid.ID) (*weather.Config, error) {
 	return c.data.WeatherClientConfigs[id], nil
 }
 
+// GetWeatherClientConfigs returns all of the WeatherClient configurations
 func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -53,6 +55,7 @@ func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error) {
 	return result, nil
 }
 
+// SaveWeatherClientConfig saves the config
 func (c *Client) SaveWeatherClientConfig(wc *weather.Config) error {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -61,6 +64,7 @@ func (c *Client) SaveWeatherClientConfig(wc *weather.Config) error {
 	return c.save()
 }
 
+// DeleteWeatherClientConfig deletes the config
 func (c *Client) DeleteWeatherClientConfig(id xid.ID) error {
 	c.m.Lock()
 	defer c.m.Unlock()

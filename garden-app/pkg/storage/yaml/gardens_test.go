@@ -77,7 +77,7 @@ func TestSaveGarden(t *testing.T) {
 		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
 
-	backup := copyMap(client.data.Gardens)
+	backup := copyData(client.data)
 
 	t.Run("Successful", func(t *testing.T) {
 		defer client.update()
@@ -111,7 +111,7 @@ func TestDeleteGarden(t *testing.T) {
 		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
 
-	backup := copyMap(client.data.Gardens)
+	backup := copyData(client.data)
 
 	t.Run("Successful", func(t *testing.T) {
 		defer client.update()

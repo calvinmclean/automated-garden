@@ -8,11 +8,13 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 )
 
+// WeatherClientResponse is a simple struct being used to render and return a WeatherClient
 type WeatherClientResponse struct {
 	*weather.Config
 	Links []Link `json:"links,omitempty"`
 }
 
+// NewWeatherClientResponse creates a new WeatherClientResponse
 func (wcr WeatherClientsResource) NewWeatherClientResponse(ctx context.Context, weatherClient *weather.Config, links ...Link) *WeatherClientResponse {
 	response := &WeatherClientResponse{
 		Config: weatherClient,
@@ -33,7 +35,7 @@ func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request
 	return nil
 }
 
-// AllWeatherClientResponse is a simple struct being used to render and return a list of all WeatherClients
+// AllWeatherClientsResponse is a simple struct being used to render and return a list of all WeatherClients
 type AllWeatherClientsResponse struct {
 	WeatherClients []*WeatherClientResponse `json:"weather_clients"`
 }

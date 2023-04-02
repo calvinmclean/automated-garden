@@ -175,17 +175,18 @@ func TestZoneRestrictEndDatedMiddleware(t *testing.T) {
 
 func TestGetZone(t *testing.T) {
 	one := 1
+	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 
 	tests := []struct {
 		name      string
 		zone      func() *pkg.Zone
-		setupMock func(*influxdb.MockClient, *weather.MockClient) // TODO: mock storage client
+		setupMock func(*influxdb.MockClient, *weather.MockClient, *storage.MockClient)
 		expected  string
 	}{
 		{
 			"Successful",
 			func() *pkg.Zone { return createExampleZone() },
-			func(*influxdb.MockClient, *weather.MockClient) {},
+			func(*influxdb.MockClient, *weather.MockClient, *storage.MockClient) {},
 			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"},"next_water_duration":"1s","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
@@ -202,7 +203,7 @@ func TestGetZone(t *testing.T) {
 				}
 				return zone
 			},
-			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient) {
+			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient, storageClient *storage.MockClient) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), nil)
 				influxdbClient.On("Close")
 			},
@@ -223,23 +224,26 @@ func TestGetZone(t *testing.T) {
 							BaselineValue: float32Pointer(0),
 							Factor:        float32Pointer(0),
 							Range:         float32Pointer(25.4),
+							ClientID:      weatherClientID,
 						},
 						Temperature: &weather.ScaleControl{
 							BaselineValue: float32Pointer(30),
 							Factor:        float32Pointer(0.5),
 							Range:         float32Pointer(10),
+							ClientID:      weatherClientID,
 						},
 					},
 				}
 				return zone
 			},
-			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient) {
+			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient, storageClient *storage.MockClient) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), nil)
 				influxdbClient.On("Close")
+				storageClient.On("GetWeatherClient", weatherClientID).Return(weatherClient, nil)
 				weatherClient.On("GetTotalRain", mock.Anything).Return(float32(12.7), nil)
 				weatherClient.On("GetAverageHighTemperature", mock.Anything).Return(float32(35), nil)
 			},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1h0m0s","interval":"24h0m0s","start_time":null,"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4},"moisture_control":{"minimum_moisture":1},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10}}},"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celcius":35,"scale_factor":1.25},"soil_moisture_percent":2},"next_water_duration":"37m30.000039936s","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule":{"duration":"1h0m0s","interval":"24h0m0s","start_time":null,"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"moisture_control":{"minimum_moisture":1},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}}},"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celcius":35,"scale_factor":1.25},"soil_moisture_percent":2},"next_water_duration":"37m30.000039936s","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"ErrorGettingMoisture",
@@ -255,7 +259,7 @@ func TestGetZone(t *testing.T) {
 				}
 				return zone
 			},
-			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient) {
+			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient, storageClient *storage.MockClient) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
@@ -267,16 +271,18 @@ func TestGetZone(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			weatherClient := new(weather.MockClient)
+			storageClient := new(storage.MockClient)
 			pr := ZonesResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					worker:         worker.NewWorker(nil, influxdbClient, nil, logrus.New()),
+					storageClient:  storageClient,
+					worker:         worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
 
 			zone := tt.zone()
-			tt.setupMock(influxdbClient, weatherClient)
+			tt.setupMock(influxdbClient, weatherClient, storageClient)
 
 			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
@@ -299,6 +305,7 @@ func TestGetZone(t *testing.T) {
 			}
 			influxdbClient.AssertExpectations(t)
 			weatherClient.AssertExpectations(t)
+			storageClient.AssertExpectations(t)
 		})
 	}
 }
@@ -404,7 +411,7 @@ func TestUpdateZone(t *testing.T) {
 			"BadRequestInvalidTemperatureControl",
 			func(storageClient *storage.MockClient) {},
 			`{"name":"new name","water_schedule":{"weather_control":{"temperature_control":{"baseline_value":27,"factor":-1,"range":10}}}}`,
-			`{"status":"Invalid request.","error":"water_schedule.weather_control.temperature_control.factor must be between 0 and 1"}`,
+			`{"status":"Invalid request.","error":"error validating temperature_control: factor must be between 0 and 1"}`,
 			http.StatusBadRequest,
 		},
 		{

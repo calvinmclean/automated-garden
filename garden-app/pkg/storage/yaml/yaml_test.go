@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 	"gopkg.in/yaml.v3"
 )
@@ -21,20 +22,24 @@ func init() {
 	plantID, _ = xid.FromString("c3ucvu06n88pt1dom670")
 }
 
-func resetFile(filename string, gardens map[xid.ID]*pkg.Garden) error {
-	content, err := yaml.Marshal(gardens)
+func resetFile(filename string, data clientData) error {
+	content, err := yaml.Marshal(data)
 	if err != nil {
 		return err
 	}
 	return os.WriteFile(filename, content, 0755)
 }
 
-func copyMap(gardens map[xid.ID]*pkg.Garden) map[xid.ID]*pkg.Garden {
-	result := map[xid.ID]*pkg.Garden{}
-	for k, v := range gardens {
-		result[k] = v
+func copyData(data clientData) clientData {
+	gardens := map[xid.ID]*pkg.Garden{}
+	for k, v := range data.Gardens {
+		gardens[k] = v
 	}
-	return result
+	weatherClients := map[xid.ID]*weather.Config{}
+	for k, v := range data.WeatherClientConfigs {
+		weatherClients[k] = v
+	}
+	return clientData{Gardens: gardens, WeatherClientConfigs: weatherClients}
 }
 
 func TestNewClient(t *testing.T) {
