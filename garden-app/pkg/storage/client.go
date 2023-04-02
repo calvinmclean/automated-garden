@@ -6,6 +6,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/configmap"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/yaml"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 )
 
@@ -31,6 +32,12 @@ type Client interface {
 	GetPlants(xid.ID, bool) ([]*pkg.Plant, error)
 	SavePlant(xid.ID, *pkg.Plant) error
 	DeletePlant(xid.ID, xid.ID) error
+
+	GetWeatherClient(xid.ID) (weather.Client, error)
+	GetWeatherClientConfig(xid.ID) (*weather.Config, error)
+	GetWeatherClientConfigs() ([]*weather.Config, error)
+	SaveWeatherClientConfig(*weather.Config) error
+	DeleteWeatherClientConfig(xid.ID) error
 }
 
 // NewClient will use the config to create and return the correct type of storage client

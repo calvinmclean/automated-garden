@@ -253,7 +253,7 @@ func TestCreateGarden(t *testing.T) {
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,
 				config:         Config{},
-				worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
@@ -329,7 +329,7 @@ func TestGetAllGardens(t *testing.T) {
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,
 				config:         Config{},
-				worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 			tt.setupMock(storageClient, influxdbClient)
 
@@ -364,7 +364,7 @@ func TestGetGarden(t *testing.T) {
 			storageClient:  storageClient,
 			influxdbClient: influxdbClient,
 			config:         Config{},
-			worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+			worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
 		}
 		garden := createExampleGarden()
 
@@ -458,7 +458,7 @@ func TestEndDateGarden(t *testing.T) {
 			gr := GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
-				worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+				worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -569,7 +569,7 @@ func TestUpdateGarden(t *testing.T) {
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,
 				config:         Config{},
-				worker:         worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 
 			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
@@ -594,74 +594,6 @@ func TestUpdateGarden(t *testing.T) {
 		})
 	}
 }
-
-// func TestGetGardenHealth(t *testing.T) {
-// 	now := time.Now()
-// 	fiveMinutesAgo := time.Now().Add(-5 * time.Minute)
-// 	tests := []struct {
-// 		name           string
-// 		time           time.Time
-// 		err            error
-// 		expectedStatus string
-// 	}{
-// 		{
-// 			"UP",
-// 			now,
-// 			nil,
-// 			"UP",
-// 		},
-// 		{
-// 			"DOWN",
-// 			fiveMinutesAgo,
-// 			nil,
-// 			"DOWN",
-// 		},
-// 		{
-// 			"N/A",
-// 			now,
-// 			errors.New("influxdb error"),
-// 			"N/A",
-// 		},
-// 	}
-
-// 	for _, tt := range tests {
-// 		t.Run(tt.name, func(t *testing.T) {
-// 			storageClient := new(storage.MockClient)
-// 			influxdbClient := new(influxdb.MockClient)
-// 			gr := GardensResource{
-// 				storageClient:  storageClient,
-// 				influxdbClient: influxdbClient,
-// 				config:         Config{},
-// 			}
-// 			garden := createExampleGarden()
-// 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(tt.time, tt.err)
-// 			influxdbClient.On("Close")
-
-// 			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
-// 			r := httptest.NewRequest("GET", "/health", nil).WithContext(ctx)
-// 			w := httptest.NewRecorder()
-// 			h := http.HandlerFunc(gr.getGardenHealth)
-
-// 			h.ServeHTTP(w, r)
-
-// 			// check HTTP response status code
-// 			if w.Code != http.StatusOK {
-// 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
-// 			}
-
-// 			// check HTTP response body
-// 			var actual GardenHealthResponse
-// 			err := json.Unmarshal(w.Body.Bytes(), &actual)
-// 			if err != nil {
-// 				t.Errorf("Unexpected error unmarshaling GardenHealthResponse: %v", err)
-// 			}
-// 			if actual.Status != tt.expectedStatus {
-// 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual.Status, tt.expectedStatus)
-// 			}
-// 			storageClient.AssertExpectations(t)
-// 		})
-// 	}
-// }
 
 func TestGardenAction(t *testing.T) {
 	tests := []struct {
@@ -712,7 +644,7 @@ func TestGardenAction(t *testing.T) {
 			tt.setupMock(mqttClient)
 
 			gr := GardensResource{
-				worker: worker.NewWorker(nil, nil, mqttClient, nil, logrus.New()),
+				worker: worker.NewWorker(nil, nil, mqttClient, logrus.New()),
 			}
 			garden := createExampleGarden()
 

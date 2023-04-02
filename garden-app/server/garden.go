@@ -9,7 +9,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -28,15 +27,15 @@ const (
 type GardensResource struct {
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
-	weatherClient  weather.Client
 	worker         *worker.Worker
 	config         Config
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, logger *logrus.Entry) (GardensResource, error) {
+func NewGardenResource(config Config, logger *logrus.Entry, storageClient storage.Client) (GardensResource, error) {
 	gr := GardensResource{
-		config: config,
+		config:        config,
+		storageClient: storageClient,
 	}
 
 	// Initialize MQTT Client
@@ -50,13 +49,6 @@ func NewGardenResource(config Config, logger *logrus.Entry) (GardensResource, er
 		return gr, fmt.Errorf("unable to initialize MQTT client: %v", err)
 	}
 
-	// Initialize Storage Client
-	logger.WithField("type", config.StorageConfig.Type).Info("initializing storage client")
-	gr.storageClient, err = storage.NewClient(config.StorageConfig)
-	if err != nil {
-		return gr, fmt.Errorf("unable to initialize storage client: %v", err)
-	}
-
 	// Initialize InfluxDB Client
 	logger.WithFields(logrus.Fields{
 		"address": config.InfluxDBConfig.Address,
@@ -65,15 +57,9 @@ func NewGardenResource(config Config, logger *logrus.Entry) (GardensResource, er
 	}).Info("initializing InfluxDB client")
 	gr.influxdbClient = influxdb.NewClient(gr.config.InfluxDBConfig)
 
-	// Initialize weather Client
-	gr.weatherClient, err = weather.NewClient(gr.config.WeatherConfig)
-	if err != nil {
-		return gr, fmt.Errorf("unable to initialize weather Client: %v", err)
-	}
-
 	// Initialize Scheduler
 	logger.Info("initializing scheduler")
-	gr.worker = worker.NewWorker(gr.storageClient, gr.influxdbClient, mqttClient, gr.weatherClient, logger.Logger)
+	gr.worker = worker.NewWorker(gr.storageClient, gr.influxdbClient, mqttClient, logger.Logger)
 	gr.worker.StartAsync()
 
 	// Initialize light schedules for all Gardens

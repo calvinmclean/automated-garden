@@ -13,7 +13,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -30,7 +29,6 @@ type Config struct {
 	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
 	StorageConfig  storage.Config  `mapstructure:"storage"`
-	WeatherConfig  weather.Config  `mapstructure:"weather"`
 	LogConfig      LogConfig       `mapstructure:"log"`
 }
 
@@ -69,8 +67,15 @@ func NewServer(cfg Config) (*Server, error) {
 	})))
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
-	// RESTy routes for Garden and Plant API
-	gardenResource, err := NewGardenResource(cfg, logger)
+	// Initialize Storage Client
+	logger.WithField("type", cfg.StorageConfig.Type).Info("initializing storage client")
+	storageClient, err := storage.NewClient(cfg.StorageConfig)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
+	}
+
+	// Create API routes/handlers
+	gardenResource, err := NewGardenResource(cfg, logger, storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
@@ -133,6 +138,25 @@ func NewServer(cfg Config) (*Server, error) {
 					})
 				})
 			})
+		})
+	})
+
+	weatherClientsResource, err := NewWeatherClientsResource(logger, storageClient)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
+	}
+	r.Route(weatherClientsBasePath, func(r chi.Router) {
+		r.Post("/", weatherClientsResource.createWeatherClient)
+		r.Get("/", weatherClientsResource.getAllWeatherClients)
+
+		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {
+			r.Use(weatherClientsResource.weatherClientContextMiddleware)
+
+			r.Get("/", weatherClientsResource.getWeatherClient)
+			r.Patch("/", weatherClientsResource.updateWeatherClient)
+			r.Delete("/", weatherClientsResource.deleteWeatherClient)
+
+			r.Get("/test", weatherClientsResource.testWeatherClient)
 		})
 	})
 

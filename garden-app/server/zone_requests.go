@@ -45,7 +45,7 @@ func (z *ZoneRequest) Bind(r *http.Request) error {
 	if z.WaterSchedule.WeatherControl != nil {
 		err := ValidateWeatherControl(z.WaterSchedule.WeatherControl)
 		if err != nil {
-			return err
+			return fmt.Errorf("error validating weather_control: %w", err)
 		}
 	}
 
@@ -54,23 +54,46 @@ func (z *ZoneRequest) Bind(r *http.Request) error {
 
 // ValidateWeatherControl validates input for the WeatherControl of a Zone
 func ValidateWeatherControl(wc *weather.Control) error {
-	errStringFormat := "missing required field: water_schedule.weather_control.%s"
 	if wc.Temperature != nil {
-		if wc.Temperature.BaselineValue == nil {
-			return fmt.Errorf(errStringFormat, "temperature_control.baseline_value")
+		err := ValidateScaleControl(wc.Temperature)
+		if err != nil {
+			return fmt.Errorf("error validating temperature_control: %w", err)
 		}
-		if wc.Temperature.Factor == nil {
-			return fmt.Errorf(errStringFormat, "temperature_control.factor")
+	}
+	if wc.Rain != nil {
+		err := ValidateScaleControl(wc.Rain)
+		if err != nil {
+			return fmt.Errorf("error validating rain_control: %w", err)
 		}
-		if *wc.Temperature.Factor > float32(1) || *wc.Temperature.Factor < float32(0) {
-			return errors.New("water_schedule.weather_control.temperature_control.factor must be between 0 and 1")
+	}
+	if wc.SoilMoisture != nil {
+		if wc.SoilMoisture.MinimumMoisture == nil {
+			return errors.New("missing required field: minimum_moisture")
 		}
-		if wc.Temperature.Range == nil {
-			return fmt.Errorf(errStringFormat, "temperature_control.range")
-		}
-		if *wc.Temperature.Range < float32(0) {
-			return errors.New("water_schedule.weather_control.temperature_control.range must be a positive number")
-		}
+	}
+	return nil
+}
+
+// ValidateScaleControl validates input for ScaleControl
+func ValidateScaleControl(sc *weather.ScaleControl) error {
+	errStringFormat := "missing required field: %s"
+	if sc.BaselineValue == nil {
+		return fmt.Errorf(errStringFormat, "baseline_value")
+	}
+	if sc.Factor == nil {
+		return fmt.Errorf(errStringFormat, "factor")
+	}
+	if *sc.Factor > float32(1) || *sc.Factor < float32(0) {
+		return errors.New("factor must be between 0 and 1")
+	}
+	if sc.Range == nil {
+		return fmt.Errorf(errStringFormat, "range")
+	}
+	if *sc.Range < float32(0) {
+		return errors.New("range must be a positive number")
+	}
+	if sc.ClientID.IsNil() {
+		return fmt.Errorf(errStringFormat, "client_id")
 	}
 	return nil
 }

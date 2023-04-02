@@ -127,7 +127,7 @@ func TestGetPlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					influxdbClient: influxdbClient,
-					worker:         worker.NewWorker(nil, influxdbClient, nil, nil, logrus.New()),
+					worker:         worker.NewWorker(nil, influxdbClient, nil, logrus.New()),
 				},
 			}
 			garden := createExampleGarden()
@@ -214,7 +214,7 @@ func TestUpdatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
+					worker:        worker.NewWorker(nil, nil, nil, logrus.New()),
 				},
 			}
 			plant := createExamplePlant()
@@ -301,7 +301,7 @@ func TestEndDatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					worker:        worker.NewWorker(nil, nil, nil, nil, logrus.New()),
+					worker:        worker.NewWorker(nil, nil, nil, logrus.New()),
 				},
 			}
 
@@ -334,7 +334,7 @@ func TestEndDatePlant(t *testing.T) {
 func TestGetAllPlants(t *testing.T) {
 	pr := PlantsResource{
 		GardensResource: GardensResource{
-			worker: worker.NewWorker(nil, nil, nil, nil, logrus.New()),
+			worker: worker.NewWorker(nil, nil, nil, logrus.New()),
 		},
 	}
 	garden := createExampleGarden()
@@ -451,7 +451,7 @@ func TestCreatePlant(t *testing.T) {
 			pr := PlantsResource{
 				GardensResource: GardensResource{
 					storageClient: storageClient,
-					worker:        worker.NewWorker(storageClient, nil, nil, nil, logrus.New()),
+					worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 				},
 			}
 

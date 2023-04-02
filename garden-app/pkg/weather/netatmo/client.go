@@ -22,41 +22,42 @@ const (
 // If RainModuleID is not provided, RainModuleName is used to get it from the API
 // For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
 type Config struct {
-	StationID   string `mapstructure:"station_id"`
-	StationName string `mapstructure:"station_name"`
+	StationID   string `json:"station_id,omitempty" yaml:"station_id,omitempty" mapstructure:"station_id,omitempty"`
+	StationName string `json:"station_name,omitempty" yaml:"station_name,omitempty" mapstructure:"station_name,omitempty"`
 
-	RainModuleID   string `mapstructure:"rain_module_id"`
-	RainModuleName string `mapstructure:"rain_module_name"`
+	RainModuleID   string `json:"rain_module_id,omitempty" yaml:"rain_module_id,omitempty" mapstructure:"rain_module_id,omitempty"`
+	RainModuleName string `json:"rain_module_name,omitempty" yaml:"rain_module_name,omitempty" mapstructure:"rain_module_name,omitempty"`
 
-	OutdoorModuleID   string `mapstructure:"outdoor_module_id"`
-	OutdoorModuleName string `mapstructure:"outdoor_module_name"`
+	OutdoorModuleID   string `json:"outdoor_module_id,omitempty" yaml:"outdoor_module_id,omitempty" mapstructure:"outdoor_module_id,omitempty"`
+	OutdoorModuleName string `json:"outdoor_module_name,omitempty" yaml:"outdoor_module_name,omitempty" mapstructure:"outdoor_module_name,omitempty"`
 
-	Authentication *TokenData `mapstructure:"authentication"`
-	ClientID       string     `mapstructure:"client_id"`
-	ClientSecret   string     `mapstructure:"client_secret"`
+	Authentication *TokenData `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication,omitempty"`
+	ClientID       string     `json:"client_id,omitempty" yaml:"client_id,omitempty" mapstructure:"client_id,omitempty"`
+	ClientSecret   string     `json:"client_secret,omitempty" yaml:"client_secret,omitempty" mapstructure:"client_secret,omitempty"`
 }
 
 // TokenData contains information returned by Netatmo auth API
 type TokenData struct {
-	AccessToken    string `mapstructure:"access_token" json:"access_token"`
-	RefreshToken   string `mapstructure:"refresh_token" json:"refresh_token"`
-	ExpiresIn      int    `mapstructure:"expires_in" json:"expires_in"`
-	ExpirationDate time.Time
+	AccessToken    string    `json:"access_token,omitempty" yaml:"access_token,omitempty" mapstructure:"access_token,omitempty"`
+	RefreshToken   string    `json:"refresh_token,omitempty" yaml:"refresh_token,omitempty" mapstructure:"refresh_token,omitempty"`
+	ExpiresIn      int       `json:"expires_in,omitempty" yaml:"expires_in,omitempty" mapstructure:"expires_in,omitempty"`
+	ExpirationDate time.Time `json:"expiration_date,omitempty" yaml:"expiration_date,omitempty" mapstructure:"expiration_date,omitempty"`
 }
 
 // Client is used to interact with Netatmo API
 type Client struct {
 	*Config
 	*http.Client
-	baseURL *url.URL
+	baseURL         *url.URL
+	storageCallback func(map[string]interface{}) error
 }
 
 // NewClient creates a new Netatmo API client from configuration
 // If StationID is not provided, StationName is used to get it from the API
 // If RainModuleID is not provided, RainModuleName is used to get it from the API
 // For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
-func NewClient(options map[string]interface{}) (*Client, error) {
-	client := &Client{Client: http.DefaultClient}
+func NewClient(options map[string]interface{}, storageCallback func(map[string]interface{}) error) (*Client, error) {
+	client := &Client{Client: http.DefaultClient, storageCallback: storageCallback}
 
 	err := mapstructure.Decode(options, &client.Config)
 	if err != nil {
@@ -216,9 +217,30 @@ func (c *Client) refreshToken() error {
 
 	err = json.Unmarshal(respBody, c.Authentication)
 	if err != nil {
-		return err
+		return fmt.Errorf("unable to unmarshal refresh token response body: %w", err)
 	}
 	c.Authentication.ExpirationDate = time.Now().Add(time.Duration(c.Authentication.ExpiresIn) * time.Second)
+
+	// Use storage callback to save new authentication details
+	err = c.storageCallback(map[string]interface{}{
+		"station_id":          c.Config.StationID,
+		"station_name":        c.Config.StationName,
+		"rain_module_id":      c.Config.RainModuleID,
+		"rain_module_name":    c.Config.RainModuleName,
+		"outdoor_module_id":   c.Config.OutdoorModuleID,
+		"outdoor_module_name": c.Config.OutdoorModuleName,
+		"authentication": map[string]interface{}{
+			"access_token":    c.Config.Authentication.AccessToken,
+			"refresh_token":   c.Config.Authentication.RefreshToken,
+			"expires_in":      c.Config.Authentication.ExpiresIn,
+			"expiration_date": c.Config.Authentication.ExpirationDate,
+		},
+		"client_id":     c.Config.ClientID,
+		"client_secret": c.Config.ClientSecret,
+	})
+	if err != nil {
+		return fmt.Errorf("error executing storage callback to store new tokens: %w", err)
+	}
 
 	return nil
 }

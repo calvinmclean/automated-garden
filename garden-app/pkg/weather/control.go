@@ -1,5 +1,7 @@
 package weather
 
+import "github.com/rs/xid"
+
 // Control defines certain parameters and behaviors to influence watering patterns based off weather data
 type Control struct {
 	Rain         *ScaleControl        `json:"rain_control,omitempty"`
@@ -19,7 +21,7 @@ func (wc *Control) Patch(new *Control) {
 		if wc.SoilMoisture == nil {
 			wc.SoilMoisture = &SoilMoistureControl{}
 		}
-		if new.SoilMoisture.MinimumMoisture != 0 {
+		if new.SoilMoisture.MinimumMoisture != nil {
 			wc.SoilMoisture.MinimumMoisture = new.SoilMoisture.MinimumMoisture
 		}
 	}
@@ -35,7 +37,7 @@ func (wc *Control) Patch(new *Control) {
 // soil moisture is below the minimum
 // soil moisture value is currently hard-coded as the average value over the last 15 minutes
 type SoilMoistureControl struct {
-	MinimumMoisture int `json:"minimum_moisture,omitempty"`
+	MinimumMoisture *int `json:"minimum_moisture,omitempty"`
 }
 
 // ScaleControl is a generic struct that enables scaling
@@ -61,6 +63,7 @@ type ScaleControl struct {
 	BaselineValue *float32 `json:"baseline_value"`
 	Factor        *float32 `json:"factor"`
 	Range         *float32 `json:"range"`
+	ClientID      xid.ID   `json:"client_id"`
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
@@ -73,6 +76,9 @@ func (sc *ScaleControl) Patch(new *ScaleControl) {
 	}
 	if new.Range != nil {
 		sc.Range = new.Range
+	}
+	if !new.ClientID.IsNil() {
+		sc.ClientID = new.ClientID
 	}
 }
 

@@ -99,7 +99,7 @@ func TestGardenAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, nil, logrus.New()).ExecuteGardenAction(garden, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, logrus.New()).ExecuteGardenAction(garden, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -114,7 +114,7 @@ func TestLightActionExecute(t *testing.T) {
 		Name:        "garden",
 		TopicPrefix: "garden",
 		LightSchedule: &pkg.LightSchedule{
-			Duration:  &pkg.Duration{15 * time.Hour},
+			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
 			StartTime: "23:00:00-07:00",
 		},
 		CreatedAt: &now,
@@ -141,7 +141,7 @@ func TestLightActionExecute(t *testing.T) {
 		},
 		{
 			"SuccessfulWithDelay",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{30 * time.Second}},
+			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
@@ -155,7 +155,7 @@ func TestLightActionExecute(t *testing.T) {
 		},
 		{
 			"LightDelayError",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{30 * time.Second}},
+			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
@@ -172,7 +172,7 @@ func TestLightActionExecute(t *testing.T) {
 		},
 		{
 			"PublishError",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{30 * time.Second}},
+			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(errors.New("publish error"))
@@ -212,7 +212,7 @@ func TestLightActionExecute(t *testing.T) {
 			mqttClient.On("Disconnect", uint(100)).Return()
 			influxdbClient.On("Close").Return()
 
-			worker := NewWorker(storageClient, influxdbClient, mqttClient, nil, logrus.New())
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 			worker.ScheduleLightActions(garden)
 			worker.StartAsync()
 
@@ -287,7 +287,7 @@ func TestStopActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, nil, logrus.New()).ExecuteStopAction(garden, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, logrus.New()).ExecuteStopAction(garden, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
