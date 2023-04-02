@@ -82,7 +82,7 @@ func NewClient(options map[string]string) (*Client, error) {
 // save saves the client's data back to a persistent source. This is unexported and should only be used when a RWLock is already acquired
 func (c *Client) save() error {
 	// Marshal map to YAML bytes
-	content, err := yaml.Marshal(c.data.Gardens)
+	content, err := yaml.Marshal(c.data)
 	if err != nil {
 		return fmt.Errorf("unable to marshal YAML string from Plants map: %v", err)
 	}
@@ -107,9 +107,9 @@ func (c *Client) update() error {
 	if err != nil {
 		return fmt.Errorf("unable to get ConfigMap '%s': %v", c.configMapName, err)
 	}
-	err = yaml.Unmarshal([]byte(configMap.Data[c.keyName]), &c.data.Gardens)
+	err = yaml.Unmarshal([]byte(configMap.Data[c.keyName]), &c.data)
 	if err != nil {
-		return fmt.Errorf("unable to unmarshal YAML map of Plants: %v", err)
+		return fmt.Errorf("unable to unmarshal YAML: %v", err)
 	}
 	return nil
 }
