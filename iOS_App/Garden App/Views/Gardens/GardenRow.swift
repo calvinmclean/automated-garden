@@ -88,9 +88,8 @@ struct GardenRow: View {
             }
             if !garden.isEndDated() {
                 HStack {
-                    if let up = garden.health?.status == "UP" {
-                        Label(garden.health?.status ?? "N/A", systemImage: up ? "wifi" : "wifi.slash").foregroundColor(up ? .blue : .red)
-                    }
+                    let up = garden.health?.status == "UP"
+                    Label(garden.health?.status ?? "N/A", systemImage: up ? "wifi" : "wifi.slash").foregroundColor(up ? .blue : .red)
                     Label(String(garden.numZones), systemImage: "drop.triangle").foregroundColor(.yellow)
                     Label(String(garden.numPlants), systemImage: "leaf.circle").foregroundColor(.green)
                     if let nextLightAction = garden.nextLightAction {

@@ -120,9 +120,8 @@ struct ZoneDetail: View {
                     DetailHStack(key: "Total", value: waterHistory.total)
                     if let history = waterHistory.history {
                         if history.count > 0 {
-                            if let lastWateredTime = history[0].recordTime {
-                                DetailHStack(key: "Last Watered", value: lastWateredTime.formattedWithTime)
-                            }
+                            let lastWateredTime = history[0].recordTime
+                            DetailHStack(key: "Last Watered", value: lastWateredTime.formattedWithTime)
                             NavigationLink(destination: ZoneWaterHistoryView(waterHistory: waterHistory)) {
                                 Text("See Full History")
                             }
