@@ -130,12 +130,14 @@ func (c *Controller) Start() {
 	// Initialize scheduler and schedule publishing Jobs
 	c.logger.Debug("initializing scheduler")
 	scheduler := gocron.NewScheduler(time.Local)
-	for p := 0; p < c.NumZones; p++ {
-		c.logger.WithFields(logrus.Fields{
-			"interval": c.MoistureInterval.String(),
-			"strategy": c.MoistureStrategy,
-		}).Debug("create scheduled job to publish moisture data")
-		scheduler.Every(c.MoistureInterval).Do(c.publishMoistureData, p)
+	if c.MoistureInterval != 0 {
+		for p := 0; p < c.NumZones; p++ {
+			c.logger.WithFields(logrus.Fields{
+				"interval": c.MoistureInterval.String(),
+				"strategy": c.MoistureStrategy,
+			}).Debug("create scheduled job to publish moisture data")
+			scheduler.Every(c.MoistureInterval).Do(c.publishMoistureData, p)
+		}
 	}
 	if c.PublishHealth {
 		c.logger.WithFields(logrus.Fields{
