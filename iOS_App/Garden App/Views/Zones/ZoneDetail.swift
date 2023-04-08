@@ -45,7 +45,7 @@ struct ZoneDetail: View {
                                 print("Water Zone button tapped for \(zone.name)")
                                 modelData.zoneResource().waterZone(
                                     zone: zone,
-                                    duration: wateringAmount * 1000,
+                                    duration: "\(wateringAmount)s",
                                     ignoreMoisture: ignoreMoisture
                                 )
                             }) {
