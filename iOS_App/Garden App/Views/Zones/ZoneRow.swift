@@ -26,7 +26,7 @@ struct ZoneRow: View {
             action: {
                 modelData.zoneResource().waterZone(
                     zone: zone,
-                    duration: 5000,
+                    duration: "5s",
                     ignoreMoisture: true
                 )
             },

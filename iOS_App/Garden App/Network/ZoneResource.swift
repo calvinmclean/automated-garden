@@ -8,7 +8,7 @@
 import Foundation
 
 struct WaterAction: Codable {
-    var duration: Int
+    var duration: String
     var ignoreMoisture: Bool
     
     enum CodingKeys: String, CodingKey {
@@ -148,7 +148,7 @@ class ZoneResource {
         task.resume()
     }
 
-    func waterZone(zone: Zone, duration: Int, ignoreMoisture: Bool) {
+    func waterZone(zone: Zone, duration: String, ignoreMoisture: Bool) {
         guard let path = zone.getLink(rel: "action") else { fatalError() }
         guard let url = URL(string: "\(self.url)\(path)") else { fatalError() }
         var request = URLRequest(url: url)
