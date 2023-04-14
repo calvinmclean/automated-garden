@@ -63,14 +63,11 @@ func NewGardenResource(config Config, logger *logrus.Entry, storageClient storag
 	gr.worker.StartAsync()
 
 	// Initialize light schedules for all Gardens
-	logger.Info("setting up LightSchedules for Gardens")
 	allGardens, err := gr.storageClient.GetGardens(false)
 	if err != nil {
 		return gr, err
 	}
 	for _, g := range allGardens {
-		gardenLogger := logger.WithField(gardenIDLogField, g.ID)
-		gardenLogger.Debugf("scheduling LightAction for: %+v", g.LightSchedule)
 		if g.LightSchedule != nil {
 			if err = gr.worker.ScheduleLightActions(g); err != nil {
 				return gr, fmt.Errorf("unable to schedule LightAction for Garden %v: %v", g.ID, err)

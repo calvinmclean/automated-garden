@@ -33,7 +33,6 @@ func NewZonesResource(gr GardensResource, logger *logrus.Entry) (ZonesResource, 
 	}
 
 	// Initialize WaterActions for each Zone from the storage client
-	logger.Info("setting up WaterAction for Zones")
 	allGardens, err := zr.storageClient.GetGardens(false)
 	if err != nil {
 		return zr, fmt.Errorf("unable to get Gardens from storage: %v", err)
@@ -44,11 +43,6 @@ func NewZonesResource(gr GardensResource, logger *logrus.Entry) (ZonesResource, 
 			return zr, fmt.Errorf("unable to get Zones for Garden %s: %v", g.ID.String(), err)
 		}
 		for _, z := range allZones {
-			ctxLogger := logger.WithFields(logrus.Fields{
-				gardenIDLogField: g.ID,
-				zoneIDLogField:   z.ID,
-			})
-			ctxLogger.Debugf("scheduling WaterAction for: %+v", z.WaterSchedule)
 			if err = zr.worker.ScheduleWaterAction(g, z); err != nil {
 				return zr, fmt.Errorf("unable to add WaterAction for Zone %v: %v", z.ID, err)
 			}
