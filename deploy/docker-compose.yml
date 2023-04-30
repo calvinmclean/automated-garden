@@ -23,8 +23,6 @@ services:
     image: prom/prometheus
     ports:
       - "9090:9090"
-    extra_hosts:
-      - "garden-app:192.168.5.2" # IP address may change
     volumes:
       - "./configs/prometheus:/etc/prometheus"
     profiles:
@@ -32,18 +30,18 @@ services:
       - demo
 
   influxdb:
-    image: "quay.io/influxdb/influxdb:v2.0.2"
+    image: "influxdb:latest"
     ports:
       - "8086:8086"
     volumes:
-      - "influxdb:/var/lib/influxd"
+      - "influxdb:/var/lib/influxdb2"
     profiles:
       - test
       - run-local
-
       - demo
+
   influxdb_setup:
-    image: "quay.io/influxdb/influxdb:v2.0.2"
+    image: "influxdb:latest"
     volumes:
       - "./influxdb_setup:/entrypoint"
     command: "/entrypoint/entrypoint.sh"
