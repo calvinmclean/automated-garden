@@ -36,8 +36,6 @@ func (w *Worker) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 		Do(func(jobLogger *logrus.Entry) {
 			defer w.influxdbClient.Close()
 
-			schedulerErrors.WithLabelValues(zoneLabels(z)...).Inc()
-
 			jobLogger.Infof("executing WaterAction for %d ms", waterAction.Duration)
 			err := w.ExecuteWaterAction(g, z, waterAction)
 			if err != nil {
