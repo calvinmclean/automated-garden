@@ -52,22 +52,6 @@ func NewZonesResource(gr GardensResource, logger *logrus.Entry) (ZonesResource, 
 	return zr, err
 }
 
-// restrictEndDatedMiddleware will return a 400 response if the requested Zone is end-dated
-func (zr ZonesResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		zone := getZoneFromContext(r.Context())
-		logger := getLoggerFromContext(r.Context())
-
-		if zone.EndDated() {
-			err := fmt.Errorf("resource not available for end-dated Zone")
-			logger.WithError(err).Error("unable to complete request")
-			render.Render(w, r, ErrInvalidRequest(err))
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
 // zoneContextMiddleware middleware is used to load a Zone object from the URL
 // parameters passed through as the request. In case the Zone could not be found,
 // we stop here and return a 404.

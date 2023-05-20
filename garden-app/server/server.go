@@ -101,7 +101,7 @@ func NewServer(cfg Config) (*Server, error) {
 
 			// Add new middleware to restrict certain paths to non-end-dated Gardens
 			r.Route("/", func(r chi.Router) {
-				r.Use(gardenResource.restrictEndDatedMiddleware)
+				r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
 				r.Post("/action", gardenResource.gardenAction)
 
 				r.Route(plantBasePath, func(r chi.Router) {
@@ -130,7 +130,7 @@ func NewServer(cfg Config) (*Server, error) {
 
 						// Add new middleware to restrict certain paths to non-end-dated Zones
 						r.Route("/", func(r chi.Router) {
-							r.Use(zonesResource.restrictEndDatedMiddleware)
+							r.Use(restrictEndDatedMiddleware("Zone", zoneCtxKey))
 
 							r.Post("/action", zonesResource.zoneAction)
 							r.Get("/history", zonesResource.waterHistory)

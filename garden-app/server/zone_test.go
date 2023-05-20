@@ -115,9 +115,6 @@ func TestZoneContextMiddleware(t *testing.T) {
 }
 
 func TestZoneRestrictEndDatedMiddleware(t *testing.T) {
-	pr := ZonesResource{
-		GardensResource: GardensResource{},
-	}
 	zone := createExampleZone()
 	endDatedZone := createExampleZone()
 	endDate := time.Now().Add(-1 * time.Minute)
@@ -128,7 +125,7 @@ func TestZoneRestrictEndDatedMiddleware(t *testing.T) {
 
 	router := chi.NewRouter()
 	router.Route("/zone", func(r chi.Router) {
-		r.Use(pr.restrictEndDatedMiddleware)
+		r.Use(restrictEndDatedMiddleware("Zone", zoneCtxKey))
 		r.Get("/", testHandler)
 	})
 
