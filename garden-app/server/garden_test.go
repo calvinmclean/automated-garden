@@ -138,7 +138,6 @@ func TestGardenContextMiddleware(t *testing.T) {
 }
 
 func TestGardenRestrictEndDatedMiddleware(t *testing.T) {
-	gr := GardensResource{}
 	garden := createExampleGarden()
 	endDatedGarden := createExampleGarden()
 	endDate := time.Now().Add(-1 * time.Minute)
@@ -149,7 +148,7 @@ func TestGardenRestrictEndDatedMiddleware(t *testing.T) {
 
 	router := chi.NewRouter()
 	router.Route("/garden", func(r chi.Router) {
-		r.Use(gr.restrictEndDatedMiddleware)
+		r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
 		r.Get("/", testHandler)
 	})
 

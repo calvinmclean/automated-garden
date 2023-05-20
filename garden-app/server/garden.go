@@ -78,22 +78,6 @@ func NewGardenResource(config Config, logger *logrus.Entry, storageClient storag
 	return gr, nil
 }
 
-// restrictEndDatedMiddleware will return a 400 response if the requested Garden is end-dated
-func (gr GardensResource) restrictEndDatedMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		garden := getGardenFromContext(r.Context())
-		logger := getLoggerFromContext(r.Context())
-
-		if garden.EndDated() {
-			err := fmt.Errorf("resource not available for end-dated Garden")
-			logger.WithError(err).Error("unable to complete request")
-			render.Render(w, r, ErrInvalidRequest(err))
-			return
-		}
-		next.ServeHTTP(w, r)
-	})
-}
-
 // gardenContextMiddleware middleware is used to load a Garden object from the URL
 // parameters passed through as the request. In case the Garden could not be found,
 // we stop here and return a 404.
