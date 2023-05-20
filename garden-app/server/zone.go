@@ -32,24 +32,7 @@ func NewZonesResource(gr GardensResource, logger *logrus.Entry) (ZonesResource, 
 		GardensResource: gr,
 	}
 
-	// Initialize WaterActions for each Zone from the storage client
-	allGardens, err := zr.storageClient.GetGardens(false)
-	if err != nil {
-		return zr, fmt.Errorf("unable to get Gardens from storage: %v", err)
-	}
-	for _, g := range allGardens {
-		allZones, err := zr.storageClient.GetZones(g.ID, false)
-		if err != nil {
-			return zr, fmt.Errorf("unable to get Zones for Garden %s: %v", g.ID.String(), err)
-		}
-		for _, z := range allZones {
-			if err = zr.worker.ScheduleWaterAction(g, z); err != nil {
-				return zr, fmt.Errorf("unable to add WaterAction for Zone %v: %v", z.ID, err)
-			}
-		}
-	}
-
-	return zr, err
+	return zr, nil
 }
 
 // zoneContextMiddleware middleware is used to load a Zone object from the URL
@@ -142,34 +125,25 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	zone.Patch(request.Zone)
-	logger.Debugf("zone after patching: %+v", zone)
-
-	// Validate the new WaterSchedule.WeatherControl
-	if zone.WaterSchedule.WeatherControl != nil {
-		err := ValidateWeatherControl(zone.WaterSchedule.WeatherControl)
+	if request.Zone.WaterScheduleID != xid.NilID() {
+		// Validate water schedule exists
+		_, err := zr.storageClient.GetWaterSchedule(request.Zone.WaterScheduleID)
 		if err != nil {
-			logger.WithError(err).Error("invalid WaterSchedule.WeatherControl after patching")
+			err := fmt.Errorf("error getting WaterSchedule with ID %q", request.Zone.WaterScheduleID)
+			logger.WithError(err).Error("invalid request to update Zone")
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
 		}
 	}
+
+	zone.Patch(request.Zone)
+	logger.Debugf("zone after patching: %+v", zone)
 
 	// Save the Zone
 	if err := zr.storageClient.SaveZone(garden.ID, zone); err != nil {
 		logger.WithError(err).Error("unable to save updated Zone")
 		render.Render(w, r, InternalServerError(err))
 		return
-	}
-
-	// Update the water schedule for the Zone if it was changed or EndDate is removed
-	if request.Zone.WaterSchedule != nil || request.Zone.EndDate == nil {
-		logger.Info("updating/resetting WaterSchedule for Zone")
-		if err := zr.worker.ResetWaterSchedule(garden, zone); err != nil {
-			logger.WithError(err).Errorf("unable to update/reset WaterSchedule: %+v", zone.WaterSchedule)
-			render.Render(w, r, InternalServerError(err))
-			return
-		}
 	}
 
 	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone)); err != nil {
@@ -287,6 +261,15 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Validate water schedule exists
+	_, err := zr.storageClient.GetWaterSchedule(zone.WaterScheduleID)
+	if err != nil {
+		err := fmt.Errorf("error getting WaterSchedule with ID %q", zone.WaterScheduleID)
+		logger.WithError(err).Error("invalid request to create Zone")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
 	// Assign values to fields that may not be set in the request
 	zone.ID = xid.New()
 	if zone.CreatedAt == nil {
@@ -294,13 +277,6 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 		zone.CreatedAt = &now
 	}
 	logger.Debugf("new zone ID: %v", zone.ID)
-
-	// Start water schedule
-	if err := zr.worker.ScheduleWaterAction(garden, zone); err != nil {
-		logger.WithError(err).Error("unable to schedule WaterAction")
-		render.Render(w, r, InternalServerError(err))
-		return
-	}
 
 	// Save the Zone
 	logger.Debug("saving Zone")

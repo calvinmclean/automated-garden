@@ -21,20 +21,24 @@ const (
 // ScheduleWaterAction will schedule water actions for the Zone based off the CreatedAt date,
 // WaterSchedule time, and Interval. The scheduled Job is tagged with the Zone's ID so it can
 // easily be removed
-func (w *Worker) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
-	logger := w.contextLogger(g, z)
-	logger.Infof("creating scheduled Job for watering Zone: %+v", *z.WaterSchedule)
+func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
+	logger := w.waterScheduleLogger(ws)
+	logger.Infof("creating scheduled Job for WaterSchedule %q: %+v", *ws)
 
 	// Schedule the WaterAction execution
-	scheduleJobsGauge.WithLabelValues(zoneLabels(z)...).Inc()
-	waterAction := &action.WaterAction{Duration: z.WaterSchedule.Duration}
+	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(ws)...).Inc()
+	waterAction := &action.WaterAction{Duration: ws.Duration}
 	_, err := w.scheduler.
-		Every(z.WaterSchedule.Interval.Duration).
-		StartAt(*z.WaterSchedule.StartTime).
-		Tag("zone").
-		Tag(z.ID.String()).
+		Every(ws.Interval.Duration).
+		StartAt(*ws.StartTime).
+		Tag("water_schedule").
+		Tag(ws.ID.String()).
 		Do(func(jobLogger *logrus.Entry) {
 			defer w.influxdbClient.Close()
+
+			// TODO: Get Gardens and Zones and loop through them
+			var g *pkg.Garden
+			var z *pkg.Zone
 
 			jobLogger.Infof("executing WaterAction for %d ms", waterAction.Duration)
 			err := w.ExecuteWaterAction(g, z, waterAction)
@@ -47,24 +51,24 @@ func (w *Worker) ScheduleWaterAction(g *pkg.Garden, z *pkg.Zone) error {
 }
 
 // ResetWaterSchedule will simply remove the existing Job and create a new one
-func (w *Worker) ResetWaterSchedule(g *pkg.Garden, z *pkg.Zone) error {
-	logger := w.contextLogger(g, z)
+func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
+	logger := w.waterScheduleLogger(ws)
 	logger.Debugf("resetting WaterSchedule")
 
-	if err := w.RemoveJobsByID(z.ID); err != nil {
+	if err := w.RemoveJobsByID(ws.ID); err != nil {
 		return err
 	}
-	return w.ScheduleWaterAction(g, z)
+	return w.ScheduleWaterAction(ws)
 }
 
 // GetNextWaterTime determines the next scheduled watering time for a given Zone using tags
-func (w *Worker) GetNextWaterTime(z *pkg.Zone) *time.Time {
-	logger := w.contextLogger(nil, z)
-	logger.WithField("zone_id", z.ID).Debugf("getting next water time for zone with ID")
+func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
+	logger := w.waterScheduleLogger(ws)
+	logger.Debugf("getting next water time for water_schedule")
 
 	for _, job := range w.scheduler.Jobs() {
 		for _, tag := range job.Tags() {
-			if tag == z.ID.String() {
+			if tag == ws.ID.String() {
 				result := job.NextRun()
 				return &result
 			}
@@ -375,10 +379,18 @@ func (w *Worker) contextLogger(g *pkg.Garden, z *pkg.Zone) *logrus.Entry {
 	return w.logger.WithFields(fields)
 }
 
+func (w *Worker) waterScheduleLogger(ws *pkg.WaterSchedule) *logrus.Entry {
+	return w.logger.WithField("water_schedule_id", ws.ID.String())
+}
+
 func zoneLabels(z *pkg.Zone) []string {
 	return []string{"zone", z.ID.String()}
 }
 
 func gardenLabels(g *pkg.Garden) []string {
 	return []string{"garden", g.ID.String()}
+}
+
+func waterScheduleLabels(ws *pkg.WaterSchedule) []string {
+	return []string{"water_schedule", ws.ID.String()}
 }

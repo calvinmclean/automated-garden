@@ -74,8 +74,27 @@ func NewServer(cfg Config) (*Server, error) {
 		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
 	}
 
+	// Initialize MQTT Client
+	logger.WithFields(logrus.Fields{
+		"client_id": cfg.MQTTConfig.ClientID,
+		"broker":    cfg.MQTTConfig.Broker,
+		"port":      cfg.MQTTConfig.Port,
+	}).Info("initializing MQTT client")
+	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to initialize MQTT client: %v", err)
+	}
+
+	// Initialize InfluxDB Client
+	logger.WithFields(logrus.Fields{
+		"address": cfg.InfluxDBConfig.Address,
+		"org":     cfg.InfluxDBConfig.Org,
+		"bucket":  cfg.InfluxDBConfig.Bucket,
+	}).Info("initializing InfluxDB client")
+	influxdbClient := influxdb.NewClient(cfg.InfluxDBConfig)
+
 	// Create API routes/handlers
-	gardenResource, err := NewGardenResource(cfg, logger, storageClient)
+	gardenResource, err := NewGardenResource(cfg, logger, storageClient, mqttClient, influxdbClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}

@@ -38,33 +38,19 @@ type ZoneResponse struct {
 	Links             []Link       `json:"links,omitempty"`
 }
 
-// WeatherData is used to represent the data used for WeatherControl to a user
-type WeatherData struct {
-	Rain                *RainData        `json:"rain,omitempty"`
-	Temperature         *TemperatureData `json:"average_temperature,omitempty"`
-	SoilMoisturePercent *float64         `json:"soil_moisture_percent,omitempty"`
-}
-
-// RainData shows the total rain in the last watering interval and the scaling factor it would result in
-type RainData struct {
-	MM          float32 `json:"mm"`
-	ScaleFactor float32 `json:"scale_factor"`
-}
-
-// TemperatureData shows the average high temperatures in the last watering interval and the scaling factor it would result in
-type TemperatureData struct {
-	Celcius     float32 `json:"celcius"`
-	ScaleFactor float32 `json:"scale_factor"`
-}
-
 // NewZoneResponse creates a self-referencing ZoneResponse
 func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
 	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
 
+	ws, err := zr.storageClient.GetWaterSchedule(zone.WaterScheduleID)
+	if err != nil {
+		logger.Errorf("unable to get WaterSchedule for ZoneResponse: %v", err)
+	}
+
 	response := &ZoneResponse{
 		Zone:          zone,
 		Links:         links,
-		NextWaterTime: zr.worker.GetNextWaterTime(zone),
+		NextWaterTime: zr.worker.GetNextWaterTime(ws),
 	}
 
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
@@ -91,10 +77,10 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		)
 	}
 
-	if zone.HasWeatherControl() {
-		response.WeatherData = zr.getWeatherData(ctx, zone)
+	if ws.HasWeatherControl() {
+		response.WeatherData = getWeatherData(ctx, ws, zr.storageClient)
 
-		if zone.WaterSchedule.HasSoilMoistureControl() && garden != nil {
+		if ws.HasSoilMoistureControl() && garden != nil {
 			logger.Debug("getting moisture data for Zone")
 			soilMoisture, err := zr.getMoisture(ctx, garden, zone)
 			if err != nil {
@@ -106,9 +92,9 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		}
 	}
 
-	nextWateringDuration := zone.WaterSchedule.Duration.Duration
-	if zone.HasWeatherControl() && !zone.EndDated() {
-		wd, err := zr.worker.ScaleWateringDuration(zone.WaterSchedule, nextWateringDuration)
+	nextWateringDuration := ws.Duration.Duration
+	if ws.HasWeatherControl() && !zone.EndDated() {
+		wd, err := zr.worker.ScaleWateringDuration(ws, nextWateringDuration)
 		if err != nil {
 			logger.WithError(err).Warn("unable to determine water duration scale")
 		} else {
@@ -118,61 +104,6 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 	response.NextWaterDuration = nextWateringDuration.String()
 
 	return response
-}
-
-func (zr ZonesResource) getWeatherData(ctx context.Context, zone *pkg.Zone) *WeatherData {
-	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
-	weatherData := &WeatherData{}
-	var err error
-
-	if zone.WaterSchedule.HasRainControl() {
-		logger.Debug("getting rain data for Zone")
-		weatherData.Rain = &RainData{}
-		weatherData.Rain.MM, err = zr.getRainData(zone)
-		if err != nil {
-			logger.WithError(err).Warn("unable to get rain data for Zone")
-		} else {
-			weatherData.Rain.ScaleFactor = zone.WaterSchedule.WeatherControl.Rain.InvertedScaleDownOnly(weatherData.Rain.MM)
-		}
-	}
-
-	if zone.WaterSchedule.HasTemperatureControl() {
-		logger.Debug("getting average high temperature for Zone")
-		weatherData.Temperature = &TemperatureData{}
-		weatherData.Temperature.Celcius, err = zr.getTemperatureData(zone)
-		if err != nil {
-			logger.WithError(err).Warn("unable to get average high temperature from weather client")
-		} else {
-			weatherData.Temperature.ScaleFactor = zone.WaterSchedule.WeatherControl.Temperature.Scale(weatherData.Temperature.Celcius)
-		}
-	}
-	return weatherData
-}
-
-func (zr ZonesResource) getRainData(zone *pkg.Zone) (float32, error) {
-	weatherClient, err := zr.storageClient.GetWeatherClient(zone.WaterSchedule.WeatherControl.Rain.ClientID)
-	if err != nil {
-		return 0, fmt.Errorf("error getting WeatherClient for RainControl: %w", err)
-	}
-
-	totalRain, err := weatherClient.GetTotalRain(zone.WaterSchedule.Interval.Duration)
-	if err != nil {
-		return 0, fmt.Errorf("unable to get rain data from weather client: %w", err)
-	}
-	return totalRain, nil
-}
-
-func (zr ZonesResource) getTemperatureData(zone *pkg.Zone) (float32, error) {
-	weatherClient, err := zr.storageClient.GetWeatherClient(zone.WaterSchedule.WeatherControl.Temperature.ClientID)
-	if err != nil {
-		return 0, fmt.Errorf("error getting WeatherClient for TemperatureControl: %w", err)
-	}
-
-	avgTemperature, err := weatherClient.GetAverageHighTemperature(zone.WaterSchedule.Interval.Duration)
-	if err != nil {
-		return 0, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
-	}
-	return avgTemperature, nil
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
