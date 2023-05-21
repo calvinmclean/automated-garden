@@ -20,6 +20,7 @@ type Zone struct {
 	CreatedAt       *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate         *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WaterScheduleID xid.ID       `json:"water_schedule_id" yaml:"water_schedule_id"`
+	SkipCount       *int         `json:"skip_count" yaml:"skip_count"`
 }
 
 // String...
@@ -46,6 +47,9 @@ func (z *Zone) Patch(newZone *Zone) {
 	}
 	if z.EndDate != nil && newZone.EndDate == nil {
 		z.EndDate = newZone.EndDate
+	}
+	if newZone.SkipCount != nil {
+		z.SkipCount = newZone.SkipCount
 	}
 
 	if newZone.WaterScheduleID != xid.NilID() {

@@ -14,6 +14,16 @@ import (
 // ExecuteScheduledWaterAction will get all of the Zones that use the schedule and execute WaterActions on them after
 // scaling durations based on the Zone's configuration
 func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) error {
+	if z.SkipCount != nil && *z.SkipCount > 0 {
+		*z.SkipCount--
+		err := w.storageClient.SaveZone(g.ID, z)
+		if err != nil {
+			return fmt.Errorf("unable to save Zone after decrementing SkipCount: %w", err)
+		}
+
+		w.logger.Infof("skipping watering Zone %q because of SkipCount", z.ID)
+		return nil
+	}
 	duration, err := w.exerciseWeatherControl(g, z, ws)
 	if err != nil {
 		w.logger.Errorf("error executing weather controls, continuing to water: %v", err)
