@@ -8,7 +8,7 @@ import (
 )
 
 func TestGetGarden(t *testing.T) {
-	client, err := NewClient(map[string]string{"filename": "testdata/gardens_data.yaml"})
+	client, err := NewClient("yaml", map[string]string{"filename": "testdata/gardens_data.yaml"})
 	if err != nil {
 		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
@@ -40,7 +40,7 @@ func TestGetGarden(t *testing.T) {
 }
 
 func TestGetGardens(t *testing.T) {
-	client, err := NewClient(map[string]string{"filename": "testdata/gardens_end_dated.yaml"})
+	client, err := NewClient("yaml", map[string]string{"filename": "testdata/gardens_end_dated.yaml"})
 	if err != nil {
 		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
@@ -72,7 +72,7 @@ func TestGetGardens(t *testing.T) {
 }
 
 func TestSaveGarden(t *testing.T) {
-	client, err := NewClient(map[string]string{"filename": "testdata/gardens_data.yaml"})
+	client, err := NewClient("yaml", map[string]string{"filename": "testdata/gardens_data.yaml"})
 	if err != nil {
 		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
@@ -106,7 +106,7 @@ func TestSaveGarden(t *testing.T) {
 }
 
 func TestDeleteGarden(t *testing.T) {
-	client, err := NewClient(map[string]string{"filename": "testdata/gardens_data.yaml"})
+	client, err := NewClient("yaml", map[string]string{"filename": "testdata/gardens_data.yaml"})
 	if err != nil {
 		t.Errorf("Unexpected error from NewClient: %v", err)
 	}
