@@ -71,16 +71,15 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 		// }
 	}
 
-	nextWateringDuration := ws.Duration.Duration
+	response.NextWaterDuration = ws.Duration.Duration.String()
 	if ws.HasWeatherControl() && !ws.EndDated() {
-		wd, err := wsr.worker.ScaleWateringDuration(ws, nextWateringDuration)
+		wd, err := wsr.worker.ScaleWateringDuration(ws)
 		if err != nil {
 			logger.WithError(err).Warn("unable to determine water duration scale")
 		} else {
-			nextWateringDuration = time.Duration(wd)
+			response.NextWaterDuration = time.Duration(wd).String()
 		}
 	}
-	response.NextWaterDuration = nextWateringDuration.String()
 
 	return response
 }

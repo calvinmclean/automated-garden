@@ -22,29 +22,31 @@ const (
 // WaterSchedule time, and Interval. The scheduled Job is tagged with the Zone's ID so it can
 // easily be removed
 func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
-	logger := w.waterScheduleLogger(ws)
+	logger := w.contextLogger(nil, nil, ws)
 	logger.Infof("creating scheduled Job for WaterSchedule %q: %+v", *ws)
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(ws)...).Inc()
-	waterAction := &action.WaterAction{Duration: ws.Duration}
 	_, err := w.scheduler.
 		Every(ws.Interval.Duration).
 		StartAt(*ws.StartTime).
 		Tag("water_schedule").
 		Tag(ws.ID.String()).
 		Do(func(jobLogger *logrus.Entry) {
-			defer w.influxdbClient.Close()
+			zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID)
 
-			// TODO: Get Gardens and Zones and loop through them
-			var g *pkg.Garden
-			var z *pkg.Zone
-
-			jobLogger.Infof("executing WaterAction for %d ms", waterAction.Duration)
-			err := w.ExecuteWaterAction(g, z, waterAction)
 			if err != nil {
-				jobLogger.Errorf("error executing scheduled zone water action: %v", err)
-				schedulerErrors.WithLabelValues(zoneLabels(z)...).Inc()
+				jobLogger.Errorf("error getting Zones for WaterSchedule when executing scheduled Job: %v", err)
+				schedulerErrors.WithLabelValues(waterScheduleLabels(ws)...).Inc()
+				return
+			}
+
+			for _, zg := range zonesAndGardens {
+				err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws)
+				if err != nil {
+					jobLogger.WithField("zone_id", zg.Zone.ID.String()).Errorf("error executing scheduled water action: %v", err)
+					schedulerErrors.WithLabelValues(append(waterScheduleLabels(ws), zoneLabels(zg.Zone)...)...).Inc()
+				}
 			}
 		}, logger.WithField("source", "scheduled_job"))
 	return err
@@ -52,7 +54,7 @@ func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
 
 // ResetWaterSchedule will simply remove the existing Job and create a new one
 func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
-	logger := w.waterScheduleLogger(ws)
+	logger := w.contextLogger(nil, nil, ws)
 	logger.Debugf("resetting WaterSchedule")
 
 	if err := w.RemoveJobsByID(ws.ID); err != nil {
@@ -63,7 +65,7 @@ func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
 
 // GetNextWaterTime determines the next scheduled watering time for a given Zone using tags
 func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
-	logger := w.waterScheduleLogger(ws)
+	logger := w.contextLogger(nil, nil, ws)
 	logger.Debugf("getting next water time for water_schedule")
 
 	for _, job := range w.scheduler.Jobs() {
@@ -81,7 +83,7 @@ func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
 // LightSchedule time, and Interval. The scheduled Jobs are tagged with the Garden's ID so they can
 // easily be removed
 func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
-	logger := w.contextLogger(g, nil)
+	logger := w.contextLogger(g, nil, nil)
 	logger.Infof("creating scheduled Jobs for lighting Garden: %+v", *g.LightSchedule)
 
 	// Parse Gardens's LightSchedule.Time (has no "date")
@@ -174,7 +176,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 
 // ResetLightSchedule will simply remove the existing Job and create a new one
 func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
-	logger := w.contextLogger(g, nil)
+	logger := w.contextLogger(g, nil, nil)
 	logger.Debug("resetting LightSchedule")
 
 	if err := w.RemoveJobsByID(g.ID); err != nil {
@@ -185,7 +187,7 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 
 // GetNextLightTime returns the next time that the Garden's light will be turned to the specified state
 func (w *Worker) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Time {
-	logger := w.contextLogger(g, nil)
+	logger := w.contextLogger(g, nil, nil)
 	logger.Debugf("getting next light time for state %s", state.String())
 
 	nextJob, err := w.getNextLightJob(g, state, true)
@@ -198,7 +200,7 @@ func (w *Worker) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Tim
 
 // ScheduleLightDelay handles a LightAction that requests delaying turning a light on
 func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) error {
-	logger := w.contextLogger(g, nil)
+	logger := w.contextLogger(g, nil, nil)
 	logger.Infof("scheduling light delay: %+v", *input)
 
 	// Only allow when action state is OFF
@@ -288,7 +290,7 @@ func (w *Worker) RemoveJobsByID(id xid.ID) error {
 // getNextLightJob returns the next Job tagged with the gardenID and state. If allowAdhoc is true, return whichever job is soonest,
 // otherwise return the first non-adhoc Job
 func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc bool) (*gocron.Job, error) {
-	logger := w.contextLogger(g, nil)
+	logger := w.contextLogger(g, nil, nil)
 	logger.Debugf("getting next light Job for state %s, allowAdhoc=%t", state, allowAdhoc)
 
 	sort.Sort(w.scheduler)
@@ -316,7 +318,7 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 
 // scheduleAdhocLightAction schedules a one-time action to turn a light on based on the LightSchedule.AdhocOnTime
 func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
-	logger := w.contextLogger(g, nil)
+	logger := w.contextLogger(g, nil, nil)
 	logger.Infof("creating one-time scheduled Job for lighting Garden")
 
 	if g.LightSchedule.AdhocOnTime == nil {
@@ -368,7 +370,7 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 	return err
 }
 
-func (w *Worker) contextLogger(g *pkg.Garden, z *pkg.Zone) *logrus.Entry {
+func (w *Worker) contextLogger(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) *logrus.Entry {
 	fields := logrus.Fields{}
 	if g != nil {
 		fields["garden_id"] = g.ID.String()
@@ -376,11 +378,10 @@ func (w *Worker) contextLogger(g *pkg.Garden, z *pkg.Zone) *logrus.Entry {
 	if z != nil {
 		fields["zone_id"] = z.ID.String()
 	}
+	if ws != nil {
+		fields["water_schedule_id"] = ws.ID.String()
+	}
 	return w.logger.WithFields(fields)
-}
-
-func (w *Worker) waterScheduleLogger(ws *pkg.WaterSchedule) *logrus.Entry {
-	return w.logger.WithField("water_schedule_id", ws.ID.String())
 }
 
 func zoneLabels(z *pkg.Zone) []string {

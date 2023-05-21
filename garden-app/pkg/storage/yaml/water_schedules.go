@@ -51,13 +51,13 @@ func (c *Client) DeleteWaterSchedule(id xid.ID) error {
 	return c.save()
 }
 
-func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.Zone, error) {
+func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, error) {
 	gardens, err := c.GetGardens(false)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get all Gardens: %w", err)
 	}
 
-	results := []*pkg.Zone{}
+	results := []*pkg.ZoneAndGarden{}
 	for _, g := range gardens {
 		zones, err := c.GetZones(g.ID, false)
 		if err != nil {
@@ -66,7 +66,7 @@ func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.Zone, error) {
 
 		for _, z := range zones {
 			if z.WaterScheduleID == id {
-				results = append(results, z)
+				results = append(results, &pkg.ZoneAndGarden{Zone: z, Garden: g})
 			}
 		}
 	}

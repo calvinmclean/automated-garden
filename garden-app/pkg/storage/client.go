@@ -43,7 +43,7 @@ type Client interface {
 	SaveWaterSchedule(*pkg.WaterSchedule) error
 	DeleteWaterSchedule(xid.ID) error
 
-	GetZonesUsingWaterSchedule(xid.ID) ([]*pkg.Zone, error)
+	GetZonesUsingWaterSchedule(xid.ID) ([]*pkg.ZoneAndGarden, error)
 	GetWaterSchedulesUsingWeatherClient(xid.ID) ([]*pkg.WaterSchedule, error)
 }
 
