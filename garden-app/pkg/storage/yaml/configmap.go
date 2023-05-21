@@ -1,4 +1,4 @@
-package configmap
+package yaml
 
 import (
 	"context"
@@ -12,29 +12,11 @@ import (
 	"gopkg.in/yaml.v3"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
-	v1 "k8s.io/client-go/kubernetes/typed/core/v1"
 	"k8s.io/client-go/rest"
 )
 
-// Client implements the Client interface to use a Kubernetes ConfigMap to
-// store a YAML file containing Plant information
-type Client struct {
-	configMapName string
-	keyName       string
-	data          clientData
-	k8sClient     v1.ConfigMapInterface
-	Options       map[string]string
-
-	m *sync.Mutex
-}
-
-type clientData struct {
-	Gardens              map[xid.ID]*pkg.Garden     `yaml:"gardens"`
-	WeatherClientConfigs map[xid.ID]*weather.Config `yaml:"weather_clients"`
-}
-
-// NewClient initializes a K8s clientset and reads the ConfigMap into a map
-func NewClient(options map[string]string) (*Client, error) {
+// newConfigMapStorage initializes a K8s clientset and reads the ConfigMap into a map
+func newConfigMapStorage(options map[string]string) (*Client, error) {
 	if _, ok := options["name"]; !ok {
 		return nil, fmt.Errorf("missing config key 'name'")
 	}
@@ -51,6 +33,8 @@ func NewClient(options map[string]string) (*Client, error) {
 		Options: options,
 		m:       &sync.Mutex{},
 	}
+	client.update = client.updateFromConfigMap
+	client.save = client.saveFromConfigMap
 
 	// Create the in-cluster config
 	k8sConfig, err := rest.InClusterConfig()
@@ -79,8 +63,8 @@ func NewClient(options map[string]string) (*Client, error) {
 	return client, nil
 }
 
-// save saves the client's data back to a persistent source. This is unexported and should only be used when a RWLock is already acquired
-func (c *Client) save() error {
+// saveFromConfigMap saves the client's data back to a persistent source. This is unexported and should only be used when a RWLock is already acquired
+func (c *Client) saveFromConfigMap() error {
 	// Marshal map to YAML bytes
 	content, err := yaml.Marshal(c.data)
 	if err != nil {
@@ -100,9 +84,9 @@ func (c *Client) save() error {
 	return nil
 }
 
-// update will refresh from the configmap in case something was changed externally. Although it is mostly used prior to reads, it
+// updateFromConfigMap will refresh from the configmap in case something was changed externally. Although it is mostly used prior to reads, it
 // still modifies the map and should only be used while an RWLock is acquired
-func (c *Client) update() error {
+func (c *Client) updateFromConfigMap() error {
 	configMap, err := c.k8sClient.Get(context.TODO(), c.configMapName, metav1.GetOptions{})
 	if err != nil {
 		return fmt.Errorf("unable to get ConfigMap '%s': %v", c.configMapName, err)

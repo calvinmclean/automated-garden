@@ -76,7 +76,7 @@ func TestNewClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewClient(tt.options)
+			client, err := NewClient("yaml", tt.options)
 			if err != nil {
 				t.Errorf("Unexpected error from NewClient: %v", err)
 			}
@@ -102,7 +102,7 @@ func TestNewClient(t *testing.T) {
 	}
 
 	t.Run("ErrorMissingFilename", func(t *testing.T) {
-		_, err := NewClient(map[string]string{})
+		_, err := NewClient("yaml", map[string]string{})
 		if err == nil {
 			t.Error("Expected error but got nil")
 		}
