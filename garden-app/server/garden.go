@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
@@ -27,24 +26,18 @@ const (
 type GardensResource struct {
 	storageClient  storage.Client
 	influxdbClient influxdb.Client
-	mqttClient     mqtt.Client
 	worker         *worker.Worker
 	config         Config
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, logger *logrus.Entry, storageClient storage.Client, mqttClient mqtt.Client, influxdbClient influxdb.Client) (GardensResource, error) {
+func NewGardenResource(config Config, logger *logrus.Entry, storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (GardensResource, error) {
 	gr := GardensResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
-		mqttClient:     mqttClient,
+		worker:         worker,
 		config:         config,
 	}
-
-	// Initialize Scheduler
-	logger.Info("initializing scheduler")
-	gr.worker = worker.NewWorker(gr.storageClient, gr.influxdbClient, gr.mqttClient, logger.Logger)
-	gr.worker.StartAsync()
 
 	// Initialize light schedules for all Gardens
 	allGardens, err := gr.storageClient.GetGardens(false)

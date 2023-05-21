@@ -8,6 +8,9 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
@@ -23,13 +26,17 @@ const (
 // ZonesResource encapsulates the structs and dependencies necessary for the "/zones" API
 // to function, including storage, scheduling, and caching
 type ZonesResource struct {
-	GardensResource
+	storageClient  storage.Client
+	influxdbClient influxdb.Client
+	worker         *worker.Worker
 }
 
 // NewZonesResource creates a new ZonesResource
-func NewZonesResource(gr GardensResource, logger *logrus.Entry) (ZonesResource, error) {
+func NewZonesResource(storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker, logger *logrus.Entry) (ZonesResource, error) {
 	zr := ZonesResource{
-		GardensResource: gr,
+		storageClient:  storageClient,
+		influxdbClient: influxdbClient,
+		worker:         worker,
 	}
 
 	return zr, nil

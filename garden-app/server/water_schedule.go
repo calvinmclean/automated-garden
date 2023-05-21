@@ -5,8 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
@@ -23,26 +21,16 @@ const (
 
 // WaterSchedulesResource provides and API for interacting with WaterSchedules
 type WaterSchedulesResource struct {
-	storageClient  storage.Client
-	influxdbClient influxdb.Client
-	mqttClient     mqtt.Client
-	worker         *worker.Worker
-	config         Config
+	storageClient storage.Client
+	worker        *worker.Worker
 }
 
 // NewWaterSchedulesResource creates a new WaterSchedulesResource
-func NewWaterSchedulesResource(config Config, logger *logrus.Entry, storageClient storage.Client, mqttClient mqtt.Client, influxdbClient influxdb.Client) (WaterSchedulesResource, error) {
+func NewWaterSchedulesResource(logger *logrus.Entry, storageClient storage.Client, worker *worker.Worker) (WaterSchedulesResource, error) {
 	wsr := WaterSchedulesResource{
-		storageClient:  storageClient,
-		influxdbClient: influxdbClient,
-		mqttClient:     mqttClient,
-		config:         config,
+		storageClient: storageClient,
+		worker:        worker,
 	}
-
-	// Initialize Scheduler
-	logger.Info("initializing scheduler")
-	wsr.worker = worker.NewWorker(wsr.storageClient, wsr.influxdbClient, mqttClient, logger.Logger)
-	wsr.worker.StartAsync()
 
 	// Initialize WaterActions for each WaterSchedule from the storage client
 	allWaterSchedules, err := wsr.storageClient.GetWaterSchedules(false)

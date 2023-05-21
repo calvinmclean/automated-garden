@@ -13,6 +13,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -43,6 +44,7 @@ type Server struct {
 	quit            chan os.Signal
 	logger          *logrus.Entry
 	gardensResource GardensResource
+	worker          *worker.Worker
 }
 
 // NewServer creates and initializes all server resources based on config
@@ -93,8 +95,12 @@ func NewServer(cfg Config) (*Server, error) {
 	}).Info("initializing InfluxDB client")
 	influxdbClient := influxdb.NewClient(cfg.InfluxDBConfig)
 
+	// Initialize Scheduler
+	logger.Info("initializing scheduler")
+	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, baseLogger)
+
 	// Create API routes/handlers
-	gardenResource, err := NewGardenResource(cfg, logger, storageClient, mqttClient, influxdbClient)
+	gardenResource, err := NewGardenResource(cfg, logger, storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
@@ -102,7 +108,7 @@ func NewServer(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", plantBasePath, err)
 	}
-	zonesResource, err := NewZonesResource(gardenResource, logger)
+	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker, logger)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
@@ -179,16 +185,35 @@ func NewServer(cfg Config) (*Server, error) {
 		})
 	})
 
+	waterSchedulesResource, err := NewWaterSchedulesResource(logger, storageClient, worker)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
+	}
+	r.Route(waterScheduleBasePath, func(r chi.Router) {
+		r.Post("/", waterSchedulesResource.createWaterSchedule)
+		r.Get("/", waterSchedulesResource.getAllWaterSchedules)
+
+		r.Route(fmt.Sprintf("/{%s}", waterSchedulePathParam), func(r chi.Router) {
+			r.Use(waterSchedulesResource.waterScheduleContextMiddleware)
+
+			r.Get("/", waterSchedulesResource.getWaterSchedule)
+			r.Patch("/", waterSchedulesResource.updateWaterSchedule)
+			r.Delete("/", waterSchedulesResource.endDateWaterSchedule)
+		})
+	})
+
 	return &Server{
 		&http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: r},
 		make(chan os.Signal, 1),
 		logger,
 		gardenResource,
+		worker,
 	}, nil
 }
 
 // Start will run the server until it is stopped (blocking)
 func (s *Server) Start() {
+	s.worker.StartAsync()
 	go func() {
 		shutdownErr := s.ListenAndServe()
 		if shutdownErr != http.ErrServerClosed {
