@@ -29,6 +29,7 @@ func newConfigMapStorage(options map[string]string) (*Client, error) {
 		data: clientData{
 			Gardens:              map[xid.ID]*pkg.Garden{},
 			WeatherClientConfigs: map[xid.ID]*weather.Config{},
+			WaterSchedules:       map[xid.ID]*pkg.WaterSchedule{},
 		},
 		Options: options,
 		m:       &sync.Mutex{},

@@ -17,3 +17,4 @@ gardens:
         max_zones: null
         created_at: 2021-08-03T19:53:14.816332-07:00
 weather_clients: {}
+water_schedules: {}

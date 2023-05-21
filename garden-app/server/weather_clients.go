@@ -190,25 +190,13 @@ func (wcr WeatherClientsResource) deleteWeatherClient(w http.ResponseWriter, r *
 }
 
 func (wcr *WeatherClientsResource) checkIfClientIsBeingUsed(weatherClient *weather.Config) error {
-
 	waterSchedules, err := wcr.storageClient.GetWaterSchedulesUsingWeatherClient(weatherClient.ID)
 	if err != nil {
 		return fmt.Errorf("unable to get WaterSchedules using WeatherClient %q: %w", weatherClient.ID, err)
 	}
 
-	for _, ws := range waterSchedules {
-		if ws.HasWeatherControl() {
-			if ws.HasRainControl() {
-				if ws.WeatherControl.Rain.ClientID == weatherClient.ID {
-					return fmt.Errorf("unable to delete WeatherClient used by Rain control in WaterSchedule %q: %w", ws.ID, err)
-				}
-			}
-			if ws.HasTemperatureControl() {
-				if ws.WeatherControl.Temperature.ClientID == weatherClient.ID {
-					return fmt.Errorf("unable to delete WeatherClient used by Temperature control in WaterSchedule %q: %w", ws.ID, err)
-				}
-			}
-		}
+	if len(waterSchedules) > 0 {
+		return fmt.Errorf("unable to delete WeatherClient used by %d WaterSchedules", len(waterSchedules))
 	}
 
 	return nil
