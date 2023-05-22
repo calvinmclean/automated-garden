@@ -17,7 +17,7 @@ type WaterSchedule struct {
 	Interval       *Duration        `json:"interval" yaml:"interval"`
 	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
 	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	WeatherControl *weather.Control `json:"weather_control,omitempty"`
+	WeatherControl *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
 
 	Name        *string `json:"name,omitempty" yaml:"name,omitempty"`
 	Description *string `json:"description,omitempty" yaml:"description,omitempty"`
