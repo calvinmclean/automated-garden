@@ -32,6 +32,11 @@ func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
 		Tag("water_schedule").
 		Tag(ws.ID.String()).
 		Do(func(jobLogger *logrus.Entry) {
+			if !ws.IsActive() {
+				jobLogger.Infof("skipping WaterSchedule %q because current time is outside of ActivePeriod: %+v", ws.ID, *ws.ActivePeriod)
+				return
+			}
+
 			zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID)
 
 			if err != nil {
@@ -73,10 +78,17 @@ func (w *Worker) GetNextWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.
 
 	nextRuns := []nextRunData{}
 	for _, ws := range waterSchedules {
+		if !ws.IsActive() {
+			continue
+		}
 		nextRuns = append(nextRuns, nextRunData{
 			ws:      ws,
 			nextRun: w.GetNextWaterTime(ws),
 		})
+	}
+
+	if len(nextRuns) == 0 {
+		return nil
 	}
 
 	nextRun := nextRuns[0]
@@ -94,6 +106,10 @@ func (w *Worker) GetNextWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.
 
 // GetNextWaterTime determines the next scheduled watering time for a given Zone using tags
 func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
+	if ws == nil {
+		return nil
+	}
+
 	logger := w.contextLogger(nil, nil, ws)
 	logger.Debugf("getting next water time for water_schedule")
 

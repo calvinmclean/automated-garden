@@ -38,6 +38,12 @@ func (ws *WaterScheduleRequest) Bind(r *http.Request) error {
 			return fmt.Errorf("error validating weather_control: %w", err)
 		}
 	}
+	if ws.ActivePeriod != nil {
+		err := ws.ActivePeriod.Validate()
+		if err != nil {
+			return fmt.Errorf("error validating active_period: %w", err)
+		}
+	}
 
 	return nil
 }
@@ -111,6 +117,13 @@ func (ws *UpdateWaterScheduleRequest) Bind(r *http.Request) error {
 	// Check that StartTime is in the future
 	if ws.StartTime != nil && time.Since(*ws.StartTime) > 0 {
 		return fmt.Errorf("unable to set start_time to time in the past")
+	}
+
+	if ws.ActivePeriod != nil {
+		err := ws.ActivePeriod.Validate()
+		if err != nil {
+			return fmt.Errorf("error validating active_period: %w", err)
+		}
 	}
 
 	return nil
