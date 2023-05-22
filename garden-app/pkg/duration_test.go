@@ -19,20 +19,32 @@ func TestDurationUnmarshalJSON(t *testing.T) {
 		{
 			"SuccessfulDecodeString",
 			`{"d": "1m"}`,
-			Duration{1 * time.Minute},
+			Duration{1 * time.Minute, ""},
 			"",
 		},
 		{
 			"SuccessfulDecodeInt",
 			`{"d": 60000000000}`,
-			Duration{1 * time.Minute},
+			Duration{1 * time.Minute, ""},
+			"",
+		},
+		{
+			"SuccessfulDecodeCron",
+			`{"d": "cron:*/5 * * * 1"}`,
+			Duration{0, "*/5 * * * 1"},
 			"",
 		},
 		{
 			"ErrorInvalidDurationString",
 			`{"d": "60000000000"}`,
 			Duration{},
-			`invalid format for Duration: time: missing unit in duration "60000000000"`,
+			`invalid input for Duration: invalid format for time.Duration: time: missing unit in duration "60000000000"`,
+		},
+		{
+			"ErrorInvalidCronString",
+			`{"d": "cron:abc"}`,
+			Duration{},
+			`invalid input for Duration: invalid cron expression: expected exactly 5 fields, found 1: [abc]`,
 		},
 		{
 			"ErrorDecodingOtherType",
@@ -60,9 +72,16 @@ func TestDurationUnmarshalJSON(t *testing.T) {
 }
 
 func TestDurationJSONMarshal(t *testing.T) {
-	result, err := json.Marshal(Duration{1 * time.Minute})
-	assert.NoError(t, err)
-	assert.Equal(t, `"1m0s"`, string(result))
+	t.Run("time.Duration", func(t *testing.T) {
+		result, err := json.Marshal(&Duration{1 * time.Minute, ""})
+		assert.NoError(t, err)
+		assert.Equal(t, `"1m0s"`, string(result))
+	})
+	t.Run("cron", func(t *testing.T) {
+		result, err := json.Marshal(&Duration{0, "*/5 * * * 1"})
+		assert.NoError(t, err)
+		assert.Equal(t, `"cron:*/5 * * * 1"`, string(result))
+	})
 }
 
 func TestDurationUnmarshalYAML(t *testing.T) {
@@ -75,20 +94,32 @@ func TestDurationUnmarshalYAML(t *testing.T) {
 		{
 			"SuccessfulDecodeString",
 			`d: 1m`,
-			Duration{1 * time.Minute},
+			Duration{1 * time.Minute, ""},
 			"",
 		},
 		{
 			"SuccessfulDecodeInt",
 			`d: 60000000000`,
-			Duration{1 * time.Minute},
+			Duration{1 * time.Minute, ""},
+			"",
+		},
+		{
+			"SuccessfulDecodeCron",
+			`d: cron:*/5 * * * 1`,
+			Duration{0, "*/5 * * * 1"},
 			"",
 		},
 		{
 			"ErrorInvalidDurationString",
 			`{"d": "60000000000"}`,
 			Duration{},
-			`invalid format for Duration: time: missing unit in duration "60000000000"`,
+			`invalid input for Duration: invalid format for time.Duration: time: missing unit in duration "60000000000"`,
+		},
+		{
+			"ErrorInvalidCronString",
+			`{"d": "cron:abc"}`,
+			Duration{},
+			"invalid input for Duration: invalid cron expression: expected exactly 5 fields, found 1: [abc]",
 		},
 		{
 			"ErrorDecodingOtherType",
@@ -116,7 +147,14 @@ func TestDurationUnmarshalYAML(t *testing.T) {
 }
 
 func TestDurationYAMLMarshal(t *testing.T) {
-	result, err := yaml.Marshal(Duration{1 * time.Minute})
-	assert.NoError(t, err)
-	assert.Equal(t, "duration: 1m0s\n", string(result))
+	t.Run("time.Duration", func(t *testing.T) {
+		result, err := yaml.Marshal(&Duration{1 * time.Minute, ""})
+		assert.NoError(t, err)
+		assert.Equal(t, "1m0s\n", string(result))
+	})
+	t.Run("cron", func(t *testing.T) {
+		result, err := yaml.Marshal(&Duration{0, "*/5 * * * 1"})
+		assert.NoError(t, err)
+		assert.Equal(t, "cron:*/5 * * * 1\n", string(result))
+	})
 }

@@ -27,8 +27,7 @@ func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(ws)...).Inc()
-	_, err := w.scheduler.
-		Every(ws.Interval.Duration).
+	_, err := ws.Interval.SchedulerFunc(w.scheduler).
 		StartAt(*ws.StartTime).
 		Tag("water_schedule").
 		Tag(ws.ID.String()).
@@ -45,7 +44,7 @@ func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
 				err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws)
 				if err != nil {
 					jobLogger.WithField("zone_id", zg.Zone.ID.String()).Errorf("error executing scheduled water action: %v", err)
-					schedulerErrors.WithLabelValues(append(waterScheduleLabels(ws), zoneLabels(zg.Zone)...)...).Inc()
+					schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
 				}
 			}
 		}, logger.WithField("source", "scheduled_job"))
