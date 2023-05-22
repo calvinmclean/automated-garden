@@ -134,8 +134,14 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 
 	if len(request.Zone.WaterScheduleIDs) != 0 {
 		// Validate water schedules exists
-		_, err := zr.waterSchedulesExist(request.Zone.WaterScheduleIDs)
+		exists, err := zr.waterSchedulesExist(request.Zone.WaterScheduleIDs)
 		if err != nil {
+			logger.WithError(err).Errorf("unable to get WaterSchedules %q for updating Zone", request.Zone.WaterScheduleIDs)
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
+		if !exists {
+			err = fmt.Errorf("unable to update Zone with non-existent WaterSchedule %q", request.Zone.WaterScheduleIDs)
 			logger.WithError(err).Error("invalid request to update Zone")
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
@@ -281,8 +287,14 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// Validate water schedules exists
-	_, err := zr.waterSchedulesExist(request.Zone.WaterScheduleIDs)
+	exists, err := zr.waterSchedulesExist(request.Zone.WaterScheduleIDs)
 	if err != nil {
+		logger.WithError(err).Errorf("unable to get WaterSchedules %q for new Zone", request.Zone.WaterScheduleIDs)
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+	if !exists {
+		err = fmt.Errorf("unable to create Zone with non-existent WaterSchedule %q", request.Zone.WaterScheduleIDs)
 		logger.WithError(err).Error("invalid request to create Zone")
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

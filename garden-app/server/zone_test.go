@@ -26,6 +26,7 @@ import (
 )
 
 var id, _ = xid.FromString("c5cvhpcbcv45e8bp16dg")
+var id2, _ = xid.FromString("chkodpg3lcj13q82mq40")
 
 func createExampleZone() *pkg.Zone {
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
@@ -388,6 +389,15 @@ func TestUpdateZone(t *testing.T) {
 			http.StatusBadRequest,
 		},
 		{
+			"ErrorWaterScheduleNotFound",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetWaterSchedule", id).Return(nil, nil)
+			},
+			`{"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"unable to update Zone with non-existent WaterSchedule [\"c5cvhpcbcv45e8bp16dg\"]"}`,
+			http.StatusBadRequest,
+		},
+		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveZone", mock.Anything, mock.Anything).Return(errors.New("storage error"))
@@ -588,6 +598,13 @@ func TestGetAllZones(t *testing.T) {
 }
 
 func TestCreateZone(t *testing.T) {
+	otherCreatedAt := createdAt.Add(-1 * time.Hour)
+	otherWS := &pkg.WaterSchedule{
+		ID:        id2,
+		Duration:  &pkg.Duration{Duration: time.Second * 10},
+		Interval:  &pkg.Duration{Duration: time.Hour * 1},
+		StartTime: &otherCreatedAt,
+	}
 	gardenWithZone := createExampleGarden()
 	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
 	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
@@ -609,6 +626,19 @@ func TestCreateZone(t *testing.T) {
 			createExampleGarden(),
 			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
 			`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water_duration":"1s","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`,
+			http.StatusCreated,
+		},
+		{
+			"SuccessfulMultipleWaterSchedules",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveZone", mock.Anything, mock.Anything).Return(nil)
+				storageClient.On("GetWaterSchedule", id).Return(createExampleWaterSchedule(), nil)
+				storageClient.On("GetWaterSchedule", id2).Return(otherWS, nil)
+				storageClient.On("GetMultipleWaterSchedules", []xid.ID{id, id2}).Return([]*pkg.WaterSchedule{createExampleWaterSchedule(), otherWS}, nil)
+			},
+			createExampleGarden(),
+			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
+			`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"\],"skip_count":null,"next_water_duration":"1s","links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -641,6 +671,16 @@ func TestCreateZone(t *testing.T) {
 			createExampleGarden(),
 			"this is not json",
 			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorWaterScheduleNotFound",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("GetWaterSchedule", id).Return(nil, nil)
+			},
+			createExampleGarden(),
+			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
+			`{"status":"Invalid request.","error":"unable to create Zone with non-existent WaterSchedule \[\\\"c5cvhpcbcv45e8bp16dg\\\"\]"}`,
 			http.StatusBadRequest,
 		},
 		{

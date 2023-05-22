@@ -82,6 +82,9 @@ func (w *Worker) GetNextWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.
 
 	nextRun := nextRuns[0]
 	for i := 1; i < len(nextRuns); i++ {
+		if nextRuns[i].nextRun == nil {
+			continue
+		}
 		if nextRuns[i].nextRun.Before(*nextRun.nextRun) {
 			nextRun = nextRuns[i]
 		}
