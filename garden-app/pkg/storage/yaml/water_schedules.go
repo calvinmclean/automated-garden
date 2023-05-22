@@ -7,6 +7,7 @@ import (
 	"github.com/rs/xid"
 )
 
+// GetWaterSchedule ...
 func (c *Client) GetWaterSchedule(id xid.ID) (*pkg.WaterSchedule, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -18,6 +19,7 @@ func (c *Client) GetWaterSchedule(id xid.ID) (*pkg.WaterSchedule, error) {
 	return c.data.WaterSchedules[id], nil
 }
 
+// GetWaterSchedules returns all WaterSchedules
 func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -35,6 +37,7 @@ func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, erro
 	return result, nil
 }
 
+// GetMultipleWaterSchedules returns multiple WaterSchedules matching the slice of IDs
 func (c *Client) GetMultipleWaterSchedules(ids []xid.ID) ([]*pkg.WaterSchedule, error) {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -53,6 +56,7 @@ func (c *Client) GetMultipleWaterSchedules(ids []xid.ID) ([]*pkg.WaterSchedule, 
 	return result, nil
 }
 
+// SaveWaterSchedule ...
 func (c *Client) SaveWaterSchedule(ws *pkg.WaterSchedule) error {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -61,6 +65,7 @@ func (c *Client) SaveWaterSchedule(ws *pkg.WaterSchedule) error {
 	return c.save()
 }
 
+// DeleteWaterSchedule ...
 func (c *Client) DeleteWaterSchedule(id xid.ID) error {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -69,6 +74,7 @@ func (c *Client) DeleteWaterSchedule(id xid.ID) error {
 	return c.save()
 }
 
+// GetZonesUsingWaterSchedule ...
 func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, error) {
 	gardens, err := c.GetGardens(false)
 	if err != nil {
@@ -94,6 +100,7 @@ func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, er
 	return results, nil
 }
 
+// GetWaterSchedulesUsingWeatherClient ...
 func (c *Client) GetWaterSchedulesUsingWeatherClient(id xid.ID) ([]*pkg.WaterSchedule, error) {
 	waterSchedules, err := c.GetWaterSchedules(false)
 	if err != nil {
