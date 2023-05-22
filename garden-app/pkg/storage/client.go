@@ -37,6 +37,15 @@ type Client interface {
 	GetWeatherClientConfigs() ([]*weather.Config, error)
 	SaveWeatherClientConfig(*weather.Config) error
 	DeleteWeatherClientConfig(xid.ID) error
+
+	GetWaterSchedule(xid.ID) (*pkg.WaterSchedule, error)
+	GetMultipleWaterSchedules([]xid.ID) ([]*pkg.WaterSchedule, error)
+	GetWaterSchedules(bool) ([]*pkg.WaterSchedule, error)
+	SaveWaterSchedule(*pkg.WaterSchedule) error
+	DeleteWaterSchedule(xid.ID) error
+
+	GetZonesUsingWaterSchedule(xid.ID) ([]*pkg.ZoneAndGarden, error)
+	GetWaterSchedulesUsingWeatherClient(xid.ID) ([]*pkg.WaterSchedule, error)
 }
 
 // NewClient will use the config to create and return the correct type of storage client

@@ -190,31 +190,13 @@ func (wcr WeatherClientsResource) deleteWeatherClient(w http.ResponseWriter, r *
 }
 
 func (wcr *WeatherClientsResource) checkIfClientIsBeingUsed(weatherClient *weather.Config) error {
-	gardens, err := wcr.storageClient.GetGardens(false)
+	waterSchedules, err := wcr.storageClient.GetWaterSchedulesUsingWeatherClient(weatherClient.ID)
 	if err != nil {
-		return fmt.Errorf("unable to get all Gardens: %w", err)
+		return fmt.Errorf("unable to get WaterSchedules using WeatherClient %q: %w", weatherClient.ID, err)
 	}
 
-	for _, g := range gardens {
-		zones, err := wcr.storageClient.GetZones(g.ID, false)
-		if err != nil {
-			return fmt.Errorf("unable to get all Zones for Garden %q: %w", g.ID, err)
-		}
-
-		for _, z := range zones {
-			if z.HasWeatherControl() {
-				if z.WaterSchedule.HasRainControl() {
-					if z.WaterSchedule.WeatherControl.Rain.ClientID == weatherClient.ID {
-						return fmt.Errorf("unable to delete WeatherClient used by Rain control in Zone %q (in garden %q): %w", z.ID, g.ID, err)
-					}
-				}
-				if z.WaterSchedule.HasTemperatureControl() {
-					if z.WaterSchedule.WeatherControl.Temperature.ClientID == weatherClient.ID {
-						return fmt.Errorf("unable to delete WeatherClient used by Temperature control in Zone %q (in garden %q): %w", z.ID, g.ID, err)
-					}
-				}
-			}
-		}
+	if len(waterSchedules) > 0 {
+		return fmt.Errorf("unable to delete WeatherClient used by %d WaterSchedules", len(waterSchedules))
 	}
 
 	return nil

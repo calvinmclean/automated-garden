@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
@@ -32,35 +31,13 @@ type GardensResource struct {
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, logger *logrus.Entry, storageClient storage.Client) (GardensResource, error) {
+func NewGardenResource(config Config, logger *logrus.Entry, storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (GardensResource, error) {
 	gr := GardensResource{
-		config:        config,
-		storageClient: storageClient,
+		storageClient:  storageClient,
+		influxdbClient: influxdbClient,
+		worker:         worker,
+		config:         config,
 	}
-
-	// Initialize MQTT Client
-	logger.WithFields(logrus.Fields{
-		"client_id": config.MQTTConfig.ClientID,
-		"broker":    config.MQTTConfig.Broker,
-		"port":      config.MQTTConfig.Port,
-	}).Info("initializing MQTT client")
-	mqttClient, err := mqtt.NewClient(gr.config.MQTTConfig, nil)
-	if err != nil {
-		return gr, fmt.Errorf("unable to initialize MQTT client: %v", err)
-	}
-
-	// Initialize InfluxDB Client
-	logger.WithFields(logrus.Fields{
-		"address": config.InfluxDBConfig.Address,
-		"org":     config.InfluxDBConfig.Org,
-		"bucket":  config.InfluxDBConfig.Bucket,
-	}).Info("initializing InfluxDB client")
-	gr.influxdbClient = influxdb.NewClient(gr.config.InfluxDBConfig)
-
-	// Initialize Scheduler
-	logger.Info("initializing scheduler")
-	gr.worker = worker.NewWorker(gr.storageClient, gr.influxdbClient, mqttClient, logger.Logger)
-	gr.worker.StartAsync()
 
 	// Initialize light schedules for all Gardens
 	allGardens, err := gr.storageClient.GetGardens(false)

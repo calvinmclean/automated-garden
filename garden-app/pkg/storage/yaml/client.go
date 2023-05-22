@@ -29,8 +29,9 @@ type Client struct {
 }
 
 type clientData struct {
-	Gardens              map[xid.ID]*pkg.Garden     `yaml:"gardens"`
-	WeatherClientConfigs map[xid.ID]*weather.Config `yaml:"weather_clients"`
+	Gardens              map[xid.ID]*pkg.Garden        `yaml:"gardens"`
+	WeatherClientConfigs map[xid.ID]*weather.Config    `yaml:"weather_clients"`
+	WaterSchedules       map[xid.ID]*pkg.WaterSchedule `yaml:"water_schedules"`
 }
 
 // NewClient creates a new storage backend using YAML format. It has options to store to a local YAML

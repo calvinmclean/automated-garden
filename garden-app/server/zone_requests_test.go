@@ -7,14 +7,12 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneRequest(t *testing.T) {
 	pos := uint(0)
-	now := time.Now()
 	tests := []struct {
 		name string
 		pr   *ZoneRequest
@@ -40,240 +38,33 @@ func TestZoneRequest(t *testing.T) {
 			"missing required zone_position field",
 		},
 		{
-			"EmptyWaterScheduleError",
+			"EmptyWaterScheduleIDError",
 			&ZoneRequest{
 				Zone: &pkg.Zone{
 					Name:     "zone",
 					Position: &pos,
 				},
 			},
-			"missing required water_schedule field",
-		},
-		{
-			"EmptyWaterScheduleIntervalError",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Name:     "zone",
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Duration: &pkg.Duration{Duration: time.Second},
-					},
-				},
-			},
-			"missing required water_schedule.interval field",
-		},
-		{
-			"EmptyWaterScheduleDurationError",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Name:     "zone",
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval: &pkg.Duration{Duration: time.Hour * 24},
-					},
-				},
-			},
-			"missing required water_schedule.duration field",
-		},
-		{
-			"EmptyWaterScheduleStartTimeError",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Name:     "zone",
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval: &pkg.Duration{Duration: time.Hour * 24},
-						Duration: &pkg.Duration{Duration: time.Second},
-					},
-				},
-			},
-			"missing required water_schedule.start_time field",
+			"missing required water_schedule_ids field",
 		},
 		{
 			"EmptyNameError",
 			&ZoneRequest{
 				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-					},
+					Position:         &pos,
+					WaterScheduleIDs: []xid.ID{id},
 				},
 			},
 			"missing required name field",
-		},
-		{
-			"EmptyWaterScheduleWeatherControlBaselineTemperature",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-						WeatherControl: &weather.Control{
-							Temperature: &weather.ScaleControl{
-								Factor: float32Pointer(0.5),
-								Range:  float32Pointer(10),
-							},
-						},
-					},
-					Name: "name",
-				},
-			},
-			"error validating weather_control: error validating temperature_control: missing required field: baseline_value",
-		},
-		{
-			"EmptyWaterScheduleWeatherControlFactor",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-						WeatherControl: &weather.Control{
-							Temperature: &weather.ScaleControl{
-								BaselineValue: float32Pointer(27),
-								Range:         float32Pointer(10),
-							},
-						},
-					},
-					Name: "name",
-				},
-			},
-			"error validating weather_control: error validating temperature_control: missing required field: factor",
-		},
-		{
-			"EmptyWaterScheduleWeatherControlRange",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-						WeatherControl: &weather.Control{
-							Temperature: &weather.ScaleControl{
-								BaselineValue: float32Pointer(27),
-								Factor:        float32Pointer(0.5),
-							},
-						},
-					},
-					Name: "name",
-				},
-			},
-			"error validating weather_control: error validating temperature_control: missing required field: range",
-		},
-		{
-			"EmptyWaterScheduleWeatherControlClientID",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-						WeatherControl: &weather.Control{
-							Temperature: &weather.ScaleControl{
-								BaselineValue: float32Pointer(27),
-								Factor:        float32Pointer(0.5),
-								Range:         float32Pointer(10),
-							},
-						},
-					},
-					Name: "name",
-				},
-			},
-			"error validating weather_control: error validating temperature_control: missing required field: client_id",
-		},
-		{
-			"WaterScheduleWeatherControlInvalidFactorBig",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-						WeatherControl: &weather.Control{
-							Temperature: &weather.ScaleControl{
-								BaselineValue: float32Pointer(27),
-								Factor:        float32Pointer(2),
-								Range:         float32Pointer(10),
-							},
-						},
-					},
-					Name: "name",
-				},
-			},
-			"error validating weather_control: error validating temperature_control: factor must be between 0 and 1",
-		},
-		{
-			"WaterScheduleWeatherControlInvalidFactorSmall",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-						WeatherControl: &weather.Control{
-							Temperature: &weather.ScaleControl{
-								BaselineValue: float32Pointer(27),
-								Factor:        float32Pointer(-1),
-								Range:         float32Pointer(10),
-							},
-						},
-					},
-					Name: "name",
-				},
-			},
-			"error validating weather_control: error validating temperature_control: factor must be between 0 and 1",
-		},
-		{
-			"WaterScheduleWeatherControlInvalidRange",
-			&ZoneRequest{
-				Zone: &pkg.Zone{
-					Position: &pos,
-					WaterSchedule: &pkg.WaterSchedule{
-						Interval:  &pkg.Duration{Duration: time.Hour * 24},
-						Duration:  &pkg.Duration{Duration: time.Second},
-						StartTime: &now,
-						WeatherControl: &weather.Control{
-							Temperature: &weather.ScaleControl{
-								BaselineValue: float32Pointer(27),
-								Factor:        float32Pointer(0.5),
-								Range:         float32Pointer(-1),
-							},
-						},
-					},
-					Name: "name",
-				},
-			},
-			"error validating weather_control: error validating temperature_control: range must be a positive number",
 		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
 		pr := &ZoneRequest{
 			Zone: &pkg.Zone{
-				Name:     "zone",
-				Position: &pos,
-				WaterSchedule: &pkg.WaterSchedule{
-					Duration:  &pkg.Duration{Duration: time.Second},
-					Interval:  &pkg.Duration{Duration: time.Hour * 24},
-					StartTime: &now,
-					WeatherControl: &weather.Control{
-						Temperature: &weather.ScaleControl{
-							BaselineValue: float32Pointer(27),
-							Factor:        float32Pointer(0.5),
-							Range:         float32Pointer(10),
-							ClientID:      xid.New(),
-						},
-					},
-				},
+				Name:             "zone",
+				Position:         &pos,
+				WaterScheduleIDs: []xid.ID{id},
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)
@@ -293,7 +84,6 @@ func TestZoneRequest(t *testing.T) {
 func TestUpdateZoneRequest(t *testing.T) {
 	pp := uint(0)
 	now := time.Now()
-	past := now.Add(-1 * time.Hour)
 	tests := []struct {
 		name string
 		pr   *UpdateZoneRequest
@@ -315,17 +105,6 @@ func TestUpdateZoneRequest(t *testing.T) {
 				Zone: &pkg.Zone{ID: xid.New()},
 			},
 			"updating ID is not allowed",
-		},
-		{
-			"StartTimeInPastError",
-			&UpdateZoneRequest{
-				Zone: &pkg.Zone{
-					WaterSchedule: &pkg.WaterSchedule{
-						StartTime: &past,
-					},
-				},
-			},
-			"unable to set water_schedule.start_time to time in the past",
 		},
 		{
 			"EndDateError",

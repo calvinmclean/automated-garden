@@ -1,11 +1,11 @@
 package pkg
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/rs/xid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneEndDated(t *testing.T) {
@@ -33,9 +33,8 @@ func TestZoneEndDated(t *testing.T) {
 
 func TestZonePatch(t *testing.T) {
 	zero := uint(0)
-	one := 1
-	float := float32(1)
 	now := time.Now()
+	wsID := xid.New()
 	tests := []struct {
 		name    string
 		newZone *Zone
@@ -53,56 +52,8 @@ func TestZonePatch(t *testing.T) {
 			&Zone{CreatedAt: &now},
 		},
 		{
-			"PatchWaterSchedule.Duration",
-			&Zone{WaterSchedule: &WaterSchedule{
-				Duration: &Duration{time.Second},
-			}},
-		},
-		{
-			"PatchWaterSchedule.Interval",
-			&Zone{WaterSchedule: &WaterSchedule{
-				Interval: &Duration{time.Hour * 2},
-			}},
-		},
-		{
-			"PatchWaterSchedule.WeatherControl.SoilMoisture.MinimumMoisture",
-			&Zone{WaterSchedule: &WaterSchedule{
-				WeatherControl: &weather.Control{
-					SoilMoisture: &weather.SoilMoistureControl{
-						MinimumMoisture: &one,
-					},
-				},
-			}},
-		},
-		{
-			"PatchWaterSchedule.StartTime",
-			&Zone{WaterSchedule: &WaterSchedule{
-				StartTime: &now,
-			}},
-		},
-		{
-			"PatchWaterSchedule.WeatherControl.Temperature",
-			&Zone{WaterSchedule: &WaterSchedule{
-				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: &float,
-						Factor:        &float,
-						Range:         &float,
-					},
-				},
-			}},
-		},
-		{
-			"PatchWaterSchedule.WeatherControl.Temperature",
-			&Zone{WaterSchedule: &WaterSchedule{
-				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: &float,
-						Factor:        &float,
-						Range:         &float,
-					},
-				},
-			}},
+			"PatchWaterScheduleID",
+			&Zone{WaterScheduleIDs: []xid.ID{wsID}},
 		},
 		{
 			"PatchDetails.Description",
@@ -120,21 +71,9 @@ func TestZonePatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			p := &Zone{}
-			p.Patch(tt.newZone)
-			if p.WaterSchedule != nil && !reflect.DeepEqual(*p.WaterSchedule, *tt.newZone.WaterSchedule) {
-				t.Errorf("Unexpected result for WaterSchedule: expected=%v, actual=%v", tt.newZone, p)
-			}
-			p.WaterSchedule = nil
-			tt.newZone.WaterSchedule = nil
-			if p.Details != nil && *p.Details != *tt.newZone.Details {
-				t.Errorf("Unexpected result for Details: expected=%v, actual=%v", tt.newZone, p)
-			}
-			p.Details = nil
-			tt.newZone.Details = nil
-			if *p != *tt.newZone {
-				t.Errorf("Unexpected result: expected=%v, actual=%v", tt.newZone, p)
-			}
+			z := &Zone{}
+			z.Patch(tt.newZone)
+			assert.Equal(t, tt.newZone, z)
 		})
 	}
 

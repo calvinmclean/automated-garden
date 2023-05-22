@@ -16,6 +16,7 @@ const (
 	plantCtxKey
 	zoneCtxKey
 	weatherClientCtxKey
+	waterScheduleCtxKey
 )
 
 func newContextWithLogger(ctx context.Context, logger *logrus.Entry) context.Context {
@@ -60,4 +61,12 @@ func newContextWithWeatherClient(ctx context.Context, wc *weather.Config) contex
 
 func getWeatherClientFromContext(ctx context.Context) *weather.Config {
 	return ctx.Value(weatherClientCtxKey).(*weather.Config)
+}
+
+func newContextWithWaterSchedule(ctx context.Context, ws *pkg.WaterSchedule) context.Context {
+	return context.WithValue(ctx, waterScheduleCtxKey, ws)
+}
+
+func getWaterScheduleFromContext(ctx context.Context) *pkg.WaterSchedule {
+	return ctx.Value(waterScheduleCtxKey).(*pkg.WaterSchedule)
 }
