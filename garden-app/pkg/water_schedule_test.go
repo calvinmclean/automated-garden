@@ -42,13 +42,13 @@ func TestWaterSchedulePatch(t *testing.T) {
 		{
 			"PatchDuration",
 			&WaterSchedule{
-				Duration: &Duration{time.Second},
+				Duration: &Duration{time.Second, ""},
 			},
 		},
 		{
 			"PatchInterval",
 			&WaterSchedule{
-				Interval: &Duration{time.Hour * 2},
+				Interval: &Duration{time.Hour * 2, ""},
 			},
 		},
 		{
