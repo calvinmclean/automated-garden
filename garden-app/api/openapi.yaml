@@ -14,6 +14,8 @@ tags:
     description: Operations related to Plant resources
   - name: zones
     description: Operations related to Zone resources
+  - name: water_schedules
+    description: Operations related to WaterSchedule resources
 paths:
   /gardens:
     post:
@@ -418,6 +420,112 @@ paths:
         "400":
           description: Bad Request
 
+  /water_schedules:
+    post:
+      tags:
+        - water_schedules
+      summary: Add a WaterSchedule
+      description: Adds a new WaterSchedule.
+      operationId: addWaterSchedule
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaterScheduleResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Add a WaterSchedule
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateWaterScheduleRequest"
+    get:
+      tags:
+        - water_schedules
+      summary: Get all WaterSchedules
+      description: Query for a list of all WaterSchedules. Optionally include end-dated WaterSchedules.
+      operationId: getAllWaterSchedules
+      parameters:
+        - $ref: "#/components/parameters/WaterScheduleID"
+        - name: end_dated
+          in: query
+          description: whether or not to include end-dated WaterSchedules in the response
+          required: false
+          schema:
+            type: boolean
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllWaterSchedulesResponse"
+        "400":
+          description: Bad Request
+  /water_schedules/{waterScheduleID}:
+    get:
+      tags:
+        - water_schedules
+      summary: Get a WaterSchedule
+      description: Get details of a WaterSchedule.
+      operationId: getWaterSchedule
+      parameters:
+        - $ref: "#/components/parameters/WaterScheduleID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaterScheduleResponse"
+        "400":
+          description: Bad Request
+    patch:
+      tags:
+        - water_schedules
+      summary: Update/Edit a WaterSchedule
+      description: Update/Edit a WaterSchedule. Only certain fields of a WaterSchedule are editable.
+      operationId: updateWaterSchedule
+      parameters:
+        - $ref: "#/components/parameters/WaterScheduleID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaterScheduleResponse"
+        "400":
+          description: Bad Request
+      requestBody:
+        description: Update/Edit a new WaterSchedule
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpdateWaterScheduleRequest"
+    delete:
+      tags:
+        - water_schedules
+      summary: End-date a WaterSchedule
+      description: End-date a WaterSchedule. This allows deleting without actually losing the resource data. Once a WaterSchedule is end-dated, certain resources will not be available such as health and action.
+      operationId: endDateWaterSchedule
+      parameters:
+        - $ref: "#/components/parameters/WaterScheduleID"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WaterScheduleResponse"
+        "400":
+          description: Bad Request
+
 components:
   parameters:
     GardenID:
@@ -438,6 +546,13 @@ components:
       name: zoneID
       in: path
       description: ID of Zone resource for this request
+      required: true
+      schema:
+        $ref: "#/components/schemas/xid"
+    WaterScheduleID:
+      name: waterScheduleID
+      in: path
+      description: ID of WaterSchedule resource for this request
       required: true
       schema:
         $ref: "#/components/schemas/xid"
@@ -521,13 +636,11 @@ components:
                 $ref: "#/components/schemas/link"
               example:
                 - rel: self
-                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670
+                  href: /gardens/c22tmvucie6n6gdrpal0/zones/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670
                 - rel: garden
                   href: /gardens/c22tmvucie6n6gdrpal0
                 - rel: zone
-                  href: /gardens/c22tmvucie6n6gdrpal0/zones/c3ucvu06n88pt1dom670
-                - rel: action
-                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/action
+                  href: /gardens/c22tmvucie6n6gdrpal0/zones/c22tmvucie6n6gdrpal0
       required:
         - id
         - created_at
@@ -785,12 +898,79 @@ components:
           format: date-time
           description: time that the watering interval should be started at
         weather_control:
-          $ref: "#/components/schemas/ScaleControl"
+          $ref: "#/components/schemas/WeatherControl"
           description: control watering based on weather data. Requires a configured weather client
+        name:
+          type: string
+          description: optional name for the WaterSchedule
+        description:
+          type: string
+          description: optional description for the WaterSchedule
       required:
         - duration
         - interval
         - start_time
+
+    UpdateWaterScheduleRequest:
+      type: object
+      description: This allows updating/editing a WaterSchedule resource
+      allOf:
+        - $ref: "#/components/schemas/WaterSchedule"
+
+    AllWaterSchedulesResponse:
+      type: object
+      description: List of all WaterSchedules
+      properties:
+        water_schedules:
+          type: array
+          items:
+            $ref: "#/components/schemas/WaterScheduleResponse"
+
+    CreateWaterScheduleRequest:
+      type: object
+      description: This allows creating a WaterSchedule resource
+      allOf:
+        - $ref: "#/components/schemas/WaterSchedule"
+      required:
+        - duration
+        - interval
+        - start_time
+
+    WaterScheduleResponse:
+      type: object
+      description: This is the response object for WaterSchedules that contains extra information only available on WaterSchedules that are created
+      allOf:
+        - $ref: "#/components/schemas/WaterSchedule"
+        - properties:
+            id:
+              $ref: "#/components/schemas/xid"
+            end_date:
+              type: string
+              format: date-time
+              description: the date-time when the WaterSchedule was deleted/removed
+            next_water_time:
+              type: string
+              description: time of the next scheduled watering
+              format: date-time
+            next_water_duration:
+              type: string
+              description: |
+                duration of the next scheduled watering. If WeatherControl is enabled, this will adjust for scaling based on
+                currently-available data
+              format: duration
+              example: 10m0s
+            weather_data:
+              $ref: "#/components/schemas/link"
+            links:
+              type: array
+              items:
+                $ref: "#/components/schemas/link"
+              example:
+                - rel: self
+                  href: /water_schedules/c22tmvucie6n6gdrpal0
+      required:
+        - id
+        - links
 
     WeatherControl:
       type: object
@@ -881,8 +1061,12 @@ components:
           description: this corresponds directly to the configuration of the `garden-controller` and is critical for having control of the Zone
           example: 0
           minimum: 0
-        water_schedule:
-          $ref: "#/components/schemas/WaterSchedule"
+        water_schedule_ids:
+          type: array
+          items:
+            $ref: "#/components/schemas/xid"
+          description: list of WaterSchedules used to water this Zone
+          example: ["9m4e2mr0ui3e8a215n4g"]
 
     UpdateZoneRequest:
       type: object
@@ -899,7 +1083,7 @@ components:
       type: object
       description: List of all Zones
       properties:
-        plants:
+        zones:
           type: array
           items:
             $ref: "#/components/schemas/ZoneResponse"
@@ -912,7 +1096,7 @@ components:
       required:
         - name
         - position
-        - water_schedule
+        - water_schedule_ids
 
     ZoneResponse:
       type: object
@@ -949,20 +1133,20 @@ components:
                 $ref: "#/components/schemas/link"
               example:
                 - rel: self
-                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670
+                  href: /gardens/c22tmvucie6n6gdrpal0/zones/c3ucvu06n88pt1dom670
                 - rel: garden
                   href: /gardens/c22tmvucie6n6gdrpal0
                 - rel: action
-                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/action
+                  href: /gardens/c22tmvucie6n6gdrpal0/zones/c3ucvu06n88pt1dom670/action
                 - rel: history
-                  href: /gardens/c22tmvucie6n6gdrpal0/plants/c3ucvu06n88pt1dom670/history
+                  href: /gardens/c22tmvucie6n6gdrpal0/zones/c3ucvu06n88pt1dom670/history
       required:
         - id
         - created_at
         - links
         - name
         - position
-        - water_schedule
+        - water_schedule_ids
 
     WeatherData:
       type: object
