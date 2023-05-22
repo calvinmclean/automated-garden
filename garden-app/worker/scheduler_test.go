@@ -37,11 +37,11 @@ func createExampleZone() *pkg.Zone {
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	p := uint(0)
 	return &pkg.Zone{
-		Name:            "test zone",
-		ID:              id,
-		CreatedAt:       &createdAt,
-		Position:        &p,
-		WaterScheduleID: id,
+		Name:             "test zone",
+		ID:               id,
+		CreatedAt:        &createdAt,
+		Position:         &p,
+		WaterScheduleIDs: []xid.ID{id},
 	}
 }
 

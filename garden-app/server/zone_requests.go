@@ -24,8 +24,8 @@ func (z *ZoneRequest) Bind(r *http.Request) error {
 	if z.Position == nil {
 		return errors.New("missing required zone_position field")
 	}
-	if z.WaterScheduleID == xid.NilID() {
-		return errors.New("missing required water_schedule_id field")
+	if len(z.WaterScheduleIDs) == 0 {
+		return errors.New("missing required water_schedule_ids field")
 	}
 	if z.Name == "" {
 		return errors.New("missing required name field")

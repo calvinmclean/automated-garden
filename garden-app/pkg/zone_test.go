@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/rs/xid"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestZoneEndDated(t *testing.T) {
@@ -52,7 +53,7 @@ func TestZonePatch(t *testing.T) {
 		},
 		{
 			"PatchWaterScheduleID",
-			&Zone{WaterScheduleID: wsID},
+			&Zone{WaterScheduleIDs: []xid.ID{wsID}},
 		},
 		{
 			"PatchDetails.Description",
@@ -70,16 +71,9 @@ func TestZonePatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ws := &Zone{}
-			ws.Patch(tt.newZone)
-			if ws.Details != nil && *ws.Details != *tt.newZone.Details {
-				t.Errorf("Unexpected result for Details: expected=%v, actual=%v", tt.newZone, ws)
-			}
-			ws.Details = nil
-			tt.newZone.Details = nil
-			if *ws != *tt.newZone {
-				t.Errorf("Unexpected result: expected=%v, actual=%v", tt.newZone, ws)
-			}
+			z := &Zone{}
+			z.Patch(tt.newZone)
+			assert.Equal(t, tt.newZone, z)
 		})
 	}
 

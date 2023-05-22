@@ -42,15 +42,16 @@ type ZoneResponse struct {
 func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
 	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
 
-	ws, err := zr.storageClient.GetWaterSchedule(zone.WaterScheduleID)
+	ws, err := zr.storageClient.GetMultipleWaterSchedules(zone.WaterScheduleIDs)
 	if err != nil {
 		logger.Errorf("unable to get WaterSchedule for ZoneResponse: %v", err)
 	}
 
+	nextWaterSchedule := zr.worker.GetNextWaterSchedule(ws)
 	response := &ZoneResponse{
 		Zone:          zone,
 		Links:         links,
-		NextWaterTime: zr.worker.GetNextWaterTime(ws),
+		NextWaterTime: zr.worker.GetNextWaterTime(nextWaterSchedule),
 	}
 
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
@@ -77,10 +78,12 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		)
 	}
 
-	if ws.HasWeatherControl() {
-		response.WeatherData = getWeatherData(ctx, ws, zr.storageClient)
+	// TODO: In order to do this, I need to return the "nextWaterSchedule" instead of just the next time
+	//       I wil basically reset the refactored GetNextWaterTime and take the code from there to create a function to get the next schedule
+	if nextWaterSchedule.HasWeatherControl() {
+		response.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.storageClient)
 
-		if ws.HasSoilMoistureControl() && garden != nil {
+		if nextWaterSchedule.HasSoilMoistureControl() && garden != nil {
 			logger.Debug("getting moisture data for Zone")
 			soilMoisture, err := zr.getMoisture(ctx, garden, zone)
 			if err != nil {
@@ -92,9 +95,9 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		}
 	}
 
-	response.NextWaterDuration = ws.Duration.Duration.String()
-	if ws.HasWeatherControl() && !zone.EndDated() {
-		wd, err := zr.worker.ScaleWateringDuration(ws)
+	response.NextWaterDuration = nextWaterSchedule.Duration.Duration.String()
+	if nextWaterSchedule.HasWeatherControl() && !zone.EndDated() {
+		wd, err := zr.worker.ScaleWateringDuration(nextWaterSchedule)
 		if err != nil {
 			logger.WithError(err).Warn("unable to determine water duration scale")
 		} else {

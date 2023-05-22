@@ -132,11 +132,10 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if request.Zone.WaterScheduleID != xid.NilID() {
-		// Validate water schedule exists
-		_, err := zr.storageClient.GetWaterSchedule(request.Zone.WaterScheduleID)
+	if len(request.Zone.WaterScheduleIDs) != 0 {
+		// Validate water schedules exists
+		_, err := zr.waterSchedulesExist(request.Zone.WaterScheduleIDs)
 		if err != nil {
-			err := fmt.Errorf("error getting WaterSchedule with ID %q", request.Zone.WaterScheduleID)
 			logger.WithError(err).Error("invalid request to update Zone")
 			render.Render(w, r, ErrInvalidRequest(err))
 			return
@@ -157,6 +156,20 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
+}
+
+func (zr ZonesResource) waterSchedulesExist(ids []xid.ID) (bool, error) {
+	for _, id := range ids {
+		ws, err := zr.storageClient.GetWaterSchedule(id)
+		if err != nil {
+			return false, fmt.Errorf("error getting WaterSchedule with ID %q", id)
+		}
+		if ws == nil {
+			return false, nil
+		}
+	}
+
+	return true, nil
 }
 
 // endDateZone will mark the Zone's end date as now and save it
@@ -267,10 +280,9 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-	// Validate water schedule exists
-	_, err := zr.storageClient.GetWaterSchedule(zone.WaterScheduleID)
+	// Validate water schedules exists
+	_, err := zr.waterSchedulesExist(request.Zone.WaterScheduleIDs)
 	if err != nil {
-		err := fmt.Errorf("error getting WaterSchedule with ID %q", zone.WaterScheduleID)
 		logger.WithError(err).Error("invalid request to create Zone")
 		render.Render(w, r, ErrInvalidRequest(err))
 		return

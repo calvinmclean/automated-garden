@@ -35,6 +35,24 @@ func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, erro
 	return result, nil
 }
 
+func (c *Client) GetMultipleWaterSchedules(ids []xid.ID) ([]*pkg.WaterSchedule, error) {
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	err := c.update()
+	if err != nil {
+		return nil, err
+	}
+	result := []*pkg.WaterSchedule{}
+	for _, id := range ids {
+		ws, ok := c.data.WaterSchedules[id]
+		if ok {
+			result = append(result, ws)
+		}
+	}
+	return result, nil
+}
+
 func (c *Client) SaveWaterSchedule(ws *pkg.WaterSchedule) error {
 	c.m.Lock()
 	defer c.m.Unlock()
@@ -65,8 +83,10 @@ func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, er
 		}
 
 		for _, z := range zones {
-			if z.WaterScheduleID == id {
-				results = append(results, &pkg.ZoneAndGarden{Zone: z, Garden: g})
+			for _, wsID := range z.WaterScheduleIDs {
+				if wsID == id {
+					results = append(results, &pkg.ZoneAndGarden{Zone: z, Garden: g})
+				}
 			}
 		}
 	}

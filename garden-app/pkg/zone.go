@@ -13,14 +13,14 @@ import (
 // and some additional details describing the Zone. The Position is an integer that tells the controller which
 // part of hardware needs to be switched on to start watering
 type Zone struct {
-	Name            string       `json:"name" yaml:"name,omitempty"`
-	Details         *ZoneDetails `json:"details,omitempty" yaml:"details,omitempty"`
-	ID              xid.ID       `json:"id" yaml:"id,omitempty"`
-	Position        *uint        `json:"position" yaml:"position"`
-	CreatedAt       *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate         *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	WaterScheduleID xid.ID       `json:"water_schedule_id" yaml:"water_schedule_id"`
-	SkipCount       *int         `json:"skip_count" yaml:"skip_count"`
+	Name             string       `json:"name" yaml:"name,omitempty"`
+	Details          *ZoneDetails `json:"details,omitempty" yaml:"details,omitempty"`
+	ID               xid.ID       `json:"id" yaml:"id,omitempty"`
+	Position         *uint        `json:"position" yaml:"position"`
+	CreatedAt        *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate          *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	WaterScheduleIDs []xid.ID     `json:"water_schedule_ids" yaml:"water_schedule_ids"`
+	SkipCount        *int         `json:"skip_count" yaml:"skip_count"`
 }
 
 // String...
@@ -52,9 +52,8 @@ func (z *Zone) Patch(newZone *Zone) {
 		z.SkipCount = newZone.SkipCount
 	}
 
-	if newZone.WaterScheduleID != xid.NilID() {
-		// Initiate WaterSchedule if it is nil
-		z.WaterScheduleID = newZone.WaterScheduleID
+	if len(newZone.WaterScheduleIDs) != 0 {
+		z.WaterScheduleIDs = newZone.WaterScheduleIDs
 	}
 
 	if newZone.Details != nil {

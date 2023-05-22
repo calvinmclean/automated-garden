@@ -131,6 +131,29 @@ func (_m *MockClient) GetGardens(_a0 bool) ([]*pkg.Garden, error) {
 	return r0, r1
 }
 
+// GetMultipleWaterSchedules provides a mock function with given fields: _a0
+func (_m *MockClient) GetMultipleWaterSchedules(_a0 []xid.ID) ([]*pkg.WaterSchedule, error) {
+	ret := _m.Called(_a0)
+
+	var r0 []*pkg.WaterSchedule
+	if rf, ok := ret.Get(0).(func([]xid.ID) []*pkg.WaterSchedule); ok {
+		r0 = rf(_a0)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]*pkg.WaterSchedule)
+		}
+	}
+
+	var r1 error
+	if rf, ok := ret.Get(1).(func([]xid.ID) error); ok {
+		r1 = rf(_a0)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetPlant provides a mock function with given fields: _a0, _a1
 func (_m *MockClient) GetPlant(_a0 xid.ID, _a1 xid.ID) (*pkg.Plant, error) {
 	ret := _m.Called(_a0, _a1)

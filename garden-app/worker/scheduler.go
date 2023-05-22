@@ -63,6 +63,33 @@ func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
 	return w.ScheduleWaterAction(ws)
 }
 
+// GetNextWaterSchedule determines the WaterSchedule that is going to be used for the next watering time
+func (w *Worker) GetNextWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.WaterSchedule {
+	w.logger.Debugf("getting next water schedule for water_schedules: %+v", waterSchedules)
+
+	type nextRunData struct {
+		ws      *pkg.WaterSchedule
+		nextRun *time.Time
+	}
+
+	nextRuns := []nextRunData{}
+	for _, ws := range waterSchedules {
+		nextRuns = append(nextRuns, nextRunData{
+			ws:      ws,
+			nextRun: w.GetNextWaterTime(ws),
+		})
+	}
+
+	nextRun := nextRuns[0]
+	for i := 1; i < len(nextRuns); i++ {
+		if nextRuns[i].nextRun.Before(*nextRun.nextRun) {
+			nextRun = nextRuns[i]
+		}
+	}
+
+	return nextRun.ws
+}
+
 // GetNextWaterTime determines the next scheduled watering time for a given Zone using tags
 func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
 	logger := w.contextLogger(nil, nil, ws)

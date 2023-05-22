@@ -39,6 +39,7 @@ type Client interface {
 	DeleteWeatherClientConfig(xid.ID) error
 
 	GetWaterSchedule(xid.ID) (*pkg.WaterSchedule, error)
+	GetMultipleWaterSchedules([]xid.ID) ([]*pkg.WaterSchedule, error)
 	GetWaterSchedules(bool) ([]*pkg.WaterSchedule, error)
 	SaveWaterSchedule(*pkg.WaterSchedule) error
 	DeleteWaterSchedule(xid.ID) error

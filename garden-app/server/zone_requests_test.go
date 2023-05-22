@@ -13,7 +13,6 @@ import (
 
 func TestZoneRequest(t *testing.T) {
 	pos := uint(0)
-	// now := time.Now()
 	tests := []struct {
 		name string
 		pr   *ZoneRequest
@@ -46,14 +45,14 @@ func TestZoneRequest(t *testing.T) {
 					Position: &pos,
 				},
 			},
-			"missing required water_schedule_id field",
+			"missing required water_schedule_ids field",
 		},
 		{
 			"EmptyNameError",
 			&ZoneRequest{
 				Zone: &pkg.Zone{
-					Position:        &pos,
-					WaterScheduleID: id,
+					Position:         &pos,
+					WaterScheduleIDs: []xid.ID{id},
 				},
 			},
 			"missing required name field",
@@ -63,9 +62,9 @@ func TestZoneRequest(t *testing.T) {
 	t.Run("Successful", func(t *testing.T) {
 		pr := &ZoneRequest{
 			Zone: &pkg.Zone{
-				Name:            "zone",
-				Position:        &pos,
-				WaterScheduleID: id,
+				Name:             "zone",
+				Position:         &pos,
+				WaterScheduleIDs: []xid.ID{id},
 			},
 		}
 		r := httptest.NewRequest("", "/", nil)
