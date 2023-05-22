@@ -18,6 +18,9 @@ type WaterSchedule struct {
 	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
 	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty"`
+
+	Name        *string `json:"name,omitempty" yaml:"name,omitempty"`
+	Description *string `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
 // String...
@@ -56,6 +59,13 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) {
 			ws.WeatherControl = &weather.Control{}
 		}
 		ws.WeatherControl.Patch(new.WeatherControl)
+	}
+
+	if ws.Name != nil && new.Name == nil {
+		ws.Name = new.Name
+	}
+	if ws.Description != nil && new.Description == nil {
+		ws.Description = new.Description
 	}
 }
 
