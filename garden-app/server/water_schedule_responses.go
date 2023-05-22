@@ -45,7 +45,9 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 	response := &WaterScheduleResponse{
 		WaterSchedule: ws,
 		Links:         links,
-		NextWaterTime: wsr.worker.GetNextWaterTime(ws),
+	}
+	if !ws.EndDated() {
+		response.NextWaterTime = wsr.worker.GetNextWaterTime(ws)
 	}
 
 	response.Links = append(response.Links,
@@ -55,29 +57,20 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 		},
 	)
 
-	if ws.HasWeatherControl() {
+	if ws.HasWeatherControl() && !ws.EndDated() {
 		response.WeatherData = getWeatherData(ctx, ws, wsr.storageClient)
-
-		// TODO: Can I re-enable this if moisture comes from WeatherClient instead of garden? Follow up issue #95
-		// if ws.HasSoilMoistureControl() {
-		// 	logger.Debug("getting moisture data for WaterSchedule")
-		// 	soilMoisture, err := wsr.getMoisture(ctx, garden, ws)
-		// 	if err != nil {
-		// 		logger.WithError(err).Warn("unable to get moisture data for WaterSchedule")
-		// 	} else {
-		// 		logger.Debugf("successfully got moisture data for WaterSchedule: %f", soilMoisture)
-		// 		response.WeatherData.SoilMoisturePercent = &soilMoisture
-		// 	}
-		// }
 	}
 
-	response.NextWaterDuration = ws.Duration.Duration.String()
-	if ws.HasWeatherControl() && !ws.EndDated() {
-		wd, err := wsr.worker.ScaleWateringDuration(ws)
-		if err != nil {
-			logger.WithError(err).Warn("unable to determine water duration scale")
-		} else {
-			response.NextWaterDuration = time.Duration(wd).String()
+	if !ws.EndDated() {
+		response.NextWaterDuration = ws.Duration.Duration.String()
+
+		if ws.HasWeatherControl() {
+			wd, err := wsr.worker.ScaleWateringDuration(ws)
+			if err != nil {
+				logger.WithError(err).Warn("unable to determine water duration scale")
+			} else {
+				response.NextWaterDuration = time.Duration(wd).String()
+			}
 		}
 	}
 
@@ -87,39 +80,5 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
 func (z *WaterScheduleResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return nil
-}
-
-// WaterScheduleWaterHistoryResponse wraps a slice of WaterHistory structs plus some aggregate stats for an HTTP response
-type WaterScheduleWaterHistoryResponse struct {
-	History []pkg.WaterHistory `json:"history"`
-	Count   int                `json:"count"`
-	Average string             `json:"average"`
-	Total   string             `json:"total"`
-}
-
-// NewWaterScheduleWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
-func NewWaterScheduleWaterHistoryResponse(history []pkg.WaterHistory) WaterScheduleWaterHistoryResponse {
-	total := time.Duration(0)
-	for _, h := range history {
-		amountDuration, _ := time.ParseDuration(h.Duration)
-		total += amountDuration
-	}
-	count := len(history)
-	average := time.Duration(0)
-	if count != 0 {
-		average = time.Duration(int(total) / len(history))
-	}
-	return WaterScheduleWaterHistoryResponse{
-		History: history,
-		Count:   count,
-		Average: average.String(),
-		Total:   time.Duration(total).String(),
-	}
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (resp WaterScheduleWaterHistoryResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }

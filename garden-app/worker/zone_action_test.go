@@ -11,7 +11,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
-	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -65,8 +64,7 @@ func TestZoneAction(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			zone := &pkg.Zone{
-				Position:      uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{},
+				Position: uintPointer(0),
 			}
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
@@ -93,21 +91,6 @@ func TestWaterActionExecute(t *testing.T) {
 	action := &action.WaterAction{
 		Duration: &pkg.Duration{Duration: time.Second},
 	}
-	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
-	temperatureControl := &weather.ScaleControl{
-		BaselineValue: float32Pointer(70),
-		Factor:        float32Pointer(0.5),
-		Range:         float32Pointer(30),
-		ClientID:      weatherClientID,
-	}
-	rainControl := &weather.ScaleControl{
-		BaselineValue: float32Pointer(0),
-		Factor:        float32Pointer(0),
-		Range:         float32Pointer(50),
-		ClientID:      weatherClientID,
-	}
-
-	fifty := 50
 
 	tests := []struct {
 		name          string
@@ -118,8 +101,7 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"Successful",
 			&pkg.Zone{
-				Position:      uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{},
+				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
@@ -130,349 +112,12 @@ func TestWaterActionExecute(t *testing.T) {
 		{
 			"TopicTemplateError",
 			&pkg.Zone{
-				Position:      uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{},
+				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
 			"unable to fill MQTT topic template: template error",
-		},
-		{
-			"SuccessWhenMoistureLessThanMinimum",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						SoilMoisture: &weather.SoilMoistureControl{
-							MinimumMoisture: &fifty,
-						},
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), nil)
-				influxdbClient.On("Close")
-			},
-			"",
-		},
-		{
-			"SuccessWhenMoistureGreaterThanMinimum",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						SoilMoisture: &weather.SoilMoistureControl{
-							MinimumMoisture: &fifty,
-						},
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(51), nil)
-				influxdbClient.On("Close")
-				// No MQTT calls made
-			},
-			"",
-		},
-		{
-			"InfluxDBClientErrorStillWaters",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						SoilMoisture: &weather.SoilMoistureControl{
-							MinimumMoisture: &fifty,
-						},
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
-				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), errors.New("influxdb error"))
-				influxdbClient.On("Close")
-			},
-			"",
-		},
-		{
-			"SuccessfulRainScaleToZero",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Rain: rainControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetTotalRain", mock.Anything).Return(float32(50), nil)
-				// No MQTT calls made
-			},
-			"",
-		},
-		{
-			"SuccessfulNoRainScaling",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					Duration: &pkg.Duration{Duration: time.Second},
-					WeatherControl: &weather.Control{
-						Rain: rainControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetTotalRain", mock.Anything).Return(float32(0), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"RainDelayErrorStillWaters",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Rain: rainControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetTotalRain", mock.Anything).Return(float32(0), errors.New("weather client error"))
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulRainPartialScaling",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Rain: rainControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulNoTemperatureScaling",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(70), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulTemperaturePartialScaleUp",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(85), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1250,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulTemperatureMaxScaleUp",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(100), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulTemperatureMaxScaleUpPastMax",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(120), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulTemperaturePartialScaleDown",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(55), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":750,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulTemperatureMaxScaleDown",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(40), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessfulTemperatureBeyondMaxScaleDown",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(0), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			"GetAverageTemperatureErrorStillWatersDefault",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(0), errors.New("weather client error"))
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			// Scenario emulating summer where temperature causes increased watering, but
-			// recent rain scales it down again
-			"CompoundScalingSummerRain",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-						Rain:        rainControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(85), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":625,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
-		},
-		{
-			// Scenario emulating winter where temperature causes decreased watering and
-			// recent rain scales it down even more
-			"CompoundScalingWinterRain",
-			&pkg.Zone{
-				Position: uintPointer(0),
-				WaterSchedule: &pkg.WaterSchedule{
-					Interval: &pkg.Duration{Duration: time.Hour * 24},
-					WeatherControl: &weather.Control{
-						Temperature: temperatureControl,
-						Rain:        rainControl,
-					},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
-				sc.On("GetWeatherClient", weatherClientID).Return(wc, nil)
-				wc.On("GetTotalRain", mock.Anything).Return(float32(25), nil)
-				wc.On("GetAverageHighTemperature", mock.Anything).Return(float32(55), nil)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":375,"id":null,"position":0}`)).Return(nil)
-			},
-			"",
 		},
 	}
 

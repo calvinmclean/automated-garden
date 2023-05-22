@@ -267,7 +267,6 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
-
 	// Validate water schedule exists
 	_, err := zr.storageClient.GetWaterSchedule(zone.WaterScheduleID)
 	if err != nil {

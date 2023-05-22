@@ -48,6 +48,9 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) {
 	if new.StartTime != nil {
 		ws.StartTime = new.StartTime
 	}
+	if ws.EndDate != nil && new.EndDate == nil {
+		ws.EndDate = new.EndDate
+	}
 	if new.WeatherControl != nil {
 		if ws.WeatherControl == nil {
 			ws.WeatherControl = &weather.Control{}

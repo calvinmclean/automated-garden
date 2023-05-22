@@ -14,10 +14,11 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+var id, _ = xid.FromString("c5cvhpcbcv45e8bp16dg")
+
 func createExampleGarden() *pkg.Garden {
 	two := uint(2)
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
-	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	return &pkg.Garden{
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
@@ -34,18 +35,23 @@ func createExampleGarden() *pkg.Garden {
 
 func createExampleZone() *pkg.Zone {
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
-	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 	p := uint(0)
 	return &pkg.Zone{
-		Name:      "test zone",
+		Name:            "test zone",
+		ID:              id,
+		CreatedAt:       &createdAt,
+		Position:        &p,
+		WaterScheduleID: id,
+	}
+}
+
+func createExampleWaterSchedule() *pkg.WaterSchedule {
+	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	return &pkg.WaterSchedule{
 		ID:        id,
-		CreatedAt: &createdAt,
-		Position:  &p,
-		WaterSchedule: &pkg.WaterSchedule{
-			Duration:  &pkg.Duration{Duration: time.Second},
-			Interval:  &pkg.Duration{Duration: time.Hour * 24},
-			StartTime: &createdAt,
-		},
+		Duration:  &pkg.Duration{Duration: time.Second},
+		Interval:  &pkg.Duration{Duration: time.Hour * 24},
+		StartTime: &createdAt,
 	}
 }
 
@@ -58,16 +64,21 @@ func TestScheduleWaterAction(t *testing.T) {
 	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
+	storageClient.On("GetZonesUsingWaterSchedule", id).Return([]*pkg.ZoneAndGarden{
+		{
+			Zone:   createExampleZone(),
+			Garden: createExampleGarden(),
+		},
+	}, nil)
 
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
-	g := createExampleGarden()
-	z := createExampleZone()
+	ws := createExampleWaterSchedule()
 	// Set Zone's WaterSchedule.StartTime to the near future
 	startTime := time.Now().Add(250 * time.Millisecond)
-	z.WaterSchedule.StartTime = &startTime
-	err := worker.ScheduleWaterAction(g, z)
+	ws.StartTime = &startTime
+	err := worker.ScheduleWaterAction(ws)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
@@ -90,25 +101,24 @@ func TestResetNextWaterTime(t *testing.T) {
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
-	g := createExampleGarden()
-	z := createExampleZone()
+	ws := createExampleWaterSchedule()
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
-	z.WaterSchedule.StartTime = &startTime
-	err := worker.ScheduleWaterAction(g, z)
+	ws.StartTime = &startTime
+	err := worker.ScheduleWaterAction(ws)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
 	// Change WaterSchedule and restart
 	newTime := startTime.Add(-30 * time.Minute)
-	z.WaterSchedule.StartTime = &newTime
-	err = worker.ResetWaterSchedule(g, z)
+	ws.StartTime = &newTime
+	err = worker.ResetWaterSchedule(ws)
 	if err != nil {
 		t.Errorf("Unexpected error when resetting WaterAction: %v", err)
 	}
 
-	nextWaterTime := worker.GetNextWaterTime(z)
+	nextWaterTime := worker.GetNextWaterTime(ws)
 	expected := startTime.Add(-30 * time.Minute).Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -130,17 +140,16 @@ func TestGetNextWaterTime(t *testing.T) {
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
-	g := createExampleGarden()
-	z := createExampleZone()
-	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
+	ws := createExampleWaterSchedule()
+	// Set WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
-	z.WaterSchedule.StartTime = &startTime
-	err := worker.ScheduleWaterAction(g, z)
+	ws.StartTime = &startTime
+	err := worker.ScheduleWaterAction(ws)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
-	nextWaterTime := worker.GetNextWaterTime(z)
+	nextWaterTime := worker.GetNextWaterTime(ws)
 	expected := startTime.Add(24 * time.Hour)
 	if *nextWaterTime != expected {
 		t.Errorf("Expected %v but got: %v", nextWaterTime, expected)
@@ -443,23 +452,22 @@ func TestRemoveJobsByID(t *testing.T) {
 	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
 	worker.StartAsync()
 
-	g := createExampleGarden()
-	z := createExampleZone()
+	ws := createExampleWaterSchedule()
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
 	startTime := time.Now().Add(-1 * time.Hour)
-	z.WaterSchedule.StartTime = &startTime
-	err := worker.ScheduleWaterAction(g, z)
+	ws.StartTime = &startTime
+	err := worker.ScheduleWaterAction(ws)
 	if err != nil {
 		t.Errorf("Unexpected error when scheduling WaterAction: %v", err)
 	}
 
-	err = worker.RemoveJobsByID(z.ID)
+	err = worker.RemoveJobsByID(ws.ID)
 	if err != nil {
 		t.Errorf("Unexpected error when removing jobs: %v", err)
 	}
 
 	// This also gets coverage for GetNextWaterTime when no Job exists
-	nextWaterTime := worker.GetNextWaterTime(z)
+	nextWaterTime := worker.GetNextWaterTime(ws)
 	if nextWaterTime != nil {
 		t.Errorf("Expected nil but got: %v", nextWaterTime)
 	}

@@ -19,18 +19,18 @@ type WaterScheduleRequest struct {
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
 func (ws *WaterScheduleRequest) Bind(r *http.Request) error {
-	if ws == nil {
+	if ws == nil || ws.WaterSchedule == nil {
 		return errors.New("missing required WaterSchedule fields")
 	}
 
 	if ws.Interval == nil {
-		return errors.New("missing required water_schedule.interval field")
+		return errors.New("missing required interval field")
 	}
 	if ws.Duration == nil {
-		return errors.New("missing required water_schedule.duration field")
+		return errors.New("missing required duration field")
 	}
 	if ws.StartTime == nil {
-		return errors.New("missing required water_schedule.start_time field")
+		return errors.New("missing required start_time field")
 	}
 	if ws.WeatherControl != nil {
 		err := ValidateWeatherControl(ws.WeatherControl)
@@ -97,7 +97,7 @@ type UpdateWaterScheduleRequest struct {
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
 func (ws *UpdateWaterScheduleRequest) Bind(r *http.Request) error {
-	if ws == nil {
+	if ws == nil || ws.WaterSchedule == nil {
 		return errors.New("missing required WaterSchedule fields")
 	}
 
@@ -108,11 +108,9 @@ func (ws *UpdateWaterScheduleRequest) Bind(r *http.Request) error {
 		return errors.New("to end-date a WaterSchedule, please use the DELETE endpoint")
 	}
 
-	if ws.WaterSchedule != nil {
-		// Check that StartTime is in the future
-		if ws.StartTime != nil && time.Since(*ws.StartTime) > 0 {
-			return fmt.Errorf("unable to set water_schedule.start_time to time in the past")
-		}
+	// Check that StartTime is in the future
+	if ws.StartTime != nil && time.Since(*ws.StartTime) > 0 {
+		return fmt.Errorf("unable to set start_time to time in the past")
 	}
 
 	return nil

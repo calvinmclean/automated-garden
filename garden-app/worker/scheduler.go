@@ -23,7 +23,7 @@ const (
 // easily be removed
 func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, ws)
-	logger.Infof("creating scheduled Job for WaterSchedule %q: %+v", *ws)
+	logger.Infof("creating scheduled Job for WaterSchedule: %+v", *ws)
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(ws)...).Inc()
