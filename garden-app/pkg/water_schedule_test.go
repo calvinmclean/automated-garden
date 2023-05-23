@@ -125,3 +125,126 @@ func TestWaterSchedulePatch(t *testing.T) {
 		}
 	})
 }
+
+func TestActivePeriodValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		input       *ActivePeriod
+		expectedErr string
+	}{
+		{
+			"ValidLongNames",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   "February",
+			},
+			"",
+		},
+		{
+			"InvalidStart",
+			&ActivePeriod{
+				StartMonth: "anuary",
+				EndMonth:   "February",
+			},
+			`invalid StartMonth: parsing time "anuary" as "January": cannot parse "anuary" as "January"`,
+		},
+		{
+			"InvalidEnd",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   "ebruary",
+			},
+			`invalid EndMonth: parsing time "ebruary" as "January": cannot parse "ebruary" as "January"`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.input.Validate()
+			if tt.expectedErr == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.Equal(t, tt.expectedErr, err.Error())
+			}
+		})
+	}
+}
+
+// These tests have some potential to fail depending on what time of year it is right now, but I'll fix it if it happens
+func TestWaterScheduleIsActive(t *testing.T) {
+	now := time.Now()
+
+	tests := []struct {
+		name     string
+		ap       *ActivePeriod
+		expected bool
+	}{
+		{
+			"AllYear",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   "December",
+			},
+			true,
+		},
+		{
+			"CurrentlyStartMonth",
+			&ActivePeriod{
+				StartMonth: now.Month().String(),
+				EndMonth:   "December",
+			},
+			true,
+		},
+		{
+			"CurrentlyEndMonth",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   now.Month().String(),
+			},
+			true,
+		},
+		{
+			"CurrentlyOneMonthBeforeEnd",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   now.AddDate(0, 1, 0).Month().String(),
+			},
+			true,
+		},
+		{
+			"CurrentlyOneMonthAfterStart",
+			&ActivePeriod{
+				StartMonth: now.AddDate(0, -1, 0).Month().String(),
+				EndMonth:   "December",
+			},
+			true,
+		},
+		{
+			"CurrentlyOneMonthBeforeStart",
+			&ActivePeriod{
+				StartMonth: now.AddDate(0, 1, 0).Month().String(),
+				EndMonth:   "December",
+			},
+			false,
+		},
+		{
+			"CurrentlyOneMonthAfterEnd",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   now.AddDate(0, -1, 0).Month().String(),
+			},
+			false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, (&WaterSchedule{ActivePeriod: tt.ap}).IsActive())
+		})
+	}
+
+	t.Run("NoActivePeriod", func(t *testing.T) {
+		assert.Equal(t, true, (&WaterSchedule{}).IsActive())
+	})
+}

@@ -18,9 +18,9 @@ type WaterSchedule struct {
 	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
 	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
-
-	Name        *string `json:"name,omitempty" yaml:"name,omitempty"`
-	Description *string `json:"description,omitempty" yaml:"description,omitempty"`
+	Name           *string          `json:"name,omitempty" yaml:"name,omitempty"`
+	Description    *string          `json:"description,omitempty" yaml:"description,omitempty"`
+	ActivePeriod   *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
 }
 
 // String...
@@ -60,12 +60,17 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) {
 		}
 		ws.WeatherControl.Patch(new.WeatherControl)
 	}
-
-	if ws.Name != nil && new.Name == nil {
+	if new.Name != nil {
 		ws.Name = new.Name
 	}
-	if ws.Description != nil && new.Description == nil {
+	if new.Description != nil {
 		ws.Description = new.Description
+	}
+	if new.ActivePeriod != nil {
+		if ws.ActivePeriod == nil {
+			ws.ActivePeriod = &ActivePeriod{}
+		}
+		ws.ActivePeriod.Patch(new.ActivePeriod)
 	}
 }
 
@@ -87,4 +92,56 @@ func (ws *WaterSchedule) HasTemperatureControl() bool {
 	return ws.WeatherControl != nil &&
 		ws.WeatherControl.Temperature != nil &&
 		*ws.WeatherControl.Temperature.Factor != 0
+}
+
+// IsActive determines if the WaterSchedule is currently in it's ActivePeriod. Always true if no ActivePeriod is configured
+func (ws *WaterSchedule) IsActive() bool {
+	if ws.ActivePeriod == nil {
+		return true
+	}
+
+	_ = ws.ActivePeriod.Validate()
+
+	// Set current year to this year for easy comparison
+	now := time.Now()
+	ws.ActivePeriod.start = ws.ActivePeriod.start.AddDate(now.Year(), 0, 0)
+	ws.ActivePeriod.end = ws.ActivePeriod.end.AddDate(now.Year(), 0, 0)
+
+	return now.Month() == ws.ActivePeriod.start.Month() || // currenty start month
+		now.Month() == ws.ActivePeriod.end.Month() || // currently end month
+		(now.After(ws.ActivePeriod.start) && now.Before(ws.ActivePeriod.end)) // somewhere in-between
+}
+
+// ActivePeriod contains the start and end months for when a WaterSchedule should be considered active. Both of these constraints are inclusive
+type ActivePeriod struct {
+	StartMonth string `json:"start_month" yaml:"start_month"`
+	EndMonth   string `json:"end_month" yaml:"end_month"`
+
+	start time.Time
+	end   time.Time
+}
+
+// Validate parses the Month strings to make sure they are valid
+func (ap *ActivePeriod) Validate() error {
+	var err error
+	ap.start, err = time.Parse("January", ap.StartMonth)
+	if err != nil {
+		return fmt.Errorf("invalid StartMonth: %w", err)
+	}
+	ap.end, err = time.Parse("January", ap.EndMonth)
+	if err != nil {
+		return fmt.Errorf("invalid EndMonth: %w", err)
+	}
+
+	return nil
+}
+
+// Patch allows for easily updating/editing an ActivePeriod
+func (ap *ActivePeriod) Patch(new *ActivePeriod) {
+	if new.StartMonth != "" {
+		ap.StartMonth = new.StartMonth
+	}
+	if new.EndMonth != "" {
+		ap.EndMonth = new.EndMonth
+	}
 }
