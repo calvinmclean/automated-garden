@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/kv"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/yaml"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
@@ -53,6 +54,8 @@ func NewClient(config Config) (Client, error) {
 	switch config.Type {
 	case "YAML", "yaml", "ConfigMap", "configmap":
 		return yaml.NewClient(config.Type, config.Options)
+	case "KV", "kv":
+		return kv.NewClient(config.Options)
 	default:
 		return nil, fmt.Errorf("invalid type '%s'", config.Type)
 	}
