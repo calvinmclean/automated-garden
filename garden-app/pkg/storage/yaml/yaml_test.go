@@ -45,25 +45,25 @@ func copyData(data clientData) clientData {
 func TestNewClient(t *testing.T) {
 	tests := []struct {
 		name             string
-		options          map[string]string
+		options          map[string]interface{}
 		expectedFilename string
 		expectedGardens  map[xid.ID]*pkg.Garden
 	}{
 		{
 			"FileNotExist",
-			map[string]string{"filename": "fake file"},
+			map[string]interface{}{"filename": "fake file"},
 			"fake file",
 			map[xid.ID]*pkg.Garden{},
 		},
 		{
 			"EmptyFile",
-			map[string]string{"filename": "testdata/gardens_empty.yaml"},
+			map[string]interface{}{"filename": "testdata/gardens_empty.yaml"},
 			"testdata/gardens_empty.yaml",
 			map[xid.ID]*pkg.Garden{},
 		},
 		{
 			"RealFile",
-			map[string]string{"filename": "testdata/gardens_data.yaml"},
+			map[string]interface{}{"filename": "testdata/gardens_data.yaml"},
 			"testdata/gardens_data.yaml",
 			map[xid.ID]*pkg.Garden{
 				gardenID: {
@@ -102,7 +102,7 @@ func TestNewClient(t *testing.T) {
 	}
 
 	t.Run("ErrorMissingFilename", func(t *testing.T) {
-		_, err := NewClient("yaml", map[string]string{})
+		_, err := NewClient("yaml", map[string]interface{}{})
 		if err == nil {
 			t.Error("Expected error but got nil")
 		}

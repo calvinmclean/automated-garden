@@ -12,8 +12,8 @@ import (
 )
 
 // newYAMLStorage configures read/write from a local file
-func newYAMLStorage(options map[string]string) (*Client, error) {
-	if _, ok := options["filename"]; !ok {
+func newYAMLStorage(options map[string]interface{}) (*Client, error) {
+	if _, ok := options["filename"].(string); !ok {
 		return nil, fmt.Errorf("missing config key 'filename'")
 	}
 	client := &Client{
@@ -22,7 +22,7 @@ func newYAMLStorage(options map[string]string) (*Client, error) {
 			WeatherClientConfigs: map[xid.ID]*weather.Config{},
 			WaterSchedules:       map[xid.ID]*pkg.WaterSchedule{},
 		},
-		filename: options["filename"],
+		filename: options["filename"].(string),
 		Options:  options,
 		m:        &sync.Mutex{},
 	}

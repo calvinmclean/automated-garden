@@ -8,17 +8,18 @@ import (
 	"github.com/madflojo/hord"
 	"github.com/madflojo/hord/drivers/hashmap"
 	"github.com/madflojo/hord/drivers/redis"
+	"github.com/mitchellh/mapstructure"
 	"gopkg.in/yaml.v3"
 )
 
 type Client struct {
 	db        hord.Database
-	options   map[string]string
+	options   map[string]interface{}
 	unmarshal func([]byte, interface{}) error
 	marshal   func(interface{}) ([]byte, error)
 }
 
-func NewClient(options map[string]string) (*Client, error) {
+func NewClient(options map[string]interface{}) (*Client, error) {
 	driver, ok := options["driver"]
 	if !ok {
 		return nil, fmt.Errorf("missing config key 'driver'")
@@ -34,14 +35,14 @@ func NewClient(options map[string]string) (*Client, error) {
 	}
 }
 
-func newFileClient(options map[string]string) (*Client, error) {
-	if _, ok := options["filename"]; !ok {
-		return nil, fmt.Errorf("missing config key 'filename'")
+func newFileClient(options map[string]interface{}) (*Client, error) {
+	var cfg hashmap.Config
+	err := mapstructure.Decode(options, &cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding config: %w", err)
 	}
 
-	db, err := hashmap.Dial(hashmap.Config{
-		Filename: options["filename"],
-	})
+	db, err := hashmap.Dial(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating database connection: %w", err)
 	}
@@ -56,8 +57,8 @@ func newFileClient(options map[string]string) (*Client, error) {
 		options: options,
 	}
 
-	switch filepath.Ext(options["filename"]) {
-	case ".json":
+	switch filepath.Ext(cfg.Filename) {
+	case ".json", "":
 		client.unmarshal = json.Unmarshal
 		client.marshal = json.Marshal
 	case ".yml", ".yaml":
@@ -68,16 +69,14 @@ func newFileClient(options map[string]string) (*Client, error) {
 	return client, nil
 }
 
-func newRedisClient(options map[string]string) (*Client, error) {
-	server, ok := options["server"]
-	if !ok {
-		return nil, fmt.Errorf("missing config key 'server'")
+func newRedisClient(options map[string]interface{}) (*Client, error) {
+	var cfg redis.Config
+	err := mapstructure.Decode(options, &cfg)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding config: %w", err)
 	}
 
-	db, err := redis.Dial(redis.Config{
-		Server:   server,
-		Password: options["password"],
-	})
+	db, err := redis.Dial(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("error creating database connection: %w", err)
 	}
@@ -90,7 +89,7 @@ func newRedisClient(options map[string]string) (*Client, error) {
 	return &Client{
 		db:        db,
 		options:   options,
-		unmarshal: yaml.Unmarshal,
-		marshal:   yaml.Marshal,
+		unmarshal: json.Unmarshal,
+		marshal:   json.Marshal,
 	}, nil
 }

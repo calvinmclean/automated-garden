@@ -12,8 +12,8 @@ import (
 
 // Config is used to identify and configure a storage client
 type Config struct {
-	Type    string            `mapstructure:"type"`
-	Options map[string]string `mapstructure:"options"`
+	Type    string                 `mapstructure:"type"`
+	Options map[string]interface{} `mapstructure:"options"`
 }
 
 // Client is a "generic" interface used to interact with our storage backend (DB, file, etc)
