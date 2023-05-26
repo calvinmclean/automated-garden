@@ -10,10 +10,12 @@ import (
 
 const gardenPrefix = "Garden_"
 
+// GetGarden ...
 func (c *Client) GetGarden(id xid.ID) (*pkg.Garden, error) {
 	return c.getGarden(gardenPrefix + id.String())
 }
 
+// GetGardens ...
 func (c *Client) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 	keys, err := c.db.Keys()
 	if err != nil {
@@ -39,6 +41,7 @@ func (c *Client) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
 	return results, nil
 }
 
+// SaveGarden ...
 func (c *Client) SaveGarden(g *pkg.Garden) error {
 	asBytes, err := c.marshal(g)
 	if err != nil {
@@ -53,6 +56,7 @@ func (c *Client) SaveGarden(g *pkg.Garden) error {
 	return nil
 }
 
+// DeleteGarden ...
 func (c *Client) DeleteGarden(id xid.ID) error {
 	return c.db.Delete(gardenPrefix + id.String())
 }

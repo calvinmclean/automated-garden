@@ -10,10 +10,12 @@ import (
 
 const waterSchedulePrefix = "WaterSchedule_"
 
+// GetWaterSchedule ...
 func (c *Client) GetWaterSchedule(id xid.ID) (*pkg.WaterSchedule, error) {
 	return c.getWaterSchedule(waterSchedulePrefix + id.String())
 }
 
+// GetWaterSchedules ...
 func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, error) {
 	keys, err := c.db.Keys()
 	if err != nil {
@@ -39,6 +41,7 @@ func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, erro
 	return results, nil
 }
 
+// SaveWaterSchedule ...
 func (c *Client) SaveWaterSchedule(g *pkg.WaterSchedule) error {
 	asBytes, err := c.marshal(g)
 	if err != nil {
@@ -53,6 +56,7 @@ func (c *Client) SaveWaterSchedule(g *pkg.WaterSchedule) error {
 	return nil
 }
 
+// DeleteWaterSchedule ...
 func (c *Client) DeleteWaterSchedule(id xid.ID) error {
 	return c.db.Delete(waterSchedulePrefix + id.String())
 }
@@ -72,6 +76,7 @@ func (c *Client) getWaterSchedule(key string) (*pkg.WaterSchedule, error) {
 	return &result, nil
 }
 
+// GetMultipleWaterSchedules ...
 func (c *Client) GetMultipleWaterSchedules(ids []xid.ID) ([]*pkg.WaterSchedule, error) {
 	results := []*pkg.WaterSchedule{}
 	for _, id := range ids {

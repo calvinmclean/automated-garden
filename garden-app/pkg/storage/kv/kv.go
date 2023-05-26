@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+// Client is a wrapper around hord.Database to allow for easy interactions with resources
 type Client struct {
 	db        hord.Database
 	options   map[string]interface{}
@@ -19,6 +20,9 @@ type Client struct {
 	marshal   func(interface{}) ([]byte, error)
 }
 
+// NewClient will create a new DB connection for one of the supported hord backends:
+//   - hashmap
+//   - redis
 func NewClient(options map[string]interface{}) (*Client, error) {
 	driver, ok := options["driver"]
 	if !ok {
@@ -26,7 +30,7 @@ func NewClient(options map[string]interface{}) (*Client, error) {
 	}
 
 	switch driver {
-	case "file":
+	case "hashmap":
 		return newFileClient(options)
 	case "redis":
 		return newRedisClient(options)

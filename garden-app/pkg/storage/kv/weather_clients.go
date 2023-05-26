@@ -10,6 +10,7 @@ import (
 
 const weatherclientPrefix = "WeatherClient_"
 
+// GetWeatherClient ...
 func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 	clientConfig, err := c.getWeatherClientConfig(weatherclientPrefix + id.String())
 	if err != nil {
@@ -22,10 +23,12 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 	})
 }
 
+// GetWeatherClientConfig ...
 func (c *Client) GetWeatherClientConfig(id xid.ID) (*weather.Config, error) {
 	return c.getWeatherClientConfig(weatherclientPrefix + id.String())
 }
 
+// GetWeatherClientConfigs ...
 func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error) {
 	keys, err := c.db.Keys()
 	if err != nil {
@@ -49,6 +52,7 @@ func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error) {
 	return results, nil
 }
 
+// SaveWeatherClientConfig ...
 func (c *Client) SaveWeatherClientConfig(wc *weather.Config) error {
 	asBytes, err := c.marshal(wc)
 	if err != nil {
@@ -63,6 +67,7 @@ func (c *Client) SaveWeatherClientConfig(wc *weather.Config) error {
 	return nil
 }
 
+// DeleteWeatherClientConfig ...
 func (c *Client) DeleteWeatherClientConfig(id xid.ID) error {
 	return c.db.Delete(weatherclientPrefix + id.String())
 }

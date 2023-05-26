@@ -7,6 +7,7 @@ import (
 	"github.com/rs/xid"
 )
 
+// GetPlant ...
 func (c *Client) GetPlant(gardenID xid.ID, id xid.ID) (*pkg.Plant, error) {
 	garden, err := c.GetGarden(gardenID)
 	if err != nil {
@@ -16,6 +17,7 @@ func (c *Client) GetPlant(gardenID xid.ID, id xid.ID) (*pkg.Plant, error) {
 	return garden.Plants[id], nil
 }
 
+// GetPlants ...
 func (c *Client) GetPlants(gardenID xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
 	garden, err := c.GetGarden(gardenID)
 	if err != nil {
@@ -32,6 +34,7 @@ func (c *Client) GetPlants(gardenID xid.ID, getEndDated bool) ([]*pkg.Plant, err
 	return results, nil
 }
 
+// SavePlant ...
 func (c *Client) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
 	garden, err := c.GetGarden(gardenID)
 	if err != nil {
@@ -46,6 +49,7 @@ func (c *Client) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
 	return c.SaveGarden(garden)
 }
 
+// DeletePlant ...
 func (c *Client) DeletePlant(gardenID xid.ID, id xid.ID) error {
 	garden, err := c.GetGarden(gardenID)
 	if err != nil {

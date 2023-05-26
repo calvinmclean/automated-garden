@@ -16,7 +16,8 @@ influxdb:
 storage:
   type: "KV"
   options:
-    filename: "gardens.yaml"
+    driver: "hashmap"
+    Filename: "gardens.yaml"
 # or use redis storage:
 # storage:
 #   type: "KV"
