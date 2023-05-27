@@ -5,6 +5,7 @@
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/calvinmclean/automated-garden/main.yml?branch=main)
 [![License](https://img.shields.io/github/license/calvinmclean/automated-garden)](https://github.com/calvinmclean/automated-garden/blob/main/LICENSE)
 [![Go Reference](https://pkg.go.dev/badge/github.com/calvinmclean/automated-garden/garden-app.svg)](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app)
+[![codecov](https://codecov.io/gh/calvinmclean/automated-garden/branch/main/graph/badge.svg?token=20LWQYHKE8)](https://codecov.io/gh/calvinmclean/automated-garden)
 
 This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with multiple irrigation systems.
 
