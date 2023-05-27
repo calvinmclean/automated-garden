@@ -351,10 +351,14 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 
 	logger.Debugf("found %d light jobs and now checking to remove any adhoc jobs", len(jobs))
 	for _, j := range jobs {
+		isAdhoc := false
 		for _, tag := range j.Tags() {
 			if tag == adhocTag {
-				continue
+				isAdhoc = true
+				break
 			}
+		}
+		if !isAdhoc {
 			return j, nil
 		}
 	}
