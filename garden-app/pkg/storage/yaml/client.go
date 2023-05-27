@@ -13,7 +13,7 @@ import (
 // Client implements the Client interface to use a YAML file as a storage mechanism
 type Client struct {
 	data    clientData
-	Options map[string]string
+	Options map[string]interface{}
 	m       *sync.Mutex
 
 	// yaml file source
@@ -36,7 +36,7 @@ type clientData struct {
 
 // NewClient creates a new storage backend using YAML format. It has options to store to a local YAML
 // file or a K8s ConfigMap
-func NewClient(storageType string, options map[string]string) (*Client, error) {
+func NewClient(storageType string, options map[string]interface{}) (*Client, error) {
 	switch storageType {
 	case "YAML", "yaml":
 		return newYAMLStorage(options)

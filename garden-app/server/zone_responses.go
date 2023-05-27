@@ -47,11 +47,9 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		logger.Errorf("unable to get WaterSchedule for ZoneResponse: %v", err)
 	}
 
-	nextWaterSchedule := zr.worker.GetNextWaterSchedule(ws)
 	response := &ZoneResponse{
-		Zone:          zone,
-		Links:         links,
-		NextWaterTime: zr.worker.GetNextWaterTime(nextWaterSchedule),
+		Zone:  zone,
+		Links: links,
 	}
 
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
@@ -78,6 +76,13 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		)
 	}
 
+	nextWaterSchedule := zr.worker.GetNextWaterSchedule(ws)
+
+	if nextWaterSchedule != nil {
+		response.NextWaterDuration = nextWaterSchedule.Duration.Duration.String()
+		response.NextWaterTime = zr.worker.GetNextWaterTime(nextWaterSchedule)
+	}
+
 	// TODO: In order to do this, I need to return the "nextWaterSchedule" instead of just the next time
 	//       I wil basically reset the refactored GetNextWaterTime and take the code from there to create a function to get the next schedule
 	if nextWaterSchedule.HasWeatherControl() {
@@ -95,7 +100,6 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		}
 	}
 
-	response.NextWaterDuration = nextWaterSchedule.Duration.Duration.String()
 	if nextWaterSchedule.HasWeatherControl() && !zone.EndDated() {
 		wd, err := zr.worker.ScaleWateringDuration(nextWaterSchedule)
 		if err != nil {

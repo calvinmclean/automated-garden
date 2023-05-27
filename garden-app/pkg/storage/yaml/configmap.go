@@ -16,16 +16,16 @@ import (
 )
 
 // newConfigMapStorage initializes a K8s clientset and reads the ConfigMap into a map
-func newConfigMapStorage(options map[string]string) (*Client, error) {
-	if _, ok := options["name"]; !ok {
+func newConfigMapStorage(options map[string]interface{}) (*Client, error) {
+	if _, ok := options["name"].(string); !ok {
 		return nil, fmt.Errorf("missing config key 'name'")
 	}
-	if _, ok := options["key"]; !ok {
+	if _, ok := options["key"].(string); !ok {
 		return nil, fmt.Errorf("missing config key 'key'")
 	}
 	client := &Client{
-		configMapName: options["name"],
-		keyName:       options["key"],
+		configMapName: options["name"].(string),
+		keyName:       options["key"].(string),
 		data: clientData{
 			Gardens:              map[xid.ID]*pkg.Garden{},
 			WeatherClientConfigs: map[xid.ID]*weather.Config{},
