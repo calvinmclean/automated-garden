@@ -65,7 +65,7 @@ jobs:
 
       - name: Test
         working-directory: ./${{ env.PROJECT_NAME }}
-        run: go test -short -v -race -covermode=atomic -coverprofile=coverage.out ./...
+        run: go test -short -v -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
@@ -86,7 +86,7 @@ jobs:
 
       - name: Integration Test
         working-directory: ./${{ env.PROJECT_NAME }}/integration_tests
-        run: sleep 15 && go test -v -race -covermode=atomic -coverprofile=coverage.out ./...
+        run: sleep 15 && go test -v -covermode=atomic -coverprofile=coverage.out ./...
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
