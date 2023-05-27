@@ -1,10 +1,12 @@
 package kv
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/madflojo/hord"
 	"github.com/rs/xid"
 )
 
@@ -64,6 +66,9 @@ func (c *Client) DeleteWaterSchedule(id xid.ID) error {
 func (c *Client) getWaterSchedule(key string) (*pkg.WaterSchedule, error) {
 	dataBytes, err := c.db.Get(key)
 	if err != nil {
+		if errors.Is(hord.ErrNil, err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("error getting WaterSchedule: %w", err)
 	}
 

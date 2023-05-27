@@ -1,10 +1,12 @@
 package kv
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/madflojo/hord"
 	"github.com/rs/xid"
 )
 
@@ -75,6 +77,9 @@ func (c *Client) DeleteWeatherClientConfig(id xid.ID) error {
 func (c *Client) getWeatherClientConfig(key string) (*weather.Config, error) {
 	dataBytes, err := c.db.Get(key)
 	if err != nil {
+		if errors.Is(hord.ErrNil, err) {
+			return nil, nil
+		}
 		return nil, fmt.Errorf("error getting WeatherClient: %w", err)
 	}
 
