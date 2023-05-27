@@ -85,8 +85,8 @@ jobs:
         run: docker compose --profile test up -d
 
       - name: Integration Test
-        working-directory: ./${{ env.PROJECT_NAME }}/integration_tests
-        run: sleep 15 && go test -v -covermode=atomic -coverprofile=coverage.out ./...
+        working-directory: ./${{ env.PROJECT_NAME }}
+        run: sleep 15 && go test -v -covermode=atomic -coverprofile=coverage.out ./integration_tests/...
 
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
