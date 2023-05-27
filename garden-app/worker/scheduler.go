@@ -212,7 +212,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 
 		// Schedule one-time watering
 		if err = w.scheduleAdhocLightAction(g); err != nil {
-			return err
+			return fmt.Errorf("error scheduling ad-hoc light action: %w", err)
 		}
 		logger.Debug("successfully scheduled adhoc ON time")
 	}
@@ -298,7 +298,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		// Delay the original ON Job for 24 hours
 		_, err = w.scheduler.Job(nextOnJob).StartAt(nextOnJob.NextRun().Add(24 * time.Hour)).Update()
 		if err != nil {
-			return err
+			return fmt.Errorf("error re-scheduling original ON Job: %w", err)
 		}
 
 		// Add new ON schedule with action.Light.ForDuration that executes once
@@ -310,7 +310,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 	g.LightSchedule.AdhocOnTime = &adhocTime
 	err := w.scheduleAdhocLightAction(g)
 	if err != nil {
-		return err
+		return fmt.Errorf("error scheduling ad-hoc light action: %w", err)
 	}
 
 	return w.storageClient.SaveGarden(g)

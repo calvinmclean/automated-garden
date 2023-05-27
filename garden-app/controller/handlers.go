@@ -18,7 +18,9 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 			return
 		}
 
+		c.assertionData.Lock()
 		c.assertionData.waterActions = append(c.assertionData.waterActions, waterMsg)
+		c.assertionData.Unlock()
 
 		waterLogger.WithFields(logrus.Fields{
 			"zone_id":  waterMsg.ZoneID,
@@ -31,7 +33,9 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 
 func (c *Controller) stopHandler(topic string) paho.MessageHandler {
 	return func(pc paho.Client, msg paho.Message) {
+		c.assertionData.Lock()
 		c.assertionData.stopActions++
+		c.assertionData.Unlock()
 
 		c.subLogger.WithFields(logrus.Fields{
 			"topic": msg.Topic(),
@@ -41,7 +45,9 @@ func (c *Controller) stopHandler(topic string) paho.MessageHandler {
 
 func (c *Controller) stopAllHandler(topic string) paho.MessageHandler {
 	return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
+		c.assertionData.Lock()
 		c.assertionData.stopAllActions++
+		c.assertionData.Unlock()
 
 		c.subLogger.WithFields(logrus.Fields{
 			"topic": msg.Topic(),
@@ -59,7 +65,9 @@ func (c *Controller) lightHandler(topic string) paho.MessageHandler {
 			return
 		}
 
+		c.assertionData.Lock()
 		c.assertionData.lightActions = append(c.assertionData.lightActions, action)
+		c.assertionData.Unlock()
 
 		lightLogger.WithFields(logrus.Fields{
 			"state": action.State,
