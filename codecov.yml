@@ -15,3 +15,4 @@ ignore:
   - docs
   - garden-app/pkg/weather/netatmo # ignore because it is basically untestable
   - "*_test.go"
+  - "mock*.go"
