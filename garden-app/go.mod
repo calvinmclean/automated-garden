@@ -7,7 +7,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/go-chi/chi/v5 v5.0.8
 	github.com/go-chi/render v1.0.2
-	github.com/go-co-op/gocron v1.18.1
+	github.com/go-co-op/gocron v1.28.0
 	github.com/influxdata/influxdb-client-go/v2 v2.12.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -80,6 +80,7 @@ require (
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/stretchr/objx v0.5.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
+	go.uber.org/atomic v1.11.0 // indirect
 	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/oauth2 v0.5.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
