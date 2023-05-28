@@ -163,6 +163,10 @@ func TestGetNextWaterTime(t *testing.T) {
 }
 
 func TestScheduleLightActions(t *testing.T) {
+	// TODO: this test was consistently failing when running in GitHub Workflow, but worked fine locally until this commit which
+	// changed line 199 of `scheduler.go` (ScheduleLightActions) to delete and re-create Job instead of updating. It's interesting
+	// because it used to work fine, so I need to double-check that this these tests are actually testing what I think they are.
+	// In other words, this test sometimes tests the update job and sometimes doesn't, depending on when it is run
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
 		worker := NewWorker(nil, nil, nil, logrus.New())
 		worker.StartAsync()
@@ -178,9 +182,7 @@ func TestScheduleLightActions(t *testing.T) {
 		}
 
 		nextOnTime := worker.GetNextLightTime(g, pkg.LightStateOn)
-		if *nextOnTime != later {
-			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", later, *nextOnTime)
-		}
+		assert.Equal(t, later, *nextOnTime)
 	})
 	t.Run("AdhocOnTimeInPastIsNotUsed", func(t *testing.T) {
 		storageClient := new(storage.MockClient)
