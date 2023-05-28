@@ -14,8 +14,9 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  type: "YAML"
+  type: "kv"
   options:
+    driver: hashmap
     filename: "testdata/gardens.yml"
 
 controller:
