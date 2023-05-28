@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	lightInterval = 24 * time.Hour
-	adhocTag      = "ADHOC"
+	adhocTag = "ADHOC"
 )
 
 // ScheduleWaterAction will schedule water actions for the Zone based off the CreatedAt date,
@@ -137,49 +136,42 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		return err
 	}
 
-	// Create startDate using the CreatedAt date with the WaterSchedule's timestamp
-	startDate := time.Date(
-		g.CreatedAt.Year(),
-		g.CreatedAt.Month(),
-		g.CreatedAt.Day(),
+	now := time.Now().In(lightTime.Location())
+	// Create onStartDate using the CreatedAt date with the WaterSchedule's timestamp
+	onStartDate := time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
 		lightTime.Hour(),
 		lightTime.Minute(),
 		lightTime.Second(),
 		0,
 		lightTime.Location(),
 	)
-
-	executeLightAction := func(input *action.LightAction, actionLogger *logrus.Entry) {
-		actionLogger = actionLogger.WithField("state", input.State.String())
-		actionLogger.Infof("executing LightAction with state %s", input.State)
-		err = w.ExecuteLightAction(g, input)
-		if err != nil {
-			actionLogger.Errorf("error executing scheduled LightAction: %v", err)
-			schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
-		}
-	}
+	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
 
 	// Schedule the LightAction execution for ON and OFF
 	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Add(2)
 	onAction := &action.LightAction{State: pkg.LightStateOn}
 	offAction := &action.LightAction{State: pkg.LightStateOff}
 	_, err = w.scheduler.
-		Every(lightInterval).
-		StartAt(startDate).
+		Every(1).Day().At(onStartDate).
+		StartAt(onStartDate).
 		Tag("garden").
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOn.String()).
-		Do(executeLightAction, onAction, logger.WithField("source", "scheduled_job"))
+		Do(w.executeLightActionInScheduledJob, g, onAction, logger.WithField("source", "scheduled_job"))
 	if err != nil {
 		return err
 	}
+
 	_, err = w.scheduler.
-		Every(lightInterval).
-		StartAt(startDate.Add(g.LightSchedule.Duration.Duration)).
+		Every(1).Day().At(offStartDate).
+		StartAt(offStartDate).
 		Tag("garden").
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOff.String()).
-		Do(executeLightAction, offAction, logger.WithField("source", "scheduled_job"))
+		Do(w.executeLightActionInScheduledJob, g, offAction, logger.WithField("source", "scheduled_job"))
 	if err != nil {
 		return err
 	}
@@ -295,11 +287,20 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		}
 		logger.Debug("found next ON Job and rescheduling in 24 hours")
 
-		// Delay the original ON Job for 24 hours
-		_, err = w.scheduler.Job(nextOnJob).StartAt(nextOnJob.NextRun().Add(24 * time.Hour)).Update()
+		// TODO: go back to using Update() function when bug is fixed
+		newTime := nextOnJob.NextRun().Add(24 * time.Hour)
+		onAction := &action.LightAction{State: pkg.LightStateOn}
+		_, err = w.scheduler.
+			Every(1).Day().
+			StartAt(newTime).
+			Tag("garden").
+			Tag(g.ID.String()).
+			Tag(pkg.LightStateOn.String()).
+			Do(w.executeLightActionInScheduledJob, g, onAction, logger.WithField("source", "scheduled_job"))
 		if err != nil {
-			return fmt.Errorf("error re-scheduling original ON Job: %w", err)
+			return err
 		}
+		w.scheduler.RemoveByReference(nextOnJob)
 
 		// Add new ON schedule with action.Light.ForDuration that executes once
 		adhocTime = nextOnTime.Add(input.ForDuration.Duration)
@@ -351,10 +352,14 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 
 	logger.Debugf("found %d light jobs and now checking to remove any adhoc jobs", len(jobs))
 	for _, j := range jobs {
+		isAdhoc := false
 		for _, tag := range j.Tags() {
 			if tag == adhocTag {
-				continue
+				isAdhoc = true
+				break
 			}
+		}
+		if !isAdhoc {
 			return j, nil
 		}
 	}
@@ -402,7 +407,8 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Inc()
 	onAction := &action.LightAction{State: pkg.LightStateOn}
 	_, err := w.scheduler.
-		Every("1s"). // Every is required even though it's not needed for this Job
+		Every(1).Day(). // Every is required even though it's not needed for this Job
+		At(*g.LightSchedule.AdhocOnTime).
 		LimitRunsTo(1).
 		StartAt(*g.LightSchedule.AdhocOnTime).
 		WaitForSchedule().
@@ -439,4 +445,14 @@ func gardenLabels(g *pkg.Garden) []string {
 
 func waterScheduleLabels(ws *pkg.WaterSchedule) []string {
 	return []string{"water_schedule", ws.ID.String()}
+}
+
+func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.LightAction, actionLogger *logrus.Entry) {
+	actionLogger = actionLogger.WithField("state", input.State.String())
+	actionLogger.Infof("executing LightAction with state %s", input.State)
+	err := w.ExecuteLightAction(g, input)
+	if err != nil {
+		actionLogger.Errorf("error executing scheduled LightAction: %v", err)
+		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
+	}
 }

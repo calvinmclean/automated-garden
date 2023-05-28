@@ -11,6 +11,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -168,7 +169,7 @@ func TestScheduleLightActions(t *testing.T) {
 		defer worker.Stop()
 
 		now := time.Now()
-		later := now.Add(1 * time.Hour)
+		later := now.Add(1 * time.Hour).Truncate(time.Second)
 		g := createExampleGarden()
 		g.LightSchedule.AdhocOnTime = &later
 		err := worker.ScheduleLightActions(g)
@@ -209,17 +210,15 @@ func TestScheduleLightActions(t *testing.T) {
 			lightTime.Minute(),
 			lightTime.Second(),
 			0,
-			lightTime.Location(),
+			time.Local,
 		)
 		// If expected time is before now, it will be tomorrow
 		if expected.Before(now) {
-			expected = expected.Add(lightInterval)
+			expected = expected.Add(24 * time.Hour)
 		}
 
 		nextOnTime := worker.GetNextLightTime(g, pkg.LightStateOn)
-		if nextOnTime.UnixNano() != expected.UnixNano() {
-			t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
-		}
+		assert.Equal(t, expected, *nextOnTime)
 		storageClient.AssertExpectations(t)
 	})
 }
@@ -345,14 +344,12 @@ func TestScheduleLightDelay(t *testing.T) {
 					lightTime.Minute(),
 					lightTime.Second(),
 					0,
-					lightTime.Location(),
+					time.Local,
 				).Add(tt.expectedDelay).Truncate(time.Second)
 			}
 
 			nextOnTime := worker.GetNextLightTime(tt.garden, pkg.LightStateOn).Truncate(time.Second)
-			if nextOnTime.UnixNano() != expected.UnixNano() {
-				t.Errorf("Unexpected nextOnTime: expected=%v, actual=%v", expected, nextOnTime)
-			}
+			assert.Equal(t, expected, nextOnTime)
 			storageClient.AssertExpectations(t)
 		})
 	}
