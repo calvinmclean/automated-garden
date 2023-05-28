@@ -266,8 +266,8 @@ func ZoneTests(t *testing.T) {
 		assert.Equal(t, "3s", history.Total)
 	})
 	t.Run("ChangeWaterScheduleStartTimeResetsWaterSchedule", func(t *testing.T) {
-		// Reschedule to Water in 1 second, for 1 second
-		newStartTime := time.Now().Add(1 * time.Second).Truncate(time.Second)
+		// Reschedule to Water in 2 second, for 1 second
+		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/chkodpg3lcj13q82mq40", pkg.WaterSchedule{
 			StartTime: &newStartTime,
@@ -286,7 +286,7 @@ func ZoneTests(t *testing.T) {
 		assert.Equal(t, http.StatusOK, status)
 		assert.Equal(t, newStartTime, z2.NextWaterTime.Truncate(time.Second).Local())
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(3 * time.Second)
 
 		// Assert WaterAction
 		id, err := xid.FromString("c9i99otvqc7kmt8hjio0")
