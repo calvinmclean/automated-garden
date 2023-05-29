@@ -14,5 +14,6 @@ ignore:
   - iOS_App
   - docs
   - garden-app/pkg/weather/netatmo # ignore because it is basically untestable
+  - garden-app/cmd/completion.go
   - "garden-app/**/*_test.go"
   - "garden-app/**/mock*.go"
