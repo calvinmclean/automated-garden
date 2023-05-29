@@ -70,7 +70,7 @@ func NewServer(cfg Config) (*Server, error) {
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	// Initialize Storage Client
-	logger.WithField("type", cfg.StorageConfig.Type).Info("initializing storage client")
+	logger.WithField("driver", cfg.StorageConfig.Driver).Info("initializing storage client")
 	storageClient, err := storage.NewClient(cfg.StorageConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize storage client: %v", err)

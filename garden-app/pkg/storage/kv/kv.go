@@ -23,19 +23,14 @@ type Client struct {
 // NewClient will create a new DB connection for one of the supported hord backends:
 //   - hashmap
 //   - redis
-func NewClient(options map[string]interface{}) (*Client, error) {
-	driver, ok := options["driver"]
-	if !ok {
-		return nil, fmt.Errorf("missing config key 'driver'")
-	}
-
+func NewClient(driver string, options map[string]interface{}) (*Client, error) {
 	switch driver {
 	case "hashmap":
 		return newFileClient(options)
 	case "redis":
 		return newRedisClient(options)
 	default:
-		return nil, fmt.Errorf("invalid KV driver: %s", driver)
+		return nil, fmt.Errorf("invalid KV driver: %q", driver)
 	}
 }
 

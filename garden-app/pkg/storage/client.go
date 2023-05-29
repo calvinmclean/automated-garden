@@ -5,14 +5,13 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/kv"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/yaml"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 )
 
 // Config is used to identify and configure a storage client
 type Config struct {
-	Type    string                 `mapstructure:"type"`
+	Driver  string                 `mapstructure:"driver"`
 	Options map[string]interface{} `mapstructure:"options"`
 }
 
@@ -58,18 +57,12 @@ type BaseClient interface {
 
 // NewClient will use the config to create and return the correct type of storage client
 func NewClient(config Config) (Client, error) {
-	var client BaseClient
-	var err error
-	switch config.Type {
-	case "YAML", "yaml", "ConfigMap", "configmap":
-		client, err = yaml.NewClient(config.Type, config.Options)
-	case "KV", "kv":
-		client, err = kv.NewClient(config.Options)
-	default:
-		return nil, fmt.Errorf("invalid type '%s'", config.Type)
+	client, err := kv.NewClient(config.Driver, config.Options)
+	if err != nil {
+		return nil, fmt.Errorf("error creating new KV client: %w", err)
 	}
 
-	return &extendedClient{client}, err
+	return &extendedClient{client}, nil
 }
 
 type extendedClient struct {
