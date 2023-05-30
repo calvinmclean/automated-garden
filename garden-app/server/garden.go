@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -31,7 +30,7 @@ type GardensResource struct {
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, logger *logrus.Entry, storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (GardensResource, error) {
+func NewGardenResource(config Config, storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (GardensResource, error) {
 	gr := GardensResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,

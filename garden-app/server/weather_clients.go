@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -26,7 +25,7 @@ type WeatherClientsResource struct {
 }
 
 // NewWeatherClientsResource creates a new WeatherClientsResource
-func NewWeatherClientsResource(logger *logrus.Entry, storageClient storage.Client) (WeatherClientsResource, error) {
+func NewWeatherClientsResource(storageClient storage.Client) (WeatherClientsResource, error) {
 	wc := WeatherClientsResource{
 		storageClient: storageClient,
 	}
@@ -73,7 +72,7 @@ func (wcr WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r 
 	weatherClientConfigs, err := wcr.storageClient.GetWeatherClientConfigs()
 	if err != nil {
 		logger.WithError(err).Error("unable to get all WeatherClients")
-		render.Render(w, r, ErrRender(err))
+		render.Render(w, r, InternalServerError(err))
 		return
 	}
 	logger.Debugf("found %d WeatherClients", len(weatherClientConfigs))
@@ -155,7 +154,7 @@ func (wcr WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *
 		return
 	}
 
-	render.Status(r, http.StatusCreated)
+	render.Status(r, http.StatusOK)
 	if err := render.Render(w, r, wcr.NewWeatherClientResponse(r.Context(), weatherClient)); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
