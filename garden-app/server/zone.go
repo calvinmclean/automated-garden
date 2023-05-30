@@ -14,7 +14,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -32,7 +31,7 @@ type ZonesResource struct {
 }
 
 // NewZonesResource creates a new ZonesResource
-func NewZonesResource(storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker, logger *logrus.Entry) (ZonesResource, error) {
+func NewZonesResource(storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesResource, error) {
 	zr := ZonesResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,

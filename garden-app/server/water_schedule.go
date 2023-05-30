@@ -10,7 +10,6 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -26,7 +25,7 @@ type WaterSchedulesResource struct {
 }
 
 // NewWaterSchedulesResource creates a new WaterSchedulesResource
-func NewWaterSchedulesResource(logger *logrus.Entry, storageClient storage.Client, worker *worker.Worker) (WaterSchedulesResource, error) {
+func NewWaterSchedulesResource(storageClient storage.Client, worker *worker.Worker) (WaterSchedulesResource, error) {
 	wsr := WaterSchedulesResource{
 		storageClient: storageClient,
 		worker:        worker,

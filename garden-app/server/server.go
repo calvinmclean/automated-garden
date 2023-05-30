@@ -100,7 +100,7 @@ func NewServer(cfg Config) (*Server, error) {
 	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, baseLogger)
 
 	// Create API routes/handlers
-	gardenResource, err := NewGardenResource(cfg, logger, storageClient, influxdbClient, worker)
+	gardenResource, err := NewGardenResource(cfg, storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
@@ -108,7 +108,7 @@ func NewServer(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", plantBasePath, err)
 	}
-	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker, logger)
+	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
@@ -166,7 +166,7 @@ func NewServer(cfg Config) (*Server, error) {
 		})
 	})
 
-	weatherClientsResource, err := NewWeatherClientsResource(logger, storageClient)
+	weatherClientsResource, err := NewWeatherClientsResource(storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
@@ -185,7 +185,7 @@ func NewServer(cfg Config) (*Server, error) {
 		})
 	})
 
-	waterSchedulesResource, err := NewWaterSchedulesResource(logger, storageClient, worker)
+	waterSchedulesResource, err := NewWaterSchedulesResource(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
 	}
