@@ -166,6 +166,13 @@ func TestUpdateWeatherClient(t *testing.T) {
 			http.StatusBadRequest,
 		},
 		{
+			"BadRequestInvalidConfigForClient",
+			func(storageClient *storage.MockClient) {},
+			`{"options": {"rain_interval": "not duration"}}`,
+			`{"status":"Invalid request.","error":"time: invalid duration \"not duration\""}`,
+			http.StatusBadRequest,
+		},
+		{
 			"StorageClientError",
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveWeatherClientConfig", mock.Anything, mock.Anything).Return(errors.New("storage error"))

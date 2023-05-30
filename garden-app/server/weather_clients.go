@@ -146,6 +146,14 @@ func (wcr WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *
 
 	weatherClient.Patch(request.Config)
 
+	// make sure a valid WeatherClient can still be created
+	_, err := weather.NewClient(weatherClient, func(map[string]interface{}) error { return nil })
+	if err != nil {
+		logger.WithError(err).Error("invalid request to update WeatherClient")
+		render.Render(w, r, ErrInvalidRequest(err))
+		return
+	}
+
 	// Save the WeatherClient
 	logger.Debug("saving WeatherClient")
 	if err := wcr.storageClient.SaveWeatherClientConfig(weatherClient); err != nil {
