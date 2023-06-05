@@ -199,16 +199,19 @@ func (s *Scheduler) scheduleNextRun(job *Job) (bool, nextRun) {
 	if job.neverRan() {
 		// Increment startAtTime to the future
 		if !job.startAtTime.IsZero() && job.startAtTime.Before(now) {
-			duration := s.durationToNextRun(job.startAtTime, job).duration
-			job.startAtTime = job.startAtTime.Add(duration)
+			dur := s.durationToNextRun(job.startAtTime, job).duration
+			job.setStartAtTime(job.startAtTime.Add(dur))
 			if job.startAtTime.Before(now) {
 				diff := now.Sub(job.startAtTime)
-				duration := s.durationToNextRun(job.startAtTime, job).duration
-				count := diff / duration
-				if diff%duration != 0 {
-					count++
+				dur := s.durationToNextRun(job.startAtTime, job).duration
+				var count time.Duration
+				if dur != 0 {
+					count = diff / dur
+					if diff%dur != 0 {
+						count++
+					}
 				}
-				job.startAtTime = job.startAtTime.Add(duration * count)
+				job.setStartAtTime(job.startAtTime.Add(dur * count))
 			}
 		}
 	} else {
@@ -243,12 +246,14 @@ func (s *Scheduler) durationToNextRun(lastRun time.Time, job *Job) nextRun {
 	// job can be scheduled with .StartAt()
 	if job.getFirstAtTime() == 0 && job.getStartAtTime().After(lastRun) {
 		sa := job.getStartAtTime()
-		job.addAtTime(
-			time.Duration(sa.Hour())*time.Hour +
-				time.Duration(sa.Minute())*time.Minute +
-				time.Duration(sa.Second())*time.Second,
-		)
-		return nextRun{duration: job.getStartAtTime().Sub(s.now()), dateTime: job.getStartAtTime()}
+		if job.unit == days || job.unit == weeks || job.unit == months {
+			job.addAtTime(
+				time.Duration(sa.Hour())*time.Hour +
+					time.Duration(sa.Minute())*time.Minute +
+					time.Duration(sa.Second())*time.Second,
+			)
+		}
+		return nextRun{duration: sa.Sub(s.now()), dateTime: sa}
 	}
 
 	var next nextRun

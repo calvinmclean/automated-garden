@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	adhocTag = "ADHOC"
+	lightInterval = 24 * time.Hour
+	adhocTag      = "ADHOC"
 )
 
 // ScheduleWaterAction will schedule water actions for the Zone based off the CreatedAt date,
@@ -155,7 +156,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	onAction := &action.LightAction{State: pkg.LightStateOn}
 	offAction := &action.LightAction{State: pkg.LightStateOff}
 	_, err = w.scheduler.
-		Every(1).Day().At(onStartDate).
+		Every(lightInterval).
 		StartAt(onStartDate).
 		Tag("garden").
 		Tag(g.ID.String()).
@@ -166,7 +167,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	}
 
 	_, err = w.scheduler.
-		Every(1).Day().At(offStartDate).
+		Every(lightInterval).
 		StartAt(offStartDate).
 		Tag("garden").
 		Tag(g.ID.String()).
@@ -196,7 +197,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		logger.Debugf("garden's next ON time is %v", nextOnTime)
 		if nextOnTime.Before(*g.LightSchedule.AdhocOnTime) {
 			logger.Debug("next ON time is before the adhoc time, so delaying it by 24 hours")
-			err = w.rescheduleLightOn(nextOnJob, g, nextOnTime.Add(24*time.Hour), logger)
+			_, err = w.scheduler.Job(nextOnJob).StartAt(nextOnTime.Add(lightInterval)).Update()
 			if err != nil {
 				return fmt.Errorf("error rescheduling next on job: %w", err)
 			}
@@ -290,7 +291,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		}
 		logger.Debug("found next ON Job and rescheduling in 24 hours")
 
-		err = w.rescheduleLightOn(nextOnJob, g, nextOnJob.NextRun().Add(24*time.Hour), logger)
+		_, err = w.scheduler.Job(nextOnJob).StartAt(nextOnJob.NextRun().Add(lightInterval)).Update()
 		if err != nil {
 			return fmt.Errorf("error rescheduling next on job: %w", err)
 		}
@@ -448,22 +449,4 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 		actionLogger.Errorf("error executing scheduled LightAction: %v", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 	}
-}
-
-// TODO: go back to using Update() function when bug is fixed
-func (w *Worker) rescheduleLightOn(nextJob *gocron.Job, g *pkg.Garden, newTime time.Time, logger *logrus.Entry) error {
-	onAction := &action.LightAction{State: pkg.LightStateOn}
-	_, err := w.scheduler.
-		Every(1).Day().
-		StartAt(newTime).
-		Tag("garden").
-		Tag(g.ID.String()).
-		Tag(pkg.LightStateOn.String()).
-		Do(w.executeLightActionInScheduledJob, g, onAction, logger.WithField("source", "scheduled_job"))
-	if err != nil {
-		return fmt.Errorf("unable to create new LightOn job: %w", err)
-	}
-	w.scheduler.RemoveByReference(nextJob)
-
-	return nil
 }
