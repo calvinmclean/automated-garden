@@ -115,5 +115,5 @@ enum TemperatureUnit: String, Identifiable, CaseIterable {
     var id: String { self.rawValue }
     var displayName: String { rawValue }
 
-    case celcius = "°C", fahrenheit = "°F"
+    case celsius = "°C", fahrenheit = "°F"
 }

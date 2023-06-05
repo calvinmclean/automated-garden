@@ -122,6 +122,7 @@ func (c *Client) getStationData() (stationDataResponse, error) {
 	if err != nil {
 		return stationDataResponse{}, err
 	}
+	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -205,6 +206,7 @@ func (c *Client) refreshToken() error {
 	if err != nil {
 		return err
 	}
+	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

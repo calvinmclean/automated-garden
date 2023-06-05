@@ -107,7 +107,7 @@ func (ws *WaterSchedule) IsActive() bool {
 	ws.ActivePeriod.start = ws.ActivePeriod.start.AddDate(now.Year(), 0, 0)
 	ws.ActivePeriod.end = ws.ActivePeriod.end.AddDate(now.Year(), 0, 0)
 
-	return now.Month() == ws.ActivePeriod.start.Month() || // currenty start month
+	return now.Month() == ws.ActivePeriod.start.Month() || // currently start month
 		now.Month() == ws.ActivePeriod.end.Month() || // currently end month
 		(now.After(ws.ActivePeriod.start) && now.Before(ws.ActivePeriod.end)) // somewhere in-between
 }

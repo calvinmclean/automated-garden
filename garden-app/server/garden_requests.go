@@ -18,7 +18,7 @@ type GardenRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (g *GardenRequest) Bind(r *http.Request) error {
+func (g *GardenRequest) Bind(_ *http.Request) error {
 	if g == nil || g.Garden == nil {
 		return errors.New("missing required Garden fields")
 	}
@@ -70,7 +70,7 @@ type UpdateGardenRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (g *UpdateGardenRequest) Bind(r *http.Request) error {
+func (g *UpdateGardenRequest) Bind(_ *http.Request) error {
 	if g == nil || g.Garden == nil {
 		return errors.New("missing required Garden fields")
 	}
@@ -113,7 +113,7 @@ type GardenActionRequest struct {
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
 // It will verify that the request is valid
-func (action *GardenActionRequest) Bind(r *http.Request) error {
+func (action *GardenActionRequest) Bind(_ *http.Request) error {
 	// PlantAction is nil if no PlantAction fields are sent in the request. Return an
 	// error to avoid a nil pointer dereference.
 	if action == nil || action.GardenAction == nil || (action.Light == nil && action.Stop == nil) {

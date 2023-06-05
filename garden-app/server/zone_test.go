@@ -22,11 +22,14 @@ import (
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
-var id, _ = xid.FromString("c5cvhpcbcv45e8bp16dg")
-var id2, _ = xid.FromString("chkodpg3lcj13q82mq40")
+var (
+	id, _  = xid.FromString("c5cvhpcbcv45e8bp16dg")
+	id2, _ = xid.FromString("chkodpg3lcj13q82mq40")
+)
 
 func createExampleZone() *pkg.Zone {
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
@@ -230,7 +233,7 @@ func TestGetZone(t *testing.T) {
 					},
 				}}, nil)
 			},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"skip_count":null,"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celcius":35,"scale_factor":1.25},"soil_moisture_percent":2},"next_water_duration":"37m30.000039936s","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"skip_count":null,"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celsius":35,"scale_factor":1.25},"soil_moisture_percent":2},"next_water_duration":"37m30.000039936s","links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}`,
 		},
 		{
 			"ErrorGettingMoisture",
@@ -581,7 +584,7 @@ func TestGetAllZones(t *testing.T) {
 			}
 
 			zoneJSON, _ := json.Marshal(zr.NewAllZonesResponse(context.Background(), tt.expected, garden))
-			// When the expected result contains more than one Zone, on some occassions it might be out of order
+			// When the expected result contains more than one Zone, on some occasions it might be out of order
 			var reverseZoneJSON []byte
 			if len(tt.expected) > 1 {
 				reverseZoneJSON, _ = json.Marshal(zr.NewAllZonesResponse(context.Background(), []*pkg.Zone{tt.expected[1], tt.expected[0]}, &pkg.Garden{}))
@@ -849,7 +852,8 @@ func TestGetNextWaterTime(t *testing.T) {
 			}
 			ws := createExampleWaterSchedule()
 
-			pr.worker.ScheduleWaterAction(ws)
+			err := pr.worker.ScheduleWaterAction(ws)
+			assert.NoError(t, err)
 			pr.worker.StartAsync()
 			defer pr.worker.Stop()
 

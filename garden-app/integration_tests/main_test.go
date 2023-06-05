@@ -40,7 +40,7 @@ func TestIntegration(t *testing.T) {
 	input, err := os.ReadFile(baseGardensFile)
 	require.NoError(t, err)
 
-	err = os.WriteFile(gardensFile, input, 0644)
+	err = os.WriteFile(gardensFile, input, 0o600)
 	require.NoError(t, err)
 
 	defer os.RemoveAll(gardensFile)
@@ -337,6 +337,7 @@ func makeRequest(method, path string, body, response interface{}) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+	defer resp.Body.Close()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -92,6 +92,7 @@ func (c *Client) getMeasure(dataType, scale string, beginDate time.Time, endDate
 	if err != nil {
 		return nil, err
 	}
+	defer resp.Body.Close()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

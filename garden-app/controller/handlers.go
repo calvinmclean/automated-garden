@@ -31,7 +31,7 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 	}
 }
 
-func (c *Controller) stopHandler(topic string) paho.MessageHandler {
+func (c *Controller) stopHandler(_ string) paho.MessageHandler {
 	return func(pc paho.Client, msg paho.Message) {
 		c.assertionData.Lock()
 		c.assertionData.stopActions++
@@ -43,7 +43,7 @@ func (c *Controller) stopHandler(topic string) paho.MessageHandler {
 	}
 }
 
-func (c *Controller) stopAllHandler(topic string) paho.MessageHandler {
+func (c *Controller) stopAllHandler(_ string) paho.MessageHandler {
 	return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
 		c.assertionData.Lock()
 		c.assertionData.stopAllActions++

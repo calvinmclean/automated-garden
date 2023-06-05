@@ -46,6 +46,6 @@ func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
 }
 
 // GetAverageHighTemperature returns the configured value
-func (c *Client) GetAverageHighTemperature(since time.Duration) (float32, error) {
+func (c *Client) GetAverageHighTemperature(_ time.Duration) (float32, error) {
 	return c.AverageHighTemperature, nil
 }

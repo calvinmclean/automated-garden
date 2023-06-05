@@ -24,7 +24,7 @@ func (zr ZonesResource) NewAllZonesResponse(ctx context.Context, zones []*pkg.Zo
 }
 
 // Render ...
-func (zr *AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (zr *AllZonesResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -114,7 +114,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (z *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (z *ZoneResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -148,6 +148,6 @@ func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryRes
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (resp ZoneWaterHistoryResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (resp ZoneWaterHistoryResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

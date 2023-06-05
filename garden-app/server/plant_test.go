@@ -379,7 +379,7 @@ func TestGetAllPlants(t *testing.T) {
 			}
 
 			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(context.Background(), tt.expected, garden))
-			// When the expected result contains more than one Plant, on some occassions it might be out of order
+			// When the expected result contains more than one Plant, on some occasions it might be out of order
 			var reversePlantJSON []byte
 			if len(tt.expected) > 1 {
 				reversePlantJSON, _ = json.Marshal(pr.NewAllPlantsResponse(context.Background(), []*pkg.Plant{tt.expected[1], tt.expected[0]}, &pkg.Garden{}))

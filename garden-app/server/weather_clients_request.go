@@ -16,7 +16,7 @@ type WeatherClientRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (wc *WeatherClientRequest) Bind(r *http.Request) error {
+func (wc *WeatherClientRequest) Bind(_ *http.Request) error {
 	if wc == nil || wc.Config == nil {
 		return errors.New("missing required WeatherClient fields")
 	}
@@ -43,7 +43,7 @@ type UpdateWeatherClientRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (wc *UpdateWeatherClientRequest) Bind(r *http.Request) error {
+func (wc *UpdateWeatherClientRequest) Bind(_ *http.Request) error {
 	if wc == nil || wc.Config == nil {
 		return errors.New("missing required WeatherClient fields")
 	}

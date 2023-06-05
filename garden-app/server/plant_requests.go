@@ -15,7 +15,7 @@ type PlantRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (p *PlantRequest) Bind(r *http.Request) error {
+func (p *PlantRequest) Bind(_ *http.Request) error {
 	if p == nil || p.Plant == nil {
 		return errors.New("missing required Plant fields")
 	}
@@ -38,7 +38,7 @@ type UpdatePlantRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (p *UpdatePlantRequest) Bind(r *http.Request) error {
+func (p *UpdatePlantRequest) Bind(_ *http.Request) error {
 	if p == nil || p.Plant == nil {
 		return errors.New("missing required Plant fields")
 	}

@@ -989,7 +989,7 @@ components:
         temperature_control:
           $ref: "#/components/schemas/ScaleControl"
           description: |
-            scale watering based on recent average high temeperatures. Values are in degrees Celcius. With
+            scale watering based on recent average high temeperatures. Values are in degrees Celsius. With
             the example configuration, an average high of 18C will result in scaling factor of 0.55
           example:
             baseline_value: 27
@@ -1168,10 +1168,10 @@ components:
           type: object
           description: data about the average daily high temperatures
           properties:
-            celcius:
+            celsius:
               type: number
               format: float
-              description: average high daily temperatures since last watering (in degrees celcius)
+              description: average high daily temperatures since last watering (in degrees celsius)
             scale_factor:
               type: number
               format: float

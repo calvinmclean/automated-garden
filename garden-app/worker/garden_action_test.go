@@ -12,6 +12,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -213,10 +214,11 @@ func TestLightActionExecute(t *testing.T) {
 			influxdbClient.On("Close").Return()
 
 			worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
-			worker.ScheduleLightActions(garden)
+			err := worker.ScheduleLightActions(garden)
+			assert.NoError(t, err)
 			worker.StartAsync()
 
-			err := worker.ExecuteLightAction(garden, tt.action)
+			err = worker.ExecuteLightAction(garden, tt.action)
 			tt.assert(err, t)
 
 			worker.Stop()

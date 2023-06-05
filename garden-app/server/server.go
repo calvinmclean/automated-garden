@@ -203,6 +203,7 @@ func NewServer(cfg Config) (*Server, error) {
 	})
 
 	return &Server{
+		// nolint:gosec
 		&http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: r},
 		make(chan os.Signal, 1),
 		logger,
@@ -231,7 +232,10 @@ func (s *Server) Start() {
 		shutdownStart = time.Now()
 		s.logger.Info("gracefully shutting down server")
 
-		s.Shutdown(context.Background())
+		err := s.Shutdown(context.Background())
+		if err != nil {
+			s.logger.WithError(err).Error("unable to shutdown server")
+		}
 		s.gardensResource.worker.Stop()
 
 		wg.Done()

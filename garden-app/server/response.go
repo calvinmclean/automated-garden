@@ -6,10 +6,8 @@ import (
 	"github.com/go-chi/render"
 )
 
-var (
-	// ErrNotFoundResponse is a basic error response for missing resource
-	ErrNotFoundResponse = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not found."}
-)
+// ErrNotFoundResponse is a basic error response for missing resource
+var ErrNotFoundResponse = &ErrResponse{HTTPStatusCode: 404, StatusText: "Resource not found."}
 
 // ErrResponse is a struct used to organize HTTP error responses
 type ErrResponse struct {
@@ -22,7 +20,7 @@ type ErrResponse struct {
 }
 
 // Render will verify and render the ErrResponse
-func (e *ErrResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (e *ErrResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	render.Status(r, e.HTTPStatusCode)
 	return nil
 }

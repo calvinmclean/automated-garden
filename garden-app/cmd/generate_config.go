@@ -36,7 +36,7 @@ func init() {
 }
 
 // GenerateConfig is used to help in the creation of garden-controller Arduino configuration files
-func GenerateConfig(cmd *cobra.Command, args []string) {
+func GenerateConfig(cmd *cobra.Command, _ []string) {
 	var config controller.Config
 	if err := viper.Unmarshal(&config); err != nil {
 		cmd.PrintErrln("unable to read config from file: ", err)

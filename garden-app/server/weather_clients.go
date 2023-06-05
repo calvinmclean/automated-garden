@@ -241,7 +241,7 @@ func (wcr WeatherClientsResource) testWeatherClient(w http.ResponseWriter, r *ht
 			MM: rd,
 		},
 		Temperature: &TemperatureData{
-			Celcius: td,
+			Celsius: td,
 		},
 	}}
 
