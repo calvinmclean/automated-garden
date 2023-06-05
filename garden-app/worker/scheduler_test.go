@@ -212,7 +212,7 @@ func TestScheduleLightActions(t *testing.T) {
 			lightTime.Minute(),
 			lightTime.Second(),
 			0,
-			time.Local,
+			lightTime.Location(),
 		)
 		// If expected time is before now, it will be tomorrow
 		if expected.Before(now) {

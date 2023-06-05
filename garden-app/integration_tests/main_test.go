@@ -301,6 +301,21 @@ func ZoneTests(t *testing.T) {
 	})
 }
 
+func EndToEndTests(t *testing.T) {
+	t.Run("CreateWaterSchedule", func(t *testing.T) {})
+	t.Run("CreateWaterScheduleWithMoistureControl", func(t *testing.T) {})
+	t.Run("CreateWeatherClient", func(t *testing.T) {})
+	t.Run("CreateGarden", func(t *testing.T) {})
+	t.Run("CreateZone", func(t *testing.T) {})
+	t.Run("CreateZoneWithMoistureControl", func(t *testing.T) {})
+	t.Run("GetZoneToShowWeatherScaling", func(t *testing.T) {})
+	t.Run("GetZoneToShowMoistureScaling", func(t *testing.T) {})
+	t.Run("DeleteZone", func(t *testing.T) {})
+	t.Run("DeleteGarden", func(t *testing.T) {})
+	t.Run("DeleteWeatherClient", func(t *testing.T) {})
+	t.Run("DeleteWaterSchedule", func(t *testing.T) {})
+}
+
 func makeRequest(method, path string, body, response interface{}) (int, error) {
 	var reqBody io.Reader
 	if body != nil {
