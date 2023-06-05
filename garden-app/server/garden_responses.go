@@ -101,7 +101,7 @@ func (gr GardensResource) NewGardenResponse(ctx context.Context, garden *pkg.Gar
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (g *GardenResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -121,6 +121,6 @@ func (gr GardensResource) NewAllGardensResponse(ctx context.Context, gardens []*
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (pr *AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (pr *AllGardensResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

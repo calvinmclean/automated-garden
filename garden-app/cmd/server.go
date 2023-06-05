@@ -6,15 +6,13 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	serverCommand = &cobra.Command{
-		Use:     "server",
-		Aliases: []string{"run"},
-		Short:   "Run the webserver",
-		Long:    `Runs the main webserver application`,
-		Run:     Server,
-	}
-)
+var serverCommand = &cobra.Command{
+	Use:     "server",
+	Aliases: []string{"run"},
+	Short:   "Run the webserver",
+	Long:    `Runs the main webserver application`,
+	Run:     Server,
+}
 
 func init() {
 	serverCommand.Flags().Int("port", 80, "port to run Application server on")
@@ -24,7 +22,7 @@ func init() {
 }
 
 // Server will execute the Run function provided by the `server` package for running the webserver
-func Server(cmd *cobra.Command, args []string) {
+func Server(cmd *cobra.Command, _ []string) {
 	var config server.Config
 	if err := viper.Unmarshal(&config); err != nil {
 		cmd.PrintErrln("unable to read config from file:", err)

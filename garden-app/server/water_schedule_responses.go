@@ -24,7 +24,7 @@ func (wsr WaterSchedulesResource) NewAllWaterSchedulesResponse(ctx context.Conte
 }
 
 // Render ...
-func (zr *AllWaterSchedulesResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (zr *AllWaterSchedulesResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -79,6 +79,6 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (z *WaterScheduleResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (z *WaterScheduleResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

@@ -18,7 +18,7 @@ type WaterScheduleRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (ws *WaterScheduleRequest) Bind(r *http.Request) error {
+func (ws *WaterScheduleRequest) Bind(_ *http.Request) error {
 	if ws == nil || ws.WaterSchedule == nil {
 		return errors.New("missing required WaterSchedule fields")
 	}
@@ -102,7 +102,7 @@ type UpdateWaterScheduleRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (ws *UpdateWaterScheduleRequest) Bind(r *http.Request) error {
+func (ws *UpdateWaterScheduleRequest) Bind(_ *http.Request) error {
 	if ws == nil || ws.WaterSchedule == nil {
 		return errors.New("missing required WaterSchedule fields")
 	}

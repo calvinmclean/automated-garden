@@ -23,7 +23,7 @@ type RainData struct {
 
 // TemperatureData shows the average high temperatures in the last watering interval and the scaling factor it would result in
 type TemperatureData struct {
-	Celcius     float32 `json:"celcius"`
+	Celsius     float32 `json:"celsius"`
 	ScaleFactor float32 `json:"scale_factor"`
 }
 
@@ -46,11 +46,11 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient st
 	if ws.HasTemperatureControl() {
 		logger.Debug("getting average high temperature for WaterSchedule")
 		weatherData.Temperature = &TemperatureData{}
-		weatherData.Temperature.Celcius, err = getTemperatureData(ws, storageClient)
+		weatherData.Temperature.Celsius, err = getTemperatureData(ws, storageClient)
 		if err != nil {
 			logger.WithError(err).Warn("unable to get average high temperature from weather client")
 		} else {
-			weatherData.Temperature.ScaleFactor = ws.WeatherControl.Temperature.Scale(weatherData.Temperature.Celcius)
+			weatherData.Temperature.ScaleFactor = ws.WeatherControl.Temperature.Scale(weatherData.Temperature.Celsius)
 		}
 	}
 	return weatherData

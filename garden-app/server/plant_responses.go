@@ -23,7 +23,7 @@ func (pr PlantsResource) NewAllPlantsResponse(ctx context.Context, plants []*pkg
 }
 
 // Render will take the map of Plants and convert it to a list for a more RESTy response
-func (pr *AllPlantsResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (pr *AllPlantsResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -35,7 +35,7 @@ type PlantResponse struct {
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
-func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garden, plant *pkg.Plant, links ...Link) *PlantResponse {
+func (pr PlantsResource) NewPlantResponse(_ context.Context, garden *pkg.Garden, plant *pkg.Plant, links ...Link) *PlantResponse {
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	links = append(links,
 		Link{
@@ -59,7 +59,7 @@ func (pr PlantsResource) NewPlantResponse(ctx context.Context, garden *pkg.Garde
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (p *PlantResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (p *PlantResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 

@@ -136,14 +136,22 @@ func (c *Controller) Start() {
 				"interval": c.MoistureInterval.String(),
 				"strategy": c.MoistureStrategy,
 			}).Debug("create scheduled job to publish moisture data")
-			scheduler.Every(c.MoistureInterval).Do(c.publishMoistureData, p)
+			_, err := scheduler.Every(c.MoistureInterval).Do(c.publishMoistureData, p)
+			if err != nil {
+				c.logger.WithError(err).Error("error scheduling moisture publishing")
+				return
+			}
 		}
 	}
 	if c.PublishHealth {
 		c.logger.WithFields(logrus.Fields{
 			"interval": c.HealthInterval.String(),
 		}).Debug("create scheduled job to publish health data")
-		scheduler.Every(c.HealthInterval).Do(c.publishHealthData)
+		_, err := scheduler.Every(c.HealthInterval).Do(c.publishHealthData)
+		if err != nil {
+			c.logger.WithError(err).Error("error scheduling health publishing")
+			return
+		}
 	}
 	scheduler.StartAsync()
 
@@ -262,6 +270,7 @@ func (c *Controller) publishHealthData() {
 func (c *Controller) createMoistureData() int {
 	switch c.MoistureStrategy {
 	case "random":
+		// nolint:gosec
 		source := rand.New(rand.NewSource(time.Now().UnixNano()))
 		return source.Intn(c.MoistureValue)
 	case "constant":

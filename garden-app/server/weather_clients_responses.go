@@ -15,7 +15,7 @@ type WeatherClientResponse struct {
 }
 
 // NewWeatherClientResponse creates a new WeatherClientResponse
-func (wcr WeatherClientsResource) NewWeatherClientResponse(ctx context.Context, weatherClient *weather.Config, links ...Link) *WeatherClientResponse {
+func (wcr WeatherClientsResource) NewWeatherClientResponse(_ context.Context, weatherClient *weather.Config, links ...Link) *WeatherClientResponse {
 	response := &WeatherClientResponse{
 		Config: weatherClient,
 	}
@@ -31,7 +31,7 @@ func (wcr WeatherClientsResource) NewWeatherClientResponse(ctx context.Context, 
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (resp *WeatherClientResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -50,7 +50,7 @@ func (wcr WeatherClientsResource) NewAllWeatherClientsResponse(ctx context.Conte
 }
 
 // Render ...
-func (wr *AllWeatherClientsResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (wr *AllWeatherClientsResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -60,6 +60,6 @@ type WeatherClientTestResponse struct {
 }
 
 // Render ...
-func (resp *WeatherClientTestResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (resp *WeatherClientTestResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

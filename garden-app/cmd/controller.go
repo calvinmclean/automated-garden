@@ -63,7 +63,7 @@ func init() {
 }
 
 // Controller will start up the mock garden-controller
-func Controller(cmd *cobra.Command, args []string) {
+func Controller(cmd *cobra.Command, _ []string) {
 	var config controller.Config
 	if err := viper.Unmarshal(&config); err != nil {
 		cmd.PrintErrln("unable to read config from file:", err)

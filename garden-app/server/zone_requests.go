@@ -16,7 +16,7 @@ type ZoneRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (z *ZoneRequest) Bind(r *http.Request) error {
+func (z *ZoneRequest) Bind(_ *http.Request) error {
 	if z == nil || z.Zone == nil {
 		return errors.New("missing required Zone fields")
 	}
@@ -42,7 +42,7 @@ type UpdateZoneRequest struct {
 
 // Bind is used to make this struct compatible with the go-chi webserver for reading incoming
 // JSON requests
-func (z *UpdateZoneRequest) Bind(r *http.Request) error {
+func (z *UpdateZoneRequest) Bind(_ *http.Request) error {
 	if z == nil || z.Zone == nil {
 		return errors.New("missing required Zone fields")
 	}
@@ -64,7 +64,7 @@ type ZoneActionRequest struct {
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
 // It will verify that the request is valid
-func (action *ZoneActionRequest) Bind(r *http.Request) error {
+func (action *ZoneActionRequest) Bind(_ *http.Request) error {
 	// ZoneAction is nil if no ZoneAction fields are sent in the request. Return an
 	// error to avoid a nil pointer dereference.
 	if action == nil || action.ZoneAction == nil || (action.Water == nil) {

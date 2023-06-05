@@ -38,7 +38,6 @@ func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
 			}
 
 			zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID)
-
 			if err != nil {
 				jobLogger.Errorf("error getting Zones for WaterSchedule when executing scheduled Job: %v", err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(ws)...).Inc()

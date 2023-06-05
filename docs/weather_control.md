@@ -33,7 +33,7 @@ The above example will proportionally scale watering down to zero when there is 
 
 ## Temperature Control
 
-Temperature control usese the average daily high temperatures for scaling control and will scale watering both up and down based on recent temperatures. Units are in degrees Celcius.
+Temperature control usese the average daily high temperatures for scaling control and will scale watering both up and down based on recent temperatures. Units are in degrees Celsius.
 
 In the above example, there is a baseline value of 30C (86F) and range of 10 degrees. If the average daily high temperatures in the last 3 days (72h) are >= 40C (104F), watering will be scaled to 1.5 (1h30m). If the average daily high is <= 20C (68F), watering is scaled to 0.5 (30m). The scaling is proportional between these values.
 
@@ -80,7 +80,7 @@ Sometimes it might be hard to know what the total rainfall was or the recent ave
             "scale_factor": 1
         },
         "average_temperature": {
-            "celcius": 23,
+            "celsius": 23,
             "scale_factor": 0.60800004
         }
     },

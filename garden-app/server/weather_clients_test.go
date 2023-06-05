@@ -416,7 +416,7 @@ func TestTestWeatherClient(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("GetWeatherClient", mock.Anything).Return(weatherClient, nil)
 			},
-			`{"rain":{"mm":76.2,"scale_factor":0},"average_temperature":{"celcius":80,"scale_factor":0}}`,
+			`{"rain":{"mm":76.2,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":0}}`,
 			http.StatusOK,
 		},
 		{
