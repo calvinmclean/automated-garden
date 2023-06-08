@@ -64,7 +64,7 @@ func ValidateWeatherControl(wc *weather.Control) error {
 	}
 	if wc.SoilMoisture != nil {
 		if wc.SoilMoisture.MinimumMoisture == nil {
-			return errors.New("missing required field: minimum_moisture")
+			return errors.New("error validating moisture_control: missing required field: minimum_moisture")
 		}
 	}
 	return nil

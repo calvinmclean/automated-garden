@@ -52,6 +52,18 @@ func TestWaterSchedulePatch(t *testing.T) {
 			},
 		},
 		{
+			"PatchName",
+			&WaterSchedule{
+				Name: "new name",
+			},
+		},
+		{
+			"PatchDescription",
+			&WaterSchedule{
+				Description: "description",
+			},
+		},
+		{
 			"PatchWeatherControl.SoilMoisture.MinimumMoisture",
 			&WaterSchedule{
 				WeatherControl: &weather.Control{
@@ -88,6 +100,22 @@ func TestWaterSchedulePatch(t *testing.T) {
 						Factor:        &float,
 						Range:         &float,
 					},
+				},
+			},
+		},
+		{
+			"PatchActivePeriod.StartMonth",
+			&WaterSchedule{
+				ActivePeriod: &ActivePeriod{
+					StartMonth: "new month",
+				},
+			},
+		},
+		{
+			"PatchActivePeriod.EndMonth",
+			&WaterSchedule{
+				ActivePeriod: &ActivePeriod{
+					EndMonth: "new month",
 				},
 			},
 		},

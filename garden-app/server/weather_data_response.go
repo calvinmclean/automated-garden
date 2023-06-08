@@ -30,54 +30,57 @@ type TemperatureData struct {
 func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient storage.Client) *WeatherData {
 	logger := getLoggerFromContext(ctx).WithField(waterScheduleIDLogField, ws.ID.String())
 	weatherData := &WeatherData{}
-	var err error
 
 	if ws.HasRainControl() {
 		logger.Debug("getting rain data for WaterSchedule")
-		weatherData.Rain = &RainData{}
-		weatherData.Rain.MM, err = getRainData(ws, storageClient)
-		if err != nil {
+		rainMM, err := getRainData(ws, storageClient)
+		if err != nil || rainMM == nil {
 			logger.WithError(err).Warn("unable to get rain data for WaterSchedule")
 		} else {
-			weatherData.Rain.ScaleFactor = ws.WeatherControl.Rain.InvertedScaleDownOnly(weatherData.Rain.MM)
+			weatherData.Rain = &RainData{
+				MM:          *rainMM,
+				ScaleFactor: ws.WeatherControl.Rain.InvertedScaleDownOnly(*rainMM),
+			}
 		}
 	}
 
 	if ws.HasTemperatureControl() {
 		logger.Debug("getting average high temperature for WaterSchedule")
-		weatherData.Temperature = &TemperatureData{}
-		weatherData.Temperature.Celsius, err = getTemperatureData(ws, storageClient)
-		if err != nil {
+		celsius, err := getTemperatureData(ws, storageClient)
+		if err != nil || celsius == nil {
 			logger.WithError(err).Warn("unable to get average high temperature from weather client")
 		} else {
-			weatherData.Temperature.ScaleFactor = ws.WeatherControl.Temperature.Scale(weatherData.Temperature.Celsius)
+			weatherData.Temperature = &TemperatureData{
+				Celsius:     *celsius,
+				ScaleFactor: ws.WeatherControl.Temperature.Scale(*celsius),
+			}
 		}
 	}
 	return weatherData
 }
 
-func getRainData(ws *pkg.WaterSchedule, storageClient storage.Client) (float32, error) {
+func getRainData(ws *pkg.WaterSchedule, storageClient storage.Client) (*float32, error) {
 	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Rain.ClientID)
 	if err != nil {
-		return 0, fmt.Errorf("error getting WeatherClient for RainControl: %w", err)
+		return nil, fmt.Errorf("error getting WeatherClient for RainControl: %w", err)
 	}
 
 	totalRain, err := weatherClient.GetTotalRain(ws.Interval.Duration)
 	if err != nil {
-		return 0, fmt.Errorf("unable to get rain data from weather client: %w", err)
+		return nil, fmt.Errorf("unable to get rain data from weather client: %w", err)
 	}
-	return totalRain, nil
+	return &totalRain, nil
 }
 
-func getTemperatureData(ws *pkg.WaterSchedule, storageClient storage.Client) (float32, error) {
+func getTemperatureData(ws *pkg.WaterSchedule, storageClient storage.Client) (*float32, error) {
 	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
 	if err != nil {
-		return 0, fmt.Errorf("error getting WeatherClient for TemperatureControl: %w", err)
+		return nil, fmt.Errorf("error getting WeatherClient for TemperatureControl: %w", err)
 	}
 
 	avgTemperature, err := weatherClient.GetAverageHighTemperature(ws.Interval.Duration)
 	if err != nil {
-		return 0, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
+		return nil, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
 	}
-	return avgTemperature, nil
+	return &avgTemperature, nil
 }

@@ -179,6 +179,52 @@ func TestWaterScheduleRequest(t *testing.T) {
 			},
 			"error validating weather_control: error validating temperature_control: range must be a positive number",
 		},
+		{
+			"WeatherControlRainInvalidRange",
+			&WaterScheduleRequest{
+				WaterSchedule: &pkg.WaterSchedule{
+					Interval:  &pkg.Duration{Duration: time.Hour * 24},
+					Duration:  &pkg.Duration{Duration: time.Second},
+					StartTime: &now,
+					WeatherControl: &weather.Control{
+						Rain: &weather.ScaleControl{
+							BaselineValue: float32Pointer(27),
+							Factor:        float32Pointer(0.5),
+							Range:         float32Pointer(-1),
+						},
+					},
+				},
+			},
+			"error validating weather_control: error validating rain_control: range must be a positive number",
+		},
+		{
+			"WeatherControlMissingMinimumMoisture",
+			&WaterScheduleRequest{
+				WaterSchedule: &pkg.WaterSchedule{
+					Interval:  &pkg.Duration{Duration: time.Hour * 24},
+					Duration:  &pkg.Duration{Duration: time.Second},
+					StartTime: &now,
+					WeatherControl: &weather.Control{
+						SoilMoisture: &weather.SoilMoistureControl{},
+					},
+				},
+			},
+			"error validating weather_control: error validating moisture_control: missing required field: minimum_moisture",
+		},
+		{
+			"ActivePeriodInvalid",
+			&WaterScheduleRequest{
+				WaterSchedule: &pkg.WaterSchedule{
+					Interval:  &pkg.Duration{Duration: time.Hour * 24},
+					Duration:  &pkg.Duration{Duration: time.Second},
+					StartTime: &now,
+					ActivePeriod: &pkg.ActivePeriod{
+						StartMonth: "not a month",
+					},
+				},
+			},
+			"error validating active_period: invalid StartMonth: parsing time \"not a month\" as \"January\": cannot parse \"not a month\" as \"January\"",
+		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
@@ -253,6 +299,17 @@ func TestUpdateWaterScheduleRequest(t *testing.T) {
 				},
 			},
 			"to end-date a WaterSchedule, please use the DELETE endpoint",
+		},
+		{
+			"InvalidActivePeriod",
+			&UpdateWaterScheduleRequest{
+				WaterSchedule: &pkg.WaterSchedule{
+					ActivePeriod: &pkg.ActivePeriod{
+						StartMonth: "not a month",
+					},
+				},
+			},
+			"error validating active_period: invalid StartMonth: parsing time \"not a month\" as \"January\": cannot parse \"not a month\" as \"January\"",
 		},
 	}
 
