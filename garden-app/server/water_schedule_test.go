@@ -227,6 +227,33 @@ func TestGetWaterSchedule(t *testing.T) {
 			},
 			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celsius":35,"scale_factor":1.25}},"next_water_duration":"37m30.000039936s","links":[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}]}`,
 		},
+		{
+			"SuccessfulAfterErrorGettingTemperatureWeatherClient",
+			&pkg.WaterSchedule{
+				ID:        id,
+				Duration:  &pkg.Duration{Duration: time.Hour},
+				Interval:  &pkg.Duration{Duration: time.Hour * 24},
+				StartTime: &createdAt,
+				WeatherControl: &weather.Control{
+					Rain: &weather.ScaleControl{
+						BaselineValue: float32Pointer(0),
+						Factor:        float32Pointer(0),
+						Range:         float32Pointer(25.4),
+						ClientID:      weatherClientID,
+					},
+					Temperature: &weather.ScaleControl{
+						BaselineValue: float32Pointer(30),
+						Factor:        float32Pointer(0.5),
+						Range:         float32Pointer(10),
+						ClientID:      weatherClientID,
+					},
+				},
+			},
+			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient, storageClient *storage.MockClient) {
+				storageClient.On("GetWeatherClient", weatherClientID).Return(nil, errors.New("storage error"))
+			},
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{},"next_water_duration":"1h0m0s","links":[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}]}`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -255,7 +282,6 @@ func TestGetWaterSchedule(t *testing.T) {
 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 			}
 
-			// waterScheduleJSON, _ := json.Marshal(pr.NewWaterScheduleResponse(waterSchedule, 0))
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())
 			if actual != tt.expected {

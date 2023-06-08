@@ -66,7 +66,7 @@ func (w *Worker) exerciseWeatherControl(g *pkg.Garden, z *pkg.Zone, ws *pkg.Wate
 
 	duration, err := w.ScaleWateringDuration(ws)
 	if err != nil {
-		return 0, err
+		return 0, fmt.Errorf("unable to scale watering duration: %w", err)
 	}
 
 	return duration, nil
