@@ -62,6 +62,9 @@ func (c *Config) Patch(newConfig *Config) {
 		c.Type = newConfig.Type
 	}
 
+	if c.Options == nil && newConfig.Options != nil {
+		c.Options = map[string]interface{}{}
+	}
 	for k, v := range newConfig.Options {
 		c.Options[k] = v
 	}

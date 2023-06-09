@@ -4,8 +4,92 @@ import (
 	"testing"
 	"time"
 
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestPatch(t *testing.T) {
+	fifty := 50
+	tests := []struct {
+		name       string
+		newControl *Control
+	}{
+		{
+			"PatchRain.BaselineValue",
+			&Control{
+				Rain: &ScaleControl{
+					BaselineValue: float32Pointer(25.4),
+				},
+			},
+		},
+		{
+			"PatchRain.Factor",
+			&Control{
+				Rain: &ScaleControl{
+					Factor: float32Pointer(25.4),
+				},
+			},
+		},
+		{
+			"PatchRain.Range",
+			&Control{
+				Rain: &ScaleControl{
+					Range: float32Pointer(25.4),
+				},
+			},
+		},
+		{
+			"PatchRain.ID",
+			&Control{
+				Rain: &ScaleControl{
+					ClientID: xid.New(),
+				},
+			},
+		},
+		{
+			"PatchTemperature.BaselineValue",
+			&Control{
+				Temperature: &ScaleControl{
+					BaselineValue: float32Pointer(25.4),
+				},
+			},
+		},
+		{
+			"PatchSoilMoisture.MinimumMoisture",
+			&Control{
+				SoilMoisture: &SoilMoistureControl{
+					MinimumMoisture: &fifty,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name+"WithNilExisting", func(t *testing.T) {
+			c := &Control{}
+			c.Patch(tt.newControl)
+			assert.Equal(t, tt.newControl, c)
+		})
+		t.Run(tt.name+"WithAllExisting", func(t *testing.T) {
+			if tt.newControl.Rain == nil {
+				tt.newControl.Rain = &ScaleControl{}
+			}
+			if tt.newControl.Temperature == nil {
+				tt.newControl.Temperature = &ScaleControl{}
+			}
+			if tt.newControl.SoilMoisture == nil {
+				tt.newControl.SoilMoisture = &SoilMoistureControl{}
+			}
+			c := &Control{
+				Rain:         &ScaleControl{},
+				Temperature:  &ScaleControl{},
+				SoilMoisture: &SoilMoistureControl{},
+			}
+			c.Patch(tt.newControl)
+			assert.Equal(t, tt.newControl, c)
+		})
+	}
+}
 
 func TestScale(t *testing.T) {
 	baseline := float32(90)

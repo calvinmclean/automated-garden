@@ -7,6 +7,14 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func TestNewClientInvalidRainInterval(t *testing.T) {
+	_, err := NewClient(map[string]interface{}{
+		"rain_interval": "not a duration",
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "time: invalid duration \"not a duration\"", err.Error())
+}
+
 func TestGetTotalRain(t *testing.T) {
 	tests := []struct {
 		name           string
