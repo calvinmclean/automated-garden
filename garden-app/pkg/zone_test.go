@@ -33,6 +33,7 @@ func TestZoneEndDated(t *testing.T) {
 
 func TestZonePatch(t *testing.T) {
 	zero := uint(0)
+	three := 3
 	now := time.Now()
 	wsID := xid.New()
 	tests := []struct {
@@ -66,6 +67,12 @@ func TestZonePatch(t *testing.T) {
 			&Zone{Details: &ZoneDetails{
 				Notes: "notes",
 			}},
+		},
+		{
+			"PatchSkipCount",
+			&Zone{
+				SkipCount: &three,
+			},
 		},
 	}
 
