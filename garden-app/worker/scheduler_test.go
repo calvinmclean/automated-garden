@@ -476,3 +476,78 @@ func TestRemoveJobsByID(t *testing.T) {
 	influxdbClient.AssertExpectations(t)
 	mqttClient.AssertExpectations(t)
 }
+
+func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
+	worker := NewWorker(nil, nil, nil, logrus.New())
+	worker.scheduler.StartAsync()
+
+	now := time.Now()
+	addTime := func(add time.Duration) *time.Time {
+		newTime := now.Add(add)
+		return &newTime
+	}
+
+	ws1 := &pkg.WaterSchedule{
+		Name:      "ws1",
+		ID:        xid.New(),
+		Duration:  &pkg.Duration{Duration: time.Second},
+		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+		StartTime: addTime(5 * time.Minute),
+	}
+	ws2 := &pkg.WaterSchedule{
+		Name:      "ws2",
+		ID:        xid.New(),
+		Duration:  &pkg.Duration{Duration: time.Second},
+		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+		StartTime: addTime(1 * time.Minute),
+	}
+	ws3 := &pkg.WaterSchedule{
+		Name:      "ws3",
+		ID:        xid.New(),
+		Duration:  &pkg.Duration{Duration: time.Second},
+		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+		StartTime: addTime(3 * time.Minute),
+	}
+	ws4 := &pkg.WaterSchedule{
+		Name:      "ws4",
+		ID:        xid.New(),
+		Duration:  &pkg.Duration{Duration: time.Second},
+		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+		StartTime: addTime(2 * time.Minute),
+	}
+	unscheduled := &pkg.WaterSchedule{
+		Name:      "unscheduled",
+		ID:        xid.New(),
+		Duration:  &pkg.Duration{Duration: time.Second},
+		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+		StartTime: addTime(2 * time.Minute),
+	}
+	inactive := &pkg.WaterSchedule{
+		Name:      "inactive",
+		ID:        xid.New(),
+		Duration:  &pkg.Duration{Duration: time.Second},
+		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+		StartTime: addTime(2 * time.Minute),
+		ActivePeriod: &pkg.ActivePeriod{
+			StartMonth: now.AddDate(0, 1, 0).Month().String(),
+			EndMonth:   now.AddDate(0, 2, 0).Month().String(),
+		},
+	}
+
+	err := worker.ScheduleWaterAction(ws1)
+	assert.NoError(t, err)
+	err = worker.ScheduleWaterAction(ws2)
+	assert.NoError(t, err)
+	err = worker.ScheduleWaterAction(ws3)
+	assert.NoError(t, err)
+	err = worker.ScheduleWaterAction(ws4)
+	assert.NoError(t, err)
+	err = worker.ScheduleWaterAction(inactive)
+	assert.NoError(t, err)
+
+	next := worker.GetNextWaterSchedule([]*pkg.WaterSchedule{ws1, ws2, ws3, ws4, unscheduled, inactive})
+	assert.Equal(t, "ws2", next.Name)
+
+	next = worker.GetNextWaterSchedule([]*pkg.WaterSchedule{})
+	assert.Nil(t, next)
+}
