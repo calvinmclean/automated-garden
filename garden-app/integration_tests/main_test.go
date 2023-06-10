@@ -284,7 +284,7 @@ func ZoneTests(t *testing.T) {
 		status, err = makeRequest(http.MethodGet, "/gardens/c9i98glvqc7km2vasfig/zones/c9i99otvqc7kmt8hjio0", nil, &z2)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime, z2.NextWaterTime.Truncate(time.Second).Local())
+		assert.Equal(t, newStartTime, z2.NextWater.Time.Truncate(time.Second).Local())
 
 		time.Sleep(3 * time.Second)
 

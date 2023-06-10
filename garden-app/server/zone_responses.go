@@ -32,10 +32,9 @@ func (zr *AllZonesResponse) Render(_ http.ResponseWriter, _ *http.Request) error
 // and hypermedia Links fields
 type ZoneResponse struct {
 	*pkg.Zone
-	WeatherData       *WeatherData `json:"weather_data,omitempty"`
-	NextWaterTime     *time.Time   `json:"next_water_time,omitempty"`
-	NextWaterDuration string       `json:"next_water_duration,omitempty"`
-	Links             []Link       `json:"links,omitempty"`
+	WeatherData *WeatherData     `json:"weather_data,omitempty"`
+	NextWater   NextWaterDetails `json:"next_water,omitempty"`
+	Links       []Link           `json:"links,omitempty"`
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
@@ -63,28 +62,34 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 			gardenPath,
 		},
 	)
-	if !zone.EndDated() {
-		response.Links = append(response.Links,
-			Link{
-				"action",
-				fmt.Sprintf("%s%s/%s/action", gardenPath, zoneBasePath, zone.ID),
-			},
-			Link{
-				"history",
-				fmt.Sprintf("%s%s/%s/history", gardenPath, zoneBasePath, zone.ID),
-			},
-		)
+
+	if zone.EndDated() {
+		return response
 	}
 
-	nextWaterSchedule := zr.worker.GetNextWaterSchedule(ws)
+	response.Links = append(response.Links,
+		Link{
+			"action",
+			fmt.Sprintf("%s%s/%s/action", gardenPath, zoneBasePath, zone.ID),
+		},
+		Link{
+			"history",
+			fmt.Sprintf("%s%s/%s/history", gardenPath, zoneBasePath, zone.ID),
+		},
+	)
 
-	if nextWaterSchedule != nil {
-		response.NextWaterDuration = nextWaterSchedule.Duration.Duration.String()
-		response.NextWaterTime = zr.worker.GetNextWaterTime(nextWaterSchedule)
+	nextWaterSchedule := zr.worker.GetNextActiveWaterSchedule(ws)
+
+	if nextWaterSchedule == nil {
+		response.NextWater = NextWaterDetails{
+			Message: "no active WaterSchedules",
+		}
+		return response
 	}
 
-	// TODO: In order to do this, I need to return the "nextWaterSchedule" instead of just the next time
-	//       I wil basically reset the refactored GetNextWaterTime and take the code from there to create a function to get the next schedule
+	response.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.worker, logger)
+	response.NextWater.WaterScheduleID = &nextWaterSchedule.ID
+
 	if nextWaterSchedule.HasWeatherControl() {
 		response.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.storageClient)
 
@@ -97,15 +102,6 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 				logger.Debugf("successfully got moisture data for Zone: %f", soilMoisture)
 				response.WeatherData.SoilMoisturePercent = &soilMoisture
 			}
-		}
-	}
-
-	if nextWaterSchedule.HasWeatherControl() && !zone.EndDated() {
-		wd, err := zr.worker.ScaleWateringDuration(nextWaterSchedule)
-		if err != nil {
-			logger.WithError(err).Warn("unable to determine water duration scale")
-		} else {
-			response.NextWaterDuration = time.Duration(wd).String()
 		}
 	}
 

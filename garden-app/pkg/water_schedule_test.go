@@ -328,7 +328,7 @@ func TestWaterScheduleIsActive(t *testing.T) {
 			// Check every day in this month
 			for currentTime.Month() == currentMonth.Month() {
 				t.Run(fmt.Sprintf("Day_%d", currentTime.Day()), func(t *testing.T) {
-					assert.Equal(t, tt.expected, (&WaterSchedule{ActivePeriod: tt.ap}).isActive(currentTime))
+					assert.Equal(t, tt.expected, (&WaterSchedule{ActivePeriod: tt.ap}).IsActive(currentTime))
 				})
 				currentTime = currentTime.AddDate(0, 0, 1)
 			}
@@ -336,6 +336,6 @@ func TestWaterScheduleIsActive(t *testing.T) {
 	}
 
 	t.Run("NoActivePeriod", func(t *testing.T) {
-		assert.Equal(t, true, (&WaterSchedule{}).IsActive())
+		assert.Equal(t, true, (&WaterSchedule{}).IsActive(time.Now()))
 	})
 }

@@ -545,9 +545,9 @@ func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
 	err = worker.ScheduleWaterAction(inactive)
 	assert.NoError(t, err)
 
-	next := worker.GetNextWaterSchedule([]*pkg.WaterSchedule{ws1, ws2, ws3, ws4, unscheduled, inactive})
+	next := worker.GetNextActiveWaterSchedule([]*pkg.WaterSchedule{ws1, ws2, ws3, ws4, unscheduled, inactive})
 	assert.Equal(t, "ws2", next.Name)
 
-	next = worker.GetNextWaterSchedule([]*pkg.WaterSchedule{})
+	next = worker.GetNextActiveWaterSchedule([]*pkg.WaterSchedule{})
 	assert.Nil(t, next)
 }

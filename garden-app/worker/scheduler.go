@@ -32,7 +32,7 @@ func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
 		Tag("water_schedule").
 		Tag(ws.ID.String()).
 		Do(func(jobLogger *logrus.Entry) {
-			if !ws.IsActive() {
+			if !ws.IsActive(time.Now()) {
 				jobLogger.Infof("skipping WaterSchedule %q because current time is outside of ActivePeriod: %+v", ws.ID, *ws.ActivePeriod)
 				return
 			}
@@ -66,8 +66,8 @@ func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
 	return w.ScheduleWaterAction(ws)
 }
 
-// GetNextWaterSchedule determines the WaterSchedule that is going to be used for the next watering time
-func (w *Worker) GetNextWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.WaterSchedule {
+// GetNextActiveWaterSchedule determines the WaterSchedule that is going to be used for the next watering time
+func (w *Worker) GetNextActiveWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.WaterSchedule {
 	w.logger.Debugf("getting next water schedule for water_schedules: %+v", waterSchedules)
 
 	type nextRunData struct {
@@ -77,12 +77,18 @@ func (w *Worker) GetNextWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.
 
 	nextRuns := []nextRunData{}
 	for _, ws := range waterSchedules {
-		if !ws.IsActive() {
+		nextWaterTime := w.GetNextWaterTime(ws)
+		if nextWaterTime == nil {
 			continue
 		}
+
+		if !ws.IsActive(*nextWaterTime) {
+			continue
+		}
+
 		nextRuns = append(nextRuns, nextRunData{
 			ws:      ws,
-			nextRun: w.GetNextWaterTime(ws),
+			nextRun: nextWaterTime,
 		})
 	}
 
@@ -92,9 +98,6 @@ func (w *Worker) GetNextWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.
 
 	nextRun := nextRuns[0]
 	for i := 1; i < len(nextRuns); i++ {
-		if nextRuns[i].nextRun == nil {
-			continue
-		}
 		if nextRuns[i].nextRun.Before(*nextRun.nextRun) {
 			nextRun = nextRuns[i]
 		}

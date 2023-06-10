@@ -108,6 +108,7 @@ func (wsr WaterSchedulesResource) updateWaterSchedule(w http.ResponseWriter, r *
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
 	}
+	wasEndDated := ws.EndDated()
 
 	ws.Patch(request.WaterSchedule)
 	logger.Debugf("WaterSchedule after patching: %+v", ws)
@@ -130,7 +131,7 @@ func (wsr WaterSchedulesResource) updateWaterSchedule(w http.ResponseWriter, r *
 	}
 
 	// Update the water schedule for the WaterSchedule if it was changed or EndDate is removed
-	if request.WaterSchedule != nil || request.EndDate == nil {
+	if (wasEndDated && request.EndDate == nil) || request.Interval != nil || request.Duration != nil || request.StartTime != nil {
 		logger.Info("updating/resetting WaterSchedule for WaterSchedule")
 		if err := wsr.worker.ResetWaterSchedule(ws); err != nil {
 			logger.WithError(err).Errorf("unable to update/reset WaterSchedule: %+v", ws)
