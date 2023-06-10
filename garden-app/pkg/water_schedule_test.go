@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
@@ -184,6 +185,14 @@ func TestActivePeriodValidate(t *testing.T) {
 			},
 			`invalid EndMonth: parsing time "ebruary" as "January": cannot parse "ebruary" as "January"`,
 		},
+		{
+			"InvalidSameStartEnd",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   "January",
+			},
+			`StartMonth and EndMonth must be different`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -201,15 +210,15 @@ func TestActivePeriodValidate(t *testing.T) {
 
 // These tests have some potential to fail depending on what time of year it is right now, but I'll fix it if it happens
 func TestWaterScheduleIsActive(t *testing.T) {
-	now := time.Now()
-
 	tests := []struct {
-		name     string
-		ap       *ActivePeriod
-		expected bool
+		name         string
+		currentMonth string
+		ap           *ActivePeriod
+		expected     bool
 	}{
 		{
 			"AllYear",
+			"February",
 			&ActivePeriod{
 				StartMonth: "January",
 				EndMonth:   "December",
@@ -218,57 +227,112 @@ func TestWaterScheduleIsActive(t *testing.T) {
 		},
 		{
 			"CurrentlyStartMonth",
+			"February",
 			&ActivePeriod{
-				StartMonth: now.Month().String(),
+				StartMonth: "February",
 				EndMonth:   "December",
 			},
 			true,
 		},
 		{
 			"CurrentlyEndMonth",
+			"February",
 			&ActivePeriod{
 				StartMonth: "January",
-				EndMonth:   now.Month().String(),
+				EndMonth:   "February",
 			},
 			true,
 		},
 		{
 			"CurrentlyOneMonthBeforeEnd",
+			"February",
 			&ActivePeriod{
 				StartMonth: "January",
-				EndMonth:   now.AddDate(0, 1, 0).Month().String(),
+				EndMonth:   "March",
 			},
 			true,
 		},
 		{
 			"CurrentlyOneMonthAfterStart",
+			"February",
 			&ActivePeriod{
-				StartMonth: now.AddDate(0, -1, 0).Month().String(),
+				StartMonth: "January",
 				EndMonth:   "December",
 			},
 			true,
 		},
 		{
 			"CurrentlyOneMonthBeforeStart",
+			"February",
 			&ActivePeriod{
-				StartMonth: now.AddDate(0, 1, 0).Month().String(),
+				StartMonth: "March",
 				EndMonth:   "December",
 			},
 			false,
 		},
 		{
 			"CurrentlyOneMonthAfterEnd",
+			"March",
 			&ActivePeriod{
 				StartMonth: "January",
-				EndMonth:   now.AddDate(0, -1, 0).Month().String(),
+				EndMonth:   "February",
 			},
 			false,
+		},
+		{
+			"WrapAroundYearTrue",
+			"February",
+			&ActivePeriod{
+				StartMonth: "December",
+				EndMonth:   "July",
+			},
+			true,
+		},
+		{
+			"WrapAroundYearBefore",
+			"November",
+			&ActivePeriod{
+				StartMonth: "December",
+				EndMonth:   "July",
+			},
+			false,
+		},
+		{
+			"WrapAroundYearAfter",
+			"August",
+			&ActivePeriod{
+				StartMonth: "December",
+				EndMonth:   "July",
+			},
+			false,
+		},
+		{
+			"FullYear",
+			"January",
+			&ActivePeriod{
+				StartMonth: "January",
+				EndMonth:   "December",
+			},
+			true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, (&WaterSchedule{ActivePeriod: tt.ap}).IsActive())
+			// Parse current month and set to this year
+			currentMonth, err := time.Parse("January", tt.currentMonth)
+			assert.NoError(t, err)
+
+			currentTime := currentMonth.AddDate(time.Now().Year(), 0, 0)
+
+			// Check every day in this month
+			for currentTime.Month() == currentMonth.Month() {
+				t.Run(fmt.Sprintf("Day_%d", currentTime.Day()), func(t *testing.T) {
+					assert.Equal(t, tt.expected, (&WaterSchedule{ActivePeriod: tt.ap}).isActive(currentTime))
+				})
+				currentTime = currentTime.AddDate(0, 0, 1)
+			}
+
 		})
 	}
 

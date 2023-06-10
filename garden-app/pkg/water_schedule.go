@@ -95,6 +95,11 @@ func (ws *WaterSchedule) HasTemperatureControl() bool {
 
 // IsActive determines if the WaterSchedule is currently in it's ActivePeriod. Always true if no ActivePeriod is configured
 func (ws *WaterSchedule) IsActive() bool {
+	return ws.isActive(time.Now())
+}
+
+// isActive is used to make IsActive more testable
+func (ws *WaterSchedule) isActive(now time.Time) bool {
 	if ws.ActivePeriod == nil {
 		return true
 	}
@@ -102,9 +107,13 @@ func (ws *WaterSchedule) IsActive() bool {
 	_ = ws.ActivePeriod.Validate()
 
 	// Set current year to this year for easy comparison
-	now := time.Now()
 	ws.ActivePeriod.start = ws.ActivePeriod.start.AddDate(now.Year(), 0, 0)
 	ws.ActivePeriod.end = ws.ActivePeriod.end.AddDate(now.Year(), 0, 0)
+
+	// Handle wraparound dates like December -> February (Winter)
+	if ws.ActivePeriod.start.After(ws.ActivePeriod.end) {
+		ws.ActivePeriod.start = ws.ActivePeriod.start.AddDate(-1, 0, 0)
+	}
 
 	return now.Month() == ws.ActivePeriod.start.Month() || // currently start month
 		now.Month() == ws.ActivePeriod.end.Month() || // currently end month
@@ -130,6 +139,10 @@ func (ap *ActivePeriod) Validate() error {
 	ap.end, err = time.Parse("January", ap.EndMonth)
 	if err != nil {
 		return fmt.Errorf("invalid EndMonth: %w", err)
+	}
+
+	if ap.start.Month() == ap.end.Month() {
+		return fmt.Errorf("StartMonth and EndMonth must be different")
 	}
 
 	return nil
