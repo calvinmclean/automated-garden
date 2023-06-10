@@ -332,7 +332,6 @@ func TestWaterScheduleIsActive(t *testing.T) {
 				})
 				currentTime = currentTime.AddDate(0, 0, 1)
 			}
-
 		})
 	}
 
