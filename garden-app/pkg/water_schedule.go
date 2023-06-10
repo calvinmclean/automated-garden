@@ -90,8 +90,7 @@ func (ws *WaterSchedule) HasSoilMoistureControl() bool {
 // HasTemperatureControl is used to determine if configuration is available for environmental scaling
 func (ws *WaterSchedule) HasTemperatureControl() bool {
 	return ws.WeatherControl != nil &&
-		ws.WeatherControl.Temperature != nil &&
-		*ws.WeatherControl.Temperature.Factor != 0
+		ws.WeatherControl.Temperature != nil
 }
 
 // IsActive determines if the WaterSchedule is currently in it's ActivePeriod. Always true if no ActivePeriod is configured

@@ -13,6 +13,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -180,10 +181,25 @@ func TestDeleteWeatherClient(t *testing.T) {
 	weatherClientWithWS := createExampleWeatherClientConfig()
 	weatherClientWithWS.ID = id2
 
-	ws := createExampleWaterSchedule()
-	ws.WeatherControl = &weather.Control{
+	ws1 := createExampleWaterSchedule()
+	ws1.WeatherControl = &weather.Control{
 		Rain: &weather.ScaleControl{
 			ClientID: id2,
+		},
+		Temperature: &weather.ScaleControl{
+			ClientID: id2,
+		},
+	}
+
+	// This water schedule creates the situation where a WaterSchedule has WeatherControl, but doesn't match the ID
+	ws2 := createExampleWaterSchedule()
+	ws2.ID = xid.New()
+	ws2.WeatherControl = &weather.Control{
+		Rain: &weather.ScaleControl{
+			ClientID: xid.New(),
+		},
+		Temperature: &weather.ScaleControl{
+			ClientID: xid.New(),
 		},
 	}
 
@@ -196,7 +212,9 @@ func TestDeleteWeatherClient(t *testing.T) {
 	assert.NoError(t, err)
 	err = storageClient.SaveWeatherClientConfig(weatherClientWithWS)
 	assert.NoError(t, err)
-	err = storageClient.SaveWaterSchedule(ws)
+	err = storageClient.SaveWaterSchedule(ws1)
+	assert.NoError(t, err)
+	err = storageClient.SaveWaterSchedule(ws2)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -217,7 +235,7 @@ func TestDeleteWeatherClient(t *testing.T) {
 			"UnableToDeleteUsedByWaterSchedules",
 			id2.String(),
 			createExampleWeatherClientConfig(),
-			`{"status":"Invalid request.","error":"unable to delete WeatherClient used by 1 WaterSchedules"}`,
+			`{"status":"Invalid request.","error":"unable to delete WeatherClient used by 2 WaterSchedules"}`,
 			http.StatusBadRequest,
 		},
 	}
