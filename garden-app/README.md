@@ -2,19 +2,24 @@
 This is a Go application with a CLI and web backend for working with the garden controller.
 
 ## Getting Started
-1. Go to `/deploy` directory and start up all services
+1. Clonse this repository
     ```shell
-    docker compose --profile demo up
+    git clone https://github.com/calvinmclean/automated-garden.git
     ```
-2. Create a `config.yaml` file from the provided example
+1. Start up all services
     ```shell
+    docker compose -f deploy/docker-compose.yml --profile demo up
+    ```
+1. In a new terminal, create a `config.yaml` file from the provided example
+    ```shell
+    cd garden-app
     cp config.yaml.example config.yaml
     ```
-3. Create a `gardens.yaml` file from the provided example
+1. Create a `gardens.yaml` file from the provided example
     ```shell
     cp gardens.yaml.example gardens.yaml
     ```
-4. Run the server:
+1. Run the server:
     ```shell
     go run main.go server --config config.yaml
     ```

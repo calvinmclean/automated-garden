@@ -17,7 +17,7 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  type: "YAML"
+  driver: "hashmap"
   options:
     filename: "/app/configs/gardens.yaml"
 controller:

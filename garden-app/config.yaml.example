@@ -1,5 +1,5 @@
 web_server:
-  port: 80
+  port: 8080
 mqtt:
   broker: "localhost"
   port: 1883
@@ -14,10 +14,9 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  type: "KV"
+  driver: "hashmap"
   options:
-    driver: "hashmap"
-    Filename: "gardens.yaml"
+    filename: "gardens.yaml"
 # or use redis storage:
 # storage:
 #   type: "KV"
