@@ -97,8 +97,8 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 	logger.Debugf("update request: %+v", request)
 
 	// Don't allow changing ZoneID to non-existent Zone
-	if _, ok := garden.Zones[plant.ZoneID]; !ok {
-		err := fmt.Errorf("unable to update Plant with non-existent zone: %v", plant.ZoneID)
+	if _, ok := garden.Zones[request.ZoneID]; request.ZoneID != xid.NilID() && !ok {
+		err := fmt.Errorf("unable to update Plant with non-existent zone: %v", request.ZoneID)
 		logger.WithError(err).Error("unable to update Plant")
 		render.Render(w, r, ErrInvalidRequest(err))
 		return
