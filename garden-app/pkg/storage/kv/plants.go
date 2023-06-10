@@ -7,33 +7,6 @@ import (
 	"github.com/rs/xid"
 )
 
-// GetPlant ...
-func (c *Client) GetPlant(gardenID xid.ID, id xid.ID) (*pkg.Plant, error) {
-	garden, err := c.GetGarden(gardenID)
-	if err != nil {
-		return nil, fmt.Errorf("error getting parent Garden %q for Plant %q: %w", gardenID, id, err)
-	}
-
-	return garden.Plants[id], nil
-}
-
-// GetPlants ...
-func (c *Client) GetPlants(gardenID xid.ID, getEndDated bool) ([]*pkg.Plant, error) {
-	garden, err := c.GetGarden(gardenID)
-	if err != nil {
-		return nil, fmt.Errorf("error getting parent Garden %q: %w", gardenID, err)
-	}
-
-	results := []*pkg.Plant{}
-	for _, plant := range garden.Plants {
-		if getEndDated || !plant.EndDated() {
-			results = append(results, plant)
-		}
-	}
-
-	return results, nil
-}
-
 // SavePlant ...
 func (c *Client) SavePlant(gardenID xid.ID, plant *pkg.Plant) error {
 	garden, err := c.GetGarden(gardenID)

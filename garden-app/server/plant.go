@@ -170,7 +170,7 @@ func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	garden := getGardenFromContext(r.Context())
 	plants := []*pkg.Plant{}
 	for _, p := range garden.Plants {
-		if getEndDated || (p.EndDate == nil || p.EndDate.After(time.Now())) {
+		if getEndDated || !p.EndDated() {
 			plants = append(plants, p)
 		}
 	}

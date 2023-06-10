@@ -7,16 +7,6 @@ import (
 	"github.com/rs/xid"
 )
 
-// GetZone ...
-func (c *Client) GetZone(gardenID xid.ID, id xid.ID) (*pkg.Zone, error) {
-	garden, err := c.GetGarden(gardenID)
-	if err != nil {
-		return nil, fmt.Errorf("error getting parent Garden %q for Zone %q: %w", gardenID, id, err)
-	}
-
-	return garden.Zones[id], nil
-}
-
 // GetZones ...
 func (c *Client) GetZones(gardenID xid.ID, getEndDated bool) ([]*pkg.Zone, error) {
 	garden, err := c.GetGarden(gardenID)

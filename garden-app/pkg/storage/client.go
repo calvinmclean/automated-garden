@@ -32,13 +32,10 @@ type BaseClient interface {
 	SaveGarden(*pkg.Garden) error
 	DeleteGarden(xid.ID) error
 
-	GetZone(xid.ID, xid.ID) (*pkg.Zone, error)
 	GetZones(xid.ID, bool) ([]*pkg.Zone, error)
 	SaveZone(xid.ID, *pkg.Zone) error
 	DeleteZone(xid.ID, xid.ID) error
 
-	GetPlant(xid.ID, xid.ID) (*pkg.Plant, error)
-	GetPlants(xid.ID, bool) ([]*pkg.Plant, error)
 	SavePlant(xid.ID, *pkg.Plant) error
 	DeletePlant(xid.ID, xid.ID) error
 
