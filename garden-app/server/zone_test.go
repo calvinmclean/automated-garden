@@ -627,6 +627,15 @@ func TestCreateZone(t *testing.T) {
 	gardenWithZone := createExampleGarden()
 	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
 	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
+
+	// Predict NextWaterTime so I can test it better
+	now := time.Now()
+	expectedNextWaterTime := time.Date(now.Year(), now.Month(), now.Day(), createdAt.Hour(), createdAt.Minute(), createdAt.Second(), createdAt.Nanosecond(), createdAt.Location())
+	if now.Hour() >= 11 && now.Minute() >= 24 {
+		expectedNextWaterTime = expectedNextWaterTime.Add(24 * time.Hour)
+	}
+	expectedNextWaterTimeWithSkip := expectedNextWaterTime.Add(72 * time.Hour)
+
 	tests := []struct {
 		name           string
 		setupMock      func(*storage.MockClient)
@@ -645,7 +654,19 @@ func TestCreateZone(t *testing.T) {
 			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
 			createExampleGarden(),
 			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
-			`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`,
+			fmt.Sprintf(`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"%d-%02d-%02dT11:24:52.891386-07:00","duration":"1s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`, expectedNextWaterTime.Year(), expectedNextWaterTime.Month(), expectedNextWaterTime.Day()),
+			http.StatusCreated,
+		},
+		{
+			"SuccessfulWithSkipCount",
+			func(storageClient *storage.MockClient) {
+				storageClient.On("SaveZone", mock.Anything, mock.Anything).Return(nil)
+				storageClient.On("GetMultipleWaterSchedules", []xid.ID{id}).Return([]*pkg.WaterSchedule{createExampleWaterSchedule()}, nil)
+			},
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"name":"test-zone","skip_count":3,"position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
+			fmt.Sprintf(`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":3,"next_water":{"time":"%d-%02d-%02dT11:24:52.891386-07:00","duration":"1s","water_schedule_id":"c5cvhpcbcv45e8bp16dg","message":"skip_count 3 affected the time"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`, expectedNextWaterTimeWithSkip.Year(), expectedNextWaterTimeWithSkip.Month(), expectedNextWaterTimeWithSkip.Day()),
 			http.StatusCreated,
 		},
 		{

@@ -1061,6 +1061,11 @@ components:
           description: this corresponds directly to the configuration of the `garden-controller` and is critical for having control of the Zone
           example: 0
           minimum: 0
+        skip_count:
+          type: integer
+          description: allows manually skipping next N watering events
+          example: 1
+          minimum: 0
         water_schedule_ids:
           type: array
           items:

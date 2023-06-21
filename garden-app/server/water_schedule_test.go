@@ -312,8 +312,8 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			func(storageClient *storage.MockClient) {
 				storageClient.On("SaveWaterSchedule", mock.Anything, mock.Anything).Return(nil)
 			},
-			`{"interval":"1h"}`,
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"1h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT22:24:52.891386-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"duration":"1h"}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 			http.StatusOK,
 		},
 		{

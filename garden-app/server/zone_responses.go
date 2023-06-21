@@ -90,6 +90,12 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 	response.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.worker, logger)
 	response.NextWater.WaterScheduleID = &nextWaterSchedule.ID
 
+	if zone.SkipCount != nil && *zone.SkipCount > 0 {
+		response.NextWater.Message = fmt.Sprintf("skip_count %d affected the time", *zone.SkipCount)
+		newNextTime := response.NextWater.Time.Add(time.Duration(*zone.SkipCount) * nextWaterSchedule.Interval.Duration)
+		response.NextWater.Time = &newNextTime
+	}
+
 	if nextWaterSchedule.HasWeatherControl() {
 		response.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.storageClient)
 
