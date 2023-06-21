@@ -7,6 +7,9 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/worker"
+	"github.com/rs/xid"
+	"github.com/sirupsen/logrus"
 )
 
 // AllWaterSchedulesResponse is a simple struct being used to render and return a list of all WaterSchedules
@@ -32,22 +35,44 @@ func (zr *AllWaterSchedulesResponse) Render(_ http.ResponseWriter, _ *http.Reque
 // and hypermedia Links fields
 type WaterScheduleResponse struct {
 	*pkg.WaterSchedule
-	WeatherData       *WeatherData `json:"weather_data,omitempty"`
-	NextWaterTime     *time.Time   `json:"next_water_time,omitempty"`
-	NextWaterDuration string       `json:"next_water_duration,omitempty"`
-	Links             []Link       `json:"links,omitempty"`
+	WeatherData *WeatherData     `json:"weather_data,omitempty"`
+	NextWater   NextWaterDetails `json:"next_water,omitempty"`
+	Links       []Link           `json:"links,omitempty"`
+}
+
+// NextWaterDetails has information about the next time this WaterSchedule will be used
+type NextWaterDetails struct {
+	Time            *time.Time `json:"time,omitempty"`
+	Duration        string     `json:"duration,omitempty"`
+	WaterScheduleID *xid.ID    `json:"water_schedule_id,omitempty"`
+	Message         string     `json:"message,omitempty"`
+}
+
+// GetNextWaterDetails returns the NextWaterDetails for the WaterSchedule
+func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, logger *logrus.Entry) NextWaterDetails {
+	result := NextWaterDetails{
+		Time:     worker.GetNextWaterTime(ws),
+		Duration: ws.Duration.Duration.String(),
+	}
+
+	if ws.HasWeatherControl() {
+		wd, err := worker.ScaleWateringDuration(ws)
+		if err != nil {
+			result.Message = "unable to determine water duration scaling"
+			logger.WithError(err).Warn(result.Message)
+		} else {
+			result.Duration = time.Duration(wd).String()
+		}
+	}
+
+	return result
 }
 
 // NewWaterScheduleResponse creates a self-referencing WaterScheduleResponse
 func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, ws *pkg.WaterSchedule, links ...Link) *WaterScheduleResponse {
-	logger := getLoggerFromContext(ctx).WithField(waterScheduleIDLogField, ws.ID.String())
-
 	response := &WaterScheduleResponse{
 		WaterSchedule: ws,
 		Links:         links,
-	}
-	if !ws.EndDated() {
-		response.NextWaterTime = wsr.worker.GetNextWaterTime(ws)
 	}
 
 	response.Links = append(response.Links,
@@ -62,16 +87,8 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 	}
 
 	if !ws.EndDated() {
-		response.NextWaterDuration = ws.Duration.Duration.String()
-
-		if ws.HasWeatherControl() {
-			wd, err := wsr.worker.ScaleWateringDuration(ws)
-			if err != nil {
-				logger.WithError(err).Warn("unable to determine water duration scale")
-			} else {
-				response.NextWaterDuration = time.Duration(wd).String()
-			}
-		}
+		logger := getLoggerFromContext(ctx).WithField(waterScheduleIDLogField, ws.ID.String())
+		response.NextWater = GetNextWaterDetails(ws, wsr.worker, logger)
 	}
 
 	return response

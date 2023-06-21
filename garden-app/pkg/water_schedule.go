@@ -94,12 +94,7 @@ func (ws *WaterSchedule) HasTemperatureControl() bool {
 }
 
 // IsActive determines if the WaterSchedule is currently in it's ActivePeriod. Always true if no ActivePeriod is configured
-func (ws *WaterSchedule) IsActive() bool {
-	return ws.isActive(time.Now())
-}
-
-// isActive is used to make IsActive more testable
-func (ws *WaterSchedule) isActive(now time.Time) bool {
+func (ws *WaterSchedule) IsActive(now time.Time) bool {
 	if ws.ActivePeriod == nil {
 		return true
 	}

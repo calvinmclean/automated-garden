@@ -187,16 +187,16 @@ func TestGetWaterSchedule(t *testing.T) {
 	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 
 	tests := []struct {
-		name          string
-		waterSchedule *pkg.WaterSchedule
-		setupMock     func(*influxdb.MockClient, *weather.MockClient, *storage.MockClient)
-		expected      string
+		name           string
+		waterSchedule  *pkg.WaterSchedule
+		setupMock      func(*influxdb.MockClient, *weather.MockClient, *storage.MockClient)
+		expectedRegexp string
 	}{
 		{
 			"Successful",
 			createExampleWaterSchedule(),
 			func(*influxdb.MockClient, *weather.MockClient, *storage.MockClient) {},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water_duration":"1s","links":[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386\-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386\-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureData",
@@ -225,7 +225,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				weatherClient.On("GetTotalRain", mock.Anything).Return(float32(12.7), nil)
 				weatherClient.On("GetAverageHighTemperature", mock.Anything).Return(float32(35), nil)
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celsius":35,"scale_factor":1.25}},"next_water_duration":"37m30.000039936s","links":[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celsius":35,"scale_factor":1.25}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"37m30.000039936s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulAfterErrorGettingTemperatureWeatherClient",
@@ -252,7 +252,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient, storageClient *storage.MockClient) {
 				storageClient.On("GetWeatherClient", weatherClientID).Return(nil, errors.New("storage error"))
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{},"next_water_duration":"1h0m0s","links":[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s","message":"unable to determine water duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 	}
 
@@ -261,19 +261,21 @@ func TestGetWaterSchedule(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			weatherClient := new(weather.MockClient)
 			storageClient := new(storage.MockClient)
-			zr := WaterSchedulesResource{
-				storageClient: storageClient,
-				worker:        worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()),
-			}
-			garden := createExampleGarden()
-
 			tt.setupMock(influxdbClient, weatherClient, storageClient)
+			storageClient.On("GetWaterSchedules", false).Return([]*pkg.WaterSchedule{tt.waterSchedule}, nil)
+			influxdbClient.On("Close")
+
+			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			assert.NoError(t, err)
+			wsr.worker.StartAsync()
+
+			garden := createExampleGarden()
 
 			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
 			waterScheduleCtx := context.WithValue(gardenCtx, waterScheduleCtxKey, tt.waterSchedule)
 			r := httptest.NewRequest("GET", "/water_schedules", nil).WithContext(waterScheduleCtx)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(zr.getWaterSchedule)
+			h := http.HandlerFunc(wsr.getWaterSchedule)
 
 			h.ServeHTTP(w, r)
 
@@ -283,10 +285,13 @@ func TestGetWaterSchedule(t *testing.T) {
 			}
 
 			// check HTTP response body
+			matcher := regexp.MustCompile(tt.expectedRegexp)
 			actual := strings.TrimSpace(w.Body.String())
-			if actual != tt.expected {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			if !matcher.MatchString(actual) {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
 			}
+
+			wsr.worker.Stop()
 			influxdbClient.AssertExpectations(t)
 			weatherClient.AssertExpectations(t)
 			storageClient.AssertExpectations(t)
@@ -296,11 +301,11 @@ func TestGetWaterSchedule(t *testing.T) {
 
 func TestUpdateWaterSchedule(t *testing.T) {
 	tests := []struct {
-		name      string
-		setupMock func(*storage.MockClient)
-		body      string
-		expected  string
-		status    int
+		name           string
+		setupMock      func(*storage.MockClient)
+		body           string
+		expectedRegexp string
+		status         int
 	}{
 		{
 			"Successful",
@@ -308,14 +313,14 @@ func TestUpdateWaterSchedule(t *testing.T) {
 				storageClient.On("SaveWaterSchedule", mock.Anything, mock.Anything).Return(nil)
 			},
 			`{"interval":"1h"}`,
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"1h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water_time":"0001-01-01T00:00:00Z","next_water_duration":"1s","links":[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"1h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT22:24:52.891386-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"BadRequest",
 			func(storageClient *storage.MockClient) {},
 			"this is not json",
-			`{"status":"Invalid request.","error":"invalid character 'h' in literal true (expecting 'r')"}`,
+			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
 			http.StatusBadRequest,
 		},
 		{
@@ -341,10 +346,13 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			storageClient := new(storage.MockClient)
 			tt.setupMock(storageClient)
 
-			pr := WaterSchedulesResource{
+			wsr := WaterSchedulesResource{
 				storageClient: storageClient,
 				worker:        worker.NewWorker(nil, nil, nil, logrus.New()),
 			}
+			wsr.worker.StartAsync()
+			defer wsr.worker.Stop()
+
 			garden := createExampleGarden()
 			waterSchedule := createExampleWaterSchedule()
 
@@ -353,7 +361,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			r := httptest.NewRequest("PATCH", "/water_schedules", strings.NewReader(tt.body)).WithContext(waterScheduleCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(pr.updateWaterSchedule)
+			h := http.HandlerFunc(wsr.updateWaterSchedule)
 
 			h.ServeHTTP(w, r)
 
@@ -363,9 +371,10 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			}
 
 			// check HTTP response body
+			matcher := regexp.MustCompile(tt.expectedRegexp)
 			actual := strings.TrimSpace(w.Body.String())
-			if actual != tt.expected {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
+			if !matcher.MatchString(actual) {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
 			}
 			storageClient.AssertExpectations(t)
 		})
@@ -391,7 +400,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 				storageClient.On("SaveWaterSchedule", mock.Anything, mock.Anything).Return(nil)
 			},
 			createExampleWaterSchedule(),
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","next_water":{},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -440,10 +449,12 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			storageClient := new(storage.MockClient)
 			tt.setupMock(storageClient)
 
-			pr := WaterSchedulesResource{
+			wsr := WaterSchedulesResource{
 				storageClient: storageClient,
 				worker:        worker.NewWorker(nil, nil, nil, logrus.New()),
 			}
+			wsr.worker.StartAsync()
+			defer wsr.worker.Stop()
 
 			garden := createExampleGarden()
 			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
@@ -451,7 +462,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			r := httptest.NewRequest("DELETE", "/water_schedules", nil).WithContext(waterScheduleCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(pr.endDateWaterSchedule)
+			h := http.HandlerFunc(wsr.endDateWaterSchedule)
 
 			h.ServeHTTP(w, r)
 
@@ -539,7 +550,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 				storageClient.On("SaveWaterSchedule", mock.Anything, mock.Anything).Return(nil)
 			},
 			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
-			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water_time":"0001-01-01T00:00:00Z","next_water_duration":"1s","links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
+			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -565,15 +576,17 @@ func TestCreateWaterSchedule(t *testing.T) {
 			storageClient := new(storage.MockClient)
 			tt.setupMock(storageClient)
 
-			pr := WaterSchedulesResource{
+			wsr := WaterSchedulesResource{
 				storageClient: storageClient,
 				worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
+			wsr.worker.StartAsync()
+			defer wsr.worker.Stop()
 
 			r := httptest.NewRequest("POST", "/water_schedules", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(pr.createWaterSchedule)
+			h := http.HandlerFunc(wsr.createWaterSchedule)
 
 			h.ServeHTTP(w, r)
 
