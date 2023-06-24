@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -38,9 +39,7 @@ func TestGardenAction(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing GardenAction: %v", err)
-				}
+				assert.NoError(t, err)
 			},
 		},
 		{
@@ -70,9 +69,7 @@ func TestGardenAction(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing GardenAction: %v", err)
-				}
+				assert.NoError(t, err)
 			},
 		},
 		{
@@ -124,57 +121,35 @@ func TestLightActionExecute(t *testing.T) {
 	tests := []struct {
 		name      string
 		action    *action.LightAction
-		setupMock func(*mqtt.MockClient, *influxdb.MockClient, *storage.MockClient)
+		setupMock func(*mqtt.MockClient, *influxdb.MockClient)
 		assert    func(error, *testing.T)
 	}{
 		{
 			"Successful",
 			&action.LightAction{},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing LightAction: %v", err)
-				}
+				assert.NoError(t, err)
 			},
 		},
 		{
 			"SuccessfulWithDelay",
 			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-				storageClient.On("SaveGarden", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing LightAction: %v", err)
-				}
-			},
-		},
-		{
-			"LightDelayError",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-				storageClient.On("SaveGarden", mock.Anything).Return(errors.New("storage client error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to handle light delay: storage client error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
+				assert.NoError(t, err)
 			},
 		},
 		{
 			"PublishError",
 			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(errors.New("publish error"))
 			},
@@ -190,7 +165,7 @@ func TestLightActionExecute(t *testing.T) {
 		{
 			"TopicTemplateError",
 			&action.LightAction{},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, storageClient *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("LightTopic", "garden").Return("", errors.New("template error"))
 			},
 			func(err error, t *testing.T) {
@@ -206,15 +181,20 @@ func TestLightActionExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+			defer weather.ResetCache()
+
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
-			storageClient := new(storage.MockClient)
-			tt.setupMock(mqttClient, influxdbClient, storageClient)
+			tt.setupMock(mqttClient, influxdbClient)
 			mqttClient.On("Disconnect", uint(100)).Return()
 			influxdbClient.On("Close").Return()
 
 			worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
-			err := worker.ScheduleLightActions(garden)
+			err = worker.ScheduleLightActions(garden)
 			assert.NoError(t, err)
 			worker.StartAsync()
 
@@ -248,9 +228,7 @@ func TestStopActionExecute(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing StopAction: %v", err)
-				}
+				assert.NoError(t, err)
 			},
 		},
 		{
@@ -261,9 +239,7 @@ func TestStopActionExecute(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/stop_all", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
-				if err != nil {
-					t.Errorf("Unexpected error occurred when executing StopAction: %v", err)
-				}
+				assert.NoError(t, err)
 			},
 		},
 		{

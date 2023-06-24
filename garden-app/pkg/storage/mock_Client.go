@@ -154,52 +154,6 @@ func (_m *MockClient) GetMultipleWaterSchedules(_a0 []xid.ID) ([]*pkg.WaterSched
 	return r0, r1
 }
 
-// GetPlant provides a mock function with given fields: _a0, _a1
-func (_m *MockClient) GetPlant(_a0 xid.ID, _a1 xid.ID) (*pkg.Plant, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 *pkg.Plant
-	if rf, ok := ret.Get(0).(func(xid.ID, xid.ID) *pkg.Plant); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*pkg.Plant)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(xid.ID, xid.ID) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetPlants provides a mock function with given fields: _a0, _a1
-func (_m *MockClient) GetPlants(_a0 xid.ID, _a1 bool) ([]*pkg.Plant, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 []*pkg.Plant
-	if rf, ok := ret.Get(0).(func(xid.ID, bool) []*pkg.Plant); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).([]*pkg.Plant)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(xid.ID, bool) error); ok {
-		r1 = rf(_a0, _a1)
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
 // GetWaterSchedule provides a mock function with given fields: _a0
 func (_m *MockClient) GetWaterSchedule(_a0 xid.ID) (*pkg.WaterSchedule, error) {
 	ret := _m.Called(_a0)
@@ -331,29 +285,6 @@ func (_m *MockClient) GetWeatherClientConfigs() ([]*weather.Config, error) {
 	var r1 error
 	if rf, ok := ret.Get(1).(func() error); ok {
 		r1 = rf()
-	} else {
-		r1 = ret.Error(1)
-	}
-
-	return r0, r1
-}
-
-// GetZone provides a mock function with given fields: _a0, _a1
-func (_m *MockClient) GetZone(_a0 xid.ID, _a1 xid.ID) (*pkg.Zone, error) {
-	ret := _m.Called(_a0, _a1)
-
-	var r0 *pkg.Zone
-	if rf, ok := ret.Get(0).(func(xid.ID, xid.ID) *pkg.Zone); ok {
-		r0 = rf(_a0, _a1)
-	} else {
-		if ret.Get(0) != nil {
-			r0 = ret.Get(0).(*pkg.Zone)
-		}
-	}
-
-	var r1 error
-	if rf, ok := ret.Get(1).(func(xid.ID, xid.ID) error); ok {
-		r1 = rf(_a0, _a1)
 	} else {
 		r1 = ret.Error(1)
 	}
