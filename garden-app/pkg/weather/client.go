@@ -130,3 +130,7 @@ func (c *clientWrapper) GetAverageHighTemperature(since time.Duration) (float32,
 
 	return avgTemp, nil
 }
+
+func ResetCache() {
+	responseCache = cache.New(5*time.Minute, 1*time.Minute)
+}

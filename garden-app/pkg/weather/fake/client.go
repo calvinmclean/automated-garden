@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"errors"
 	"time"
 
 	"github.com/mitchellh/mapstructure"
@@ -13,6 +14,8 @@ type Config struct {
 	rainInterval time.Duration
 
 	AverageHighTemperature float32 `mapstructure:"avg_high_temperature"`
+
+	Error string `mapstructure:"error"`
 }
 
 // Client ...
@@ -41,11 +44,19 @@ func NewClient(options map[string]interface{}) (*Client, error) {
 
 // GetTotalRain calculates and returns the configured amount of rain for the given period
 func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
+	if c.Error != "" {
+		return 0, errors.New(c.Error)
+	}
+
 	numIntervals := float32(since.Hours() / c.rainInterval.Hours())
 	return numIntervals * c.RainMM, nil
 }
 
 // GetAverageHighTemperature returns the configured value
 func (c *Client) GetAverageHighTemperature(_ time.Duration) (float32, error) {
+	if c.Error != "" {
+		return 0, errors.New(c.Error)
+	}
+
 	return c.AverageHighTemperature, nil
 }

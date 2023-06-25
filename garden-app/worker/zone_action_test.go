@@ -95,7 +95,7 @@ func TestWaterActionExecute(t *testing.T) {
 	tests := []struct {
 		name          string
 		zone          *pkg.Zone
-		setupMock     func(*mqtt.MockClient, *influxdb.MockClient, *weather.MockClient, *storage.MockClient)
+		setupMock     func(*mqtt.MockClient, *influxdb.MockClient, *weather.MockClient)
 		expectedError string
 	}{
 		{
@@ -103,7 +103,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
@@ -114,7 +114,7 @@ func TestWaterActionExecute(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient, sc *storage.MockClient) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
 				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
 			"unable to fill MQTT topic template: template error",
@@ -123,13 +123,17 @@ func TestWaterActionExecute(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+
 			mqttClient := new(mqtt.MockClient)
 			influxdbClient := new(influxdb.MockClient)
 			wc := new(weather.MockClient)
-			sc := new(storage.MockClient)
-			tt.setupMock(mqttClient, influxdbClient, wc, sc)
+			tt.setupMock(mqttClient, influxdbClient, wc)
 
-			err := NewWorker(sc, influxdbClient, mqttClient, logrus.New()).ExecuteWaterAction(garden, tt.zone, action)
+			err = NewWorker(storageClient, influxdbClient, mqttClient, logrus.New()).ExecuteWaterAction(garden, tt.zone, action)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
@@ -139,7 +143,6 @@ func TestWaterActionExecute(t *testing.T) {
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
 			wc.AssertExpectations(t)
-			sc.AssertExpectations(t)
 		})
 	}
 }
