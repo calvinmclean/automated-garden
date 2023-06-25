@@ -136,11 +136,11 @@ struct GardenDetail: View {
                         Image(systemName: (sortBy == .createdAt ? "calendar.circle.fill" : "calendar.circle"))
                             .accessibilityLabel("Toggle Sort By Start Date")
                     }
-                    Button(action: { toggleSortBy(buttonPressed: .nextWatering) }) {
-                        Image(systemName: (sortBy == .nextWatering ? "drop.fill" : "drop"))
-                            .accessibilityLabel("Toggle Sort By Next Watering Time")
-                    }
-                    Divider()
+//                    Button(action: { toggleSortBy(buttonPressed: .nextWatering) }) {
+//                        Image(systemName: (sortBy == .nextWatering ? "drop.fill" : "drop"))
+//                            .accessibilityLabel("Toggle Sort By Next Watering Time")
+//                    }
+//                    Divider()
                     Button(action: { reverseSort.toggle() }) {
                         Image(systemName: (reverseSort ? "arrow.up" : "arrow.down"))
                             .accessibilityLabel("Reverse Sort")

@@ -9,11 +9,9 @@ import Foundation
 
 struct WaterAction: Codable {
     var duration: String
-    var ignoreMoisture: Bool
     
     enum CodingKeys: String, CodingKey {
         case duration
-        case ignoreMoisture = "ignore_moisture"
     }
 }
 
@@ -21,16 +19,8 @@ struct ZoneAction: Codable {
     var water: WaterAction
 }
 
-struct WaterScheduleStartTime: Codable {
-    var startTime: Date = Date()
-    
-    enum CodingKeys: String, CodingKey {
-        case startTime = "start_time"
-    }
-}
-
 struct DelayWateringRequestBody: Codable {
-    var waterSchedule: WaterScheduleStartTime = WaterScheduleStartTime()
+    var skipCount: Int = 0
     
     static var encoder: JSONEncoder {
         let encoder = JSONEncoder()
@@ -39,7 +29,7 @@ struct DelayWateringRequestBody: Codable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case waterSchedule = "water_schedule"
+        case skipCount = "skip_count"
     }
 }
 
@@ -148,31 +138,29 @@ class ZoneResource {
         task.resume()
     }
 
-    func waterZone(zone: Zone, duration: String, ignoreMoisture: Bool) {
+    func waterZone(zone: Zone, duration: String) {
         guard let path = zone.getLink(rel: "action") else { fatalError() }
         guard let url = URL(string: "\(self.url)\(path)") else { fatalError() }
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
-        let requestBody = ZoneAction(water: WaterAction(duration: duration, ignoreMoisture: ignoreMoisture))
+        let requestBody = ZoneAction(water: WaterAction(duration: duration))
         let jsonData = try! JSONEncoder().encode(requestBody)
         request.httpBody = jsonData
         let task = URLSession.shared.dataTask(with: request)
         task.resume()
     }
 
-    func delayWatering(zone: Zone, days: Int) {
+    func delayWatering(zone: Zone, numSkip: Int) {
         guard let path = zone.getLink(rel: "self") else { fatalError() }
         guard let url = URL(string: "\(self.url)\(path)") else { fatalError() }
         var request = URLRequest(url: url)
         request.httpMethod = "PATCH"
-        if let nextWaterTime = zone.nextWaterTime {
-            let requestBody = DelayWateringRequestBody(waterSchedule: WaterScheduleStartTime(startTime: Calendar.current.date(byAdding: .day, value: days, to: nextWaterTime)!))
-            let jsonData = try! DelayWateringRequestBody.encoder.encode(requestBody)
+        let requestBody = DelayWateringRequestBody(skipCount: numSkip)
+        let jsonData = try! DelayWateringRequestBody.encoder.encode(requestBody)
 //            print("DATA: \(String(data: jsonData, encoding: String.Encoding.utf8))")
-            request.httpBody = jsonData
-            let task = URLSession.shared.dataTask(with: request)
-            task.resume()
-        }
+        request.httpBody = jsonData
+        let task = URLSession.shared.dataTask(with: request)
+        task.resume()
     }
 
     func endDateZone(zone: Zone) {

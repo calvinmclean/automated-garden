@@ -11,13 +11,12 @@ class Zone: Identifiable, Codable {
     var name: String = ""
     var details: ZoneDetails? = ZoneDetails()
     var id: String = ""
-    var moisture: Float? = nil
     var position: Int = 0
     var createdAt: Date = Date()
     var endDate: Date? = nil
-    var waterSchedule: WaterSchedule = WaterSchedule()
-    var nextWaterTime: Date? = nil
-    var nextWaterDuration: String? = nil
+    var skipCount: Int? = 0
+    var waterScheduleIDs: Array<String> = []
+    var nextWaterDetails: NextWaterDetails? = nil
     var links: Array<Link> = []
     var history: WaterHistoryResponse? = nil
     
@@ -27,7 +26,7 @@ class Zone: Identifiable, Codable {
         case position
         case name
         case createdAt
-        case nextWatering
+//        case nextWatering
     }
     
     static var decoder: JSONDecoder {
@@ -63,8 +62,8 @@ class Zone: Identifiable, Codable {
             return self.name < other.name
         case (true, true, .createdAt), (false, false, .createdAt):
             return self.createdAt < other.createdAt
-        case (true, true, .nextWatering), (false, false, .nextWatering):
-            return self.nextWaterTime ?? Date() < other.nextWaterTime ?? Date()
+//        case (true, true, .nextWatering), (false, false, .nextWatering):
+//            return self.nextWaterTime ?? Date() < other.nextWaterTime ?? Date()
         case (true, false, _):
             return false
         case (false, true, _):
@@ -73,12 +72,12 @@ class Zone: Identifiable, Codable {
     }
     
     enum CodingKeys: String, CodingKey {
-        case name, id, links, moisture, position, details
+        case name, id, links, position, details
         case createdAt = "created_at"
         case endDate = "end_date"
-        case waterSchedule = "water_schedule"
-        case nextWaterTime = "next_water_time"
-        case nextWaterDuration = "next_water_duration"
+        case skipCount = "skip_count"
+        case nextWaterDetails = "next_water"
+        case waterScheduleIDs = "water_schedule_ids"
     }
 }
 
@@ -133,6 +132,18 @@ struct SoilMoistureControl: Codable, Equatable {
     
     enum CodingKeys: String, CodingKey {
         case minimumMoisture = "minimum_moisture"
+    }
+}
+
+struct NextWaterDetails: Codable {
+    var time: Date? = nil
+    var duration: String? = nil
+    var waterScheduleID: String? = nil
+    var message: String? = nil
+    
+    enum CodingKeys: String, CodingKey {
+        case time, duration, message
+        case waterScheduleID = "water_schedule_id"
     }
 }
 

@@ -35,26 +35,26 @@ struct EditZoneEditor: View {
                     }
                 }
                 
-                Toggle(isOn: $editWaterSchedule) {
-                    Text("Edit Water Schedule")
-                }.onChange(of: editWaterSchedule) {_ in
-                    if (editWaterSchedule) {
-                        newZone.waterSchedule = zone.waterSchedule
-                    } else {
-                        newZone.waterSchedule = nil
-                    }
-                }
-                if (editWaterSchedule) {
-                    EditWaterSchedule(waterSchedule: Binding(
-                        get: {newZone.waterSchedule ?? zone.waterSchedule},
-                        set: {
-                            if newZone.waterSchedule == nil {
-                                newZone.waterSchedule = zone.waterSchedule
-                            }
-                            newZone.waterSchedule = $0
-                        }
-                    ))
-                }
+//                Toggle(isOn: $editWaterSchedule) {
+//                    Text("Edit Water Schedule")
+//                }.onChange(of: editWaterSchedule) {_ in
+//                    if (editWaterSchedule) {
+//                        newZone.waterSchedule = zone.waterSchedule
+//                    } else {
+//                        newZone.waterSchedule = nil
+//                    }
+//                }
+//                if (editWaterSchedule) {
+//                    EditWaterSchedule(waterSchedule: Binding(
+//                        get: {newZone.waterSchedule ?? zone.waterSchedule},
+//                        set: {
+//                            if newZone.waterSchedule == nil {
+//                                newZone.waterSchedule = zone.waterSchedule
+//                            }
+//                            newZone.waterSchedule = $0
+//                        }
+//                    ))
+//                }
                 
                 Section(header: Text("Details")) {
                     HStack {

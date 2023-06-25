@@ -28,8 +28,7 @@ struct ZoneDetail: View {
     var garden: Garden
     
     @State var wateringAmount: Int = 5
-    @State var delayDays: Int = 0
-    @State var ignoreMoisture: Bool = true
+    @State var skipCount: Int = 0
     @State private var showingEditZone = false
     
     var body: some View {
@@ -37,16 +36,12 @@ struct ZoneDetail: View {
             Section("Zone Actions") {
                 if (!zone.isEndDated()) {
                     VStack {
-                        Toggle(isOn: $ignoreMoisture) {
-                            Text("Ignore Minimum Moisture")
-                        }.disabled(zone.waterSchedule.weatherControl?.soilMoisture?.minimumMoisture ?? 0 == 0)
                         Stepper(value: $wateringAmount, in: 5...300, step: 5) {
                             Button(action: {
                                 print("Water Zone button tapped for \(zone.name)")
                                 modelData.zoneResource().waterZone(
                                     zone: zone,
-                                    duration: "\(wateringAmount)s",
-                                    ignoreMoisture: ignoreMoisture
+                                    duration: "\(wateringAmount)s"
                                 )
                             }) {
                                 Label { Text("\(wateringAmount) seconds") } icon: { Image(systemName: "cloud.rain.fill") }
@@ -58,29 +53,19 @@ struct ZoneDetail: View {
                     }.padding(10)
                     
                     VStack(alignment: .leading) {
-                        if let nextWateringTime = zone.nextWaterTime {
-                            Label(Calendar.current.date(byAdding: .day, value: delayDays, to: nextWateringTime)!.minFormatted, systemImage: "drop")
-                                .foregroundColor(.blue)
-                        }
-                        Stepper {
+                        Stepper(value: $skipCount, in: 0...100, step: 1) {
                             Button(action: {
                                 print("Delay watering button tapped for \(zone.name)")
-                                modelData.zoneResource().delayWatering(zone: zone, days: delayDays)
+                                modelData.zoneResource().delayWatering(zone: zone, numSkip: skipCount)
                             }) {
-                                Label { Text("Delay \(delayDays) day(s)") } icon: { Image(systemName: "goforward") }
+                                Label { Text("Delay \(skipCount) day(s)") } icon: { Image(systemName: "goforward") }
                                     .frame(minWidth: 150, maxWidth: 150)
+                            }
+                            .onAppear {
+                                skipCount = zone.skipCount ?? 0
                             }
                             .buttonStyle(ActionButtonStyle(bgColor: .orange))
                             .controlSize(.large)
-                        } onIncrement: {
-                            delayDays += 1
-                        } onDecrement: {
-                            if let nextWateringTime = zone.nextWaterTime {
-                                let newWateringTime = Calendar.current.date(byAdding: .day, value: delayDays-1, to: nextWateringTime)!
-                                if (newWateringTime > Date()) {
-                                    delayDays -= 1
-                                }
-                            }
                         }
                     }.padding(10)
                 }
@@ -99,20 +84,20 @@ struct ZoneDetail: View {
             }
             
             Section("Water Schedule") {
-                Text("Water for \(String(zone.waterSchedule.duration)) every \(String(zone.waterSchedule.interval))")
-                    .font(.headline)
-                    .frame(maxWidth: .infinity, alignment: .center)
-                
-                DetailHStack(key: "Next Watering Time", value: zone.nextWaterTime?.formattedWithTime)
-                DetailHStack(key: "Next Watering Duration", value: zone.nextWaterDuration)
-                if let moisture = zone.moisture {
-                    DetailHStack(key: "Moisture", value: String(format: "%.2f%%", moisture))
+                if let nextWaterDetails = zone.nextWaterDetails {
+                    if let nextWateringTime = nextWaterDetails.time {
+                        DetailHStack(key: "Next Watering Time", value: nextWateringTime.formattedWithTime)
+                    }
+                    if let nextWateringDuration = nextWaterDetails.duration {
+                        DetailHStack(key: "Next Watering Duration", value: nextWateringDuration)
+                    }
+                    if let nextWateringMessage = nextWaterDetails.message {
+                        DetailHStack(key: "Message", value: nextWateringMessage)
+                    }
                 }
-                NavigationLink(destination: WaterScheduleView(waterSchedule: zone.waterSchedule)) {
-                    Text("Details")
-                }
+
             }
-            
+
             Section("Watering History (5 events in last 7 days)") {
                 if let waterHistory = zone.history {
                     DetailHStack(key: "Count", value: String(waterHistory.count))

@@ -26,8 +26,7 @@ struct ZoneRow: View {
             action: {
                 modelData.zoneResource().waterZone(
                     zone: zone,
-                    duration: "5s",
-                    ignoreMoisture: true
+                    duration: "5s"
                 )
             },
             label: {
@@ -38,10 +37,10 @@ struct ZoneRow: View {
         
         let quickDelayButton = Button(
             action: {
-                modelData.zoneResource().delayWatering(zone: zone, days: 1)
+                modelData.zoneResource().delayWatering(zone: zone, numSkip: 1)
             },
             label: {
-                Label { Text("Quick Delay (+1 day)") } icon: { Image(systemName: "goforward") }
+                Label { Text("Quick Delay (+1 skip)") } icon: { Image(systemName: "goforward") }
             }
         )
             .disabled(zone.isEndDated())
@@ -97,24 +96,22 @@ struct ZoneRow: View {
             }
             if !zone.isEndDated() {
                 HStack {
-                    if let nextWaterTime = zone.nextWaterTime {
-                        Label(nextWaterTimeState, systemImage: "drop")
-                            .foregroundColor(.blue)
-                            .onReceive(timer) { (_) in
-                                // if this is in the past, do not update view (TODO: actually fetch the Zone's new time)
-                                if nextWaterTime.timeIntervalSinceNow > 0 {
+                    if let nextWaterDetails = zone.nextWaterDetails {
+                        if let nextWaterTime = nextWaterDetails.time {
+                            Label(nextWaterTimeState, systemImage: "drop")
+                                .foregroundColor(.blue)
+                                .onReceive(timer) { (_) in
+                                    // if this is in the past, do not update view (TODO: actually fetch the Zone's new time)
+                                    if nextWaterTime.timeIntervalSinceNow > 0 {
+                                        nextWaterTimeState = nextWaterTime.minFormatted
+                                    }
+                                }
+                                .onAppear() {
                                     nextWaterTimeState = nextWaterTime.minFormatted
                                 }
-                            }
-                            .onAppear() {
-                                nextWaterTimeState = nextWaterTime.minFormatted
-                            }
+                        }
                     }
-                    Spacer()
-                    if let moisture = zone.moisture {
-                        Label(String(format: "%.f%%", moisture.rounded()), systemImage: "humidity")
-                            .foregroundColor(.cyan)
-                    }
+                
                 }
             }
         }
