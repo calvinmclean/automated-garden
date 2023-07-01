@@ -631,7 +631,7 @@ func TestCreateZone(t *testing.T) {
 	// Predict NextWaterTime so I can test it better
 	now := time.Now()
 	expectedNextWaterTime := time.Date(now.Year(), now.Month(), now.Day(), createdAt.Hour(), createdAt.Minute(), createdAt.Second(), createdAt.Nanosecond(), createdAt.Location())
-	if now.Hour() >= 11 && now.Minute() >= 24 {
+	if now.Hour() >= 11 {
 		expectedNextWaterTime = expectedNextWaterTime.Add(24 * time.Hour)
 	}
 	expectedNextWaterTimeWithSkip := expectedNextWaterTime.Add(72 * time.Hour)
