@@ -20,7 +20,7 @@ type Zone struct {
 	CreatedAt        *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate          *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WaterScheduleIDs []xid.ID     `json:"water_schedule_ids" yaml:"water_schedule_ids"`
-	SkipCount        *int         `json:"skip_count" yaml:"skip_count"`
+	SkipCount        *uint        `json:"skip_count" yaml:"skip_count"`
 }
 
 // String...

@@ -505,7 +505,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			},
 			&pkg.Zone{
 				Position:  uintPointer(0),
-				SkipCount: intPointer(0),
+				SkipCount: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
@@ -535,7 +535,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				ID:        id,
 				Position:  uintPointer(0),
-				SkipCount: intPointer(1),
+				SkipCount: uintPointer(1),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
 				err := sc.SaveGarden(&pkg.Garden{ID: id, Zones: map[xid.ID]*pkg.Zone{id: {ID: id}}})

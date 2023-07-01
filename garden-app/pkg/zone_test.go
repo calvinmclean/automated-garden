@@ -33,7 +33,7 @@ func TestZoneEndDated(t *testing.T) {
 
 func TestZonePatch(t *testing.T) {
 	zero := uint(0)
-	three := 3
+	three := uint(3)
 	now := time.Now()
 	wsID := xid.New()
 	tests := []struct {
