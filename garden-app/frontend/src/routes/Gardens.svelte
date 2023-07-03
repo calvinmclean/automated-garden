@@ -1,6 +1,6 @@
-<script>
+<script type="ts">
     import { onMount } from "svelte";
-    import Garden from "./Garden.svelte";
+    import Gardens from "../components/Gardens.svelte";
 
     let gardens;
 
@@ -13,14 +13,5 @@
     });
 </script>
 
-{#if gardens}
-    {#each gardens as garden}
-        <ul>
-            <li>
-                <Garden {garden} />
-            </li>
-        </ul>
-    {/each}
-{:else}
-    <p class="loading">loading...</p>
-{/if}
+<h1>Gardens</h1>
+<Gardens {gardens} />

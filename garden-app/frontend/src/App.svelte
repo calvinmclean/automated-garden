@@ -1,12 +1,12 @@
 <script>
-  import Gardens from "./Gardens.svelte";
+  import Router from "svelte-spa-router";
+  import routes from "./routes";
 </script>
 
 <svelte:head>
   <title>Garden App</title>
 </svelte:head>
 
-<h1>Gardens</h1>
-<main>
-  <Gardens />
-</main>
+<h1>Garden App</h1>
+
+<Router {routes} />
