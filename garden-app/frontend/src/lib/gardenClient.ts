@@ -5,7 +5,7 @@ const { get, post, put, patch, del } = createClient<paths>({
     baseUrl: "http://localhost:8080",
 });
 
-// Types
+// types
 export type GardenResponse = components["schemas"]["GardenResponse"];
 
 // functions

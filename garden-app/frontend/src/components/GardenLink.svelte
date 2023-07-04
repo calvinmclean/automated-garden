@@ -7,6 +7,7 @@
         CardSubtitle,
         CardText,
         CardTitle,
+        Icon,
     } from "sveltestrap";
     import type { components } from "../types/garden-app-openapi";
 
@@ -15,17 +16,77 @@
     export let garden: GardenResponse;
 </script>
 
-<Card class="mb-3">
+<Card class=".col-lg-4" style="margin: 5%">
     <CardHeader>
-        <CardTitle>
-            <a href="#/gardens/{garden.id}">{garden.name}</a>
-        </CardTitle>
+        <a href="#/gardens/{garden.id}">
+            <CardTitle>{garden.name}</CardTitle>
+        </a>
     </CardHeader>
     <CardBody>
         <CardSubtitle>{garden.id}</CardSubtitle>
         <CardText>
-            <li>{garden.topic_prefix}</li>
+            Topic prefix: {garden.topic_prefix}
+            <Icon name="globe2" /><br />
+            {#if garden.end_date != null}
+                End Dated: {garden.end_date}
+                <Icon name="clock-fill" style="color: red" /><br />
+            {/if}
+
+            {garden.num_zones} Zones <Icon name="columns" /><br />
+            {garden.num_plants} Plants <Icon name="" /><br />
+
+            {#if garden.health != null}
+                Health Status: {garden.health.status}<br />
+                Health Details: {garden.health.details}<br />
+            {:else if garden.end_date == null}
+                No health details available<br />
+            {/if}
+
+            {#if garden.light_schedule != null}
+                Light Schedule Duration: {garden.light_schedule.duration}
+                <Icon name="hourglass-split" /><br />
+                Light Schedule Start: {garden.light_schedule.start_time}
+                <Icon name="clock" /><br />
+            {/if}
+
+            {#if garden.next_light_action != null}
+                Next Light Time: {garden.next_light_action.time}
+                <Icon name="clock" /><br />
+                Next Light State: {garden.next_light_action.state}
+                <Icon
+                    name={garden.next_light_action.state == "ON"
+                        ? "sunrise"
+                        : "sunset"}
+                    style="color: {garden.next_light_action.state == 'ON'
+                        ? 'orange'
+                        : 'gray'}"
+                />
+                <br />
+            {/if}
         </CardText>
     </CardBody>
-    <CardFooter>{garden.created_at}</CardFooter>
+    <CardFooter>
+        <Icon
+            name="clock-fill"
+            style="color: {garden.end_date == null ? 'green' : 'red'}"
+        />
+
+        {#if garden.health != null}
+            <Icon
+                name="wifi"
+                style="color: {garden.health.status == 'UP' ? 'green' : 'red'}"
+            />
+        {/if}
+
+        {#if garden.next_light_action != null}
+            <Icon
+                name={garden.next_light_action.state == "ON"
+                    ? "sunrise"
+                    : "sunset"}
+                style="color: {garden.next_light_action.state == 'ON'
+                    ? 'orange'
+                    : 'gray'}"
+            />
+        {/if}
+    </CardFooter>
 </Card>
