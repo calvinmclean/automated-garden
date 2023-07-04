@@ -1,7 +1,16 @@
+# build static svelte app
+FROM node:18-alpine as svelte_build
+RUN mkdir /build
+ADD ./frontend /build
+WORKDIR /build
+RUN npm install && npm run build
+
+# build go app
 FROM golang:1.19-alpine AS build
 RUN mkdir /build
 ADD . /build
 WORKDIR /build
+COPY --from=svelte_build /build/dist ./server/dist
 RUN go build -o garden-app .
 
 FROM alpine:latest AS production
