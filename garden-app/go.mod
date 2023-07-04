@@ -6,6 +6,7 @@ require (
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/eclipse/paho.mqtt.golang v1.4.2
 	github.com/go-chi/chi/v5 v5.0.8
+	github.com/go-chi/cors v1.2.1
 	github.com/go-chi/render v1.0.2
 	github.com/go-co-op/gocron v1.28.2
 	github.com/influxdata/influxdb-client-go/v2 v2.12.2

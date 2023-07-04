@@ -1,8 +1,6 @@
 <script lang="ts">
     import GardenLink from "./GardenLink.svelte";
-    import type { components } from "../types/garden-app-openapi";
-
-    type GardenResponse = components["schemas"]["GardenResponse"];
+    import type { GardenResponse } from "../../lib/gardenClient";
 
     export let gardens: GardenResponse[];
 </script>

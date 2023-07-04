@@ -619,6 +619,7 @@ export interface components {
        * @description the date-time when the Zone was deleted/removed
        */
       end_date?: string;
+      next_water?: components["schemas"]["NextWaterDetails"];
       /**
        * Format: date-time 
        * @description time of the next scheduled watering
@@ -632,7 +633,7 @@ export interface components {
        * @example 10m0s
        */
       next_water_duration?: string;
-      weather_data?: components["schemas"]["link"];
+      weather_data?: components["schemas"]["WeatherData"];
       /**
        * @example [
        *   {
@@ -655,6 +656,27 @@ export interface components {
        */
       links?: (components["schemas"]["link"])[];
     }, "id" | "created_at" | "links" | "name" | "position" | "water_schedule_ids">;
+    /** @description used in ZoneResponse to show detailed information about the next watering job */
+    NextWaterDetails: {
+      /**
+       * Format: date-time 
+       * @description the time when th water schedule will be next triggered
+       */
+      time?: string;
+      /**
+       * Format: duration 
+       * @description the duration that watering will run for. If weather scaling is configured, current weather data will be used to calculate
+       * an adjusted duration, but it may be a different value when the actual schedule executes
+       */
+      duration?: string;
+      /** @description ID of the water_schedule that is executing next */
+      water_schedule_id?: components["schemas"]["xid"];
+      /**
+       * @description human-readable information about upcoming watering 
+       * @example skip_count 5 affected the time
+       */
+      message?: string;
+    };
     /** @description used in ZoneResponse to show recent weather data and scaling factors */
     WeatherData: {
       /** @description recent rainfall (in millimeters) and resulting scale factor */

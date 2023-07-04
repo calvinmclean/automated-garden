@@ -1,6 +1,6 @@
 <script lang="ts">
     import { onMount } from "svelte";
-    import Gardens from "../components/Gardens.svelte";
+    import Gardens from "../components/gardens/Gardens.svelte";
     import { getGardens } from "../lib/gardenClient";
     import type { GardenResponse } from "../lib/gardenClient";
 

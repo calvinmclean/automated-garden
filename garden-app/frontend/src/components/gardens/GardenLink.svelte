@@ -9,9 +9,8 @@
         CardTitle,
         Icon,
     } from "sveltestrap";
-    import type { components } from "../types/garden-app-openapi";
 
-    type GardenResponse = components["schemas"]["GardenResponse"];
+    import type { GardenResponse } from "../../lib/gardenClient";
 
     export let garden: GardenResponse;
 </script>
@@ -32,7 +31,7 @@
                 <Icon name="clock-fill" style="color: red" /><br />
             {/if}
 
-            {garden.num_zones} Zones <Icon name="columns" /><br />
+            {garden.num_zones} Zones <Icon name="grid" /><br />
             {garden.num_plants} Plants <Icon name="" /><br />
 
             {#if garden.health != null}
@@ -88,5 +87,7 @@
                     : 'gray'}"
             />
         {/if}
+
+        <Icon name="grid" />{garden.num_zones}
     </CardFooter>
 </Card>

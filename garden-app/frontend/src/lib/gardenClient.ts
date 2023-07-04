@@ -1,5 +1,5 @@
 import createClient from "openapi-fetch";
-import type { paths, components } from "../types/garden-app-openapi";
+import type { paths, components, operations } from "./schema";
 
 const { get, post, put, patch, del } = createClient<paths>({
     baseUrl: "http://localhost:8080",
@@ -7,6 +7,7 @@ const { get, post, put, patch, del } = createClient<paths>({
 
 // types
 export type GardenResponse = components["schemas"]["GardenResponse"];
+export type GetGardenParams = operations["getGarden"]["parameters"]["path"];
 
 // functions
 export function getGardens(end_dated: boolean) {
