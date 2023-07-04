@@ -2,7 +2,9 @@ package server
 
 import (
 	"context"
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,6 +18,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sirupsen/logrus"
@@ -23,6 +26,9 @@ import (
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
 )
+
+//go:embed dist/*
+var dist embed.FS
 
 // Config holds all the options and sub-configs for the server
 type Config struct {
@@ -35,7 +41,8 @@ type Config struct {
 
 // WebConfig is used to allow reading the "web_server" section into the main Config struct
 type WebConfig struct {
-	Port int `mapstructure:"port"`
+	Port       int  `mapstructure:"port"`
+	EnableCors bool `mapstructure:"enable_cors"`
 }
 
 // Server contains all of the necessary resources for running a server
@@ -62,6 +69,17 @@ func NewServer(cfg Config) (*Server, error) {
 	r.Use(middleware.Recoverer)
 	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(middleware.Timeout(3 * time.Second))
+
+	if cfg.EnableCors {
+		r.Use(cors.Handler(cors.Options{
+			AllowedOrigins:   []string{"https://*", "http://*"},
+			AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+			ExposedHeaders:   []string{"Link"},
+			AllowCredentials: false,
+			MaxAge:           300, // Maximum value not ignored by any of major browsers
+		}))
+	}
 
 	// Configure HTTP metrics
 	r.Use(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
@@ -112,6 +130,12 @@ func NewServer(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
+
+	static, err := fs.Sub(dist, "dist")
+	if err != nil {
+		return nil, fmt.Errorf("error setting up static webapp subtree: %w", err)
+	}
+	r.Handle("/*", http.FileServer(http.FS(static)))
 
 	r.Route(gardenBasePath, func(r chi.Router) {
 		r.Post("/", gardenResource.createGarden)
