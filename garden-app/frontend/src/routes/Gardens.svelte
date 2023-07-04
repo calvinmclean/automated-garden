@@ -1,18 +1,16 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Gardens from "../components/Gardens.svelte";
-    import type { components } from "../types/garden-app-openapi";
-
-    type GardenResponse = components["schemas"]["GardenResponse"];
-    type AllGardensResponse = components["schemas"]["AllGardensResponse"];
+    import { getGardens } from "../lib/gardenClient";
+    import type { GardenResponse } from "../lib/gardenClient";
 
     let gardens: GardenResponse[];
 
     onMount(async () => {
-        await fetch(`http://localhost:8080/gardens`)
-            .then((response) => response.json() as Promise<AllGardensResponse>)
-            .then((allGardens) => {
-                gardens = allGardens.gardens;
+        await getGardens(true)
+            .then((response) => response.data)
+            .then((data) => {
+                gardens = data.gardens;
             });
     });
 </script>
