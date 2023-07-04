@@ -1258,9 +1258,9 @@ components:
       description: waters a Zone for the specified amount of time
       properties:
         duration:
-          type: number
-          description: amount of time, in milliseconds, that Zone should be watered
-          example: 150000
+          type: string
+          description: amount of time, as duration string, that Zone should be watered
+          example: 15m
         ignore_moisture:
           type: boolean
           description: if Zone is configured with a `minimum_moisture` for watering, ignore it and force watering

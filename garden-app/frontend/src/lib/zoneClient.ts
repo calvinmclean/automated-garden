@@ -35,3 +35,19 @@ export function getZone(gardenID: string, id: string) {
         body: undefined as never,
     });
 }
+
+export function waterZone(gardenID: string, zoneID: string, minutes: number) {
+    return post("/gardens/{gardenID}/zones/{zoneID}/action", {
+        params: {
+            path: {
+                gardenID: gardenID,
+                zoneID: zoneID,
+            }
+        },
+        body: {
+            water: {
+                duration: `${minutes}m`
+            }
+        },
+    });
+}

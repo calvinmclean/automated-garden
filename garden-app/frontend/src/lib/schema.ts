@@ -750,10 +750,10 @@ export interface components {
     /** @description waters a Zone for the specified amount of time */
     WaterAction: {
       /**
-       * @description amount of time, in milliseconds, that Zone should be watered 
-       * @example 150000
+       * @description amount of time, as duration string, that Zone should be watered 
+       * @example 15m
        */
-      duration: number;
+      duration: string;
       /** @description if Zone is configured with a `minimum_moisture` for watering, ignore it and force watering */
       ignore_moisture?: boolean;
     };

@@ -17,4 +17,4 @@
     });
 </script>
 
-<Zone {zone} />
+<Zone gardenID={params.gardenID} {zone} />

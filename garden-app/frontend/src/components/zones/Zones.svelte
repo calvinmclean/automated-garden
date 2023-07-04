@@ -21,4 +21,6 @@
     {#each zones as zone}
         <ZoneLink {zone} />
     {/each}
+{:else}
+    loading...
 {/if}
