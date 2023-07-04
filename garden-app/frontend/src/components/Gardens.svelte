@@ -1,15 +1,14 @@
-<script>
+<script lang="ts">
     import GardenLink from "./GardenLink.svelte";
+    import type { components } from "../types/garden-app-openapi";
 
-    export let gardens;
+    type GardenResponse = components["schemas"]["GardenResponse"];
+
+    export let gardens: GardenResponse[];
 </script>
 
 {#if gardens}
     {#each gardens as garden}
-        <ul>
-            <li>
-                <GardenLink {garden} />
-            </li>
-        </ul>
+        <GardenLink {garden} />
     {/each}
 {/if}
