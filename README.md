@@ -65,7 +65,7 @@ Use Docker Compose to easily run everything and try it out! This will run all se
 
 2. Run Docker Compose and wait a bit for everything to start up
   ```shell
-  docker compose -f deploy/docker-compose.yml --profile run-local up
+  docker compose -f deploy/docker-compose.yml --profile demo up
   ```
 
 3. Try out some `curl` commands to see what is available in the API
