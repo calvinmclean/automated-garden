@@ -9,22 +9,34 @@
         CardText,
         CardTitle,
         Icon,
+        Spinner,
     } from "sveltestrap";
     import { location } from "svelte-spa-router";
     import type { ZoneResponse } from "../../lib/zoneClient";
 
     export let zone: ZoneResponse;
     export let withLink = false;
+    export let loadingWeatherData = false;
 </script>
 
 <Card class=".col-lg-4" style="margin: 5%">
     <CardHeader>
         {#if withLink}
             <a href="#{$location}/zones/{zone.id}">
-                <CardTitle>{zone.name}</CardTitle>
+                <CardTitle>
+                    {zone.name}
+                    {#if loadingWeatherData}
+                        <Spinner color={"success"} type="border" />
+                    {/if}
+                </CardTitle>
             </a>
         {:else}
-            <CardTitle>{zone.name}</CardTitle>
+            <CardTitle>
+                {zone.name}
+                {#if loadingWeatherData}
+                    <Spinner color={"success"} type="border" />
+                {/if}
+            </CardTitle>
         {/if}
     </CardHeader>
     <CardBody>

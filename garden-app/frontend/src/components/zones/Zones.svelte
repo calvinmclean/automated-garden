@@ -1,4 +1,5 @@
 <script lang="ts">
+    import { Spinner } from "sveltestrap";
     import { onMount } from "svelte";
     import { getZones } from "../../lib/zoneClient";
     import ZoneCard from "./ZoneCard.svelte";
@@ -8,6 +9,7 @@
     export let gardenID: string;
 
     let zones: ZoneResponse[];
+    let loadingWeatherData = true;
 
     // quickly get zones
     onMount(async () => {
@@ -22,6 +24,7 @@
         await getZones(gardenID, true, false)
             .then((response) => response.data)
             .then((data) => {
+                loadingWeatherData = false;
                 zones = data.zones;
             });
     });
@@ -29,10 +32,10 @@
 
 {#if zones && zones.length > 1}
     {#each zones as zone}
-        <ZoneCard {zone} withLink={true} />
+        <ZoneCard {zone} withLink={true} {loadingWeatherData} />
     {/each}
 {:else if zones && zones.length == 1}
-    <Zone {gardenID} zone={zones[0]} />
+    <Zone {gardenID} zone={zones[0]} {loadingWeatherData} />
 {:else}
-    loading...
+    <Spinner color={"success"} type="border" />
 {/if}

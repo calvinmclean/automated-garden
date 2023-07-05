@@ -6,20 +6,20 @@
 
     export let gardenID: string;
     export let zone: ZoneResponse;
+    export let loadingWeatherData = false;
 
-    let a = 1;
+    let minutes = 1;
 
     function onClick(event) {
-        console.log(`WATERING FOR ${a}`);
-        waterZone(gardenID, zone.id, a);
+        waterZone(gardenID, zone.id, minutes);
     }
 </script>
 
 {#if zone}
-    <ZoneCard {zone} />
+    <ZoneCard {zone} {loadingWeatherData} />
 
     <div>
-        <input type="number" bind:value={a} min="0" /> minutes
+        <input type="number" bind:value={minutes} min="0" /> minutes
         <Button on:click={onClick} color={"primary"}>Water!</Button>
     </div>
 {/if}
