@@ -1,5 +1,6 @@
 <script lang="ts">
     import {
+        Badge,
         Card,
         CardBody,
         CardFooter,
@@ -65,10 +66,9 @@
         </CardText>
     </CardBody>
     <CardFooter>
-        <Icon
-            name="clock-fill"
-            style="color: {garden.end_date == null ? 'green' : 'red'}"
-        />
+        {#if garden.end_date != null}
+            <Badge color={"danger"}>End Dated</Badge>
+        {/if}
 
         {#if garden.health != null}
             <Icon

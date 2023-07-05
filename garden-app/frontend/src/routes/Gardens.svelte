@@ -15,5 +15,4 @@
     });
 </script>
 
-<h1>Gardens</h1>
 <Gardens {gardens} />
