@@ -8,8 +8,17 @@
 
     let zones: ZoneResponse[];
 
+    // quickly get zones
     onMount(async () => {
-        await getZones(gardenID, true)
+        await getZones(gardenID, true, true)
+            .then((response) => response.data)
+            .then((data) => {
+                zones = data.zones;
+            });
+    });
+    // then get with full details
+    onMount(async () => {
+        await getZones(gardenID, true, false)
             .then((response) => response.data)
             .then((data) => {
                 zones = data.zones;

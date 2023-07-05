@@ -15,10 +15,10 @@ type AllZonesResponse struct {
 }
 
 // NewAllZonesResponse will create an AllZonesResponse from a list of Zones
-func (zr ZonesResource) NewAllZonesResponse(ctx context.Context, zones []*pkg.Zone, garden *pkg.Garden) *AllZonesResponse {
+func (zr ZonesResource) NewAllZonesResponse(ctx context.Context, zones []*pkg.Zone, garden *pkg.Garden, excludeWeatherData bool) *AllZonesResponse {
 	zoneResponses := []*ZoneResponse{}
 	for _, z := range zones {
-		zoneResponses = append(zoneResponses, zr.NewZoneResponse(ctx, garden, z))
+		zoneResponses = append(zoneResponses, zr.NewZoneResponse(ctx, garden, z, excludeWeatherData))
 	}
 	return &AllZonesResponse{zoneResponses}
 }
@@ -38,7 +38,7 @@ type ZoneResponse struct {
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
-func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
+func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, excludeWeatherData bool, links ...Link) *ZoneResponse {
 	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
 
 	ws, err := zr.storageClient.GetMultipleWaterSchedules(zone.WaterScheduleIDs)
@@ -87,7 +87,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		return response
 	}
 
-	response.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.worker, logger)
+	response.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.worker, logger, excludeWeatherData)
 	response.NextWater.WaterScheduleID = &nextWaterSchedule.ID
 
 	if zone.SkipCount != nil && *zone.SkipCount > 0 {
@@ -96,7 +96,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		response.NextWater.Time = &newNextTime
 	}
 
-	if nextWaterSchedule.HasWeatherControl() {
+	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
 		response.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.storageClient)
 
 		if nextWaterSchedule.HasSoilMoistureControl() && garden != nil {

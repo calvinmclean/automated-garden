@@ -18,10 +18,10 @@ type AllWaterSchedulesResponse struct {
 }
 
 // NewAllWaterSchedulesResponse will create an AllWaterSchedulesResponse from a list of WaterSchedules
-func (wsr WaterSchedulesResource) NewAllWaterSchedulesResponse(ctx context.Context, waterschedules []*pkg.WaterSchedule) *AllWaterSchedulesResponse {
+func (wsr WaterSchedulesResource) NewAllWaterSchedulesResponse(ctx context.Context, waterschedules []*pkg.WaterSchedule, excludeWeatherData bool) *AllWaterSchedulesResponse {
 	waterscheduleResponses := []*WaterScheduleResponse{}
 	for _, ws := range waterschedules {
-		waterscheduleResponses = append(waterscheduleResponses, wsr.NewWaterScheduleResponse(ctx, ws))
+		waterscheduleResponses = append(waterscheduleResponses, wsr.NewWaterScheduleResponse(ctx, ws, excludeWeatherData))
 	}
 	return &AllWaterSchedulesResponse{waterscheduleResponses}
 }
@@ -49,13 +49,13 @@ type NextWaterDetails struct {
 }
 
 // GetNextWaterDetails returns the NextWaterDetails for the WaterSchedule
-func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, logger *logrus.Entry) NextWaterDetails {
+func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, logger *logrus.Entry, excludeWeatherData bool) NextWaterDetails {
 	result := NextWaterDetails{
 		Time:     worker.GetNextWaterTime(ws),
 		Duration: ws.Duration.Duration.String(),
 	}
 
-	if ws.HasWeatherControl() {
+	if ws.HasWeatherControl() && !excludeWeatherData {
 		wd, err := worker.ScaleWateringDuration(ws)
 		if err != nil {
 			result.Message = "unable to determine water duration scaling"
@@ -69,7 +69,7 @@ func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, logger *l
 }
 
 // NewWaterScheduleResponse creates a self-referencing WaterScheduleResponse
-func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, ws *pkg.WaterSchedule, links ...Link) *WaterScheduleResponse {
+func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, ws *pkg.WaterSchedule, excludeWeatherData bool, links ...Link) *WaterScheduleResponse {
 	response := &WaterScheduleResponse{
 		WaterSchedule: ws,
 		Links:         links,
@@ -82,13 +82,13 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 		},
 	)
 
-	if ws.HasWeatherControl() && !ws.EndDated() {
+	if ws.HasWeatherControl() && !ws.EndDated() && !excludeWeatherData {
 		response.WeatherData = getWeatherData(ctx, ws, wsr.storageClient)
 	}
 
 	if !ws.EndDated() {
 		logger := getLoggerFromContext(ctx).WithField(waterScheduleIDLogField, ws.ID.String())
-		response.NextWater = GetNextWaterDetails(ws, wsr.worker, logger)
+		response.NextWater = GetNextWaterDetails(ws, wsr.worker, logger, excludeWeatherData)
 	}
 
 	return response
