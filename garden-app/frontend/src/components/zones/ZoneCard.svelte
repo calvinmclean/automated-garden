@@ -1,5 +1,6 @@
 <script lang="ts">
     import {
+        Badge,
         Card,
         CardBody,
         CardFooter,
@@ -10,16 +11,21 @@
         Icon,
     } from "sveltestrap";
     import { location } from "svelte-spa-router";
-    import type { ZoneResponse, getZone } from "../../lib/zoneClient";
+    import type { ZoneResponse } from "../../lib/zoneClient";
 
     export let zone: ZoneResponse;
+    export let withLink = false;
 </script>
 
 <Card class=".col-lg-4" style="margin: 5%">
     <CardHeader>
-        <a href="#{$location}/zones/{zone.id}">
+        {#if withLink}
+            <a href="#{$location}/zones/{zone.id}">
+                <CardTitle>{zone.name}</CardTitle>
+            </a>
+        {:else}
             <CardTitle>{zone.name}</CardTitle>
-        </a>
+        {/if}
     </CardHeader>
     <CardBody>
         <CardSubtitle>{zone.id}</CardSubtitle>
@@ -58,9 +64,8 @@
         </CardText>
     </CardBody>
     <CardFooter>
-        <Icon
-            name="clock-fill"
-            style="color: {zone.end_date == null ? 'green' : 'red'}"
-        />
+        {#if zone.end_date != null}
+            <Badge color={"danger"}>End Dated</Badge>
+        {/if}
     </CardFooter>
 </Card>

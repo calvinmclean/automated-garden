@@ -2,6 +2,7 @@
     import { Button } from "sveltestrap";
     import type { ZoneResponse } from "../../lib/zoneClient";
     import { waterZone } from "../../lib/zoneClient";
+    import ZoneCard from "./ZoneCard.svelte";
 
     export let gardenID: string;
     export let zone: ZoneResponse;
@@ -15,7 +16,7 @@
 </script>
 
 {#if zone}
-    <h1>{zone.name}</h1>
+    <ZoneCard {zone} />
 
     <div>
         <input type="number" bind:value={a} min="0" /> minutes

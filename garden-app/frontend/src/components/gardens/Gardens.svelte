@@ -1,5 +1,5 @@
 <script lang="ts">
-    import GardenLink from "./GardenLink.svelte";
+    import GardenCard from "./GardenCard.svelte";
     import type { GardenResponse } from "../../lib/gardenClient";
 
     export let gardens: GardenResponse[];
@@ -7,6 +7,6 @@
 
 {#if gardens}
     {#each gardens as garden}
-        <GardenLink {garden} />
+        <GardenCard {garden} withLink={true} />
     {/each}
 {/if}

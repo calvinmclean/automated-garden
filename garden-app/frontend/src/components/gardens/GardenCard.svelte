@@ -14,13 +14,18 @@
     import type { GardenResponse } from "../../lib/gardenClient";
 
     export let garden: GardenResponse;
+    export let withLink = false;
 </script>
 
 <Card class=".col-lg-4" style="margin: 5%">
     <CardHeader>
-        <a href="#/gardens/{garden.id}">
+        {#if withLink}
+            <a href="#/gardens/{garden.id}">
+                <CardTitle>{garden.name}</CardTitle>
+            </a>
+        {:else}
             <CardTitle>{garden.name}</CardTitle>
-        </a>
+        {/if}
     </CardHeader>
     <CardBody>
         <CardSubtitle>{garden.id}</CardSubtitle>

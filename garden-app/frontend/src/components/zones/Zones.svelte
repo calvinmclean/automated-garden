@@ -1,8 +1,9 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import { getZones } from "../../lib/zoneClient";
-    import ZoneLink from "./ZoneLink.svelte";
+    import ZoneCard from "./ZoneCard.svelte";
     import type { ZoneResponse } from "../../lib/zoneClient";
+    import Zone from "./Zone.svelte";
 
     export let gardenID: string;
 
@@ -26,10 +27,12 @@
     });
 </script>
 
-{#if zones}
+{#if zones && zones.length > 1}
     {#each zones as zone}
-        <ZoneLink {zone} />
+        <ZoneCard {zone} withLink={true} />
     {/each}
+{:else if zones && zones.length == 1}
+    <Zone {gardenID} zone={zones[0]} />
 {:else}
     loading...
 {/if}
