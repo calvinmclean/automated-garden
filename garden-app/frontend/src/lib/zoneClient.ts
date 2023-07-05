@@ -10,7 +10,7 @@ export type ZoneResponse = components["schemas"]["ZoneResponse"];
 export type GetZoneParams = operations["getZone"]["parameters"]["path"];
 
 // functions
-export function getZones(gardenID: string, end_dated: boolean) {
+export function getZones(gardenID: string, end_dated: boolean, exclude_weather_data: boolean) {
     return get("/gardens/{gardenID}/zones", {
         params: {
             path: {
@@ -18,19 +18,23 @@ export function getZones(gardenID: string, end_dated: boolean) {
             },
             query: {
                 end_dated: end_dated,
-            }
+                exclude_weather_data: exclude_weather_data,
+            },
         },
         body: undefined as never,
     });
 }
 
-export function getZone(gardenID: string, id: string) {
+export function getZone(gardenID: string, id: string, exclude_weather_data: boolean) {
     return get("/gardens/{gardenID}/zones/{zoneID}", {
         params: {
             path: {
                 gardenID: gardenID,
                 zoneID: id,
-            }
+            },
+            query: {
+                exclude_weather_data: exclude_weather_data,
+            },
         },
         body: undefined as never,
     });

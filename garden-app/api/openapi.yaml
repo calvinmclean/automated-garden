@@ -47,12 +47,7 @@ paths:
       description: Query for a list of all Gardens. Optionally include end-dated Gardens.
       operationId: getAllGardens
       parameters:
-        - name: end_dated
-          in: query
-          description: whether or not to include end-dated Gardens in the response
-          required: false
-          schema:
-            type: boolean
+        - $ref: "#/components/parameters/EndDated"
       responses:
         "200":
           description: OK
@@ -175,12 +170,7 @@ paths:
       operationId: getAllPlants
       parameters:
         - $ref: "#/components/parameters/GardenID"
-        - name: end_dated
-          in: query
-          description: whether or not to include end-dated Plants in the response
-          required: false
-          schema:
-            type: boolean
+        - $ref: "#/components/parameters/EndDated"
       responses:
         "200":
           description: OK
@@ -262,6 +252,7 @@ paths:
       operationId: addZone
       parameters:
         - $ref: "#/components/parameters/GardenID"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "201":
           description: Created
@@ -286,12 +277,8 @@ paths:
       operationId: getAllZones
       parameters:
         - $ref: "#/components/parameters/GardenID"
-        - name: end_dated
-          in: query
-          description: whether or not to include end-dated Zones in the response
-          required: false
-          schema:
-            type: boolean
+        - $ref: "#/components/parameters/EndDated"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -311,6 +298,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GardenID"
         - $ref: "#/components/parameters/ZoneID"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -329,6 +317,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GardenID"
         - $ref: "#/components/parameters/ZoneID"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -354,6 +343,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/GardenID"
         - $ref: "#/components/parameters/ZoneID"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -427,6 +417,8 @@ paths:
       summary: Add a WaterSchedule
       description: Adds a new WaterSchedule.
       operationId: addWaterSchedule
+      parameters:
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "201":
           description: Created
@@ -450,13 +442,8 @@ paths:
       description: Query for a list of all WaterSchedules. Optionally include end-dated WaterSchedules.
       operationId: getAllWaterSchedules
       parameters:
-        - $ref: "#/components/parameters/WaterScheduleID"
-        - name: end_dated
-          in: query
-          description: whether or not to include end-dated WaterSchedules in the response
-          required: false
-          schema:
-            type: boolean
+        - $ref: "#/components/parameters/EndDated"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -475,6 +462,7 @@ paths:
       operationId: getWaterSchedule
       parameters:
         - $ref: "#/components/parameters/WaterScheduleID"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -492,6 +480,7 @@ paths:
       operationId: updateWaterSchedule
       parameters:
         - $ref: "#/components/parameters/WaterScheduleID"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -516,6 +505,7 @@ paths:
       operationId: endDateWaterSchedule
       parameters:
         - $ref: "#/components/parameters/WaterScheduleID"
+        - $ref: "#/components/parameters/ExcludeWeatherData"
       responses:
         "200":
           description: OK
@@ -556,6 +546,20 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/xid"
+    EndDated:
+      name: end_dated
+      in: query
+      description: whether or not to include end-dated resources in the response
+      required: false
+      schema:
+        type: boolean
+    ExcludeWeatherData:
+      name: exclude_weather_data
+      in: query
+      description: whether or not to include weather data in responses. Setting to false is useful for getting faster responses since loading weather data can be slow
+      required: false
+      schema:
+        type: boolean
 
   schemas:
     xid:

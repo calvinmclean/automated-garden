@@ -88,7 +88,7 @@ func (wsr WaterSchedulesResource) getWaterSchedule(w http.ResponseWriter, r *htt
 	ws := getWaterScheduleFromContext(r.Context())
 	logger.Debugf("responding with WaterSchedule: %+v", ws)
 
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws)); err != nil {
+	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -140,7 +140,7 @@ func (wsr WaterSchedulesResource) updateWaterSchedule(w http.ResponseWriter, r *
 		}
 	}
 
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws)); err != nil {
+	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -200,7 +200,7 @@ func (wsr WaterSchedulesResource) endDateWaterSchedule(w http.ResponseWriter, r 
 		return
 	}
 
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws)); err != nil {
+	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -221,7 +221,7 @@ func (wsr WaterSchedulesResource) getAllWaterSchedules(w http.ResponseWriter, r 
 	}
 	logger.Debugf("found %d WaterSchedules", len(waterSchedules))
 
-	if err := render.Render(w, r, wsr.NewAllWaterSchedulesResponse(r.Context(), waterSchedules)); err != nil {
+	if err := render.Render(w, r, wsr.NewAllWaterSchedulesResponse(r.Context(), waterSchedules, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render AllWaterSchedulesResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -262,7 +262,7 @@ func (wsr WaterSchedulesResource) createWaterSchedule(w http.ResponseWriter, r *
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws)); err != nil {
+	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}

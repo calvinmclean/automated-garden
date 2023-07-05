@@ -174,19 +174,22 @@ func TestGetZone(t *testing.T) {
 	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 
 	tests := []struct {
-		name           string
-		waterSchedules []*pkg.WaterSchedule
-		setupMock      func(*influxdb.MockClient, *weather.MockClient, *storage.MockClient)
-		expectedRegexp string
+		name               string
+		excludeWeatherData bool
+		waterSchedules     []*pkg.WaterSchedule
+		setupMock          func(*influxdb.MockClient, *weather.MockClient, *storage.MockClient)
+		expectedRegexp     string
 	}{
 		{
 			"Successful",
+			false,
 			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
 			func(_ *influxdb.MockClient, _ *weather.MockClient, _ *storage.MockClient) {},
 			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
 		},
 		{
 			"SuccessfulWithMoisture",
+			false,
 			[]*pkg.WaterSchedule{{
 				ID:        id,
 				Duration:  &pkg.Duration{Duration: time.Second},
@@ -206,6 +209,7 @@ func TestGetZone(t *testing.T) {
 		},
 		{
 			"SuccessfulWithMoistureRainAndTemperatureData",
+			false,
 			[]*pkg.WaterSchedule{{
 				ID:        id,
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
@@ -239,7 +243,38 @@ func TestGetZone(t *testing.T) {
 			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"weather_data":{"rain":{"mm":12.7,"scale_factor":0.5},"average_temperature":{"celsius":35,"scale_factor":1.25},"soil_moisture_percent":2},"next_water":{"time":"2023-\d\d-\d\dT11:24:52.891386-07:00","duration":"37m30.000039936s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
 		},
 		{
+			"SuccessfulWithMoistureRainAndTemperatureDataButWeatherDataExcluded",
+			true,
+			[]*pkg.WaterSchedule{{
+				ID:        id,
+				Interval:  &pkg.Duration{Duration: time.Hour * 24},
+				Duration:  &pkg.Duration{Duration: time.Hour},
+				StartTime: &createdAt,
+				WeatherControl: &weather.Control{
+					SoilMoisture: &weather.SoilMoistureControl{
+						MinimumMoisture: &one,
+					},
+					Rain: &weather.ScaleControl{
+						BaselineValue: float32Pointer(0),
+						Factor:        float32Pointer(0),
+						Range:         float32Pointer(25.4),
+						ClientID:      weatherClientID,
+					},
+					Temperature: &weather.ScaleControl{
+						BaselineValue: float32Pointer(30),
+						Factor:        float32Pointer(0.5),
+						Range:         float32Pointer(10),
+						ClientID:      weatherClientID,
+					},
+				},
+			}},
+			func(influxdbClient *influxdb.MockClient, weatherClient *weather.MockClient, storageClient *storage.MockClient) {
+			},
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"2023-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
+		},
+		{
 			"ErrorGettingMoisture",
+			false,
 			[]*pkg.WaterSchedule{{
 				ID:        id,
 				Duration:  &pkg.Duration{Duration: time.Second},
@@ -285,7 +320,7 @@ func TestGetZone(t *testing.T) {
 
 			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
-			r := httptest.NewRequest("GET", "/zone", nil).WithContext(zoneCtx)
+			r := httptest.NewRequest("GET", fmt.Sprintf("/zone?exclude_weather_data=%t", tt.excludeWeatherData), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(zr.getZone)
 
@@ -599,11 +634,11 @@ func TestGetAllZones(t *testing.T) {
 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 			}
 
-			zoneJSON, _ := json.Marshal(zr.NewAllZonesResponse(context.Background(), tt.expected, garden))
+			zoneJSON, _ := json.Marshal(zr.NewAllZonesResponse(context.Background(), tt.expected, garden, false))
 			// When the expected result contains more than one Zone, on some occasions it might be out of order
 			var reverseZoneJSON []byte
 			if len(tt.expected) > 1 {
-				reverseZoneJSON, _ = json.Marshal(zr.NewAllZonesResponse(context.Background(), []*pkg.Zone{tt.expected[1], tt.expected[0]}, &pkg.Garden{}))
+				reverseZoneJSON, _ = json.Marshal(zr.NewAllZonesResponse(context.Background(), []*pkg.Zone{tt.expected[1], tt.expected[0]}, &pkg.Garden{}, false))
 			}
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())

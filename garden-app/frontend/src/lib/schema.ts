@@ -768,6 +768,10 @@ export interface components {
     ZoneID: components["schemas"]["xid"];
     /** @description ID of WaterSchedule resource for this request */
     WaterScheduleID: components["schemas"]["xid"];
+    /** @description whether or not to include end-dated resources in the response */
+    EndDated?: boolean;
+    /** @description whether or not to include weather data in responses. Setting to false is useful for getting faster responses since loading weather data can be slow */
+    ExcludeWeatherData?: boolean;
   };
   requestBodies: never;
   headers: never;
@@ -785,8 +789,7 @@ export interface operations {
   getAllGardens: {
     parameters: {
       query?: {
-        /** @description whether or not to include end-dated Gardens in the response */
-        end_dated?: boolean;
+        end_dated?: components["parameters"]["EndDated"];
       };
     };
     responses: {
@@ -921,8 +924,7 @@ export interface operations {
   getAllPlants: {
     parameters: {
       query?: {
-        /** @description whether or not to include end-dated Plants in the response */
-        end_dated?: boolean;
+        end_dated?: components["parameters"]["EndDated"];
       };
       path: {
         gardenID: components["parameters"]["GardenID"];
@@ -1045,8 +1047,8 @@ export interface operations {
   getAllZones: {
     parameters: {
       query?: {
-        /** @description whether or not to include end-dated Zones in the response */
-        end_dated?: boolean;
+        end_dated?: components["parameters"]["EndDated"];
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
       };
       path: {
         gardenID: components["parameters"]["GardenID"];
@@ -1069,6 +1071,9 @@ export interface operations {
    */
   addZone: {
     parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
       path: {
         gardenID: components["parameters"]["GardenID"];
       };
@@ -1096,6 +1101,9 @@ export interface operations {
    */
   getZone: {
     parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
       path: {
         gardenID: components["parameters"]["GardenID"];
         zoneID: components["parameters"]["ZoneID"];
@@ -1118,6 +1126,9 @@ export interface operations {
    */
   endDateZone: {
     parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
       path: {
         gardenID: components["parameters"]["GardenID"];
         zoneID: components["parameters"]["ZoneID"];
@@ -1140,6 +1151,9 @@ export interface operations {
    */
   updateZone: {
     parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
       path: {
         gardenID: components["parameters"]["GardenID"];
         zoneID: components["parameters"]["ZoneID"];
@@ -1221,11 +1235,8 @@ export interface operations {
   getAllWaterSchedules: {
     parameters: {
       query?: {
-        /** @description whether or not to include end-dated WaterSchedules in the response */
-        end_dated?: boolean;
-      };
-      path: {
-        waterScheduleID: components["parameters"]["WaterScheduleID"];
+        end_dated?: components["parameters"]["EndDated"];
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
       };
     };
     responses: {
@@ -1244,6 +1255,11 @@ export interface operations {
    * @description Adds a new WaterSchedule.
    */
   addWaterSchedule: {
+    parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
+    };
     /** @description Add a WaterSchedule */
     requestBody: {
       content: {
@@ -1267,6 +1283,9 @@ export interface operations {
    */
   getWaterSchedule: {
     parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
       path: {
         waterScheduleID: components["parameters"]["WaterScheduleID"];
       };
@@ -1288,6 +1307,9 @@ export interface operations {
    */
   endDateWaterSchedule: {
     parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
       path: {
         waterScheduleID: components["parameters"]["WaterScheduleID"];
       };
@@ -1309,6 +1331,9 @@ export interface operations {
    */
   updateWaterSchedule: {
     parameters: {
+      query?: {
+        exclude_weather_data?: components["parameters"]["ExcludeWeatherData"];
+      };
       path: {
         waterScheduleID: components["parameters"]["WaterScheduleID"];
       };

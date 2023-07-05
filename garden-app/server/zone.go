@@ -109,7 +109,7 @@ func (zr ZonesResource) getZone(w http.ResponseWriter, r *http.Request) {
 	zone := getZoneFromContext(r.Context())
 	logger.Debugf("responding with Zone: %+v", zone)
 
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone)); err != nil {
+	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -157,7 +157,7 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone)); err != nil {
+	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -226,7 +226,7 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone)); err != nil {
+	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -248,7 +248,7 @@ func (zr ZonesResource) getAllZones(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Debugf("found %d Zones", len(zones))
 
-	if err := render.Render(w, r, zr.NewAllZonesResponse(r.Context(), zones, garden)); err != nil {
+	if err := render.Render(w, r, zr.NewAllZonesResponse(r.Context(), zones, garden, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render AllZonesResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -316,7 +316,7 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone)); err != nil {
+	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -398,4 +398,9 @@ func (zr ZonesResource) getWaterHistory(ctx context.Context, zone *pkg.Zone, gar
 		})
 	}
 	return
+}
+
+func excludeWeatherData(r *http.Request) bool {
+	result := r.URL.Query().Get("exclude_weather_data") == "true"
+	return result
 }
