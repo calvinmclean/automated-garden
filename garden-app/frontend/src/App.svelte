@@ -1,6 +1,7 @@
 <script>
   import Router from "svelte-spa-router";
   import routes from "./routes";
+  import NavBar from "./components/NavBar.svelte";
 </script>
 
 <svelte:head>
@@ -12,6 +13,5 @@
   </style>
 </svelte:head>
 
-<h1>Garden App</h1>
-
+<NavBar />
 <Router {routes} />
