@@ -1,0 +1,25 @@
+version: "3"
+
+tasks:
+  integration-test:
+    dir: ./garden-app
+    cmds:
+      - go test -race -covermode=atomic -coverpkg=./... ./integration_tests
+  unit-test:
+    dir: ./garden-app
+    cmds:
+      - go test -short -race -covermode=atomic -coverpkg=./... ./...
+  lint:
+    dir: ./garden-app
+    cmds:
+      - golangci-lint run
+  run-server:
+    aliases: [rs]
+    dir: ./garden-app
+    cmds:
+      - go run main.go server --config config.yaml
+  run-webapp:
+    aliases: [rw]
+    dir: ./garden-app/frontend
+    cmds:
+      - npm run dev -- --open
