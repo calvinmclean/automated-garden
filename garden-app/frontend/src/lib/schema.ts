@@ -599,6 +599,11 @@ export interface components {
        * @description the date-time when the Zone was originally created
        */
       created_at?: string;
+      /**
+       * Format: date-time 
+       * @description the date-time when the Zone was deleted/removed
+       */
+      end_date?: string;
     };
     /** @description List of all Zones */
     AllZonesResponse: {

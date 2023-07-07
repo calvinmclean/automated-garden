@@ -23,3 +23,7 @@ tasks:
     dir: ./garden-app/frontend
     cmds:
       - npm run dev -- --open
+  generate-ts:
+    dir: ./garden-app
+    cmds:
+      - npx openapi-typescript ./api/openapi.yaml -o ./frontend/src/lib/schema.ts

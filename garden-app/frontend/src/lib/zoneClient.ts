@@ -40,6 +40,32 @@ export function getZone(gardenID: string, id: string, exclude_weather_data: bool
     });
 }
 
+export function endDateZone(gardenID: string, id: string) {
+    return del("/gardens/{gardenID}/zones/{zoneID}", {
+        params: {
+            path: {
+                gardenID: gardenID,
+                zoneID: id,
+            },
+        },
+        body: undefined as never,
+    });
+}
+
+export function restoreZone(gardenID: string, id: string) {
+    return patch("/gardens/{gardenID}/zones/{zoneID}", {
+        params: {
+            path: {
+                gardenID: gardenID,
+                zoneID: id,
+            },
+        },
+        body: {
+            end_date: null,
+        },
+    });
+}
+
 export function waterZone(gardenID: string, zoneID: string, minutes: number) {
     return post("/gardens/{gardenID}/zones/{zoneID}/action", {
         params: {

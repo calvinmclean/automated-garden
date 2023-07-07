@@ -20,15 +20,17 @@
 
 <div in:fly={{ x: 50, duration: 500 }} out:fly={{ x: -50, duration: 250 }}>
     <Card class=".col-lg-4" style="margin: 5%">
-        <CardHeader>
-            {#if withLink}
-                <a href="#/gardens/{garden.id}">
+        {#if withLink}
+            <a href="#/gardens/{garden.id}">
+                <CardHeader>
                     <CardTitle>{garden.name}</CardTitle>
-                </a>
-            {:else}
+                </CardHeader>
+            </a>
+        {:else}
+            <CardHeader>
                 <CardTitle>{garden.name}</CardTitle>
-            {/if}
-        </CardHeader>
+            </CardHeader>
+        {/if}
         <CardBody>
             <CardSubtitle>{garden.id}</CardSubtitle>
             <CardText>

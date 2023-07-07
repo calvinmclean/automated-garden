@@ -37,14 +37,14 @@
 
 {#if zones && zones.length > 1}
     {#each filterZones(zones, false) as zone (zone.id)}
-        <ZoneCard {zone} withLink={true} {loadingWeatherData} />
+        <ZoneCard {gardenID} {zone} {loadingWeatherData} />
     {/each}
 
     {#if filterZones(zones, true).length != 0}
         <Accordion flush>
             <AccordionItem header="End Dated Zones">
                 {#each filterZones(zones, true) as zone (zone.id)}
-                    <ZoneCard {zone} withLink={true} {loadingWeatherData} />
+                    <ZoneCard {gardenID} {zone} {loadingWeatherData} />
                 {/each}
             </AccordionItem>
         </Accordion>

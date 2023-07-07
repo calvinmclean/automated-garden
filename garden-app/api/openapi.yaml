@@ -1087,6 +1087,10 @@ components:
               type: string
               format: date-time
               description: the date-time when the Zone was originally created
+            end_date:
+              type: string
+              format: date-time
+              description: the date-time when the Zone was deleted/removed
 
     AllZonesResponse:
       type: object
