@@ -29,21 +29,21 @@
             });
     });
 
-    const filterZones = (zones, endDated) =>
-        zones.filter((z) =>
-            endDated ? z.end_date != null : z.end_date == null
-        );
+    const filterZones = (zones: ZoneResponse[], endDated: boolean) =>
+        zones
+            .filter((z) => (endDated ? z.end_date != null : z.end_date == null))
+            .sort((a, b) => a.name.localeCompare(b.name));
 </script>
 
 {#if zones && zones.length > 1}
-    {#each filterZones(zones, false) as zone}
+    {#each filterZones(zones, false) as zone (zone.id)}
         <ZoneCard {zone} withLink={true} {loadingWeatherData} />
     {/each}
 
     {#if filterZones(zones, true).length != 0}
         <Accordion flush>
             <AccordionItem header="End Dated Zones">
-                {#each filterZones(zones, true) as zone}
+                {#each filterZones(zones, true) as zone (zone.id)}
                     <ZoneCard {zone} withLink={true} {loadingWeatherData} />
                 {/each}
             </AccordionItem>

@@ -6,21 +6,21 @@
 
     export let gardens: GardenResponse[];
 
-    const filterGardens = (gardens, endDated) =>
-        gardens.filter((g) =>
-            endDated ? g.end_date != null : g.end_date == null
-        );
+    const filterGardens = (gardens: GardenResponse[], endDated: boolean) =>
+        gardens
+            .filter((g) => (endDated ? g.end_date != null : g.end_date == null))
+            .sort((a, b) => a.name.localeCompare(b.name));
 </script>
 
 {#if gardens}
-    {#each filterGardens(gardens, false) as garden}
+    {#each filterGardens(gardens, false) as garden (garden.id)}
         <GardenCard {garden} withLink={true} />
     {/each}
 
     {#if filterGardens(gardens, true).length != 0}
         <Accordion flush>
             <AccordionItem header="End Dated Gardens">
-                {#each filterGardens(gardens, true) as garden}
+                {#each filterGardens(gardens, true) as garden (garden.id)}
                     <GardenCard {garden} withLink={true} />
                 {/each}
             </AccordionItem>
