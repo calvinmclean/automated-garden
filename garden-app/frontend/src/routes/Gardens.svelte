@@ -1,17 +1,13 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import Gardens from "../components/gardens/Gardens.svelte";
-    import { getGardens } from "../lib/gardenClient";
     import type { GardenResponse } from "../lib/gardenClient";
+    import { gardenStore } from "../store";
 
     let gardens: GardenResponse[];
 
-    onMount(async () => {
-        await getGardens(true)
-            .then((response) => response.data)
-            .then((data) => {
-                gardens = data.gardens;
-            });
+    gardenStore.init();
+    gardenStore.subscribe((value) => {
+        gardens = value;
     });
 </script>
 
