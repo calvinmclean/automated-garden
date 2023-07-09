@@ -2,7 +2,7 @@ import createClient from "openapi-fetch";
 import type { paths, components, operations } from "./schema";
 
 const { get, post, put, patch, del } = createClient<paths>({
-    baseUrl: "",
+    baseUrl: process.env.NODE_ENV == "docker" ? "" : "http://localhost:8080",
 });
 
 // types
