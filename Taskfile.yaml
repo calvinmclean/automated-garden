@@ -1,0 +1,38 @@
+version: "3"
+
+tasks:
+  integration-test:
+    dir: ./garden-app
+    cmds:
+      - go test -race -covermode=atomic -coverpkg=./... ./integration_tests
+  unit-test:
+    dir: ./garden-app
+    cmds:
+      - go test -short -race -covermode=atomic -coverpkg=./... ./...
+  lint:
+    dir: ./garden-app
+    cmds:
+      - golangci-lint run
+  run-server:
+    aliases: [rs]
+    dir: ./garden-app
+    cmds:
+      - go run main.go server --config config.yaml
+  run-webapp:
+    aliases: [rw]
+    dir: ./garden-app/frontend
+    cmds:
+      - npm run dev -- --open
+  generate-ts:
+    dir: ./garden-app
+    cmds:
+      - npx openapi-typescript ./api/openapi.yaml -o ./frontend/src/lib/schema.ts
+  docker-build:
+    dir: ./garden-app
+    cmds:
+      - docker build . -t ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}
+  docker-push:
+    dir: ./garden-app
+    cmds:
+      - task: docker-build
+      - docker push ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}

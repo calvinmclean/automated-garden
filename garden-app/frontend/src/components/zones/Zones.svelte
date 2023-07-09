@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Spinner } from "sveltestrap";
+    import { Accordion, AccordionItem, Spinner } from "sveltestrap";
     import { onMount } from "svelte";
     import { getZones } from "../../lib/zoneClient";
     import ZoneCard from "./ZoneCard.svelte";
@@ -28,12 +28,27 @@
                 zones = data.zones;
             });
     });
+
+    const filterZones = (zones: ZoneResponse[], endDated: boolean) =>
+        zones
+            .filter((z) => (endDated ? z.end_date != null : z.end_date == null))
+            .sort((a, b) => a.name.localeCompare(b.name));
 </script>
 
 {#if zones && zones.length > 1}
-    {#each zones as zone}
-        <ZoneCard {zone} withLink={true} {loadingWeatherData} />
+    {#each filterZones(zones, false) as zone (zone.id)}
+        <ZoneCard {gardenID} {zone} {loadingWeatherData} />
     {/each}
+
+    {#if filterZones(zones, true).length != 0}
+        <Accordion flush>
+            <AccordionItem header="End Dated Zones">
+                {#each filterZones(zones, true) as zone (zone.id)}
+                    <ZoneCard {gardenID} {zone} {loadingWeatherData} />
+                {/each}
+            </AccordionItem>
+        </Accordion>
+    {/if}
 {:else if zones && zones.length == 1}
     <Zone {gardenID} zone={zones[0]} {loadingWeatherData} />
 {:else}

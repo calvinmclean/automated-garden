@@ -467,20 +467,8 @@ export interface components {
        * @description the date-time when the WaterSchedule was deleted/removed
        */
       end_date?: string;
-      /**
-       * Format: date-time 
-       * @description time of the next scheduled watering
-       */
-      next_water_time?: string;
-      /**
-       * Format: duration 
-       * @description duration of the next scheduled watering. If WeatherControl is enabled, this will adjust for scaling based on
-       * currently-available data
-       *  
-       * @example 10m0s
-       */
-      next_water_duration?: string;
-      weather_data?: components["schemas"]["link"];
+      next_water?: components["schemas"]["NextWaterDetails"];
+      weather_data?: components["schemas"]["WeatherData"];
       /**
        * @example [
        *   {
@@ -599,6 +587,11 @@ export interface components {
        * @description the date-time when the Zone was originally created
        */
       created_at?: string;
+      /**
+       * Format: date-time 
+       * @description the date-time when the Zone was deleted/removed
+       */
+      end_date?: string;
     };
     /** @description List of all Zones */
     AllZonesResponse: {
@@ -620,19 +613,6 @@ export interface components {
        */
       end_date?: string;
       next_water?: components["schemas"]["NextWaterDetails"];
-      /**
-       * Format: date-time 
-       * @description time of the next scheduled watering
-       */
-      next_water_time?: string;
-      /**
-       * Format: duration 
-       * @description duration of the next scheduled watering. If WeatherControl is enabled, this will adjust for scaling based on
-       * currently-available data
-       *  
-       * @example 10m0s
-       */
-      next_water_duration?: string;
       weather_data?: components["schemas"]["WeatherData"];
       /**
        * @example [

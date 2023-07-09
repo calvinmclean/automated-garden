@@ -952,19 +952,10 @@ components:
               type: string
               format: date-time
               description: the date-time when the WaterSchedule was deleted/removed
-            next_water_time:
-              type: string
-              description: time of the next scheduled watering
-              format: date-time
-            next_water_duration:
-              type: string
-              description: |
-                duration of the next scheduled watering. If WeatherControl is enabled, this will adjust for scaling based on
-                currently-available data
-              format: duration
-              example: 10m0s
+            next_water:
+              $ref: "#/components/schemas/NextWaterDetails"
             weather_data:
-              $ref: "#/components/schemas/link"
+              $ref: "#/components/schemas/WeatherData"
             links:
               type: array
               items:
@@ -1087,6 +1078,10 @@ components:
               type: string
               format: date-time
               description: the date-time when the Zone was originally created
+            end_date:
+              type: string
+              format: date-time
+              description: the date-time when the Zone was deleted/removed
 
     AllZonesResponse:
       type: object
@@ -1125,17 +1120,6 @@ components:
               description: the date-time when the Zone was deleted/removed
             next_water:
               $ref: "#/components/schemas/NextWaterDetails"
-            next_water_time:
-              type: string
-              description: time of the next scheduled watering
-              format: date-time
-            next_water_duration:
-              type: string
-              description: |
-                duration of the next scheduled watering. If WeatherControl is enabled, this will adjust for scaling based on
-                currently-available data
-              format: duration
-              example: 10m0s
             weather_data:
               $ref: "#/components/schemas/WeatherData"
             links:

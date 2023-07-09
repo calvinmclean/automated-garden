@@ -10,16 +10,16 @@
 
     let minutes = 1;
 
-    function onClick(event) {
+    function sendWaterRequest(event) {
         waterZone(gardenID, zone.id, minutes);
     }
 </script>
 
 {#if zone}
-    <ZoneCard {zone} {loadingWeatherData} />
+    <ZoneCard {gardenID} {zone} {loadingWeatherData} withLink={false} />
 
     <div>
         <input type="number" bind:value={minutes} min="0" /> minutes
-        <Button on:click={onClick} color={"primary"}>Water!</Button>
+        <Button on:click={sendWaterRequest} color={"primary"}>Water!</Button>
     </div>
 {/if}

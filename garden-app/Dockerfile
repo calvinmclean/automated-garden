@@ -1,7 +1,8 @@
 # build static svelte app
-FROM node:18-alpine as svelte_build
+FROM node:20-alpine as svelte_build
 RUN mkdir /build
 ADD ./frontend /build
+ENV NODE_ENV=docker
 WORKDIR /build
 RUN npm install && npm run build
 
