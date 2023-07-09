@@ -20,6 +20,8 @@
     import { location } from "svelte-spa-router";
     import type { ZoneResponse } from "../../lib/zoneClient";
     import { endDateZone, restoreZone } from "../../lib/zoneClient";
+    import WeatherData from "../WeatherData.svelte";
+    import NextWater from "../NextWater.svelte";
 
     export let gardenID: string;
     export let zone: ZoneResponse;
@@ -73,26 +75,11 @@
                 {/if}
 
                 {#if zone.next_water != null}
-                    Next Water Time: {zone.next_water.time}
-                    <Icon name="clock" /><br />
-                    Next Water Duration: {zone.next_water.duration}<br />
-                    Next Water Message: {zone.next_water.message}<br />
+                    <NextWater nextWater={zone.next_water} />
                 {/if}
 
                 {#if zone.weather_data != null}
-                    {#if zone.weather_data.rain != null}
-                        Rain MM: {zone.weather_data.rain.mm}<br />
-                        Rain Scale Factor: {zone.weather_data.rain
-                            .scale_factor}<br />
-                    {/if}
-                    {#if zone.weather_data.average_temperature != null}
-                        Average High Temp ºF: {zone.weather_data
-                            .average_temperature.celsius *
-                            1.8 +
-                            32}<br />
-                        Average High Temp Scale Factor: {zone.weather_data
-                            .average_temperature.scale_factor}<br />
-                    {/if}
+                    <WeatherData weatherData={zone.weather_data} />
                 {/if}
 
                 <ButtonDropdown>
