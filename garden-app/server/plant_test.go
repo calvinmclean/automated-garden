@@ -29,7 +29,7 @@ func createExamplePlant() *pkg.Plant {
 	}
 }
 
-func setupZonePlantGardenStorage(t *testing.T) storage.Client {
+func setupZonePlantGardenStorage(t *testing.T) *storage.Client {
 	t.Helper()
 
 	garden := createExampleGarden()

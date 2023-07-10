@@ -282,7 +282,7 @@ func (s *Server) Stop() {
 }
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types
-func validateAllStoredResources(storageClient storage.Client) error {
+func validateAllStoredResources(storageClient *storage.Client) error {
 	gardens, err := storageClient.GetGardens(true)
 	if err != nil {
 		return fmt.Errorf("unable to get all Gardens: %w", err)

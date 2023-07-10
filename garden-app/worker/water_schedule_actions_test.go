@@ -42,7 +42,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 		name          string
 		waterSchedule *pkg.WaterSchedule
 		zone          *pkg.Zone
-		setupMock     func(*mqtt.MockClient, *influxdb.MockClient, storage.Client)
+		setupMock     func(*mqtt.MockClient, *influxdb.MockClient, *storage.Client)
 		expectedError string
 	}{
 		{
@@ -53,7 +53,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 			},
@@ -67,7 +67,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
 			},
 			"unable to fill MQTT topic template: template error",
@@ -86,7 +86,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), nil)
@@ -108,7 +108,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(51), nil)
 				influxdbClient.On("Close")
 				// No MQTT calls made
@@ -129,7 +129,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
 				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), errors.New("influxdb error"))
@@ -149,7 +149,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -175,7 +175,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -202,7 +202,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -229,7 +229,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -256,7 +256,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -283,7 +283,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -310,7 +310,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -337,7 +337,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -364,7 +364,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -391,7 +391,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -418,7 +418,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -445,7 +445,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -475,7 +475,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			&pkg.Zone{
 				Position: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -507,7 +507,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position:  uintPointer(0),
 				SkipCount: uintPointer(0),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveWeatherClientConfig(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
@@ -537,7 +537,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position:  uintPointer(0),
 				SkipCount: uintPointer(1),
 			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc storage.Client) {
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveGarden(&pkg.Garden{ID: id, Zones: map[xid.ID]*pkg.Zone{id: {ID: id}}})
 				assert.NoError(t, err)
 				err = sc.SaveZone(id, &pkg.Zone{ID: id})

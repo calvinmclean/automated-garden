@@ -1,4 +1,4 @@
-package kv
+package storage
 
 import (
 	"errors"
@@ -44,13 +44,13 @@ func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, erro
 }
 
 // SaveWaterSchedule ...
-func (c *Client) SaveWaterSchedule(g *pkg.WaterSchedule) error {
-	asBytes, err := c.marshal(g)
+func (c *Client) SaveWaterSchedule(ws *pkg.WaterSchedule) error {
+	asBytes, err := c.marshal(ws)
 	if err != nil {
 		return fmt.Errorf("error marshalling WaterSchedule: %w", err)
 	}
 
-	err = c.db.Set(waterSchedulePrefix+g.ID.String(), asBytes)
+	err = c.db.Set(waterSchedulePrefix+ws.ID.String(), asBytes)
 	if err != nil {
 		return fmt.Errorf("error writing WaterSchedule to database: %w", err)
 	}
@@ -91,6 +91,32 @@ func (c *Client) GetMultipleWaterSchedules(ids []xid.ID) ([]*pkg.WaterSchedule, 
 		}
 
 		results = append(results, result)
+	}
+
+	return results, nil
+}
+
+// GetZonesUsingWaterSchedule will find all Zones that use this WaterSchedule and return the Zones along with the Gardens they belong to
+func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, error) {
+	gardens, err := c.GetGardens(false)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get all Gardens: %w", err)
+	}
+
+	results := []*pkg.ZoneAndGarden{}
+	for _, g := range gardens {
+		zones, err := c.GetZones(g.ID, false)
+		if err != nil {
+			return nil, fmt.Errorf("unable to get all Zones for Garden %q: %w", g.ID, err)
+		}
+
+		for _, z := range zones {
+			for _, wsID := range z.WaterScheduleIDs {
+				if wsID == id {
+					results = append(results, &pkg.ZoneAndGarden{Zone: z, Garden: g})
+				}
+			}
+		}
 	}
 
 	return results, nil

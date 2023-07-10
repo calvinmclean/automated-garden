@@ -23,14 +23,14 @@ const (
 // GardensResource encapsulates the structs and dependencies necessary for the "/gardens" API
 // to function, including storage and configurating
 type GardensResource struct {
-	storageClient  storage.Client
+	storageClient  *storage.Client
 	influxdbClient influxdb.Client
 	worker         *worker.Worker
 	config         Config
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (GardensResource, error) {
+func NewGardenResource(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (GardensResource, error) {
 	gr := GardensResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,

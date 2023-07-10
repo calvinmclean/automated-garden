@@ -20,12 +20,12 @@ const (
 
 // WaterSchedulesResource provides and API for interacting with WaterSchedules
 type WaterSchedulesResource struct {
-	storageClient storage.Client
+	storageClient *storage.Client
 	worker        *worker.Worker
 }
 
 // NewWaterSchedulesResource creates a new WaterSchedulesResource
-func NewWaterSchedulesResource(storageClient storage.Client, worker *worker.Worker) (WaterSchedulesResource, error) {
+func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Worker) (WaterSchedulesResource, error) {
 	wsr := WaterSchedulesResource{
 		storageClient: storageClient,
 		worker:        worker,
