@@ -206,6 +206,20 @@ func TestGardenRequest(t *testing.T) {
 			"cannot add or modify Plants with this request",
 		},
 		{
+			"CreatingZonesNotAllowedError",
+			&GardenRequest{
+				Garden: &pkg.Garden{
+					Name:        "garden",
+					TopicPrefix: "garden",
+					MaxZones:    &one,
+					Zones: map[xid.ID]*pkg.Zone{
+						xid.New(): {},
+					},
+				},
+			},
+			"cannot add or modify Zones with this request",
+		},
+		{
 			"EmptyLightScheduleDurationError",
 			&GardenRequest{
 				Garden: &pkg.Garden{

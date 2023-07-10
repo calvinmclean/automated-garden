@@ -47,7 +47,7 @@ func TestIntegration(t *testing.T) {
 
 	serverConfig, controllerConfig := getConfigs(t)
 
-	s, err = server.NewServer(serverConfig)
+	s, err = server.NewServer(serverConfig, true)
 	require.NoError(t, err)
 
 	c, err = controller.NewController(controllerConfig)
