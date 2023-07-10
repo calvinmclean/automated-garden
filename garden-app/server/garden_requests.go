@@ -40,6 +40,9 @@ func (g *GardenRequest) Bind(_ *http.Request) error {
 	if len(g.Plants) > 0 {
 		return errors.New("cannot add or modify Plants with this request")
 	}
+	if len(g.Zones) > 0 {
+		return errors.New("cannot add or modify Zones with this request")
+	}
 	if g.LightSchedule != nil {
 		if g.LightSchedule.Duration == nil {
 			return errors.New("missing required light_schedule.duration field")

@@ -35,7 +35,7 @@ func TestZoneRequest(t *testing.T) {
 					Name: "zone",
 				},
 			},
-			"missing required zone_position field",
+			"missing required position field",
 		},
 		{
 			"EmptyWaterScheduleIDError",

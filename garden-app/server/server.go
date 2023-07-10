@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"net/http"
@@ -55,7 +56,7 @@ type Server struct {
 }
 
 // NewServer creates and initializes all server resources based on config
-func NewServer(cfg Config) (*Server, error) {
+func NewServer(cfg Config, validateData bool) (*Server, error) {
 	baseLogger := logrus.New()
 	baseLogger.SetFormatter(cfg.LogConfig.GetFormatter())
 	baseLogger.SetLevel(cfg.LogConfig.GetLogLevel())
@@ -92,6 +93,13 @@ func NewServer(cfg Config) (*Server, error) {
 	storageClient, err := storage.NewClient(cfg.StorageConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
+	}
+
+	if validateData {
+		err = validateAllStoredResources(storageClient)
+		if err != nil {
+			return nil, fmt.Errorf("error validating all existing stored data: %w", err)
+		}
 	}
 
 	// Initialize MQTT Client
@@ -271,4 +279,80 @@ func (s *Server) Start() {
 // Stop shuts down the server
 func (s *Server) Stop() {
 	s.quit <- os.Interrupt
+}
+
+// validateAllStoredResources will read all resources from storage and make sure they are valid for the types
+func validateAllStoredResources(storageClient storage.Client) error {
+	gardens, err := storageClient.GetGardens(true)
+	if err != nil {
+		return fmt.Errorf("unable to get all Gardens: %w", err)
+	}
+
+	for _, g := range gardens {
+		// Remove Plants and Zones because g.Bind doesn't allow them
+		plants := g.Plants
+		g.Plants = nil
+		zones := g.Zones
+		g.Zones = nil
+
+		if g.ID.IsNil() {
+			return errors.New("invalid Garden: missing required field 'id'")
+		}
+		err = (&GardenRequest{g}).Bind(nil)
+		if err != nil {
+			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
+		}
+
+		for _, z := range zones {
+			if z.ID.IsNil() {
+				return errors.New("invalid Zone: missing required field 'id'")
+			}
+			err = (&ZoneRequest{z}).Bind(nil)
+			if err != nil {
+				return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
+			}
+		}
+
+		for _, p := range plants {
+			if p.ID.IsNil() {
+				return errors.New("invalid Plant: missing required field 'id'")
+			}
+			err = (&PlantRequest{p}).Bind(nil)
+			if err != nil {
+				return fmt.Errorf("invalid Plant %q: %w", p.ID, err)
+			}
+		}
+	}
+
+	waterSchedules, err := storageClient.GetWaterSchedules(true)
+	if err != nil {
+		return fmt.Errorf("unable to get all WaterSchedules: %w", err)
+	}
+
+	for _, ws := range waterSchedules {
+		if ws.ID.IsNil() {
+			return errors.New("invalid WaterSchedule: missing required field 'id'")
+		}
+		err = (&WaterScheduleRequest{ws}).Bind(nil)
+		if err != nil {
+			return fmt.Errorf("invalid WaterSchedule %q: %w", ws.ID, err)
+		}
+	}
+
+	weatherClients, err := storageClient.GetWeatherClientConfigs()
+	if err != nil {
+		return fmt.Errorf("unable to get all WeatherClients: %w", err)
+	}
+
+	for _, wc := range weatherClients {
+		if wc.ID.IsNil() {
+			return errors.New("invalid WeatherClient: missing required field 'id'")
+		}
+		err = (&WeatherClientRequest{wc}).Bind(nil)
+		if err != nil {
+			return fmt.Errorf("invalid WeatherClient %q: %w", wc.ID, err)
+		}
+	}
+
+	return nil
 }

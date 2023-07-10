@@ -27,6 +27,10 @@ tasks:
     dir: ./garden-app
     cmds:
       - npx openapi-typescript ./api/openapi.yaml -o ./frontend/src/lib/schema.ts
+  generate-mocks:
+    dir: ./garden-app/pkg
+    cmds:
+      - mockery --all --inpackage
   docker-build:
     dir: ./garden-app
     cmds:

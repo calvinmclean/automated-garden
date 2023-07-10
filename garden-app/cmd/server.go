@@ -30,7 +30,7 @@ func Server(cmd *cobra.Command, _ []string) {
 	}
 
 	cmd.Printf("Starting garden-app webserver on port %d...\n", config.Port)
-	server, err := server.NewServer(config)
+	server, err := server.NewServer(config, true)
 	if err != nil {
 		cmd.PrintErrln("error creating HTTP Server:", err)
 		return
