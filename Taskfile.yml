@@ -4,37 +4,58 @@ tasks:
   integration-test:
     dir: ./garden-app
     cmds:
-      - go test -race -covermode=atomic -coverpkg=./... ./integration_tests
+      - docker compose -f ../deploy/docker-compose.yml --profile test up -d
+      - defer: docker compose -f ../deploy/docker-compose.yml --profile test down
+      - sleep 15
+      - go test -race -covermode=atomic -coverprofile=integration_coverage.out -coverpkg=./... ./integration_tests
+
   unit-test:
     dir: ./garden-app
     cmds:
-      - go test -short -race -covermode=atomic -coverpkg=./... ./...
+      - go test -short -race -covermode=atomic -coverprofile=coverage.out -coverpkg=./... ./...
+
   lint:
     dir: ./garden-app
     cmds:
       - golangci-lint run
+
+  up:
+    dir: ./deploy
+    cmds:
+      - docker compose --profile run-local up {{.CLI_ARGS}}
+
+  down:
+    dir: ./deploy
+    cmds:
+      - docker compose --profile run-local down
+
   run-server:
     aliases: [rs]
     dir: ./garden-app
     cmds:
       - go run main.go server --config config.yaml
+
   run-webapp:
     aliases: [rw]
     dir: ./garden-app/frontend
     cmds:
       - npm run dev -- --open
+
   generate-ts:
     dir: ./garden-app
     cmds:
       - npx openapi-typescript ./api/openapi.yaml -o ./frontend/src/lib/schema.ts
+
   generate-mocks:
     dir: ./garden-app/pkg
     cmds:
       - mockery --all --inpackage
+
   docker-build:
     dir: ./garden-app
     cmds:
       - docker build . -t ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}
+
   docker-push:
     dir: ./garden-app
     cmds:
