@@ -1,0 +1,9 @@
+version: "3"
+
+output:
+  group:
+    begin: "::group::{{.TASK}}"
+    end: "::endgroup::"
+
+includes:
+  main: ./Taskfile.yml

@@ -3,5 +3,7 @@ config.yaml
 plants.yaml
 gardens.yaml
 cover.out
+coverage.out
+integration_coverage.out
 cover.html
 gardens_kv.yaml
