@@ -15,9 +15,9 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  driver: hashmap
+  driver: redis
   options:
-    filename: "testdata/gardens.yml"
+    server: "localhost:6379"
 
 controller:
   topic_prefix: "test"
@@ -27,5 +27,5 @@ controller:
   moisture_interval: 10s
   publish_water_event: true
   publish_health: true
-  health_interval: 1s
+  health_interval: 500ms
   enable_ui: false
