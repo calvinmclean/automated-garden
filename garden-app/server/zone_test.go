@@ -610,7 +610,6 @@ func TestGetAllZones(t *testing.T) {
 			if actual != string(zoneJSON) && actual != string(reverseZoneJSON) {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(zoneJSON))
 			}
-
 		})
 	}
 }

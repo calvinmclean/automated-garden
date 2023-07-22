@@ -230,7 +230,6 @@ func TestWaterScheduleContextMiddleware(t *testing.T) {
 			if actual != tt.expected {
 				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
 			}
-
 		})
 	}
 }

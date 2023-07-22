@@ -19,6 +19,10 @@ tasks:
     cmds:
       - golangci-lint run
 
+  gofumpt:
+    dir: ./garden-app
+    cmd: gofumpt -w .
+
   up:
     dir: ./deploy
     cmds:
