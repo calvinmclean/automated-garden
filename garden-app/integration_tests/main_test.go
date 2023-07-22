@@ -94,9 +94,6 @@ func GardenTests(t *testing.T) {
 	gardenID := CreateGardenTest(t)
 
 	t.Run("GetGarden", func(t *testing.T) {
-		// Wait a bit so Garden health is "UP"
-		time.Sleep(5 * time.Second)
-
 		var g server.GardenResponse
 		status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
 		assert.NoError(t, err)
@@ -106,6 +103,19 @@ func GardenTests(t *testing.T) {
 		assert.Equal(t, uint(3), *g.MaxZones)
 		assert.Equal(t, uint(0), g.NumZones)
 		assert.Equal(t, uint(0), g.NumPlants)
+
+		// The health status timing can be inconsistent, so it shoul be retried
+		retries := 1
+		for g.Health.Status != "UP" && retries <= 5 {
+			time.Sleep(time.Duration(retries) * time.Second)
+
+			status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, status)
+
+			retries++
+		}
+
 		assert.Equal(t, "UP", g.Health.Status)
 	})
 	t.Run("ExecuteStopAction", func(t *testing.T) {
