@@ -27,7 +27,7 @@ type TemperatureData struct {
 	ScaleFactor float32 `json:"scale_factor"`
 }
 
-func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient storage.Client) *WeatherData {
+func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) *WeatherData {
 	logger := getLoggerFromContext(ctx).WithField(waterScheduleIDLogField, ws.ID.String())
 	weatherData := &WeatherData{}
 
@@ -59,7 +59,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient st
 	return weatherData
 }
 
-func getRainData(ws *pkg.WaterSchedule, storageClient storage.Client) (*float32, error) {
+func getRainData(ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
 	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Rain.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting WeatherClient for RainControl: %w", err)
@@ -72,7 +72,7 @@ func getRainData(ws *pkg.WaterSchedule, storageClient storage.Client) (*float32,
 	return &totalRain, nil
 }
 
-func getTemperatureData(ws *pkg.WaterSchedule, storageClient storage.Client) (*float32, error) {
+func getTemperatureData(ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
 	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting WeatherClient for TemperatureControl: %w", err)

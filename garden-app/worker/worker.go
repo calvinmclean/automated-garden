@@ -26,7 +26,7 @@ var (
 
 // Worker contains the necessary clients to schedule and execute actions
 type Worker struct {
-	storageClient  storage.Client
+	storageClient  *storage.Client
 	influxdbClient influxdb.Client
 	mqttClient     mqtt.Client
 	scheduler      *gocron.Scheduler
@@ -35,7 +35,7 @@ type Worker struct {
 
 // NewWorker creates a Worker with specified clients
 func NewWorker(
-	storageClient storage.Client,
+	storageClient *storage.Client,
 	influxdbClient influxdb.Client,
 	mqttClient mqtt.Client,
 	logger *logrus.Logger,

@@ -21,11 +21,11 @@ const (
 // WeatherClientsResource encapsulates the structs and dependencies necessary for the WeatherClients API
 // to function, including storage and configuring
 type WeatherClientsResource struct {
-	storageClient storage.Client
+	storageClient *storage.Client
 }
 
 // NewWeatherClientsResource creates a new WeatherClientsResource
-func NewWeatherClientsResource(storageClient storage.Client) (WeatherClientsResource, error) {
+func NewWeatherClientsResource(storageClient *storage.Client) (WeatherClientsResource, error) {
 	wc := WeatherClientsResource{
 		storageClient: storageClient,
 	}

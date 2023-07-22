@@ -1,10 +1,11 @@
-package kv
+package storage
 
 import (
 	"errors"
 	"fmt"
 	"strings"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/madflojo/hord"
 	"github.com/rs/xid"
@@ -90,4 +91,30 @@ func (c *Client) getWeatherClientConfig(key string) (*weather.Config, error) {
 	}
 
 	return &result, nil
+}
+
+// GetWaterSchedulesUsingWeatherClient will return all WaterSchedules that rely on this WeatherClient
+func (c *Client) GetWaterSchedulesUsingWeatherClient(id xid.ID) ([]*pkg.WaterSchedule, error) {
+	waterSchedules, err := c.GetWaterSchedules(false)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get all WaterSchedules: %w", err)
+	}
+
+	results := []*pkg.WaterSchedule{}
+	for _, ws := range waterSchedules {
+		if ws.HasWeatherControl() {
+			if ws.HasRainControl() {
+				if ws.WeatherControl.Rain.ClientID == id {
+					results = append(results, ws)
+				}
+			}
+			if ws.HasTemperatureControl() {
+				if ws.WeatherControl.Temperature.ClientID == id {
+					results = append(results, ws)
+				}
+			}
+		}
+	}
+
+	return results, nil
 }

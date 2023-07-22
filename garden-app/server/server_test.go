@@ -12,24 +12,24 @@ import (
 func TestValidateAllStoredResources(t *testing.T) {
 	tests := []struct {
 		name          string
-		initStorage   func(storage.Client) error
+		initStorage   func(*storage.Client) error
 		expectedError string
 	}{
 		{
 			"EmptySuccess",
-			func(s storage.Client) error { return nil },
+			func(s *storage.Client) error { return nil },
 			"",
 		},
 		{
 			"InvalidGardenMissingID",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				return s.SaveGarden(&pkg.Garden{})
 			},
 			"invalid Garden: missing required field 'id'",
 		},
 		{
 			"InvalidGarden",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				return s.SaveGarden(&pkg.Garden{
 					ID: id,
 				})
@@ -38,7 +38,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 		},
 		{
 			"InvalidZoneMissingID",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				g := createExampleGarden()
 				err := s.SaveGarden(g)
 				if err != nil {
@@ -51,7 +51,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 		},
 		{
 			"InvalidZone",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				g := createExampleGarden()
 				err := s.SaveGarden(g)
 				if err != nil {
@@ -64,7 +64,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 		},
 		{
 			"InvalidPlantMissingID",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				g := createExampleGarden()
 				err := s.SaveGarden(g)
 				if err != nil {
@@ -77,7 +77,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 		},
 		{
 			"InvalidPlant",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				g := createExampleGarden()
 				err := s.SaveGarden(g)
 				if err != nil {
@@ -90,14 +90,14 @@ func TestValidateAllStoredResources(t *testing.T) {
 		},
 		{
 			"InvalidWaterScheduleMissingID",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				return s.SaveWaterSchedule(&pkg.WaterSchedule{})
 			},
 			"invalid WaterSchedule: missing required field 'id'",
 		},
 		{
 			"InvalidWaterSchedule",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				return s.SaveWaterSchedule(&pkg.WaterSchedule{
 					ID: id,
 				})
@@ -106,14 +106,14 @@ func TestValidateAllStoredResources(t *testing.T) {
 		},
 		{
 			"InvalidWeatherClientMissingID",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				return s.SaveWeatherClientConfig(&weather.Config{})
 			},
 			"invalid WeatherClient: missing required field 'id'",
 		},
 		{
 			"InvalidWeatherClient",
-			func(s storage.Client) error {
+			func(s *storage.Client) error {
 				return s.SaveWeatherClientConfig(&weather.Config{
 					ID: id,
 				})

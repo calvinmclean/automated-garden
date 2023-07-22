@@ -25,13 +25,13 @@ const (
 // ZonesResource encapsulates the structs and dependencies necessary for the "/zones" API
 // to function, including storage, scheduling, and caching
 type ZonesResource struct {
-	storageClient  storage.Client
+	storageClient  *storage.Client
 	influxdbClient influxdb.Client
 	worker         *worker.Worker
 }
 
 // NewZonesResource creates a new ZonesResource
-func NewZonesResource(storageClient storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesResource, error) {
+func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesResource, error) {
 	zr := ZonesResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
