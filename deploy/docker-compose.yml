@@ -105,6 +105,7 @@ services:
     ports:
       - "6379:6379"
     profiles:
+      - test
       - run-local
 
 volumes:
