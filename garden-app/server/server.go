@@ -143,7 +143,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up static webapp subtree: %w", err)
 	}
-	r.Handle("/", http.RedirectHandler("/#/gardens", http.StatusSeeOther))
 	r.Handle("/*", http.FileServer(http.FS(static)))
 
 	r.Route(gardenBasePath, func(r chi.Router) {
