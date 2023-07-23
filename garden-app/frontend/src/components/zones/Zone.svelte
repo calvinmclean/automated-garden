@@ -41,7 +41,7 @@
     }
 
     onMount(async () => {
-        await zoneWaterHistoryRequest();
+        zoneWaterHistoryRequest();
     });
 </script>
 
@@ -88,23 +88,6 @@
                         on:change={zoneWaterHistoryRequest}
                     />
                 </FormGroup>
-
-                <!-- <FormGroup>
-                    <Label for="waterHistoryLimit">
-                        Water History Limit: {limit}
-                    </Label>
-                    <Input
-                        type="range"
-                        name="range"
-                        id="waterHistoryLimit"
-                        min={1}
-                        max={100}
-                        step={1}
-                        placeholder="Limit placeholder"
-                        bind:value={limit}
-                        on:change={zoneWaterHistoryRequest}
-                    />
-                </FormGroup> -->
 
                 <Table striped borderless rows={history.history} let:row>
                     <Column header="Duration">
