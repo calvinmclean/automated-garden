@@ -9,6 +9,8 @@ const { get, post, put, patch, del } = createClient<paths>({
 export type ZoneResponse = components["schemas"]["ZoneResponse"];
 export type GetZoneParams = operations["getZone"]["parameters"]["path"];
 
+export type WaterHistoryResponse = components["schemas"]["WaterHistoryResponse"];
+
 // functions
 export function getZones(gardenID: string, end_dated: boolean, exclude_weather_data: boolean) {
     return get("/gardens/{gardenID}/zones", {
@@ -79,5 +81,22 @@ export function waterZone(gardenID: string, zoneID: string, minutes: number) {
                 duration: `${minutes}m`
             }
         },
+    });
+}
+
+
+export function getZoneWaterHistory(gardenID: string, zoneID: string, rangeDays: number, limit: number = 10) {
+    return get("/gardens/{gardenID}/zones/{zoneID}/history", {
+        params: {
+            path: {
+                gardenID: gardenID,
+                zoneID: zoneID
+            },
+            query: {
+                range: `${rangeDays * 24}h`,
+                limit: limit
+            },
+        },
+        body: undefined as never,
     });
 }

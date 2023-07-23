@@ -40,6 +40,12 @@ tasks:
     cmds:
       - go run main.go server --config config.yaml
 
+  run-controller:
+    aliases: [rc]
+    dir: ./garden-app
+    cmds:
+      - go run main.go controller --config config.yaml --enable-ui=false
+
   run-webapp:
     aliases: [rw]
     dir: ./garden-app/frontend
