@@ -2,6 +2,7 @@ version: "3"
 
 tasks:
   integration-test:
+    desc: Startup docker resources and run integration tests. Cleanup when done.
     dir: ./garden-app
     cmds:
       - docker compose -f ../deploy/docker-compose.yml --profile test up -d
@@ -11,63 +12,87 @@ tasks:
       - go test -race -covermode=atomic -coverprofile=integration_coverage.out -coverpkg=./... ./integration_tests
 
   unit-test:
+    desc: Run unit tests for Go app
     dir: ./garden-app
     cmds:
       - go test -short -race -covermode=atomic -coverprofile=coverage.out -coverpkg=./... ./...
 
   lint:
+    desc: Run linting for Go app
     dir: ./garden-app
     cmds:
       - golangci-lint run
 
   gofumpt:
+    desc: Run gofumpt to format Go app
     dir: ./garden-app
     cmd: gofumpt -w .
 
   up:
+    desc: Start docker containers for run-local (optional args for -d)
     dir: ./deploy
     cmds:
       - docker compose --profile run-local up {{.CLI_ARGS}}
 
   down:
+    desc: Remove docker containers for run-local
     dir: ./deploy
     cmds:
       - docker compose --profile run-local down
 
   run-server:
+    desc: Run backend Go app
     aliases: [rs]
     dir: ./garden-app
     cmds:
       - go run main.go server --config config.yaml
 
   run-controller:
+    desc: Run mock controller
     aliases: [rc]
     dir: ./garden-app
     cmds:
       - go run main.go controller --config config.yaml --enable-ui=false
 
   run-webapp:
+    desc: Start Svelte frontend in dev mode
     aliases: [rw]
     dir: ./garden-app/frontend
     cmds:
       - npm run dev -- --open
 
+  run-docker:
+    desc: Run backend + frontent in Docker container
+    aliases: [rd]
+    dir: ./garden-app
+    cmds:
+      - |
+        docker run --rm --network host \
+        -v ./gardens.yaml:/gardens.yaml \
+        -v ./config.yaml:/config.yaml \
+        ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}} \
+        server --config /config.yaml
+
   generate-ts:
+    desc: Use openapi-typescript to generate types from OpenAPI spec
     dir: ./garden-app
     cmds:
       - npx openapi-typescript ./api/openapi.yaml -o ./frontend/src/lib/schema.ts
 
   generate-mocks:
+    desc: Use mockery to generate mocks from Go interfaces
     dir: ./garden-app/pkg
     cmds:
       - mockery --all --inpackage
 
   docker-build:
+    desc: Build docker container
     dir: ./garden-app
     cmds:
       - docker build . -t ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}
 
   docker-push:
+    desc: Build and push docker container
     dir: ./garden-app
     cmds:
       - task: docker-build
