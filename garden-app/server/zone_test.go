@@ -615,7 +615,7 @@ func TestGetAllZones(t *testing.T) {
 }
 
 func TestCreateZone(t *testing.T) {
-	otherCreatedAt := createdAt.Add(-1 * time.Hour)
+	otherCreatedAt := createdAt.Add(-1 * time.Second)
 	otherWS := &pkg.WaterSchedule{
 		ID:        id2,
 		Duration:  &pkg.Duration{Duration: time.Second * 10},
@@ -629,7 +629,7 @@ func TestCreateZone(t *testing.T) {
 	// Predict NextWaterTime so I can test it better
 	now := time.Now()
 	expectedNextWaterTime := time.Date(now.Year(), now.Month(), now.Day(), createdAt.Hour(), createdAt.Minute(), createdAt.Second(), createdAt.Nanosecond(), createdAt.Location())
-	if now.Hour() >= 11 {
+	if now.After(expectedNextWaterTime) {
 		expectedNextWaterTime = expectedNextWaterTime.Add(24 * time.Hour)
 	}
 	expectedNextWaterTimeWithSkip := expectedNextWaterTime.Add(72 * time.Hour)
@@ -646,7 +646,7 @@ func TestCreateZone(t *testing.T) {
 			"Successful",
 			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
 			createExampleGarden(),
-			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
+			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
 			fmt.Sprintf(`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"%d-%02d-%02dT11:24:52.891386-07:00","duration":"1s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`, expectedNextWaterTime.Year(), expectedNextWaterTime.Month(), expectedNextWaterTime.Day()),
 			http.StatusCreated,
 		},
@@ -654,7 +654,7 @@ func TestCreateZone(t *testing.T) {
 			"SuccessfulWithSkipCount",
 			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
 			createExampleGarden(),
-			`{"name":"test-zone","skip_count":3,"position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
+			`{"name":"test-zone","skip_count":3,"position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
 			fmt.Sprintf(`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":3,"next_water":{"time":"%d-%02d-%02dT11:24:52.891386-07:00","duration":"1s","water_schedule_id":"c5cvhpcbcv45e8bp16dg","message":"skip_count 3 affected the time"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`, expectedNextWaterTimeWithSkip.Year(), expectedNextWaterTimeWithSkip.Month(), expectedNextWaterTimeWithSkip.Day()),
 			http.StatusCreated,
 		},
@@ -662,8 +662,8 @@ func TestCreateZone(t *testing.T) {
 			"SuccessfulMultipleWaterSchedules",
 			[]*pkg.WaterSchedule{createExampleWaterSchedule(), otherWS},
 			createExampleGarden(),
-			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
-			`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"\],"skip_count":null,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT10:24:52.891386-07:00","duration":"10s","water_schedule_id":"chkodpg3lcj13q82mq40"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`,
+			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"]}`,
+			`{"name":"test-zone","id":"[0-9a-v]{20}","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"\],"skip_count":null,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:51.891386-07:00","duration":"10s","water_schedule_id":"chkodpg3lcj13q82mq40"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -698,14 +698,14 @@ func TestCreateZone(t *testing.T) {
 			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
 			http.StatusBadRequest,
 		},
-		// {
-		// 	"ErrorWaterScheduleNotFound",
-		// 	nil,
-		// 	createExampleGarden(),
-		// 	`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"start_time":"2021-10-03T11:24:52.891386-07:00"}}`,
-		// 	`{"status":"Invalid request.","error":"unable to create Zone with non-existent WaterSchedule \[\\\"c5cvhpcbcv45e8bp16dg\\\"\]"}`,
-		// 	http.StatusBadRequest,
-		// },
+		{
+			"ErrorWaterScheduleNotFound",
+			nil,
+			createExampleGarden(),
+			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"unable to create Zone with non-existent WaterSchedule \[\\\"c5cvhpcbcv45e8bp16dg\\\"\]"}`,
+			http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
