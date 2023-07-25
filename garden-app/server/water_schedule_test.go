@@ -115,6 +115,44 @@ func TestGetWaterSchedule(t *testing.T) {
 			},
 			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
+		{
+			"ErrorRainWeatherClientDNE",
+			false,
+			&pkg.WaterSchedule{
+				ID:        id,
+				Duration:  &pkg.Duration{Duration: time.Hour},
+				Interval:  &pkg.Duration{Duration: time.Hour * 24},
+				StartTime: &createdAt,
+				WeatherControl: &weather.Control{
+					Rain: &weather.ScaleControl{
+						BaselineValue: float32Pointer(0),
+						Factor:        float32Pointer(0),
+						Range:         float32Pointer(25.4),
+						ClientID:      id2,
+					},
+				},
+			},
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+		},
+		{
+			"ErrorTemperatureWeatherClientDNE",
+			false,
+			&pkg.WaterSchedule{
+				ID:        id,
+				Duration:  &pkg.Duration{Duration: time.Hour},
+				Interval:  &pkg.Duration{Duration: time.Hour * 24},
+				StartTime: &createdAt,
+				WeatherControl: &weather.Control{
+					Temperature: &weather.ScaleControl{
+						BaselineValue: float32Pointer(30),
+						Factor:        float32Pointer(0.5),
+						Range:         float32Pointer(10),
+						ClientID:      id2,
+					},
+				},
+			},
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+		},
 	}
 
 	for _, tt := range tests {
@@ -311,8 +349,20 @@ func TestUpdateWaterSchedule(t *testing.T) {
 		},
 		{
 			"BadRequestInvalidTemperatureControl",
-			`{"weather_control":{"temperature_control":{"baseline_value":27,"factor":-1,"range":10}}}`,
+			`{"weather_control":{"temperature_control":{"baseline_value":27,"factor":-1,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
 			`{"status":"Invalid request.","error":"error validating temperature_control: factor must be between 0 and 1"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorRainWeatherClientDNE",
+			`{"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorTemperatureWeatherClientDNE",
+			`{"weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
 			http.StatusBadRequest,
 		},
 	}
@@ -322,6 +372,9 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
 				Driver: "hashmap",
 			})
+			assert.NoError(t, err)
+
+			err = storageClient.SaveWeatherClientConfig(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			wsr := WaterSchedulesResource{
@@ -510,6 +563,18 @@ func TestCreateWaterSchedule(t *testing.T) {
 			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
 			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
+		},
+		{
+			"ErrorRainWeatherClientDNE",
+			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorTemperatureWeatherClientDNE",
+			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
+			http.StatusBadRequest,
 		},
 		{
 			"ErrorBadRequestBadJSON",

@@ -20,6 +20,10 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 		return nil, fmt.Errorf("error getting weather client config: %w", err)
 	}
 
+	if clientConfig == nil {
+		return nil, fmt.Errorf("weather client config not found")
+	}
+
 	return weather.NewClient(clientConfig, func(weatherClientOptions map[string]interface{}) error {
 		clientConfig.Options = weatherClientOptions
 		return c.SaveWeatherClientConfig(clientConfig)

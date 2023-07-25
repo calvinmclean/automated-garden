@@ -87,7 +87,7 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		return response
 	}
 
-	response.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.worker, logger, excludeWeatherData)
+	response.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.worker, excludeWeatherData)
 	response.NextWater.WaterScheduleID = &nextWaterSchedule.ID
 
 	if zone.SkipCount != nil && *zone.SkipCount > 0 {

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
@@ -115,7 +116,19 @@ func (wsr WaterSchedulesResource) updateWaterSchedule(w http.ResponseWriter, r *
 
 	// Validate the new WaterSchedule.WeatherControl
 	if ws.WeatherControl != nil {
-		err := ValidateWeatherControl(ws.WeatherControl)
+		exists, err := wsr.weatherClientsExist(ws)
+		if err != nil {
+			logger.WithError(err).Errorf("unable to get WeatherClients for WaterSchedule")
+			render.Render(w, r, InternalServerError(err))
+			return
+		}
+		if !exists {
+			logger.WithError(err).Errorf("invalid WeatherClient used in WaterSchedule")
+			render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to get WeatherClient for WaterSchedule")))
+			return
+		}
+
+		err = ValidateWeatherControl(ws.WeatherControl)
 		if err != nil {
 			logger.WithError(err).Error("invalid WaterSchedule.WeatherControl after patching")
 			render.Render(w, r, ErrInvalidRequest(err))
@@ -242,6 +255,18 @@ func (wsr WaterSchedulesResource) createWaterSchedule(w http.ResponseWriter, r *
 	ws := request.WaterSchedule
 	logger.Debugf("request to create WaterSchedule: %+v", ws)
 
+	exists, err := wsr.weatherClientsExist(ws)
+	if err != nil {
+		logger.WithError(err).Errorf("unable to get WeatherClients for WaterSchedule")
+		render.Render(w, r, InternalServerError(err))
+		return
+	}
+	if !exists {
+		logger.WithError(err).Errorf("invalid WeatherClient used in WaterSchedule")
+		render.Render(w, r, ErrInvalidRequest(fmt.Errorf("unable to get WeatherClient for WaterSchedule")))
+		return
+	}
+
 	// Assign values to fields that may not be set in the request
 	ws.ID = xid.New()
 	logger.Debugf("new WaterSchedule ID: %v", ws.ID)
@@ -266,4 +291,40 @@ func (wsr WaterSchedulesResource) createWaterSchedule(w http.ResponseWriter, r *
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}
+}
+
+func (wsr WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) (bool, error) {
+	if ws.HasTemperatureControl() {
+		exists, err := wsr.weatherClientExists(ws.WeatherControl.Temperature.ClientID)
+		if err != nil {
+			return false, fmt.Errorf("error getting client for TemperatureControl: %w", err)
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+
+	if ws.HasRainControl() {
+		exists, err := wsr.weatherClientExists(ws.WeatherControl.Rain.ClientID)
+		if err != nil {
+			return false, fmt.Errorf("error getting client for RainControl: %w", err)
+		}
+		if !exists {
+			return false, nil
+		}
+	}
+
+	return true, nil
+}
+
+func (wsr WaterSchedulesResource) weatherClientExists(id xid.ID) (bool, error) {
+	wc, err := wsr.storageClient.GetWeatherClientConfig(id)
+	if err != nil {
+		return false, fmt.Errorf("error getting WeatherClient with ID %q", id)
+	}
+	if wc == nil {
+		return false, nil
+	}
+
+	return true, nil
 }

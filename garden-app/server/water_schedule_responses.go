@@ -9,7 +9,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 )
 
 // AllWaterSchedulesResponse is a simple struct being used to render and return a list of all WaterSchedules
@@ -49,20 +48,19 @@ type NextWaterDetails struct {
 }
 
 // GetNextWaterDetails returns the NextWaterDetails for the WaterSchedule
-func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, logger *logrus.Entry, excludeWeatherData bool) NextWaterDetails {
+func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, excludeWeatherData bool) NextWaterDetails {
 	result := NextWaterDetails{
 		Time:     worker.GetNextWaterTime(ws),
 		Duration: ws.Duration.Duration.String(),
 	}
 
 	if ws.HasWeatherControl() && !excludeWeatherData {
-		wd, err := worker.ScaleWateringDuration(ws)
-		if err != nil {
-			result.Message = "unable to determine water duration scaling"
-			logger.WithError(err).Warn(result.Message)
-		} else {
-			result.Duration = time.Duration(wd).String()
+		wd, hadErr := worker.ScaleWateringDuration(ws)
+		if hadErr {
+			result.Message = "error impacted duration scaling"
 		}
+
+		result.Duration = time.Duration(wd).String()
 	}
 
 	return result
@@ -87,8 +85,7 @@ func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, 
 	}
 
 	if !ws.EndDated() {
-		logger := getLoggerFromContext(ctx).WithField(waterScheduleIDLogField, ws.ID.String())
-		response.NextWater = GetNextWaterDetails(ws, wsr.worker, logger, excludeWeatherData)
+		response.NextWater = GetNextWaterDetails(ws, wsr.worker, excludeWeatherData)
 	}
 
 	return response
