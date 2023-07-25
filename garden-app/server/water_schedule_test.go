@@ -311,8 +311,20 @@ func TestUpdateWaterSchedule(t *testing.T) {
 		},
 		{
 			"BadRequestInvalidTemperatureControl",
-			`{"weather_control":{"temperature_control":{"baseline_value":27,"factor":-1,"range":10}}}`,
+			`{"weather_control":{"temperature_control":{"baseline_value":27,"factor":-1,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
 			`{"status":"Invalid request.","error":"error validating temperature_control: factor must be between 0 and 1"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorRainWeatherClientDNE",
+			`{"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorTemperatureWeatherClientDNE",
+			`{"weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
 			http.StatusBadRequest,
 		},
 	}
@@ -322,6 +334,9 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
 				Driver: "hashmap",
 			})
+			assert.NoError(t, err)
+
+			err = storageClient.SaveWeatherClientConfig(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			wsr := WaterSchedulesResource{
@@ -510,6 +525,18 @@ func TestCreateWaterSchedule(t *testing.T) {
 			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
 			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
+		},
+		{
+			"ErrorRainWeatherClientDNE",
+			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorTemperatureWeatherClientDNE",
+			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClient for WaterSchedule"}`,
+			http.StatusBadRequest,
 		},
 		{
 			"ErrorBadRequestBadJSON",
