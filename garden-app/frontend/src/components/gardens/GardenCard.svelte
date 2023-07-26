@@ -1,6 +1,7 @@
 <script lang="ts">
     import {
         Badge,
+        ButtonDropdown,
         Card,
         CardBody,
         CardFooter,
@@ -8,14 +9,30 @@
         CardSubtitle,
         CardText,
         CardTitle,
+        DropdownItem,
+        DropdownMenu,
+        DropdownToggle,
         Icon,
     } from "sveltestrap";
     import { fly } from "svelte/transition";
 
     import type { GardenResponse } from "../../lib/gardenClient";
+    import { lightAction } from "../../lib/gardenClient";
 
     export let garden: GardenResponse;
     export let withLink = false;
+
+    function toggleLight(event) {
+        lightAction(garden.id, "");
+    }
+
+    function lightOn(event) {
+        lightAction(garden.id, "ON");
+    }
+
+    function lightOff(event) {
+        lightAction(garden.id, "OFF");
+    }
 </script>
 
 <div in:fly={{ x: 50, duration: 500 }} out:fly={{ x: -50, duration: 250 }}>
@@ -71,6 +88,21 @@
                             : 'gray'}"
                     />
                     <br />
+                {/if}
+
+                {#if garden.end_date == null && garden.light_schedule != null}
+                    <ButtonDropdown>
+                        <DropdownToggle color="warning" caret>
+                            <Icon name="sun" />
+                        </DropdownToggle>
+                        <DropdownMenu>
+                            <DropdownItem on:click={toggleLight}>
+                                Toggle
+                            </DropdownItem>
+                            <DropdownItem on:click={lightOn}>ON</DropdownItem>
+                            <DropdownItem on:click={lightOff}>OFF</DropdownItem>
+                        </DropdownMenu>
+                    </ButtonDropdown>
                 {/if}
             </CardText>
         </CardBody>

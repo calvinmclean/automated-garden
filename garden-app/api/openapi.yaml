@@ -734,7 +734,7 @@ components:
 
     LightState:
       type: string
-      enum: [ON, OFF]
+      enum: [ON, OFF, ""]
       description: state that will be set by the next action
 
     CreateGardenRequest:

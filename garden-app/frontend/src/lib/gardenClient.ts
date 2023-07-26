@@ -31,3 +31,19 @@ export function getGarden(id: string) {
         body: undefined as never,
     });
 }
+
+export function lightAction(id: string, state: "ON" | "OFF" | "") {
+    return post("/gardens/{gardenID}/action", {
+        params: {
+            path: {
+                gardenID: id,
+            }
+        },
+        body: {
+            light: {
+                state: state
+            }
+        },
+    });
+}
+

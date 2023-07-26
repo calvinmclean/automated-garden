@@ -10,137 +10,137 @@ type WithRequired<T, K extends keyof T> = T & { [P in K]-?: T[P] };
 export interface paths {
   "/gardens": {
     /**
-     * Get all Gardens 
+     * Get all Gardens
      * @description Query for a list of all Gardens. Optionally include end-dated Gardens.
      */
     get: operations["getAllGardens"];
     /**
-     * Create a new Garden 
+     * Create a new Garden
      * @description Create a new Garden resource.
      */
     post: operations["createGarden"];
   };
   "/gardens/{gardenID}": {
     /**
-     * Get a Garden 
+     * Get a Garden
      * @description Get details of a Garden.
      */
     get: operations["getGarden"];
     /**
-     * End-date a Garden 
+     * End-date a Garden
      * @description End-date a Garden. This allows deleting without actually losing the resource data. Once a Garden is end-dated, certain resources will not be available such as health and action.
      */
     delete: operations["endDateGarden"];
     /**
-     * Update/Edit a Garden 
+     * Update/Edit a Garden
      * @description Update/Edit a Garden. Only certain fields of a Garden are editable.
      */
     patch: operations["updateGarden"];
   };
   "/gardens/{gardenID}/action": {
     /**
-     * Execute action on a Garden 
+     * Execute action on a Garden
      * @description This endpoint allows executing certain actions on a Garden. This will actually interact with the `garden-controller` rather than just manipulating resources.
      */
     post: operations["gardenAction"];
   };
   "/gardens/{gardenID}/plants": {
     /**
-     * Get all Plants 
+     * Get all Plants
      * @description Query for a list of all Plants. Optionally include end-dated Plants.
      */
     get: operations["getAllPlants"];
     /**
-     * Add a Plant 
+     * Add a Plant
      * @description Adds a new Plant to this Garden.
      */
     post: operations["addPlant"];
   };
   "/gardens/{gardenID}/plants/{plantID}": {
     /**
-     * Get a Plant 
+     * Get a Plant
      * @description Get details of a Plant.
      */
     get: operations["getPlant"];
     /**
-     * End-date a Plant 
+     * End-date a Plant
      * @description End-date a Plant. This allows deleting without actually losing the resource data. Once a Plant is end-dated, certain resources will not be available such as health and action.
      */
     delete: operations["endDatePlant"];
     /**
-     * Update/Edit a Plant 
+     * Update/Edit a Plant
      * @description Update/Edit a Plant. Only certain fields of a Plant are editable.
      */
     patch: operations["updatePlant"];
   };
   "/gardens/{gardenID}/zones": {
     /**
-     * Get all Zones 
+     * Get all Zones
      * @description Query for a list of all Zones. Optionally include end-dated Zones.
      */
     get: operations["getAllZones"];
     /**
-     * Add a Zone 
+     * Add a Zone
      * @description Adds a new Zone to this Garden.
      */
     post: operations["addZone"];
   };
   "/gardens/{gardenID}/zones/{zoneID}": {
     /**
-     * Get a Zone 
+     * Get a Zone
      * @description Get details of a Zone.
      */
     get: operations["getZone"];
     /**
-     * End-date a Zone 
+     * End-date a Zone
      * @description End-date a Zone. This allows deleting without actually losing the resource data. Once a Zone is end-dated, certain resources will not be available such as health and action.
      */
     delete: operations["endDateZone"];
     /**
-     * Update/Edit a Zone 
+     * Update/Edit a Zone
      * @description Update/Edit a Zone. Only certain fields of a Zone are editable.
      */
     patch: operations["updateZone"];
   };
   "/gardens/{gardenID}/zones/{zoneID}/action": {
     /**
-     * Execute action on a Zone 
+     * Execute action on a Zone
      * @description This endpoint allows executing certain actions on a Zone. This will actually interact with the `garden-controller` rather than just manipulating resources.
      */
     post: operations["zoneAction"];
   };
   "/gardens/{gardenID}/zones/{zoneID}/history": {
     /**
-     * Get Zone's watering history 
+     * Get Zone's watering history
      * @description This endpoint retrieves information about past watering events for this Zone
      */
     get: operations["zoneHistory"];
   };
   "/water_schedules": {
     /**
-     * Get all WaterSchedules 
+     * Get all WaterSchedules
      * @description Query for a list of all WaterSchedules. Optionally include end-dated WaterSchedules.
      */
     get: operations["getAllWaterSchedules"];
     /**
-     * Add a WaterSchedule 
+     * Add a WaterSchedule
      * @description Adds a new WaterSchedule.
      */
     post: operations["addWaterSchedule"];
   };
   "/water_schedules/{waterScheduleID}": {
     /**
-     * Get a WaterSchedule 
+     * Get a WaterSchedule
      * @description Get details of a WaterSchedule.
      */
     get: operations["getWaterSchedule"];
     /**
-     * End-date a WaterSchedule 
+     * End-date a WaterSchedule
      * @description End-date a WaterSchedule. This allows deleting without actually losing the resource data. Once a WaterSchedule is end-dated, certain resources will not be available such as health and action.
      */
     delete: operations["endDateWaterSchedule"];
     /**
-     * Update/Edit a WaterSchedule 
+     * Update/Edit a WaterSchedule
      * @description Update/Edit a WaterSchedule. Only certain fields of a WaterSchedule are editable.
      */
     patch: operations["updateWaterSchedule"];
@@ -152,7 +152,7 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     /**
-     * @description 20 character unique identifier used throughout this API 
+     * @description 20 character unique identifier used throughout this API
      * @example 9m4e2mr0ui3e8a215n4g
      */
     xid: string;
@@ -166,14 +166,14 @@ export interface components {
     /** @description This allows updating/editing a Plant resource */
     UpdatePlantRequest: components["schemas"]["Plant"] & {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Plant was originally created
        */
       created_at?: string;
     };
     /** @description List of all Plants */
     AllPlantsResponse: {
-      plants?: (components["schemas"]["PlantResponse"])[];
+      plants?: components["schemas"]["PlantResponse"][];
     };
     /** @description This allows creating a Plant resource */
     CreatePlantRequest: WithRequired<components["schemas"]["Plant"], "name" | "zone_id">;
@@ -181,22 +181,22 @@ export interface components {
     PlantResponse: WithRequired<components["schemas"]["Plant"] & {
       id?: components["schemas"]["xid"];
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Plant was originally created
        */
       created_at?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Plant was deleted/removed
        */
       end_date?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description time of the next scheduled watering
        */
       next_water_time?: string;
       /**
-       * Format: float 
+       * Format: float
        * @description moisture percentage of a Plant with a soil moisture sensor
        */
       moisture?: number;
@@ -216,7 +216,7 @@ export interface components {
        *   }
        * ]
        */
-      links?: (components["schemas"]["link"])[];
+      links?: components["schemas"]["link"][];
     }, "id" | "created_at" | "links" | "name">;
     /**
      * @description This represents a single Plant, or more generally a "watered resource," attached to the `garden-controller`.
@@ -224,7 +224,7 @@ export interface components {
      */
     Plant: {
       /**
-       * @description this is the name of the Plant 
+       * @description this is the name of the Plant
        * @example lettuce
        */
       name?: string;
@@ -233,22 +233,22 @@ export interface components {
       /** @description this holds various additional information about a Plant that might be useful to remember, but is not related to core functionality of this application. */
       details?: {
         /**
-         * @description a general description of a Plant 
+         * @description a general description of a Plant
          * @example nutritious leafy green
          */
         description?: string;
         /**
-         * @description general notes about the Plant 
+         * @description general notes about the Plant
          * @example grown from seed and planted about 6 inches apart
          */
         notes?: string;
         /**
-         * @description estimate of time it takes Plant to grow 
+         * @description estimate of time it takes Plant to grow
          * @example 70 days
          */
         time_to_harvest?: string;
         /**
-         * @description number of actual plants that would be managed 
+         * @description number of actual plants that would be managed
          * @example 6
          */
         count?: number;
@@ -257,14 +257,14 @@ export interface components {
     /** @description information about the Garden controller's health status */
     GardenHealth: {
       /**
-       * @description current status of a Garden 
+       * @description current status of a Garden
        * @enum {string}
        */
       status?: "UP" | "DOWN" | "N/A";
       /** @description additional details about the Garden's health. May contain error details if health status was unavailable */
       details?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the last time the Garden reported its status
        */
       last_contact?: string;
@@ -278,8 +278,8 @@ export interface components {
     LightAction: {
       state?: components["schemas"]["LightState"];
       /**
-       * Format: duration 
-       * @description duration string to determine how long to delay turning the light on. Only allowed to be used with state=OFF 
+       * Format: duration
+       * @description duration string to determine how long to delay turning the light on. Only allowed to be used with state=OFF
        * @example 14h
        */
       for_duration?: string;
@@ -290,16 +290,16 @@ export interface components {
       all?: boolean;
     };
     /**
-     * @description state that will be set by the next action 
+     * @description state that will be set by the next action
      * @enum {string}
      */
-    LightState: "ON" | "OFF";
+    LightState: "ON" | "OFF" | "";
     /** @description This allows creating a Garden resource */
     CreateGardenRequest: WithRequired<components["schemas"]["Garden"], "name">;
     /** @description This allows updating/editing a Garden resource */
     UpdateGardenRequest: components["schemas"]["Garden"] & {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Garden was originally created
        */
       created_at?: string;
@@ -308,19 +308,19 @@ export interface components {
     GardenResponse: WithRequired<components["schemas"]["Garden"] & {
       id?: components["schemas"]["xid"];
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Garden was originally created
        */
       created_at?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Garden was deleted/removed
        */
       end_date?: string;
       /** @description time and state for the next scheduled LightAction */
       next_light_action?: {
         /**
-         * Format: date-time 
+         * Format: date-time
          * @description date-time of the next action
          */
         time?: string;
@@ -328,17 +328,17 @@ export interface components {
       };
       health?: components["schemas"]["GardenHealth"];
       /**
-       * @description the number of active (not end-dated) Plants in this Garden 
+       * @description the number of active (not end-dated) Plants in this Garden
        * @example 1
        */
       num_plants?: number;
       /**
-       * @description the number of active (not end-dated) Zones in this Garden 
+       * @description the number of active (not end-dated) Zones in this Garden
        * @example 1
        */
       num_zones?: number;
       /**
-       * @description link specifically for the collection of Plants 
+       * @description link specifically for the collection of Plants
        * @example {
        *   "rel": "collection",
        *   "href": "/gardens/c6corm5mk1u53v1dchq0/plants"
@@ -346,7 +346,7 @@ export interface components {
        */
       plants?: components["schemas"]["link"];
       /**
-       * @description link specifically for the collection of Zones 
+       * @description link specifically for the collection of Zones
        * @example {
        *   "rel": "collection",
        *   "href": "/gardens/c6corm5mk1u53v1dchq0/zones"
@@ -377,46 +377,46 @@ export interface components {
        *   }
        * ]
        */
-      links?: (components["schemas"]["link"])[];
+      links?: components["schemas"]["link"][];
     }, "id" | "created_at" | "plants" | "zones" | "links">;
     /** @description List of all Gardens */
     AllGardensResponse: {
-      gardens?: (components["schemas"]["GardenResponse"])[];
+      gardens?: components["schemas"]["GardenResponse"][];
     };
     /** @description A Garden corresponds to a `garden-controller` in the real-world and contains all the necessary information for interacting with it */
     Garden: {
       /**
-       * @description A descriptive name for the Garden 
+       * @description A descriptive name for the Garden
        * @example Garden
        */
       name?: string;
       /**
        * @description This is the prefix of the MQTT topic for sending messages to the controller, so it is recommended to avoid spaces and the following characters are not allowed: `[$#*>+/]`
-       *  
+       *
        * @example garden
        */
       topic_prefix?: string;
       /**
-       * @description used to help with validation and avoid errors. This represents the maximum number of Zones that this Garden is able to water 
+       * @description used to help with validation and avoid errors. This represents the maximum number of Zones that this Garden is able to water
        * @example 3
        */
       max_zones: number;
       /** @description describes when to turn on a light and for how long to leave it on */
       light_schedule?: {
         /**
-         * Format: duration 
-         * @description duration string to determine how long to leave a light on 
+         * Format: duration
+         * @description duration string to determine how long to leave a light on
          * @example 14h
          */
         duration: string;
         /**
-         * Format: time 
-         * @description time that the light should be turned on 
+         * Format: time
+         * @description time that the light should be turned on
          * @example 23:00:00-07:00
          */
         start_time: string;
         /**
-         * Format: date-time 
+         * Format: date-time
          * @description if a light delay was used, this persists the time that the light needs to turn back on
          */
         adhoc_on_time?: string;
@@ -429,18 +429,18 @@ export interface components {
      */
     WaterSchedule: {
       /**
-       * @description amount of time, in Duration format, that Plant should be watered 
+       * @description amount of time, in Duration format, that Plant should be watered
        * @example 15000ms
        */
       duration: string;
       /**
-       * Format: duration 
-       * @description amount of time, as a Duration string, to wait between scheduled watering 
+       * Format: duration
+       * @description amount of time, as a Duration string, to wait between scheduled watering
        * @example 72h
        */
       interval: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description time that the watering interval should be started at
        */
       start_time: string;
@@ -455,7 +455,7 @@ export interface components {
     UpdateWaterScheduleRequest: components["schemas"]["WaterSchedule"];
     /** @description List of all WaterSchedules */
     AllWaterSchedulesResponse: {
-      water_schedules?: (components["schemas"]["WaterScheduleResponse"])[];
+      water_schedules?: components["schemas"]["WaterScheduleResponse"][];
     };
     /** @description This allows creating a WaterSchedule resource */
     CreateWaterScheduleRequest: WithRequired<components["schemas"]["WaterSchedule"], "duration" | "interval" | "start_time">;
@@ -463,7 +463,7 @@ export interface components {
     WaterScheduleResponse: WithRequired<components["schemas"]["WaterSchedule"] & {
       id?: components["schemas"]["xid"];
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the WaterSchedule was deleted/removed
        */
       end_date?: string;
@@ -477,7 +477,7 @@ export interface components {
        *   }
        * ]
        */
-      links?: (components["schemas"]["link"])[];
+      links?: components["schemas"]["link"][];
     }, "id" | "links">;
     WeatherControl: {
       /**
@@ -485,7 +485,7 @@ export interface components {
        * time (even if watering was skipped at the last scheduled time). This uses an "inverted scale"
        * so higher input values cause scaling < 1. Also it will only scale in this direction. Values
        * are in millimeters. The example configuration will scale to zero if rainfall >= 25.4mm (1 in)
-       *  
+       *
        * @example {
        *   "baseline_value": 0,
        *   "factor": 1,
@@ -496,7 +496,7 @@ export interface components {
       /**
        * @description scale watering based on recent average high temeperatures. Values are in degrees Celsius. With
        * the example configuration, an average high of 18C will result in scaling factor of 0.55
-       *  
+       *
        * @example {
        *   "baseline_value": 27,
        *   "factor": 0.5,
@@ -509,7 +509,7 @@ export interface components {
         /**
          * @description this is a percentage representing the threshold that the Plant's moisture must be
          * below to enable a WaterAction
-         *  
+         *
          * @example 50
          */
         minimum_moisture?: number;
@@ -521,19 +521,19 @@ export interface components {
      */
     ScaleControl: {
       /**
-       * Format: float 
+       * Format: float
        * @description this is the value where scaling starts from
        */
       baseline_value?: number;
       /**
-       * Format: float 
+       * Format: float
        * @description maximum amount that this will scale by. The value must be between 0 and 1,
        * where 0 is no scaling and 1 scale by the full proportion of the range
        */
       factor?: number;
       /**
-       * Format: float 
-       * @description the most extreme value (when added to baseline_value) that scaling will be 
+       * Format: float
+       * @description the most extreme value (when added to baseline_value) that scaling will be
        * affected by (used as max/min)
        */
       range?: number;
@@ -545,57 +545,57 @@ export interface components {
      */
     Zone: {
       /**
-       * @description this is the name of the Zone 
+       * @description this is the name of the Zone
        * @example Raised Bed 1
        */
       name?: string;
       /** @description this holds various additional information about a Zone that might be useful to remember, but is not related to core functionality of this application. */
       details?: {
         /**
-         * @description a general description of a Zone 
+         * @description a general description of a Zone
          * @example raised bed containing assorted vegetables
          */
         description?: string;
         /**
-         * @description general notes about the Zone 
+         * @description general notes about the Zone
          * @example near the west wall of the yard, receiving morning light and afternoon shade
          */
         notes?: string;
       };
       /**
-       * @description this corresponds directly to the configuration of the `garden-controller` and is critical for having control of the Zone 
+       * @description this corresponds directly to the configuration of the `garden-controller` and is critical for having control of the Zone
        * @example 0
        */
       position?: number;
       /**
-       * @description allows manually skipping next N watering events 
+       * @description allows manually skipping next N watering events
        * @example 1
        */
       skip_count?: number;
       /**
-       * @description list of WaterSchedules used to water this Zone 
+       * @description list of WaterSchedules used to water this Zone
        * @example [
        *   "9m4e2mr0ui3e8a215n4g"
        * ]
        */
-      water_schedule_ids?: (components["schemas"]["xid"])[];
+      water_schedule_ids?: components["schemas"]["xid"][];
     };
     /** @description This allows updating/editing a Zone resource */
     UpdateZoneRequest: components["schemas"]["Zone"] & {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Zone was originally created
        */
       created_at?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Zone was deleted/removed
        */
       end_date?: string;
     };
     /** @description List of all Zones */
     AllZonesResponse: {
-      zones?: (components["schemas"]["ZoneResponse"])[];
+      zones?: components["schemas"]["ZoneResponse"][];
     };
     /** @description This allows creating a Zone resource */
     CreateZoneRequest: WithRequired<components["schemas"]["Zone"], "name" | "position" | "water_schedule_ids">;
@@ -603,12 +603,12 @@ export interface components {
     ZoneResponse: WithRequired<components["schemas"]["Zone"] & {
       id?: components["schemas"]["xid"];
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Zone was originally created
        */
       created_at?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the date-time when the Zone was deleted/removed
        */
       end_date?: string;
@@ -634,17 +634,17 @@ export interface components {
        *   }
        * ]
        */
-      links?: (components["schemas"]["link"])[];
+      links?: components["schemas"]["link"][];
     }, "id" | "created_at" | "links" | "name" | "position" | "water_schedule_ids">;
     /** @description used in ZoneResponse to show detailed information about the next watering job */
     NextWaterDetails: {
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description the time when th water schedule will be next triggered
        */
       time?: string;
       /**
-       * Format: duration 
+       * Format: duration
        * @description the duration that watering will run for. If weather scaling is configured, current weather data will be used to calculate
        * an adjusted duration, but it may be a different value when the actual schedule executes
        */
@@ -652,7 +652,7 @@ export interface components {
       /** @description ID of the water_schedule that is executing next */
       water_schedule_id?: components["schemas"]["xid"];
       /**
-       * @description human-readable information about upcoming watering 
+       * @description human-readable information about upcoming watering
        * @example skip_count 5 affected the time
        */
       message?: string;
@@ -662,12 +662,12 @@ export interface components {
       /** @description recent rainfall (in millimeters) and resulting scale factor */
       rain?: {
         /**
-         * Format: float 
+         * Format: float
          * @description total rainfall since last watering (in millimeters)
          */
         mm?: number;
         /**
-         * Format: float 
+         * Format: float
          * @description scale factor calculated by WeatherControl setup and recent rain data
          */
         scale_factor?: number;
@@ -675,37 +675,37 @@ export interface components {
       /** @description data about the average daily high temperatures */
       average_temperature?: {
         /**
-         * Format: float 
+         * Format: float
          * @description average high daily temperatures since last watering (in degrees celsius)
          */
         celsius?: number;
         /**
-         * Format: float 
+         * Format: float
          * @description scale factor calculated by WeatherControl setup and recent temperature data
          */
         scale_factor?: number;
       };
       /**
-       * Format: float 
+       * Format: float
        * @description moisture percentage of a Zone with a soil moisture sensor
        */
       soil_moisture_percent?: number;
     };
     /** @description response containing a list of past watering events and some basic aggegrate details about them */
     WaterHistoryResponse: {
-      history?: (components["schemas"]["WaterHistory"])[];
+      history?: components["schemas"]["WaterHistory"][];
       /**
-       * @description number of watering events found in the range 
+       * @description number of watering events found in the range
        * @example 1
        */
       count?: number;
       /**
-       * @description average of `duration` for all events found. Formatted as a float in Go duration format 
+       * @description average of `duration` for all events found. Formatted as a float in Go duration format
        * @example 15s
        */
       average?: string;
       /**
-       * @description total of `duration` for all events found. Formatted as a float in Go duration format 
+       * @description total of `duration` for all events found. Formatted as a float in Go duration format
        * @example 15s
        */
       total?: string;
@@ -713,12 +713,12 @@ export interface components {
     /** @description a */
     WaterHistory: {
       /**
-       * @description amount of time, in Duration format, that Zone should be watered 
+       * @description amount of time, in Duration format, that Zone should be watered
        * @example 15000ms
        */
       duration?: string;
       /**
-       * Format: date-time 
+       * Format: date-time
        * @description time that the watering event was recorded
        */
       record_time?: string;
@@ -730,7 +730,7 @@ export interface components {
     /** @description waters a Zone for the specified amount of time */
     WaterAction: {
       /**
-       * @description amount of time, as duration string, that Zone should be watered 
+       * @description amount of time, as duration string, that Zone should be watered
        * @example 15m
        */
       duration: string;
@@ -763,7 +763,7 @@ export type external = Record<string, never>;
 export interface operations {
 
   /**
-   * Get all Gardens 
+   * Get all Gardens
    * @description Query for a list of all Gardens. Optionally include end-dated Gardens.
    */
   getAllGardens: {
@@ -784,7 +784,7 @@ export interface operations {
     };
   };
   /**
-   * Create a new Garden 
+   * Create a new Garden
    * @description Create a new Garden resource.
    */
   createGarden: {
@@ -806,7 +806,7 @@ export interface operations {
     };
   };
   /**
-   * Get a Garden 
+   * Get a Garden
    * @description Get details of a Garden.
    */
   getGarden: {
@@ -827,7 +827,7 @@ export interface operations {
     };
   };
   /**
-   * End-date a Garden 
+   * End-date a Garden
    * @description End-date a Garden. This allows deleting without actually losing the resource data. Once a Garden is end-dated, certain resources will not be available such as health and action.
    */
   endDateGarden: {
@@ -848,7 +848,7 @@ export interface operations {
     };
   };
   /**
-   * Update/Edit a Garden 
+   * Update/Edit a Garden
    * @description Update/Edit a Garden. Only certain fields of a Garden are editable.
    */
   updateGarden: {
@@ -875,7 +875,7 @@ export interface operations {
     };
   };
   /**
-   * Execute action on a Garden 
+   * Execute action on a Garden
    * @description This endpoint allows executing certain actions on a Garden. This will actually interact with the `garden-controller` rather than just manipulating resources.
    */
   gardenAction: {
@@ -898,7 +898,7 @@ export interface operations {
     };
   };
   /**
-   * Get all Plants 
+   * Get all Plants
    * @description Query for a list of all Plants. Optionally include end-dated Plants.
    */
   getAllPlants: {
@@ -922,7 +922,7 @@ export interface operations {
     };
   };
   /**
-   * Add a Plant 
+   * Add a Plant
    * @description Adds a new Plant to this Garden.
    */
   addPlant: {
@@ -949,7 +949,7 @@ export interface operations {
     };
   };
   /**
-   * Get a Plant 
+   * Get a Plant
    * @description Get details of a Plant.
    */
   getPlant: {
@@ -971,7 +971,7 @@ export interface operations {
     };
   };
   /**
-   * End-date a Plant 
+   * End-date a Plant
    * @description End-date a Plant. This allows deleting without actually losing the resource data. Once a Plant is end-dated, certain resources will not be available such as health and action.
    */
   endDatePlant: {
@@ -993,7 +993,7 @@ export interface operations {
     };
   };
   /**
-   * Update/Edit a Plant 
+   * Update/Edit a Plant
    * @description Update/Edit a Plant. Only certain fields of a Plant are editable.
    */
   updatePlant: {
@@ -1021,7 +1021,7 @@ export interface operations {
     };
   };
   /**
-   * Get all Zones 
+   * Get all Zones
    * @description Query for a list of all Zones. Optionally include end-dated Zones.
    */
   getAllZones: {
@@ -1046,7 +1046,7 @@ export interface operations {
     };
   };
   /**
-   * Add a Zone 
+   * Add a Zone
    * @description Adds a new Zone to this Garden.
    */
   addZone: {
@@ -1076,7 +1076,7 @@ export interface operations {
     };
   };
   /**
-   * Get a Zone 
+   * Get a Zone
    * @description Get details of a Zone.
    */
   getZone: {
@@ -1101,7 +1101,7 @@ export interface operations {
     };
   };
   /**
-   * End-date a Zone 
+   * End-date a Zone
    * @description End-date a Zone. This allows deleting without actually losing the resource data. Once a Zone is end-dated, certain resources will not be available such as health and action.
    */
   endDateZone: {
@@ -1126,7 +1126,7 @@ export interface operations {
     };
   };
   /**
-   * Update/Edit a Zone 
+   * Update/Edit a Zone
    * @description Update/Edit a Zone. Only certain fields of a Zone are editable.
    */
   updateZone: {
@@ -1157,7 +1157,7 @@ export interface operations {
     };
   };
   /**
-   * Execute action on a Zone 
+   * Execute action on a Zone
    * @description This endpoint allows executing certain actions on a Zone. This will actually interact with the `garden-controller` rather than just manipulating resources.
    */
   zoneAction: {
@@ -1181,7 +1181,7 @@ export interface operations {
     };
   };
   /**
-   * Get Zone's watering history 
+   * Get Zone's watering history
    * @description This endpoint retrieves information about past watering events for this Zone
    */
   zoneHistory: {
@@ -1209,7 +1209,7 @@ export interface operations {
     };
   };
   /**
-   * Get all WaterSchedules 
+   * Get all WaterSchedules
    * @description Query for a list of all WaterSchedules. Optionally include end-dated WaterSchedules.
    */
   getAllWaterSchedules: {
@@ -1231,7 +1231,7 @@ export interface operations {
     };
   };
   /**
-   * Add a WaterSchedule 
+   * Add a WaterSchedule
    * @description Adds a new WaterSchedule.
    */
   addWaterSchedule: {
@@ -1258,7 +1258,7 @@ export interface operations {
     };
   };
   /**
-   * Get a WaterSchedule 
+   * Get a WaterSchedule
    * @description Get details of a WaterSchedule.
    */
   getWaterSchedule: {
@@ -1282,7 +1282,7 @@ export interface operations {
     };
   };
   /**
-   * End-date a WaterSchedule 
+   * End-date a WaterSchedule
    * @description End-date a WaterSchedule. This allows deleting without actually losing the resource data. Once a WaterSchedule is end-dated, certain resources will not be available such as health and action.
    */
   endDateWaterSchedule: {
@@ -1306,7 +1306,7 @@ export interface operations {
     };
   };
   /**
-   * Update/Edit a WaterSchedule 
+   * Update/Edit a WaterSchedule
    * @description Update/Edit a WaterSchedule. Only certain fields of a WaterSchedule are editable.
    */
   updateWaterSchedule: {
