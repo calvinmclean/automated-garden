@@ -1,4 +1,14 @@
+#include "config.h"
 #ifdef ENABLE_MOISTURE_SENSORS
+
+#include <Arduino.h>
+#include "moisture.h"
+#include "main.h"
+#include "mqtt.h"
+
+TaskHandle_t moistureSensorTaskHandle;
+
+const char* moistureDataTopic = MQTT_MOISTURE_DATA_TOPIC;
 
 void setupMoistureSensors() {
     for (int i = 0; i < NUM_ZONES; i++) {

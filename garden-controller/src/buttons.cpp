@@ -1,4 +1,19 @@
+#include "config.h"
 #ifdef ENABLE_BUTTONS
+#include "buttons.h"
+#include "main.h"
+
+TaskHandle_t readButtonsTaskHandle;
+
+/* button variables */
+unsigned long lastDebounceTime = 0;
+int buttonStates[NUM_ZONES];
+int lastButtonStates[NUM_ZONES];
+
+/* stop button variables */
+unsigned long lastStopDebounceTime = 0;
+int stopButtonState = LOW;
+int lastStopButtonState;
 
 void setupButtons() {
     // Setup button pins and state
