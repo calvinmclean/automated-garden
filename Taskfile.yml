@@ -59,7 +59,7 @@ tasks:
     aliases: [rw]
     dir: ./garden-app/frontend
     cmds:
-      - npm run dev -- --open
+      - npm run dev
 
   run-docker:
     desc: Run backend + frontent in Docker container

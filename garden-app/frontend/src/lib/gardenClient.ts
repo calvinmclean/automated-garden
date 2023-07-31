@@ -47,3 +47,18 @@ export function lightAction(id: string, state: "ON" | "OFF" | "") {
     });
 }
 
+export function stopAction(id: string) {
+    return post("/gardens/{gardenID}/action", {
+        params: {
+            path: {
+                gardenID: id,
+            }
+        },
+        body: {
+            stop: {
+                all: true
+            }
+        },
+    });
+}
+

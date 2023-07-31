@@ -1,6 +1,7 @@
 <script lang="ts">
     import {
         Badge,
+        Button,
         ButtonDropdown,
         Card,
         CardBody,
@@ -16,8 +17,8 @@
     } from "sveltestrap";
     import { fly } from "svelte/transition";
 
-    import type { GardenResponse } from "../../lib/gardenClient";
-    import { lightAction } from "../../lib/gardenClient";
+    import type { GardenResponse, getGarden } from "../../lib/gardenClient";
+    import { lightAction, stopAction } from "../../lib/gardenClient";
 
     export let garden: GardenResponse;
     export let withLink = false;
@@ -32,6 +33,10 @@
 
     function lightOff(event) {
         lightAction(garden.id, "OFF");
+    }
+
+    function stopWatering(event) {
+        stopAction(garden.id);
     }
 </script>
 
@@ -90,19 +95,29 @@
                     <br />
                 {/if}
 
-                {#if garden.end_date == null && garden.light_schedule != null}
-                    <ButtonDropdown>
-                        <DropdownToggle color="warning" caret>
-                            <Icon name="sun" />
-                        </DropdownToggle>
-                        <DropdownMenu>
-                            <DropdownItem on:click={toggleLight}>
-                                Toggle
-                            </DropdownItem>
-                            <DropdownItem on:click={lightOn}>ON</DropdownItem>
-                            <DropdownItem on:click={lightOff}>OFF</DropdownItem>
-                        </DropdownMenu>
-                    </ButtonDropdown>
+                {#if garden.end_date == null}
+                    {#if garden.light_schedule != null}
+                        <ButtonDropdown>
+                            <DropdownToggle color="warning" caret>
+                                <Icon name="sun" />
+                            </DropdownToggle>
+                            <DropdownMenu>
+                                <DropdownItem on:click={toggleLight}>
+                                    Toggle
+                                </DropdownItem>
+                                <DropdownItem on:click={lightOn}>
+                                    ON
+                                </DropdownItem>
+                                <DropdownItem on:click={lightOff}>
+                                    OFF
+                                </DropdownItem>
+                            </DropdownMenu>
+                        </ButtonDropdown>
+                    {/if}
+
+                    <Button color="danger" on:click={stopWatering}>
+                        <Icon name="sign-stop" />
+                    </Button>
                 {/if}
             </CardText>
         </CardBody>

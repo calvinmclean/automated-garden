@@ -15,7 +15,7 @@ type GardenAction struct {
 
 // String...
 func (action *GardenAction) String() string {
-	return fmt.Sprintf("{LightAction: %+v, StopAction: %+v}", *action.Light, action.Stop)
+	return fmt.Sprintf("{LightAction: %+v, StopAction: %+v}", action.Light, action.Stop)
 }
 
 // LightAction is an action for turning on or off a light for the Garden. The State field is optional and it will just toggle
