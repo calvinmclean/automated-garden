@@ -9,15 +9,19 @@ import (
 )
 
 var (
-	topicPrefix       string
-	numZones          int
-	moistureStrategy  string
-	moistureValue     int
-	moistureInterval  time.Duration
-	publishWaterEvent bool
-	publishHealth     bool
-	healthInterval    time.Duration
-	enableUI          bool
+	topicPrefix                 string
+	numZones                    int
+	moistureStrategy            string
+	moistureValue               int
+	moistureInterval            time.Duration
+	publishWaterEvent           bool
+	publishHealth               bool
+	healthInterval              time.Duration
+	enableUI                    bool
+	publishTemperatureHumidity  bool
+	temperatureHumidityInterval time.Duration
+	temperatureValue            float64
+	humidityValue               float64
 
 	controllerCommand = &cobra.Command{
 		Use:     "controller",
@@ -58,6 +62,18 @@ func init() {
 
 	controllerCommand.PersistentFlags().BoolVar(&enableUI, "enable-ui", true, "Enable tview UI for nicer output")
 	viper.BindPFlag("controller.enable_ui", controllerCommand.PersistentFlags().Lookup("enable-ui"))
+
+	controllerCommand.PersistentFlags().BoolVar(&publishTemperatureHumidity, "publish-temperature-humidity", false, "Whether or not to publish temperature and humidity data")
+	viper.BindPFlag("controller.publish_temperature_humidity", controllerCommand.PersistentFlags().Lookup("publish-temperature-humidity"))
+
+	controllerCommand.PersistentFlags().DurationVar(&temperatureHumidityInterval, "temperature-humidity-interval", time.Minute, "Interval for temperature and humidity publishing")
+	viper.BindPFlag("controller.temperature_humidity_interval", controllerCommand.PersistentFlags().Lookup("temperature-humidity-interval"))
+
+	controllerCommand.PersistentFlags().Float64Var(&temperatureValue, "temperature-value", 100, "The value to use for temperature data publishing")
+	viper.BindPFlag("controller.temperature_value", controllerCommand.PersistentFlags().Lookup("temperature-value"))
+
+	controllerCommand.PersistentFlags().Float64Var(&humidityValue, "humidity-value", 100, "The value to use for humidity data publishing")
+	viper.BindPFlag("controller.humidity_value", controllerCommand.PersistentFlags().Lookup("humidity-value"))
 
 	rootCommand.AddCommand(controllerCommand)
 }

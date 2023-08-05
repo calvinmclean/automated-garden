@@ -74,6 +74,16 @@ const (
 #define MOISTURE_SENSOR_INTERVAL {{ milliseconds .MoistureInterval }}
 #endif
 {{ end -}}
+
+{{ if .PublishTemperatureHumidity }}
+#define ENABLE_DHT22
+#ifdef ENABLE_DHT22
+#define MQTT_TEMPERATURE_DATA_TOPIC TOPIC_PREFIX"/data/temperature"
+#define MQTT_HUMIDITY_DATA_TOPIC TOPIC_PREFIX"/data/humidity"
+#define DHT22_PIN {{ .TemperatureHumidityPin }}
+#define DHT22_INTERVAL {{ milliseconds .TemperatureHumidityInterval }}
+#endif
+{{ end -}}
 #endif
 `
 	wifiConfigTemplate = `#ifndef wifi_config_h
@@ -316,6 +326,11 @@ func configPrompts(config *Config) error {
 		return fmt.Errorf("error completing moisture prompts: %w", err)
 	}
 
+	err = temperatureHumidityPrompts(config)
+	if err != nil {
+		return fmt.Errorf("error completing temperature and humidity prompts: %w", err)
+	}
+
 	return nil
 }
 
@@ -423,6 +438,41 @@ func moisturePrompts(config *Config) error {
 				Message: "Moisture reading interval",
 				Default: config.MoistureInterval.String(),
 				Help:    "how often to read and publish moisture data for each configured sensor",
+			},
+		},
+	}
+	return survey.Ask(qs, config)
+}
+
+func temperatureHumidityPrompts(config *Config) error {
+	err := survey.AskOne(&survey.Input{
+		Message: "Enable temperature and humidity (DHT22) sensor",
+		Default: fmt.Sprintf("%t", config.PublishTemperatureHumidity),
+		Help:    "enable temperature and humidity publishing",
+	}, &config.PublishTemperatureHumidity)
+	if err != nil {
+		return err
+	}
+
+	if !config.PublishTemperatureHumidity {
+		return nil
+	}
+
+	qs := []*survey.Question{
+		{
+			Name: "temperature_humidity_interval",
+			Prompt: &survey.Input{
+				Message: "Temperature and humidity read/publish interval",
+				Default: config.TemperatureHumidityInterval.String(),
+				Help:    "how often to read and publish temperature and humidity data",
+			},
+		},
+		{
+			Name: "temperature_humidity_pin",
+			Prompt: &survey.Input{
+				Message: "Temperature and humidity sensor (DHT22) pin",
+				Default: config.TemperatureHumidityPin,
+				Help:    "pin identifier for a DHT22 sensor",
 			},
 		},
 	}

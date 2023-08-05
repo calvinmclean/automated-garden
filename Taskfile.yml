@@ -40,8 +40,14 @@ tasks:
     cmds:
       - docker compose --profile run-local down
 
+  run:
+    desc: Run Go app
+    dir: ./garden-app
+    cmds:
+      - go run main.go {{.CLI_ARGS}}
+
   run-server:
-    desc: Run backend Go app
+    desc: Run backend Go app server
     aliases: [rs]
     dir: ./garden-app
     cmds:

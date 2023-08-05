@@ -29,25 +29,33 @@ type Config struct {
 // NestedConfig is an unfortunate struct that I had to create to have this nested under the 'controller' key
 // in the YAML config
 type NestedConfig struct {
-	TopicPrefix       string        `mapstructure:"topic_prefix" survey:"topic_prefix"`
-	NumZones          int           `mapstructure:"num_zones" survey:"num_zones"`
-	MoistureStrategy  string        `mapstructure:"moisture_strategy" survey:"moisture_strategy"`
-	MoistureValue     int           `mapstructure:"moisture_value" survey:"moisture_value"`
-	MoistureInterval  time.Duration `mapstructure:"moisture_interval" survey:"moisture_interval"`
-	PublishWaterEvent bool          `mapstructure:"publish_water_event" survey:"publish_water_event"`
-	PublishHealth     bool          `mapstructure:"publish_health" survey:"publish_health"`
-	HealthInterval    time.Duration `mapstructure:"health_interval" survey:"health_interval"`
-	EnableUI          bool          `mapstructure:"enable_ui" survey:"enable_ui"`
+	// Configs used only for running mock controller
+	EnableUI          bool    `mapstructure:"enable_ui" survey:"enable_ui"`
+	MoistureStrategy  string  `mapstructure:"moisture_strategy" survey:"moisture_strategy"`
+	MoistureValue     int     `mapstructure:"moisture_value" survey:"moisture_value"`
+	PublishWaterEvent bool    `mapstructure:"publish_water_event" survey:"publish_water_event"`
+	TemperatureValue  float64 `mapstructure:"temperature_value"`
+	HumidityValue     float64 `mapstructure:"humidity_value"`
+
+	// Configs used for both
+	TopicPrefix                 string        `mapstructure:"topic_prefix" survey:"topic_prefix"`
+	NumZones                    int           `mapstructure:"num_zones" survey:"num_zones"`
+	MoistureInterval            time.Duration `mapstructure:"moisture_interval" survey:"moisture_interval"`
+	PublishHealth               bool          `mapstructure:"publish_health" survey:"publish_health"`
+	HealthInterval              time.Duration `mapstructure:"health_interval" survey:"health_interval"`
+	PublishTemperatureHumidity  bool          `mapstructure:"publish_temperature_humidity" survey:"publish_temperature_humidity"`
+	TemperatureHumidityInterval time.Duration `mapstructure:"temperature_humidity_interval" survey:"temperature_humidity_interval"`
 
 	// Configs only used for generate-config
-	WifiConfig           `mapstructure:"wifi" survey:"wifi"`
-	Zones                []ZoneConfig  `mapstructure:"zones" survey:"zones"`
-	DefaultWaterTime     time.Duration `mapstructure:"default_water_time" survey:"default_water_time"`
-	EnableButtons        bool          `mapstructure:"enable_buttons" survey:"enable_buttons"`
-	EnableMoistureSensor bool          `mapstructure:"enable_moisture_sensor" survey:"enable_moisture_sensor"`
-	LightPin             string        `mapstructure:"light_pin" survey:"light_pin"`
-	StopButtonPin        string        `mapstructure:"stop_water_button" survey:"stop_water_button"`
-	DisableWatering      bool          `mapstructure:"disable_watering" survey:"disable_watering"`
+	WifiConfig             `mapstructure:"wifi" survey:"wifi"`
+	Zones                  []ZoneConfig  `mapstructure:"zones" survey:"zones"`
+	DefaultWaterTime       time.Duration `mapstructure:"default_water_time" survey:"default_water_time"`
+	EnableButtons          bool          `mapstructure:"enable_buttons" survey:"enable_buttons"`
+	EnableMoistureSensor   bool          `mapstructure:"enable_moisture_sensor" survey:"enable_moisture_sensor"`
+	LightPin               string        `mapstructure:"light_pin" survey:"light_pin"`
+	StopButtonPin          string        `mapstructure:"stop_water_button" survey:"stop_water_button"`
+	DisableWatering        bool          `mapstructure:"disable_watering" survey:"disable_watering"`
+	TemperatureHumidityPin string        `mapstructure:"temperature_humidity_pin" survey:"temperature_humidity_pin"`
 
 	MQTTAddress string `survey:"mqtt_address"`
 	MQTTPort    int    `survey:"mqtt_port"`
@@ -150,6 +158,16 @@ func (c *Controller) Start() {
 		_, err := scheduler.Every(c.HealthInterval).Do(c.publishHealthData)
 		if err != nil {
 			c.logger.WithError(err).Error("error scheduling health publishing")
+			return
+		}
+	}
+	if c.PublishTemperatureHumidity {
+		c.logger.WithFields(logrus.Fields{
+			"interval": c.TemperatureHumidityInterval.String(),
+		}).Debug("create scheduled job to publish temperature and humidity data")
+		_, err := scheduler.Every(c.TemperatureHumidityInterval).Do(c.publishTemperatureHumidityData)
+		if err != nil {
+			c.logger.WithError(err).Error("error scheduling temperature and humidity publishing")
 			return
 		}
 	}
@@ -266,13 +284,44 @@ func (c *Controller) publishHealthData() {
 	}
 }
 
+func (c *Controller) publishTemperatureHumidityData() {
+	temperatureTopic := fmt.Sprintf("%s/data/temperature", c.TopicPrefix)
+	humidityTopic := fmt.Sprintf("%s/data/humidity", c.TopicPrefix)
+
+	temperature := addNoise(c.TemperatureValue, 3)
+	humidity := addNoise(c.HumidityValue, 3)
+
+	logger := c.pubLogger.WithFields(logrus.Fields{
+		"temperature": temperature,
+		"humidity":    humidity,
+	})
+	logger.Info("publishing temperature and humidity data")
+
+	err := c.mqttClient.Publish(temperatureTopic, []byte(fmt.Sprintf("temperature value=%f", temperature)))
+	if err != nil {
+		logger.WithError(err).Error("unable to publish temperature data")
+	}
+
+	err = c.mqttClient.Publish(humidityTopic, []byte(fmt.Sprintf("humidity value=%f", humidity)))
+	if err != nil {
+		logger.WithError(err).Error("unable to publish humidity data")
+	}
+}
+
+// addNoise will take a base value and introduce some += variance based on the provided percentage range. This will
+// produce sensor data that is relatively consistent but not totally flat
+func addNoise(baseValue float64, percentRange float64) float64 {
+	// nolint:gosec
+	diff := percentRange - (rand.Float64() * percentRange * 2)
+	return baseValue + diff
+}
+
 // createMoistureData uses the MoistureStrategy config to create a moisture data point
 func (c *Controller) createMoistureData() int {
 	switch c.MoistureStrategy {
 	case "random":
 		// nolint:gosec
-		source := rand.New(rand.NewSource(time.Now().UnixNano()))
-		return source.Intn(c.MoistureValue)
+		return rand.Intn(c.MoistureValue)
 	case "constant":
 		return c.MoistureValue
 	case "increasing":
