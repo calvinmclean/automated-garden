@@ -1,12 +1,19 @@
 package controller
 
 import (
+	"os"
 	"testing"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/stretchr/testify/assert"
 )
+
+func TestGenerateConfig(_ *testing.T) {
+	GenerateConfig(Config{}, true, true, true, false, false)
+	GenerateConfig(Config{}, true, true, true, false, false)
+	os.RemoveAll("config.h")
+}
 
 func TestGenerateMainConfig(t *testing.T) {
 	tests := []struct {

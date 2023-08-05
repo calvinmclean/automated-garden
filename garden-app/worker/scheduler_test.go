@@ -373,7 +373,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		g := createExampleGarden()
 		// Set StartTime and Duration so NextOffTime is soon
 		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(pkg.LightTimeFormat)
-		g.LightSchedule.Duration = &pkg.Duration{Duration: 1*time.Hour + 2*time.Minute}
+		g.LightSchedule.Duration = &pkg.Duration{Duration: 1*time.Hour + 5*time.Minute}
 
 		err = worker.ScheduleLightActions(g)
 		assert.NoError(t, err)
