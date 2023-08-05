@@ -63,15 +63,16 @@ func (l *LightState) UnmarshalJSON(data []byte) error {
 
 // Garden is the representation of a single garden-controller device. It is the container for Plants
 type Garden struct {
-	Name          string            `json:"name" yaml:"name,omitempty"`
-	TopicPrefix   string            `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
-	ID            xid.ID            `json:"id" yaml:"id,omitempty"`
-	Plants        map[xid.ID]*Plant `json:"plants" yaml:"plants,omitempty"`
-	Zones         map[xid.ID]*Zone  `json:"zones" yaml:"zones,omitempty"`
-	MaxZones      *uint             `json:"max_zones" yaml:"max_zones"`
-	CreatedAt     *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate       *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	LightSchedule *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
+	Name                      string            `json:"name" yaml:"name,omitempty"`
+	TopicPrefix               string            `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
+	ID                        xid.ID            `json:"id" yaml:"id,omitempty"`
+	Plants                    map[xid.ID]*Plant `json:"plants" yaml:"plants,omitempty"`
+	Zones                     map[xid.ID]*Zone  `json:"zones" yaml:"zones,omitempty"`
+	MaxZones                  *uint             `json:"max_zones" yaml:"max_zones"`
+	CreatedAt                 *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate                   *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	LightSchedule             *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
+	TemperatureHumiditySensor *bool             `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
 }
 
 // String...
@@ -180,6 +181,9 @@ func (g *Garden) Patch(newGarden *Garden) {
 			g.LightSchedule = nil
 		}
 	}
+	if newGarden.TemperatureHumiditySensor != nil {
+		g.TemperatureHumiditySensor = newGarden.TemperatureHumiditySensor
+	}
 }
 
 // NumPlants returns the number of non-end-dated Plants that are part of this Garden
@@ -202,6 +206,11 @@ func (g *Garden) NumZones() uint {
 		}
 	}
 	return result
+}
+
+// HasTemperatureHumiditySensor determines if the Garden has a sensor configured
+func (g *Garden) HasTemperatureHumiditySensor() bool {
+	return g.TemperatureHumiditySensor != nil && *g.TemperatureHumiditySensor
 }
 
 // PlantsByZone returns the Plants associated with the provided ZoneID

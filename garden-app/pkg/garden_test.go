@@ -9,6 +9,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/rs/xid"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
@@ -86,6 +87,9 @@ func TestGardenEndDated(t *testing.T) {
 func TestGardenPatch(t *testing.T) {
 	now := time.Now()
 	ten := uint(10)
+	trueBool := true
+	falseBool := false
+
 	tests := []struct {
 		name      string
 		newGarden *Garden
@@ -123,6 +127,14 @@ func TestGardenPatch(t *testing.T) {
 			&Garden{LightSchedule: &LightSchedule{
 				AdhocOnTime: nil,
 			}},
+		},
+		{
+			"PatchTemperatureHumiditySensorTrue",
+			&Garden{TemperatureHumiditySensor: &trueBool},
+		},
+		{
+			"PatchTemperatureHumiditySensorFalse",
+			&Garden{TemperatureHumiditySensor: &falseBool},
 		},
 	}
 
@@ -403,6 +415,24 @@ func TestNumZones(t *testing.T) {
 				t.Errorf("Expected %d but got %d", tt.expected, result)
 			}
 		})
+	}
+}
+
+func TestHasTemperatureHumiditySensor(t *testing.T) {
+	trueBool := true
+	falseBool := false
+	tests := []struct {
+		val      *bool
+		expected bool
+	}{
+		{nil, false},
+		{&trueBool, true},
+		{&falseBool, false},
+	}
+
+	for _, tt := range tests {
+		g := &Garden{TemperatureHumiditySensor: tt.val}
+		assert.Equal(t, tt.expected, g.HasTemperatureHumiditySensor())
 	}
 }
 
