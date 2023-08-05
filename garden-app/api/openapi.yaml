@@ -784,6 +784,18 @@ components:
                   $ref: "#/components/schemas/LightState"
             health:
               $ref: "#/components/schemas/GardenHealth"
+            temperature_humidity_data:
+              type: object
+              description: recent temperature and humidity from the garden-controller
+              properties:
+                temperature_celsius:
+                  type: number
+                  format: float
+                  description: temperature in degrees Celsius
+                humidity_percentage:
+                  type: number
+                  format: float
+                  description: relative humidity percentage
             num_plants:
               type: integer
               description: the number of active (not end-dated) Plants in this Garden
@@ -875,6 +887,9 @@ components:
               type: string
               format: date-time
               description: if a light delay was used, this persists the time that the light needs to turn back on
+          temperature_humidity_sensor:
+            type: boolean
+            description: determines if the garden-controller has a DHT22 sensor configured
           required:
             - duration
             - start_time
