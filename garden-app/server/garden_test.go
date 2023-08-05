@@ -165,32 +165,51 @@ func TestGardenRestrictEndDatedMiddleware(t *testing.T) {
 
 func TestCreateGarden(t *testing.T) {
 	tests := []struct {
-		name           string
-		body           string
-		expectedRegexp string
-		code           int
+		name                     string
+		body                     string
+		temperatureHumidityError bool
+		expectedRegexp           string
+		code                     int
 	}{
 		{
 			"Successful",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
+			false,
 			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			http.StatusCreated,
+		},
+		{
+			"SuccessfulWithTemperatureAndHumidity",
+			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
+			false,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"temperature_humidity_data":{"temperature_celsius":50,"humidity_percentage":50},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			http.StatusCreated,
+		},
+		{
+			"SuccessfulButErrorGettingTemperatureAndHumidity",
+			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
+			true,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_plants":0,"num_zones":0,"plants":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/plants"},"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"plants","href":"/gardens/[0-9a-v]{20}/plants"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"ErrorNegativeMaxPlants",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones":-2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
+			false,
 			`{"status":"Invalid request.","error":"json: cannot unmarshal number -2 into Go struct field GardenRequest.max_zones of type uint"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorInvalidRequestBody",
 			"{}",
+			false,
 			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorBadRequestInvalidStartTime",
 			`{"name":"test-garden", "topic_prefix":"test-garden", "max_zones": 1,"light_schedule": {"duration":"1h","start_time":"NOT A TIME"}}`,
+			false,
 			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
 			http.StatusBadRequest,
 		},
@@ -205,6 +224,11 @@ func TestCreateGarden(t *testing.T) {
 
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
+			if tt.temperatureHumidityError {
+				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(0.0, 0.0, errors.New("influxdb error"))
+			} else {
+				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
+			}
 			gr := GardensResource{
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,

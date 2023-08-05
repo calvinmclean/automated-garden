@@ -80,7 +80,8 @@ func CreateGardenTest(t *testing.T) string {
 			"light_schedule": {
 				"duration": "14h",
 				"start_time": "22:00:00-07:00"
-			}
+			},
+			"temperature_humidity_sensor": true
 		}`, &g)
 		assert.NoError(t, err)
 
@@ -103,20 +104,6 @@ func GardenTests(t *testing.T) {
 		assert.Equal(t, uint(3), *g.MaxZones)
 		assert.Equal(t, uint(0), g.NumZones)
 		assert.Equal(t, uint(0), g.NumPlants)
-
-		// The health status timing can be inconsistent, so it shoul be retried
-		retries := 1
-		for g.Health.Status != "UP" && retries <= 5 {
-			time.Sleep(time.Duration(retries) * time.Second)
-
-			status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
-			assert.NoError(t, err)
-			assert.Equal(t, http.StatusOK, status)
-
-			retries++
-		}
-
-		assert.Equal(t, "UP", g.Health.Status)
 	})
 	t.Run("ExecuteStopAction", func(t *testing.T) {
 		status, err := makeRequest(
@@ -245,6 +232,28 @@ func GardenTests(t *testing.T) {
 			action.LightAction{State: pkg.LightStateOn},
 			action.LightAction{State: pkg.LightStateOff},
 		)
+	})
+	t.Run("GetGardenToCheckInfluxDBData", func(t *testing.T) {
+		var g server.GardenResponse
+		status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, status)
+
+		// The health status timing can be inconsistent, so it should be retried
+		retries := 1
+		for g.Health.Status != "UP" && retries <= 5 {
+			time.Sleep(time.Duration(retries) * time.Second)
+
+			status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, status)
+
+			retries++
+		}
+
+		assert.Equal(t, "UP", g.Health.Status)
+		assert.Equal(t, 50.0, g.TemperatureHumidityData.TemperatureCelsius)
+		assert.Equal(t, 50.0, g.TemperatureHumidityData.HumidityPercentage)
 	})
 }
 

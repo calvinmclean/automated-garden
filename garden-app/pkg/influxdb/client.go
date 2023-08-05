@@ -3,7 +3,6 @@ package influxdb
 import (
 	"bytes"
 	"context"
-	"fmt"
 	"text/template"
 	"time"
 
@@ -229,8 +228,6 @@ func (client *client) GetTemperatureAndHumidity(ctx context.Context, topicPrefix
 			temperature = queryResult.Record().Value().(float64)
 		case "humidity":
 			humidity = queryResult.Record().Value().(float64)
-		default:
-			return 0, 0, fmt.Errorf("unexpected measurement: %q", queryResult.Record().Measurement())
 		}
 	}
 

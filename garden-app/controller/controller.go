@@ -30,12 +30,13 @@ type Config struct {
 // in the YAML config
 type NestedConfig struct {
 	// Configs used only for running mock controller
-	EnableUI          bool    `mapstructure:"enable_ui" survey:"enable_ui"`
-	MoistureStrategy  string  `mapstructure:"moisture_strategy" survey:"moisture_strategy"`
-	MoistureValue     int     `mapstructure:"moisture_value" survey:"moisture_value"`
-	PublishWaterEvent bool    `mapstructure:"publish_water_event" survey:"publish_water_event"`
-	TemperatureValue  float64 `mapstructure:"temperature_value"`
-	HumidityValue     float64 `mapstructure:"humidity_value"`
+	EnableUI                        bool    `mapstructure:"enable_ui" survey:"enable_ui"`
+	MoistureStrategy                string  `mapstructure:"moisture_strategy" survey:"moisture_strategy"`
+	MoistureValue                   int     `mapstructure:"moisture_value" survey:"moisture_value"`
+	PublishWaterEvent               bool    `mapstructure:"publish_water_event" survey:"publish_water_event"`
+	TemperatureValue                float64 `mapstructure:"temperature_value"`
+	HumidityValue                   float64 `mapstructure:"humidity_value"`
+	TemperatureHumidityDisableNoise bool    `mapstructure:"temperature_humidity_disable_noise"`
 
 	// Configs used for both
 	TopicPrefix                 string        `mapstructure:"topic_prefix" survey:"topic_prefix"`
@@ -288,8 +289,12 @@ func (c *Controller) publishTemperatureHumidityData() {
 	temperatureTopic := fmt.Sprintf("%s/data/temperature", c.TopicPrefix)
 	humidityTopic := fmt.Sprintf("%s/data/humidity", c.TopicPrefix)
 
-	temperature := addNoise(c.TemperatureValue, 3)
-	humidity := addNoise(c.HumidityValue, 3)
+	temperature := c.TemperatureValue
+	humidity := c.HumidityValue
+	if !c.TemperatureHumidityDisableNoise {
+		temperature = addNoise(temperature, 3)
+		humidity = addNoise(humidity, 3)
+	}
 
 	logger := c.pubLogger.WithFields(logrus.Fields{
 		"temperature": temperature,
