@@ -83,7 +83,7 @@
 
 #define LIGHT_PIN GPIO_NUM_32
 
-#define ENABLE_BUTTONS
+// #define ENABLE_BUTTONS
 #ifdef ENABLE_BUTTONS
 #define STOP_BUTTON_PIN GPIO_NUM_23
 #endif

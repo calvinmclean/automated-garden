@@ -1,3 +1,47 @@
+#include "mqtt.h"
+#include "main.h"
+
+WiFiClient wifiClient;
+PubSubClient client(wifiClient);
+
+TaskHandle_t mqttConnectTaskHandle;
+TaskHandle_t mqttLoopTaskHandle;
+TaskHandle_t healthPublisherTaskHandle;
+TaskHandle_t waterPublisherTaskHandle;
+QueueHandle_t waterPublisherQueue;
+#ifdef LIGHT_PIN
+QueueHandle_t lightPublisherQueue;
+TaskHandle_t lightPublisherTaskHandle;
+#endif
+
+#ifdef DISABLE_WATERING
+const char* waterCommandTopic = "";
+const char* stopCommandTopic = "";
+const char* stopAllCommandTopic = "";
+const char* waterDataTopic = "";
+#else
+const char* waterCommandTopic = MQTT_WATER_TOPIC;
+const char* stopCommandTopic = MQTT_STOP_TOPIC;
+const char* stopAllCommandTopic = MQTT_STOP_ALL_TOPIC;
+const char* waterDataTopic = MQTT_WATER_DATA_TOPIC;
+#endif
+
+#ifdef LIGHT_PIN
+const char* lightCommandTopic = MQTT_LIGHT_TOPIC;
+const char* lightDataTopic = MQTT_LIGHT_DATA_TOPIC;
+#else
+const char* lightCommandTopic = "";
+const char* lightDataTopic = "";
+#endif
+
+#ifdef ENABLE_MQTT_HEALTH
+const char* healthDataTopic = MQTT_HEALTH_DATA_TOPIC;
+#else
+const char* healthDataTopic = "";
+#endif
+
+#define ZERO (unsigned long int) 0
+
 void setupMQTT() {
     // Connect to MQTT
     client.setServer(MQTT_ADDRESS, MQTT_PORT);
@@ -28,10 +72,9 @@ void setupMQTT() {
 
 void setupWifi() {
     delay(10);
-    printf("Connecting to "SSID" as "TOPIC_PREFIX"-controller\n");
+    printf("Connecting to " SSID " as " TOPIC_PREFIX "-controller\n");
 
     WiFi.setHostname(TOPIC_PREFIX"-controller");
-
     WiFi.begin(SSID, PASSWORD);
 
     while (WiFi.status() != WL_CONNECTED) {
@@ -42,8 +85,7 @@ void setupWifi() {
     printf("Wifi connected...\n");
 
     // Create event handler tp recpnnect to WiFi
-    WiFi.onEvent(wifiDisconnectHandler, SYSTEM_EVENT_STA_DISCONNECTED);
-
+    WiFi.onEvent(wifiDisconnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
 
 /*
@@ -177,7 +219,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     if (strcmp(topic, waterCommandTopic) == 0) {
         WaterEvent we = {
             doc["position"] | -1,
-            doc["duration"] | 0,
+            doc["duration"] | ZERO,
             doc["id"] | "N/A"
         };
         printf("received command to water zone %d (%s) for %lu\n", we.position, we.id, we.duration);
