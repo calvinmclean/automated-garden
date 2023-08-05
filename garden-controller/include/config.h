@@ -97,4 +97,13 @@
 #define MOISTURE_SENSOR_INTERVAL 5000
 #endif
 
+// DHT22 Temperature and Humidity sensor
+#define ENABLE_DHT22
+#ifdef ENABLE_DHT22
+#define MQTT_TEMPERATURE_DATA_TOPIC TOPIC_PREFIX"/data/temperature"
+#define MQTT_HUMIDITY_DATA_TOPIC TOPIC_PREFIX"/data/humidity"
+#define DHT22_PIN GPIO_NUM_27
+#define DHT22_INTERVAL 5000
+#endif
+
 #endif
