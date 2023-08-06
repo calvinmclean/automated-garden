@@ -73,6 +73,13 @@
                     No health details available<br />
                 {/if}
 
+                {#if garden.temperature_humidity_data != null}
+                    Temperature: {garden.temperature_humidity_data.temperature_celsius * 1.8 + 32}°F
+                    <br />
+                    Humidity: {garden.temperature_humidity_data.humidity_percentage}%
+                    <br />
+                {/if}
+
                 {#if garden.light_schedule != null}
                     Light Schedule Duration: {garden.light_schedule.duration}
                     <Icon name="hourglass-split" /><br />
@@ -85,12 +92,8 @@
                     <Icon name="clock" /><br />
                     Next Light State: {garden.next_light_action.state}
                     <Icon
-                        name={garden.next_light_action.state == "ON"
-                            ? "sunrise"
-                            : "sunset"}
-                        style="color: {garden.next_light_action.state == 'ON'
-                            ? 'orange'
-                            : 'gray'}"
+                        name={garden.next_light_action.state == "ON" ? "sunrise" : "sunset"}
+                        style="color: {garden.next_light_action.state == 'ON' ? 'orange' : 'gray'}"
                     />
                     <br />
                 {/if}
@@ -102,15 +105,9 @@
                                 <Icon name="sun" />
                             </DropdownToggle>
                             <DropdownMenu>
-                                <DropdownItem on:click={toggleLight}>
-                                    Toggle
-                                </DropdownItem>
-                                <DropdownItem on:click={lightOn}>
-                                    ON
-                                </DropdownItem>
-                                <DropdownItem on:click={lightOff}>
-                                    OFF
-                                </DropdownItem>
+                                <DropdownItem on:click={toggleLight}>Toggle</DropdownItem>
+                                <DropdownItem on:click={lightOn}>ON</DropdownItem>
+                                <DropdownItem on:click={lightOff}>OFF</DropdownItem>
                             </DropdownMenu>
                         </ButtonDropdown>
                     {/if}
@@ -127,22 +124,13 @@
             {/if}
 
             {#if garden.health != null}
-                <Icon
-                    name="wifi"
-                    style="color: {garden.health.status == 'UP'
-                        ? 'green'
-                        : 'red'}"
-                />
+                <Icon name="wifi" style="color: {garden.health.status == 'UP' ? 'green' : 'red'}" />
             {/if}
 
             {#if garden.next_light_action != null}
                 <Icon
-                    name={garden.next_light_action.state == "ON"
-                        ? "sunrise"
-                        : "sunset"}
-                    style="color: {garden.next_light_action.state == 'ON'
-                        ? 'orange'
-                        : 'gray'}"
+                    name={garden.next_light_action.state == "ON" ? "sunrise" : "sunset"}
+                    style="color: {garden.next_light_action.state == 'ON' ? 'orange' : 'gray'}"
                 />
             {/if}
 

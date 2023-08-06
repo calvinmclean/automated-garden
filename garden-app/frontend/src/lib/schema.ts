@@ -327,6 +327,19 @@ export interface components {
         state?: components["schemas"]["LightState"];
       };
       health?: components["schemas"]["GardenHealth"];
+      /** @description recent temperature and humidity from the garden-controller */
+      temperature_humidity_data?: {
+        /**
+         * Format: float
+         * @description temperature in degrees Celsius
+         */
+        temperature_celsius?: number;
+        /**
+         * Format: float
+         * @description relative humidity percentage
+         */
+        humidity_percentage?: number;
+      };
       /**
        * @description the number of active (not end-dated) Plants in this Garden
        * @example 1

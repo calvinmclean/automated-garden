@@ -23,3 +23,4 @@ ignore:
   - garden-app/cmd/completion.go
   - "garden-app/**/*_test.go"
   - "garden-app/**/mock*.go"
+  - garden-app/controller/interactive.go

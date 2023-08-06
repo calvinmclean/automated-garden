@@ -12,6 +12,10 @@
 #ifdef ENABLE_MOISTURE_SENSORS
 #include "moisture.h"
 #endif
+#ifdef ENABLE_DHT22
+#include "dht22.h"
+#endif
+
 
 /* zone/valve variables */
 gpio_num_t zones[NUM_ZONES][4] = ZONES;
@@ -47,6 +51,10 @@ void setup() {
   setupMQTT();
 #ifdef ENABLE_MOISTURE_SENSORS
   setupMoistureSensors();
+#endif
+
+#ifdef ENABLE_DHT22
+  setupDHT22();
 #endif
 
 #ifdef ENABLE_BUTTONS

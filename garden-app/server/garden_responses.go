@@ -13,19 +13,26 @@ import (
 // and hypermedia Links fields
 type GardenResponse struct {
 	*pkg.Garden
-	NextLightAction *NextLightAction  `json:"next_light_action,omitempty"`
-	Health          *pkg.GardenHealth `json:"health,omitempty"`
-	NumPlants       uint              `json:"num_plants"`
-	NumZones        uint              `json:"num_zones"`
-	Plants          Link              `json:"plants"`
-	Zones           Link              `json:"zones"`
-	Links           []Link            `json:"links,omitempty"`
+	NextLightAction         *NextLightAction         `json:"next_light_action,omitempty"`
+	Health                  *pkg.GardenHealth        `json:"health,omitempty"`
+	TemperatureHumidityData *TemperatureHumidityData `json:"temperature_humidity_data,omitempty"`
+	NumPlants               uint                     `json:"num_plants"`
+	NumZones                uint                     `json:"num_zones"`
+	Plants                  Link                     `json:"plants"`
+	Zones                   Link                     `json:"zones"`
+	Links                   []Link                   `json:"links,omitempty"`
 }
 
 // NextLightAction contains the time and state for the next scheduled LightAction
 type NextLightAction struct {
 	Time  *time.Time     `json:"time"`
 	State pkg.LightState `json:"state"`
+}
+
+// TemperatureHumidityData has the temperature and humidity of the Garden
+type TemperatureHumidityData struct {
+	TemperatureCelsius float64 `json:"temperature_celsius"`
+	HumidityPercentage float64 `json:"humidity_percentage"`
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
@@ -93,6 +100,19 @@ func (gr GardensResource) NewGardenResponse(ctx context.Context, garden *pkg.Gar
 				Time:  nextOffTime,
 				State: pkg.LightStateOff,
 			}
+		}
+	}
+
+	if garden.HasTemperatureHumiditySensor() {
+		t, h, err := gr.influxdbClient.GetTemperatureAndHumidity(ctx, garden.TopicPrefix)
+		if err != nil {
+			logger := getLoggerFromContext(ctx).WithField(gardenIDLogField, garden.ID.String())
+			logger.WithError(err).Error("error getting temperature and humidity data: %w", err)
+			return response
+		}
+		response.TemperatureHumidityData = &TemperatureHumidityData{
+			TemperatureCelsius: t,
+			HumidityPercentage: h,
 		}
 	}
 

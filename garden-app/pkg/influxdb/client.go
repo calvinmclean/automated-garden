@@ -36,6 +36,12 @@ const (
 |> limit(n: {{.Limit}})
 {{- end }}
 |> yield(name: "last")`
+	temperatureAndHumidityQueryTemplate = `from(bucket: "{{.Bucket}}")
+|> range(start: -{{.Start}})
+|> filter(fn: (r) => r["_measurement"] == "temperature" or r["_measurement"] == "humidity")
+|> filter(fn: (r) => r["_field"] == "value")
+|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/temperature" or r["topic"] == "{{.TopicPrefix}}/data/humidity")
+|> mean()`
 )
 
 var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
@@ -49,6 +55,7 @@ type Client interface {
 	GetMoisture(context.Context, uint, string) (float64, error)
 	GetLastContact(context.Context, string) (time.Time, error)
 	GetWaterHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
+	GetTemperatureAndHumidity(context.Context, string) (float64, float64, error)
 	influxdb2.Client
 }
 
@@ -96,7 +103,7 @@ func NewClient(config Config) Client {
 }
 
 // GetMoisture returns the plant's average soil moisture in the last 15 minutes
-func (client *client) GetMoisture(ctx context.Context, zonePosition uint, topicPrefix string) (result float64, err error) {
+func (client *client) GetMoisture(ctx context.Context, zonePosition uint, topicPrefix string) (float64, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetMoisture"))
 	defer timer.ObserveDuration()
 
@@ -108,25 +115,26 @@ func (client *client) GetMoisture(ctx context.Context, zonePosition uint, topicP
 		TopicPrefix:  topicPrefix,
 	}.Render(moistureQueryTemplate)
 	if err != nil {
-		return
+		return 0, err
 	}
 
 	// Query InfluxDB
 	queryAPI := client.QueryAPI(client.config.Org)
 	queryResult, err := queryAPI.Query(ctx, queryString)
 	if err != nil {
-		return
+		return 0, err
 	}
 
 	// Read and return the result
+	var result float64
 	if queryResult.Next() {
 		result = queryResult.Record().Value().(float64)
 	}
-	err = queryResult.Err()
-	return
+
+	return result, queryResult.Err()
 }
 
-func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (result time.Time, err error) {
+func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (time.Time, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetLastContact"))
 	defer timer.ObserveDuration()
 
@@ -137,23 +145,24 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (r
 		TopicPrefix: topicPrefix,
 	}.Render(healthQueryTemplate)
 	if err != nil {
-		return
+		return time.Time{}, err
 	}
 
 	// Query InfluxDB
 	queryAPI := client.QueryAPI(client.config.Org)
 	queryResult, err := queryAPI.Query(ctx, queryString)
 	if err != nil {
-		return
+		return time.Time{}, err
 	}
 
 	// Read and return the result
+	var result time.Time
 	if queryResult.Next() {
 		time := queryResult.Record().Time()
 		result = time
 	}
-	err = queryResult.Err()
-	return
+
+	return result, queryResult.Err()
 }
 
 // GetWaterHistory gets recent water events for a specific Plant
@@ -189,4 +198,38 @@ func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, to
 		})
 	}
 	return result, queryResult.Err()
+}
+
+// GetTemperatureAndHumidity gets the recent temperature and humidity data for a Garden
+func (client *client) GetTemperatureAndHumidity(ctx context.Context, topicPrefix string) (float64, float64, error) {
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetMoisture"))
+	defer timer.ObserveDuration()
+
+	queryString, err := queryData{
+		Bucket:      client.config.Bucket,
+		Start:       time.Minute * 15,
+		TopicPrefix: topicPrefix,
+	}.Render(temperatureAndHumidityQueryTemplate)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	queryAPI := client.QueryAPI(client.config.Org)
+	queryResult, err := queryAPI.Query(ctx, queryString)
+	if err != nil {
+		return 0, 0, err
+	}
+
+	var temperature float64
+	var humidity float64
+	for queryResult.Next() {
+		switch queryResult.Record().Measurement() {
+		case "temperature":
+			temperature = queryResult.Record().Value().(float64)
+		case "humidity":
+			humidity = queryResult.Record().Value().(float64)
+		}
+	}
+
+	return temperature, humidity, queryResult.Err()
 }
