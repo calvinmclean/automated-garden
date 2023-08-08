@@ -22,7 +22,7 @@
   "dependencies": {
     "openapi-fetch": "^0.6.0",
     "svelte-spa-router": "^3.3.0",
-    "sveltestrap": "^5.10.0",
+    "sveltestrap": "^5.11.1",
     "url-slug": "^4.0.1"
   }
 }
