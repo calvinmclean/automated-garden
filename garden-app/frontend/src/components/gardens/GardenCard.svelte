@@ -10,10 +10,13 @@
         CardSubtitle,
         CardText,
         CardTitle,
+        Col,
+        Container,
         DropdownItem,
         DropdownMenu,
         DropdownToggle,
         Icon,
+        Row,
     } from "sveltestrap";
     import { fly } from "svelte/transition";
 
@@ -45,7 +48,9 @@
         {#if withLink}
             <a href="#/gardens/{garden.id}">
                 <CardHeader>
-                    <CardTitle>{garden.name}</CardTitle>
+                    <CardTitle>
+                        {garden.name}
+                    </CardTitle>
                 </CardHeader>
             </a>
         {:else}
@@ -54,68 +59,90 @@
             </CardHeader>
         {/if}
         <CardBody>
-            <CardSubtitle>{garden.id}</CardSubtitle>
             <CardText>
-                Topic prefix: {garden.topic_prefix}
-                <Icon name="globe2" /><br />
-                {#if garden.end_date != null}
-                    End Dated: {garden.end_date}
-                    <Icon name="clock-fill" style="color: red" /><br />
-                {/if}
+                <Container>
+                    <Card>
+                        <CardBody>
+                            <Row>
+                                <Col>
+                                    Topic prefix: {garden.topic_prefix}
+                                    <Icon name="globe2" />
+                                </Col>
+                                {#if garden.end_date != null}
+                                    <Col>
+                                        End Dated: {garden.end_date}
+                                        <Icon name="clock-fill" style="color: red" />
+                                    </Col>
+                                {/if}
+                            </Row>
+                        </CardBody>
+                    </Card>
+                    <Card>
+                        <CardBody>
+                            <Row>
+                                <Col>{garden.num_zones} Zones <Icon name="grid" /></Col>
+                                <Col>{garden.num_plants} Plants <Icon name="" /></Col>
+                            </Row>
+                        </CardBody>
+                    </Card>
+                    <Card>
+                        <CardBody>
+                            <Row>
+                                {#if garden.health != null}
+                                    <Col>Health Status: {garden.health.status}</Col>
+                                    <Col>Health Details: {garden.health.details}</Col>
+                                {:else if garden.end_date == null}
+                                    <Col>No health details available</Col>
+                                {/if}
 
-                {garden.num_zones} Zones <Icon name="grid" /><br />
-                {garden.num_plants} Plants <Icon name="" /><br />
-
-                {#if garden.health != null}
-                    Health Status: {garden.health.status}<br />
-                    Health Details: {garden.health.details}<br />
-                {:else if garden.end_date == null}
-                    No health details available<br />
-                {/if}
-
-                {#if garden.temperature_humidity_data != null}
-                    Temperature: {garden.temperature_humidity_data.temperature_celsius * 1.8 + 32}°F
-                    <br />
-                    Humidity: {garden.temperature_humidity_data.humidity_percentage}%
-                    <br />
-                {/if}
-
-                {#if garden.light_schedule != null}
-                    Light Schedule Duration: {garden.light_schedule.duration}
-                    <Icon name="hourglass-split" /><br />
-                    Light Schedule Start: {garden.light_schedule.start_time}
-                    <Icon name="clock" /><br />
-                {/if}
-
-                {#if garden.next_light_action != null}
-                    Next Light Time: {garden.next_light_action.time}
-                    <Icon name="clock" /><br />
-                    Next Light State: {garden.next_light_action.state}
-                    <Icon
-                        name={garden.next_light_action.state == "ON" ? "sunrise" : "sunset"}
-                        style="color: {garden.next_light_action.state == 'ON' ? 'orange' : 'gray'}"
-                    />
-                    <br />
-                {/if}
-
-                {#if garden.end_date == null}
+                                {#if garden.temperature_humidity_data != null}
+                                    <Col>
+                                        Temperature: {garden.temperature_humidity_data.temperature_celsius * 1.8 + 32}°F
+                                    </Col>
+                                    <Col>
+                                        Humidity: {garden.temperature_humidity_data.humidity_percentage}%
+                                    </Col>
+                                {/if}
+                            </Row>
+                        </CardBody>
+                    </Card>
                     {#if garden.light_schedule != null}
-                        <ButtonDropdown>
-                            <DropdownToggle color="warning" caret>
-                                <Icon name="sun" />
-                            </DropdownToggle>
-                            <DropdownMenu>
-                                <DropdownItem on:click={toggleLight}>Toggle</DropdownItem>
-                                <DropdownItem on:click={lightOn}>ON</DropdownItem>
-                                <DropdownItem on:click={lightOff}>OFF</DropdownItem>
-                            </DropdownMenu>
-                        </ButtonDropdown>
-                    {/if}
+                        <Card>
+                            <CardBody>
+                                <Row>
+                                    <Col>
+                                        Light Schedule Duration: {garden.light_schedule.duration}
+                                        <Icon name="hourglass-split" />
+                                    </Col>
 
-                    <Button color="danger" on:click={stopWatering}>
-                        <Icon name="sign-stop" />
-                    </Button>
-                {/if}
+                                    <Col>
+                                        Light Schedule Start: {garden.light_schedule.start_time}
+                                        <Icon name="clock" />
+                                    </Col>
+                                </Row>
+                            </CardBody>
+                        </Card>
+                    {/if}
+                    {#if garden.next_light_action != null}
+                        <Card>
+                            <CardBody>
+                                <Row>
+                                    <Col>
+                                        Next Light Time: {garden.next_light_action.time}
+                                        <Icon name="clock" />
+                                    </Col>
+                                    <Col>
+                                        Next Light State: {garden.next_light_action.state}
+                                        <Icon
+                                            name={garden.next_light_action.state == "ON" ? "sunrise" : "sunset"}
+                                            style="color: {garden.next_light_action.state == 'ON' ? 'orange' : 'gray'}"
+                                        />
+                                    </Col>
+                                </Row>
+                            </CardBody>
+                        </Card>
+                    {/if}
+                </Container>
             </CardText>
         </CardBody>
         <CardFooter>
@@ -135,6 +162,25 @@
             {/if}
 
             <Icon name="grid" />{garden.num_zones}
+
+            {#if garden.end_date == null}
+                {#if garden.light_schedule != null}
+                    <ButtonDropdown>
+                        <DropdownToggle color="warning" caret>
+                            <Icon name="sun" />
+                        </DropdownToggle>
+                        <DropdownMenu>
+                            <DropdownItem on:click={toggleLight}>Toggle</DropdownItem>
+                            <DropdownItem on:click={lightOn}>ON</DropdownItem>
+                            <DropdownItem on:click={lightOff}>OFF</DropdownItem>
+                        </DropdownMenu>
+                    </ButtonDropdown>
+                {/if}
+
+                <Button color="danger" on:click={stopWatering}>
+                    <Icon name="sign-stop" />
+                </Button>
+            {/if}
         </CardFooter>
     </Card>
 </div>
