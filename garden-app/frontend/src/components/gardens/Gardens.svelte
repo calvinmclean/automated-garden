@@ -1,5 +1,5 @@
 <script lang="ts">
-    import { Accordion, AccordionItem } from "sveltestrap";
+    import { Accordion, AccordionItem, Container, Col, Row } from "sveltestrap";
 
     import GardenCard from "./GardenCard.svelte";
     import type { GardenResponse } from "../../lib/gardenClient";
@@ -7,22 +7,32 @@
     export let gardens: GardenResponse[];
 
     const filterGardens = (gardens: GardenResponse[], endDated: boolean) =>
-        gardens
-            .filter((g) => (endDated ? g.end_date != null : g.end_date == null))
-            .sort((a, b) => a.name.localeCompare(b.name));
+        gardens.filter((g) => (endDated ? g.end_date != null : g.end_date == null)).sort((a, b) => a.name.localeCompare(b.name));
 </script>
 
 {#if gardens}
-    {#each filterGardens(gardens, false) as garden (garden.id)}
-        <GardenCard {garden} withLink={true} />
-    {/each}
+    <Container>
+        <Row>
+            {#each filterGardens(gardens, false) as garden (garden.id)}
+                <Col lg="6">
+                    <GardenCard {garden} withLink={true} />
+                </Col>
+            {/each}
+        </Row>
+    </Container>
 
     {#if filterGardens(gardens, true).length != 0}
         <Accordion flush>
             <AccordionItem header="End Dated Gardens">
-                {#each filterGardens(gardens, true) as garden (garden.id)}
-                    <GardenCard {garden} withLink={true} />
-                {/each}
+                <Container>
+                    <Row>
+                        {#each filterGardens(gardens, true) as garden (garden.id)}
+                            <Col lg="6">
+                                <GardenCard {garden} withLink={true} />
+                            </Col>
+                        {/each}
+                    </Row>
+                </Container>
             </AccordionItem>
         </Accordion>
     {/if}
