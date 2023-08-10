@@ -1,10 +1,12 @@
 <script lang="ts">
-  import { Styles } from "sveltestrap";
+  import { Alert, Styles } from "sveltestrap";
   import Router from "svelte-spa-router";
   import routes from "./routes";
   import NavBar from "./components/NavBar.svelte";
 
   let theme: "dark" | "light" | "auto" = "auto";
+
+  let demoMode = process.env.NODE_ENV == "demo";
 </script>
 
 <svelte:head>
@@ -19,4 +21,11 @@
 <Styles {theme} />
 
 <NavBar />
+
+{#if demoMode}
+  <Alert color="warning" heading="Not all feature are available in this demo" dismissible>
+    This demo is a work-in-progress and I hope to add mocks for all read-only features here soon
+  </Alert>
+{/if}
+
 <Router {routes} />
