@@ -103,3 +103,11 @@ tasks:
     cmds:
       - task: docker-build
       - docker push ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}
+
+  build-gh-pages:
+    aliases: ["gh-pages"]
+    dir: ./garden-app/frontend
+    cmds:
+      - npm run build
+      - cp dist/assets/index-*.js ../../docs/ui-demo/assets/index.js
+      - cp dist/assets/index-*.css ../../docs/ui-demo/assets/index.css
