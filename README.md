@@ -7,11 +7,13 @@
 [![Go Reference](https://pkg.go.dev/badge/github.com/calvinmclean/automated-garden/garden-app.svg)](https://pkg.go.dev/github.com/calvinmclean/automated-garden/garden-app)
 [![codecov](https://codecov.io/gh/calvinmclean/automated-garden/branch/main/graph/badge.svg?token=20LWQYHKE8)](https://codecov.io/gh/calvinmclean/automated-garden)
 
+
 This project is a monorepo containing code for an ESP32-based microcontroller project and a Go backend for improving interactions with multiple irrigation systems.
 
 **If you have any question at all, please reach out and I would love to chat about the project!**
 
-[See additional documentation here](https://calvinmclean.github.io/automated-garden).
+[![View Demo](https://img.shields.io/badge/View-LiveUIDemo-2ea44f?style=for-the-badge)](https://calvinmclean.github.io/automated-garden/ui-demo/#/gardens)
+[![Additional Docs](https://img.shields.io/badge/View-Documentation-3271a8?style=for-the-badge)](https://calvinmclean.github.io/automated-garden)
 
 This system is designed to be flexible for all types of gardening. Here are a few examples of different possible setups:
   - Traditional irrigation system using 24V AC valves

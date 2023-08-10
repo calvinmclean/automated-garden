@@ -23,7 +23,7 @@
 <NavBar />
 
 {#if demoMode}
-  <Alert color="warning" heading="Not all feature are available in this demo" dismissible>
+  <Alert color="warning" heading="Not all features are available in this demo" dismissible>
     This demo is a work-in-progress and I hope to add mocks for all read-only features here soon
   </Alert>
 {/if}
