@@ -1,19 +1,6 @@
 <script lang="ts">
-    import {
-        Accordion,
-        AccordionItem,
-        Button,
-        Column,
-        FormGroup,
-        Input,
-        Label,
-        Spinner,
-        Table,
-    } from "sveltestrap";
-    import type {
-        ZoneResponse,
-        WaterHistoryResponse,
-    } from "../../lib/zoneClient";
+    import { Accordion, AccordionItem, Button, Column, Col, FormGroup, Input, Label, Row, Spinner, Table } from "sveltestrap";
+    import type { ZoneResponse, WaterHistoryResponse } from "../../lib/zoneClient";
     import { waterZone, getZoneWaterHistory } from "../../lib/zoneClient";
     import ZoneCard from "./ZoneCard.svelte";
     import { onMount } from "svelte";
@@ -22,10 +9,13 @@
     export let zone: ZoneResponse;
     export let loadingWeatherData = false;
 
-    let minutes = 1;
+    let unit = zone.next_water.duration.includes("h") ? "m" : "s";
+    let waterDurationValue = 1;
+
+    let minutesToSeconds = (m: number): number => m * 60.0;
 
     function sendWaterRequest(event) {
-        waterZone(gardenID, zone.id, minutes);
+        waterZone(gardenID, zone.id, unit == "s" ? waterDurationValue : minutesToSeconds(waterDurationValue));
     }
 
     let history: WaterHistoryResponse;
@@ -48,10 +38,27 @@
 {#if zone}
     <ZoneCard {gardenID} {zone} {loadingWeatherData} withLink={false} />
 
-    <div>
-        <input type="number" bind:value={minutes} min="0" /> minutes
-        <Button on:click={sendWaterRequest} color={"primary"}>Water!</Button>
-    </div>
+    <FormGroup>
+        <Row>
+            <Col>
+                <Input
+                    type="range"
+                    name="waterDurationRange"
+                    id="waterDurationRange"
+                    min={1}
+                    max={120}
+                    step={1}
+                    bind:value={waterDurationValue}
+                />
+            </Col>
+            <Col xs="1">
+                <Input type="number" bind:value={waterDurationValue} min="0" />
+            </Col>
+            <Col>
+                <Button on:click={sendWaterRequest} color={"primary"}>Water for {waterDurationValue}{unit}</Button>
+            </Col>
+        </Row>
+    </FormGroup>
 
     {#if history}
         <br />

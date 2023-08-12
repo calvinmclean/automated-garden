@@ -190,7 +190,7 @@ export function restoreZone(gardenID: string, id: string) {
     });
 }
 
-export function waterZone(gardenID: string, zoneID: string, minutes: number) {
+export function waterZone(gardenID: string, zoneID: string, seconds: number) {
     return post("/gardens/{gardenID}/zones/{zoneID}/action", {
         params: {
             path: {
@@ -200,7 +200,7 @@ export function waterZone(gardenID: string, zoneID: string, minutes: number) {
         },
         body: {
             water: {
-                duration: `${minutes}m`
+                duration: `${seconds}s`
             }
         },
     });
