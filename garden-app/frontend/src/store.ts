@@ -17,8 +17,16 @@ const createGardenStore = () => {
 
 export const gardenStore = createGardenStore();
 
+interface zStore {
+    zones: ZoneResponse[],
+    loading: boolean,
+    gardenID: string
+};
+
 const createZoneStore = () => {
-    const { subscribe, set } = writable({ loading: true, zones: [] })
+    const { subscribe, set, } = writable(<zStore>{
+        loading: true, zones: [], gardenID: ""
+    });
 
     return {
         subscribe,
@@ -26,12 +34,15 @@ const createZoneStore = () => {
             // Get without weather data included for fast response
             let response = await getZones(gardenID, true, true);
             let data: AllZonesResponse = response.data;
-            set({ loading: true, zones: data.zones });
+            set({ loading: true, zones: data.zones, gardenID: gardenID });
 
             // Get with weather data included
             response = await getZones(gardenID, true, false);
             data = response.data;
-            set({ loading: false, zones: data.zones });
+            set({ loading: false, zones: data.zones, gardenID: gardenID, });
+        },
+        getByID: (self: zStore, zoneID: string): ZoneResponse => {
+            return self.zones.find(z => z.id == zoneID)
         }
     }
 };

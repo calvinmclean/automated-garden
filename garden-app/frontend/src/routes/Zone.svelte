@@ -1,7 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Zone from "../components/zones/Zone.svelte";
-    import { getZone, type ZoneResponse, type GetZoneParams } from "../lib/zoneClient";
+    import { type ZoneResponse, type GetZoneParams } from "../lib/zoneClient";
     import { zoneStore } from "../store";
 
     export let params: GetZoneParams;
@@ -12,7 +12,7 @@
     zoneStore.init(params.gardenID);
     zoneStore.subscribe((value) => {
         loadingWeatherData = value.loading;
-        zone = value.zones.find((z) => z.id == params.zoneID);
+        zone = zoneStore.getByID(value, params.zoneID);
     });
 </script>
 
