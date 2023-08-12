@@ -22,8 +22,7 @@
     } from "sveltestrap";
     import { fly } from "svelte/transition";
 
-    import type { GardenResponse, getGarden } from "../../lib/gardenClient";
-    import { lightAction, stopAction } from "../../lib/gardenClient";
+    import { lightAction, stopAction, type GardenResponse } from "../../lib/gardenClient";
 
     export let garden: GardenResponse;
     export let withLink = false;

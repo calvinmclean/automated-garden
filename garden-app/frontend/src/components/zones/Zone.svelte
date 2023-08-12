@@ -1,7 +1,6 @@
 <script lang="ts">
     import { Accordion, AccordionItem, Button, Column, Col, FormGroup, Input, Label, Row, Spinner, Table } from "sveltestrap";
-    import type { ZoneResponse, WaterHistoryResponse } from "../../lib/zoneClient";
-    import { waterZone, getZoneWaterHistory } from "../../lib/zoneClient";
+    import { waterZone, getZoneWaterHistory, type ZoneResponse, type WaterHistoryResponse } from "../../lib/zoneClient";
     import ZoneCard from "./ZoneCard.svelte";
     import { onMount } from "svelte";
 

@@ -1,11 +1,7 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import WaterSchedule from "../components/waterSchedules/WaterSchedule.svelte";
-    import { getWaterSchedule } from "../lib/waterScheduleClient";
-    import type {
-        WaterScheduleResponse,
-        GetWaterScheduleParams,
-    } from "../lib/waterScheduleClient";
+    import { getWaterSchedule, type WaterScheduleResponse, type GetWaterScheduleParams } from "../lib/waterScheduleClient";
 
     export let params: GetWaterScheduleParams;
 

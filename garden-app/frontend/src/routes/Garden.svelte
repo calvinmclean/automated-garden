@@ -1,8 +1,8 @@
 <script lang="ts">
     import { onMount } from "svelte";
     import Garden from "../components/gardens/Garden.svelte";
-    import { getGarden } from "../lib/gardenClient";
-    import type { GardenResponse, GetGardenParams } from "../lib/gardenClient";
+    import {} from "../lib/gardenClient";
+    import { getGarden, type GardenResponse, type GetGardenParams } from "../lib/gardenClient";
 
     export let params: GetGardenParams;
 
@@ -11,7 +11,7 @@
     onMount(async () => {
         await getGarden(params.gardenID)
             .then((response) => response.data)
-            .then((data) => {
+            .then((data: GardenResponse) => {
                 garden = data;
             });
     });

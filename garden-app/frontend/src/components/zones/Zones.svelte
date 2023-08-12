@@ -5,34 +5,21 @@
     import ZoneCard from "./ZoneCard.svelte";
     import type { ZoneResponse } from "../../lib/zoneClient";
     import Zone from "./Zone.svelte";
+    import { zoneStore } from "../../store";
 
     export let gardenID: string;
 
     let zones: ZoneResponse[];
     let loadingWeatherData = true;
 
-    // quickly get zones
-    onMount(async () => {
-        await getZones(gardenID, true, true)
-            .then((response) => response.data)
-            .then((data) => {
-                zones = data.zones;
-            });
-    });
-    // then get with full details
-    onMount(async () => {
-        await getZones(gardenID, true, false)
-            .then((response) => response.data)
-            .then((data) => {
-                loadingWeatherData = false;
-                zones = data.zones;
-            });
+    zoneStore.init(gardenID);
+    zoneStore.subscribe((value) => {
+        zones = value.zones;
+        loadingWeatherData = value.loading;
     });
 
     const filterZones = (zones: ZoneResponse[], endDated: boolean) =>
-        zones
-            .filter((z) => (endDated ? z.end_date != null : z.end_date == null))
-            .sort((a, b) => a.name.localeCompare(b.name));
+        zones.filter((z) => (endDated ? z.end_date != null : z.end_date == null)).sort((a, b) => a.name.localeCompare(b.name));
 </script>
 
 {#if zones && zones.length > 1}

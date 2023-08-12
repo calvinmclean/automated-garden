@@ -18,8 +18,7 @@
     } from "sveltestrap";
     import { fly } from "svelte/transition";
     import { location } from "svelte-spa-router";
-    import type { ZoneResponse } from "../../lib/zoneClient";
-    import { endDateZone, restoreZone } from "../../lib/zoneClient";
+    import { endDateZone, restoreZone, type ZoneResponse } from "../../lib/zoneClient";
     import WeatherData from "../WeatherData.svelte";
     import NextWater from "../NextWater.svelte";
 

@@ -1,5 +1,4 @@
 <script lang="ts">
-    import { Button } from "sveltestrap";
     import type { WaterScheduleResponse } from "../../lib/waterScheduleClient";
     import WaterScheduleCard from "./WaterScheduleCard.svelte";
 
