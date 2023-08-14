@@ -4,26 +4,14 @@
 
     import WaterScheduleCard from "./WaterScheduleCard.svelte";
     import { getWaterSchedules, type WaterScheduleResponse } from "../../lib/waterScheduleClient";
+    import { waterScheduleStore } from "../../store";
 
     let waterSchedules: WaterScheduleResponse[];
     let loadingWeatherData = true;
 
-    // quickly get zones
-    onMount(async () => {
-        await getWaterSchedules(true, true)
-            .then((response) => response.data)
-            .then((data) => {
-                waterSchedules = data.water_schedules;
-            });
-    });
-    // then get with full details
-    onMount(async () => {
-        await getWaterSchedules(true, false)
-            .then((response) => response.data)
-            .then((data) => {
-                loadingWeatherData = false;
-                waterSchedules = data.water_schedules;
-            });
+    waterScheduleStore.subscribe((wsData) => {
+        waterSchedules = wsData.waterSchedules;
+        loadingWeatherData = wsData.loading;
     });
 
     const filterWaterSchedules = (waterSchedules: WaterScheduleResponse[], endDated: boolean) =>

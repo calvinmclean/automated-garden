@@ -6,6 +6,7 @@ const { get, post, put, patch, del } = createClient<paths>({
 });
 
 // types
+export type AllWaterSchedulesResponse = components["schemas"]["AllWaterSchedulesResponse"];
 export type WaterScheduleResponse = components["schemas"]["WaterScheduleResponse"];
 export type GetWaterScheduleParams = operations["getWaterSchedule"]["parameters"]["path"];
 export type WeatherData = components["schemas"]["WeatherData"]

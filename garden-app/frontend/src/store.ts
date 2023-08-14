@@ -1,6 +1,7 @@
 import { writable } from 'svelte/store';
 import { getGardens, type GardenResponse, type AllGardensResponse } from "./lib/gardenClient";
-import { getZones, type ZoneResponse, type AllZonesResponse } from "./lib/zoneClient";
+import { getZones, type AllZonesResponse } from "./lib/zoneClient";
+import { getWaterSchedules, type WaterScheduleResponse, type AllWaterSchedulesResponse } from "./lib/waterScheduleClient"
 
 
 interface gardenStore {
@@ -39,6 +40,7 @@ const createGardenStore = () => {
 };
 
 export const gardenStore = createGardenStore();
+
 const zoneStores = {};
 
 export const createZoneStore = (gardenID) => {
@@ -62,3 +64,33 @@ const initZoneStore = async (gardenID) => {
     data = response.data;
     zoneStores[gardenID].set({ loading: false, zones: data.zones });
 };
+
+interface waterscheduleStore {
+    waterSchedules: WaterScheduleResponse[];
+    loading: boolean;
+}
+
+const createWaterScheduleStore = () => {
+    const { subscribe, set } = writable<waterscheduleStore>({
+        waterSchedules: [],
+        loading: true,
+    });
+
+    return {
+        subscribe,
+        init: async () => {
+            let response = await getWaterSchedules(true, true);
+            let data: AllWaterSchedulesResponse = response.data;;
+            set({ waterSchedules: data.water_schedules, loading: true });
+
+            response = await getWaterSchedules(true, false);
+            data = response.data;;
+            set({ waterSchedules: data.water_schedules, loading: false });
+        },
+        getByID: (self: waterscheduleStore, waterscheduleID: string): WaterScheduleResponse => {
+            return self.waterSchedules.find(g => g.id == waterscheduleID);
+        }
+    };
+};
+
+export const waterScheduleStore = createWaterScheduleStore();
