@@ -77,20 +77,15 @@
                 <Container>
                     <Row>
                         <Col>
-                            Topic prefix: {garden.topic_prefix}
-                            <Icon name="globe2" />
+                            <div class="badge-lg">
+                                <Badge pill color="warning">{garden.num_zones} Zones <Icon name="grid" /></Badge>
+                            </div>
                         </Col>
-                        {#if garden.end_date != null}
-                            <Col>
-                                End Dated: {garden.end_date}
-                                <Icon name="clock-fill" style="color: red" />
-                            </Col>
-                        {/if}
-                    </Row>
-
-                    <Row>
-                        <Col>{garden.num_zones} Zones <Icon name="grid" /></Col>
-                        <Col>{garden.num_plants} Plants <Icon name="" /></Col>
+                        <Col>
+                            <div class="badge-lg">
+                                <Badge pill color="success">{garden.num_plants} Plants <Icon name="tree" /></Badge>
+                            </div>
+                        </Col>
                     </Row>
 
                     <Row>
@@ -136,28 +131,54 @@
             </CardText>
         </CardBody>
         <CardFooter>
-            {#if garden.end_date != null}
-                <Badge color="danger">End Dated</Badge>
-            {/if}
-
-            {#if garden.end_date == null}
-                {#if garden.light_schedule != null}
-                    <ButtonDropdown>
-                        <DropdownToggle color="warning" caret>
-                            <Icon name="sun" />
-                        </DropdownToggle>
-                        <DropdownMenu>
-                            <DropdownItem on:click={toggleLight}>Toggle</DropdownItem>
-                            <DropdownItem on:click={lightOn}>ON</DropdownItem>
-                            <DropdownItem on:click={lightOff}>OFF</DropdownItem>
-                        </DropdownMenu>
-                    </ButtonDropdown>
+            <Row>
+                {#if garden.end_date != null}
+                    <Col>
+                        <Badge color="danger">End Dated</Badge>
+                    </Col>
                 {/if}
 
-                <Button color="danger" on:click={stopWatering}>
-                    <Icon name="sign-stop" />
-                </Button>
-            {/if}
+                {#if garden.end_date == null}
+                    {#if garden.light_schedule != null}
+                        <Col>
+                            <ButtonDropdown>
+                                <DropdownToggle color="warning" caret>
+                                    <Icon name="sun" />
+                                </DropdownToggle>
+                                <DropdownMenu>
+                                    <DropdownItem on:click={toggleLight}>Toggle</DropdownItem>
+                                    <DropdownItem on:click={lightOn}>ON</DropdownItem>
+                                    <DropdownItem on:click={lightOff}>OFF</DropdownItem>
+                                </DropdownMenu>
+                            </ButtonDropdown>
+                        </Col>
+                    {/if}
+
+                    <Col>
+                        <Button color="danger" on:click={stopWatering}>
+                            <Icon name="sign-stop" />
+                        </Button>
+                    </Col>
+                {/if}
+
+                <Col class="offset-sm-6">
+                    <Icon name="info-circle" id={`info-${garden.id}`} />
+                    <Popover trigger="hover" target={`info-${garden.id}`} placement="left" title="Garden Info">
+                        ID: {garden.id}<br />
+                        Topic prefix: {garden.topic_prefix}<br />
+                        {#if garden.end_date != null}
+                            End Dated: {garden.end_date}<br />
+                        {/if}
+                    </Popover>
+                </Col>
+            </Row>
         </CardFooter>
     </Card>
 </div>
+
+<style>
+    .badge-lg {
+        font-size: 1.25rem;
+        padding: 0.5rem 1rem;
+    }
+</style>
