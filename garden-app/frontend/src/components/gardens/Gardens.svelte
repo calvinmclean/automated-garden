@@ -1,13 +1,17 @@
 <script lang="ts">
     import { Accordion, AccordionItem, Container, Col, Row } from "sveltestrap";
-
     import GardenCard from "./GardenCard.svelte";
     import type { GardenResponse } from "../../lib/gardenClient";
+    import { gardenStore } from "../../store";
 
-    export let gardens: GardenResponse[];
+    let gardens: GardenResponse[];
 
     const filterGardens = (gardens: GardenResponse[], endDated: boolean) =>
         gardens.filter((g) => (endDated ? g.end_date != null : g.end_date == null)).sort((a, b) => a.name.localeCompare(b.name));
+
+    gardenStore.subscribe((value) => {
+        gardens = value.gardens;
+    });
 </script>
 
 {#if gardens}

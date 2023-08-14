@@ -3,10 +3,13 @@
   import Router from "svelte-spa-router";
   import routes from "./routes";
   import NavBar from "./components/NavBar.svelte";
+  import { gardenStore } from "./store";
 
   let theme: "dark" | "light" | "auto" = "auto";
 
   let demoMode = process.env.NODE_ENV == "demo";
+
+  gardenStore.init();
 </script>
 
 <svelte:head>
