@@ -2,3 +2,4 @@ wifi_config.h
 .DS_Store
 .vscode
 *_notes.md
+.task/

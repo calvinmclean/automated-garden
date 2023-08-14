@@ -107,6 +107,8 @@ tasks:
   build-gh-pages:
     aliases: ["gh-pages"]
     dir: ./garden-app/frontend
+    env:
+      NODE_ENV: demo
     cmds:
       - npm run build
       - cp dist/assets/index-*.js ../../docs/ui-demo/assets/index.js
