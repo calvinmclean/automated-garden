@@ -1,18 +1,17 @@
 <script lang="ts">
-    import { onMount } from "svelte";
     import Zone from "../components/zones/Zone.svelte";
     import { type ZoneResponse, type GetZoneParams } from "../lib/zoneClient";
-    import { zoneStore } from "../store";
+    import { createZoneStore } from "../store";
 
     export let params: GetZoneParams;
 
     let zone: ZoneResponse;
     let loadingWeatherData = true;
 
-    zoneStore.init(params.gardenID);
-    zoneStore.subscribe((value) => {
-        loadingWeatherData = value.loading;
-        zone = zoneStore.getByID(value, params.zoneID);
+    let zoneStoreInstance = createZoneStore(params.gardenID);
+    zoneStoreInstance.subscribe((zd) => {
+        loadingWeatherData = zd.loading;
+        zone = zd.zones.find((z: ZoneResponse) => z.id == params.zoneID);
     });
 </script>
 

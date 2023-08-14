@@ -1,21 +1,19 @@
 <script lang="ts">
     import { Accordion, AccordionItem, Spinner } from "sveltestrap";
-    import { onMount } from "svelte";
-    import { getZones } from "../../lib/zoneClient";
     import ZoneCard from "./ZoneCard.svelte";
     import type { ZoneResponse } from "../../lib/zoneClient";
     import Zone from "./Zone.svelte";
-    import { zoneStore } from "../../store";
+    import { createZoneStore } from "../../store";
 
     export let gardenID: string;
 
     let zones: ZoneResponse[];
     let loadingWeatherData = true;
 
-    zoneStore.init(gardenID);
-    zoneStore.subscribe((value) => {
-        zones = value.zones;
-        loadingWeatherData = value.loading;
+    let zoneStore = createZoneStore(gardenID);
+    zoneStore.subscribe((zd) => {
+        zones = zd.zones;
+        loadingWeatherData = zd.loading;
     });
 
     const filterZones = (zones: ZoneResponse[], endDated: boolean) =>
