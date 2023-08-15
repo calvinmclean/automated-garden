@@ -29,10 +29,6 @@
 
     let lightScheduleCollapseIsOpen: boolean = false;
 
-    function toggleLight(event) {
-        lightAction(garden.id, "");
-    }
-
     function lightOn(event) {
         lightAction(garden.id, "ON");
     }
@@ -139,25 +135,17 @@
                 {/if}
 
                 {#if garden.end_date == null}
-                    {#if garden.light_schedule != null}
-                        <Col>
-                            <ButtonDropdown>
-                                <DropdownToggle color="warning" caret>
-                                    <Icon name="sun" />
-                                </DropdownToggle>
-                                <DropdownMenu>
-                                    <DropdownItem on:click={toggleLight}>Toggle</DropdownItem>
-                                    <DropdownItem on:click={lightOn}>ON</DropdownItem>
-                                    <DropdownItem on:click={lightOff}>OFF</DropdownItem>
-                                </DropdownMenu>
-                            </ButtonDropdown>
-                        </Col>
-                    {/if}
-
                     <Col>
-                        <Button color="danger" on:click={stopWatering}>
-                            <Icon name="sign-stop" />
-                        </Button>
+                        <ButtonDropdown>
+                            <DropdownToggle caret color="primary">Actions</DropdownToggle>
+                            <DropdownMenu>
+                                {#if garden.light_schedule != null}
+                                    <DropdownItem on:click={lightOn}><Icon name="toggle-on" /> Light ON</DropdownItem>
+                                    <DropdownItem on:click={lightOff}><Icon name="toggle-off" /> Light OFF</DropdownItem>
+                                {/if}
+                                <DropdownItem on:click={stopWatering}><Icon name="sign-stop-fill" /> Stop Watering</DropdownItem>
+                            </DropdownMenu>
+                        </ButtonDropdown>
                     </Col>
                 {/if}
 
