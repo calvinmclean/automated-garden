@@ -70,6 +70,11 @@ func (c *Config) Patch(newConfig *Config) {
 	}
 }
 
+// EndDated allows this to satisfy an interface even though the resources does not have end-dates
+func (c *Config) EndDated() bool {
+	return false
+}
+
 // clientWrapper wraps any other implementation of the interface in order to add basic Prometheus summary metrics
 // and caching
 type clientWrapper struct {

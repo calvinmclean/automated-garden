@@ -4,19 +4,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/go-chi/render"
 )
-
-// endDateable is a simple interface that requires a method to determine if something is end-dated
-type endDateable interface {
-	EndDated() bool
-}
 
 // restrictEndDatedMiddleware will get an EedDateable resource from context and return an error if it is end-dated
 func restrictEndDatedMiddleware(resourceName string, ctxKey contextKey) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			resource := r.Context().Value(ctxKey).(endDateable)
+			resource := r.Context().Value(ctxKey).(pkg.EndDateable)
 			logger := getLoggerFromContext(r.Context())
 
 			if resource.EndDated() {
