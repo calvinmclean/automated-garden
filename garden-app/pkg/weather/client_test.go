@@ -71,3 +71,7 @@ func TestCachedWeatherClient(t *testing.T) {
 		assert.Equal(t, temp, tempFromCache)
 	})
 }
+
+func TestEndDated(t *testing.T) {
+	assert.False(t, (&Config{}).EndDated())
+}

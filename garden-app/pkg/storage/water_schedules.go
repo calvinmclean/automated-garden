@@ -1,84 +1,36 @@
 package storage
 
 import (
-	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/madflojo/hord"
 	"github.com/rs/xid"
 )
 
 const waterSchedulePrefix = "WaterSchedule_"
 
+func waterScheduleKey(id xid.ID) string {
+	return waterSchedulePrefix + id.String()
+}
+
 // GetWaterSchedule ...
 func (c *Client) GetWaterSchedule(id xid.ID) (*pkg.WaterSchedule, error) {
-	return c.getWaterSchedule(waterSchedulePrefix + id.String())
+	return getOne[pkg.WaterSchedule](c, waterScheduleKey(id))
 }
 
 // GetWaterSchedules ...
 func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, error) {
-	keys, err := c.db.Keys()
-	if err != nil {
-		return nil, fmt.Errorf("error getting keys: %w", err)
-	}
-
-	results := []*pkg.WaterSchedule{}
-	for _, key := range keys {
-		if !strings.HasPrefix(key, waterSchedulePrefix) {
-			continue
-		}
-
-		result, err := c.getWaterSchedule(key)
-		if err != nil {
-			return nil, fmt.Errorf("error getting keys: %w", err)
-		}
-
-		if getEndDated || !result.EndDated() {
-			results = append(results, result)
-		}
-	}
-
-	return results, nil
+	return getMultiple[*pkg.WaterSchedule](c, getEndDated, waterSchedulePrefix)
 }
 
 // SaveWaterSchedule ...
 func (c *Client) SaveWaterSchedule(ws *pkg.WaterSchedule) error {
-	asBytes, err := c.marshal(ws)
-	if err != nil {
-		return fmt.Errorf("error marshalling WaterSchedule: %w", err)
-	}
-
-	err = c.db.Set(waterSchedulePrefix+ws.ID.String(), asBytes)
-	if err != nil {
-		return fmt.Errorf("error writing WaterSchedule to database: %w", err)
-	}
-
-	return nil
+	return save[*pkg.WaterSchedule](c, ws, waterScheduleKey(ws.ID))
 }
 
 // DeleteWaterSchedule ...
 func (c *Client) DeleteWaterSchedule(id xid.ID) error {
-	return c.db.Delete(waterSchedulePrefix + id.String())
-}
-
-func (c *Client) getWaterSchedule(key string) (*pkg.WaterSchedule, error) {
-	dataBytes, err := c.db.Get(key)
-	if err != nil {
-		if errors.Is(hord.ErrNil, err) {
-			return nil, nil
-		}
-		return nil, fmt.Errorf("error getting WaterSchedule: %w", err)
-	}
-
-	var result pkg.WaterSchedule
-	err = c.unmarshal(dataBytes, &result)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing WaterSchedule data: %w", err)
-	}
-
-	return &result, nil
+	return c.db.Delete(waterScheduleKey(id))
 }
 
 // GetMultipleWaterSchedules ...
