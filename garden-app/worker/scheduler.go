@@ -21,17 +21,30 @@ const (
 // ScheduleWaterAction will schedule water actions for the Zone based off the CreatedAt date,
 // WaterSchedule time, and Interval. The scheduled Job is tagged with the Zone's ID so it can
 // easily be removed
-func (w *Worker) ScheduleWaterAction(ws *pkg.WaterSchedule) error {
-	logger := w.contextLogger(nil, nil, ws)
-	logger.Infof("creating scheduled Job for WaterSchedule: %+v", *ws)
+func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
+	logger := w.contextLogger(nil, nil, waterSchedule)
+	logger.Infof("creating scheduled Job for WaterSchedule: %+v", *waterSchedule)
 
 	// Schedule the WaterAction execution
-	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(ws)...).Inc()
-	_, err := ws.Interval.SchedulerFunc(w.scheduler).
-		StartAt(*ws.StartTime).
+	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
+	_, err := waterSchedule.Interval.SchedulerFunc(w.scheduler).
+		StartAt(*waterSchedule.StartTime).
 		Tag("water_schedule").
-		Tag(ws.ID.String()).
+		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *logrus.Entry) {
+			// Get WaterSchedule from storage in case the ActivePeriod or WeatherControl are changed
+			ws, err := w.storageClient.GetWaterSchedule(waterSchedule.ID)
+			if err != nil {
+				jobLogger.Errorf("error getting WaterSchedule %q when executing scheduled Job: %v", waterSchedule.ID, err)
+				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
+				return
+			}
+			if ws == nil {
+				jobLogger.Errorf("WaterSchedule %q not found", waterSchedule.ID)
+				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
+				return
+			}
+
 			if !ws.IsActive(time.Now()) {
 				jobLogger.Infof("skipping WaterSchedule %q because current time is outside of ActivePeriod: %+v", ws.ID, *ws.ActivePeriod)
 				return
