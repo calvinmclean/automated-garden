@@ -12,6 +12,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/controller"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/server"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
@@ -49,6 +51,7 @@ func TestIntegration(t *testing.T) {
 
 	t.Run("Garden", GardenTests)
 	t.Run("Zone", ZoneTests)
+	t.Run("WaterSchedule", WaterScheduleTests)
 }
 
 func getConfigs(t *testing.T) (server.Config, controller.Config) {
@@ -291,6 +294,26 @@ func CreateWaterScheduleTest(t *testing.T) string {
 	return ws.ID.String()
 }
 
+func CreateWeatherClientTest(t *testing.T, opts fake.Config) xid.ID {
+	var wcr server.WeatherClientResponse
+
+	t.Run("CreateWeatherClient", func(t *testing.T) {
+		status, err := makeRequest(http.MethodPost, "/weather_clients", fmt.Sprintf(`{
+			"type": "fake",
+			"options": {
+				"avg_high_temperature": %f,
+				"rain_interval": "%s",
+				"rain_mm": %f
+			}
+		}`, opts.AverageHighTemperature, opts.RainInterval, opts.RainMM), &wcr)
+		assert.NoError(t, err)
+
+		assert.Equal(t, http.StatusCreated, status)
+	})
+
+	return wcr.ID
+}
+
 func ZoneTests(t *testing.T) {
 	gardenID := CreateGardenTest(t)
 	waterScheduleID := CreateWaterScheduleTest(t)
@@ -373,6 +396,65 @@ func ZoneTests(t *testing.T) {
 				Position: 0,
 			},
 		)
+	})
+}
+
+func floatPointer(n float32) *float32 {
+	return &n
+}
+
+func WaterScheduleTests(t *testing.T) {
+	gardenID := CreateGardenTest(t)
+	waterScheduleID := CreateWaterScheduleTest(t)
+	_ = CreateZoneTest(t, gardenID, waterScheduleID)
+
+	t.Run("ChangeRainControlResultsInCorrectScalingForNextAction", func(t *testing.T) {
+		// Create WeatherClient with rain control
+		weatherClientWithRain := CreateWeatherClientTest(t, fake.Config{
+			RainInterval: "24h",
+			RainMM:       25.4,
+		})
+
+		// Reschedule to Water in 2 second, for 1 second
+		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
+		var ws server.WaterScheduleResponse
+		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
+			StartTime: &newStartTime,
+			Duration:  &pkg.Duration{Duration: time.Second},
+		}, &ws)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, status)
+		assert.Equal(t, newStartTime, ws.WaterSchedule.StartTime.Local())
+
+		time.Sleep(100 * time.Millisecond)
+
+		// Set WaterSchedule to use weather client with rain delay
+		var ws2 server.WaterScheduleResponse
+		status, err = makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
+			WeatherControl: &weather.Control{
+				Rain: &weather.ScaleControl{
+					BaselineValue: floatPointer(0),
+					Factor:        floatPointer(0),
+					Range:         floatPointer(25.4),
+					ClientID:      weatherClientWithRain,
+				},
+			},
+		}, &ws2)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, status)
+
+		// Make sure NextWater.Duration is now 0
+		var ws3 server.WaterScheduleResponse
+		status, err = makeRequest(http.MethodGet, fmt.Sprintf("/water_schedules/%s", waterScheduleID), http.NoBody, &ws3)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, status)
+		assert.Equal(t, "0s", ws3.NextWater.Duration)
+
+		time.Sleep(3 * time.Second)
+
+		// Assert that no watering occurred because the rain should result in a skip
+		assert.NoError(t, err)
+		c.AssertWaterActions(t)
 	})
 }
 

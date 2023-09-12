@@ -16,7 +16,10 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
-var id, _ = xid.FromString("c5cvhpcbcv45e8bp16dg")
+var (
+	id, _  = xid.FromString("c5cvhpcbcv45e8bp16dg")
+	id2, _ = xid.FromString("chkodpg3lcj13q82mq40")
+)
 
 func createExampleGarden() *pkg.Garden {
 	two := uint(2)
@@ -57,6 +60,37 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 	}
 }
 
+func TestScheduleWaterActionStorageError(t *testing.T) {
+	storageClient := &storage.Client{}
+
+	garden := createExampleGarden()
+	garden.Zones[id] = createExampleZone()
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker.StartAsync()
+
+	ws := createExampleWaterSchedule()
+
+	// Set StartTime to the near future
+	startTime := time.Now().Add(250 * time.Millisecond)
+	ws.StartTime = &startTime
+
+	err := worker.ScheduleWaterAction(ws)
+	assert.NoError(t, err)
+
+	time.Sleep(1000 * time.Millisecond)
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
 func TestScheduleWaterAction(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
 		Driver: "hashmap",
@@ -82,10 +116,37 @@ func TestScheduleWaterAction(t *testing.T) {
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
-	// Set Zone's WaterSchedule.StartTime to the near future
+
+	wsNotInStorage := createExampleWaterSchedule()
+	wsNotInStorage.ID = id2
+
+	wsNotActive := createExampleWaterSchedule()
+	wsNotActive.ID = xid.New()
+	currentTime := time.Now()
+	wsNotActive.ActivePeriod = &pkg.ActivePeriod{
+		StartMonth: currentTime.AddDate(0, 1, 0).String(),
+		EndMonth:   currentTime.AddDate(0, 2, 0).String(),
+	}
+
+	// Set StartTime to the near future
 	startTime := time.Now().Add(250 * time.Millisecond)
 	ws.StartTime = &startTime
+	wsNotInStorage.StartTime = &startTime
+	wsNotActive.StartTime = &startTime
+
+	err = storageClient.SaveWaterSchedule(ws)
+	assert.NoError(t, err)
+
+	err = storageClient.SaveWaterSchedule(wsNotActive)
+	assert.NoError(t, err)
+
 	err = worker.ScheduleWaterAction(ws)
+	assert.NoError(t, err)
+
+	err = worker.ScheduleWaterAction(wsNotInStorage)
+	assert.NoError(t, err)
+
+	err = worker.ScheduleWaterAction(wsNotActive)
 	assert.NoError(t, err)
 
 	time.Sleep(1000 * time.Millisecond)

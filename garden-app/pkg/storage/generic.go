@@ -12,6 +12,10 @@ import (
 // getOne will use the provided key to read data from the data source. Then, it will Unmarshal
 // into the generic type
 func getOne[T any](c *Client, key string) (*T, error) {
+	if c.db == nil {
+		return nil, fmt.Errorf("error missing database connection")
+	}
+
 	dataBytes, err := c.db.Get(key)
 	if err != nil {
 		if errors.Is(hord.ErrNil, err) {

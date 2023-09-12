@@ -23,7 +23,7 @@ func (c *Controller) AssertWaterActions(t *testing.T, expected ...action.WaterMe
 
 	c.assertionData.Lock()
 	assert.Equal(t, expected, c.assertionData.waterActions)
-	c.assertionData.waterActions = []action.WaterMessage{}
+	c.assertionData.waterActions = nil
 	c.assertionData.Unlock()
 }
 
