@@ -1,13 +1,11 @@
 <script lang="ts">
     import {
         Badge,
-        Button,
         ButtonDropdown,
         Card,
         CardBody,
         CardFooter,
         CardHeader,
-        CardSubtitle,
         CardText,
         CardTitle,
         Col,

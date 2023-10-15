@@ -3,7 +3,7 @@
     import { onMount } from "svelte";
 
     import WaterScheduleCard from "./WaterScheduleCard.svelte";
-    import { getWaterSchedules, type WaterScheduleResponse } from "../../lib/waterScheduleClient";
+    import type { WaterScheduleResponse } from "../../lib/waterScheduleClient";
     import { waterScheduleStore } from "../../store";
 
     let waterSchedules: WaterScheduleResponse[];

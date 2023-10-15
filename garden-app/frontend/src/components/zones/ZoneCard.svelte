@@ -7,18 +7,25 @@
         CardBody,
         CardFooter,
         CardHeader,
-        CardSubtitle,
         CardText,
         CardTitle,
+        Col,
+        Collapse,
         DropdownToggle,
         DropdownMenu,
         DropdownItem,
         Icon,
+        Popover,
+        Row,
         Spinner,
+        NavItem,
     } from "sveltestrap";
     import { fly } from "svelte/transition";
     import { location } from "svelte-spa-router";
     import { endDateZone, restoreZone, type ZoneResponse } from "../../lib/zoneClient";
+    import type { WaterScheduleResponse } from "../../lib/waterScheduleClient";
+    import WaterScheduleCard from "../waterSchedules/WaterScheduleCard.svelte";
+    import { waterScheduleStore } from "../../store";
     import WeatherData from "../WeatherData.svelte";
     import NextWater from "../NextWater.svelte";
 
@@ -26,6 +33,16 @@
     export let zone: ZoneResponse;
     export let withLink = true;
     export let loadingWeatherData = false;
+
+    let waterScheduleCollapseIsOpen: boolean = false;
+
+    let nextWaterSchedule: WaterScheduleResponse;
+
+    waterScheduleStore.subscribe((value) => {
+        if (zone.next_water != null) {
+            nextWaterSchedule = waterScheduleStore.getByID(value, zone.next_water.water_schedule_id);
+        }
+    });
 
     function deleteZone(event) {
         zone.end_date = Date.now().toLocaleString();
@@ -62,25 +79,28 @@
             </CardHeader>
         {/if}
         <CardBody>
-            <CardSubtitle>{zone.id}</CardSubtitle>
+            {#if zone.next_water != null}
+                <Card on:click={() => (waterScheduleCollapseIsOpen = !waterScheduleCollapseIsOpen)}>
+                    <CardBody>
+                        This Zone will be watered for {zone.next_water.duration} at {zone.next_water.time}
+                        <Icon name="cloud-drizzle" style="color: blue" />
+                    </CardBody>
+                </Card>
+
+                {#if nextWaterSchedule != null}
+                    <Collapse isOpen={waterScheduleCollapseIsOpen}>
+                        <Card body>
+                            <WaterScheduleCard waterSchedule={nextWaterSchedule} {loadingWeatherData} withLink={true} />
+                        </Card>
+                    </Collapse>
+                {/if}
+            {/if}
+
+            <!-- TODO:
+                - Add details/links to other water schedules
+                - Show Zone details -->
+
             <CardText>
-                {#if zone.end_date != null}
-                    End Dated: {zone.end_date}
-                    <Icon name="clock-fill" style="color: red" /><br />
-                {/if}
-
-                {#if zone.skip_count != null}
-                    Skip Count: {zone.skip_count}<br />
-                {/if}
-
-                {#if zone.next_water != null}
-                    <NextWater nextWater={zone.next_water} />
-                {/if}
-
-                {#if zone.weather_data != null}
-                    <WeatherData weatherData={zone.weather_data} />
-                {/if}
-
                 <ButtonDropdown>
                     <DropdownToggle color="danger" caret>
                         <Icon name="trash" />
@@ -109,6 +129,27 @@
             {#if zone.end_date != null}
                 <Badge color={"danger"}>End Dated</Badge>
             {/if}
+
+            <Row>
+                <Col class="offset-sm-6">
+                    <Icon name="info-circle" id={`info-${zone.id}`} />
+                    <Popover trigger="hover" target={`info-${zone.id}`} placement="left" title="Zone Info">
+                        ID: {zone.id}<br />
+                        Position: {zone.position}<br />
+                        Created At: {zone.created_at}<br />
+                        WaterScheduleIDs:<br />
+                        <ul>
+                            {#each zone.water_schedule_ids as wsID}
+                                <li>{wsID}</li>
+                            {/each}
+                        </ul>
+
+                        {#if zone.end_date != null}
+                            End Dated: {zone.end_date}<br />
+                        {/if}
+                    </Popover>
+                </Col>
+            </Row>
         </CardFooter>
     </Card>
 </div>
