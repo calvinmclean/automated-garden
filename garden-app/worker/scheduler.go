@@ -18,6 +18,22 @@ const (
 	adhocTag      = "ADHOC"
 )
 
+// sortableJobs is a type that makes a slice of gocron Jobs sortable
+type sortableJobs []*gocron.Job
+
+func (jobs sortableJobs) Len() int {
+	return len(jobs)
+}
+
+func (jobs sortableJobs) Less(i, j int) bool {
+	return jobs[i].NextRun().Before(jobs[j].NextRun())
+}
+
+// Swap swaps the elements with indexes i and j.
+func (jobs sortableJobs) Swap(i, j int) {
+	jobs[i], jobs[j] = jobs[j], jobs[i]
+}
+
 // ScheduleWaterAction will schedule water actions for the Zone based off the CreatedAt date,
 // WaterSchedule time, and Interval. The scheduled Job is tagged with the Zone's ID so it can
 // easily be removed
@@ -348,11 +364,11 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 	logger := w.contextLogger(g, nil, nil)
 	logger.Debugf("getting next light Job for state %s, allowAdhoc=%t", state, allowAdhoc)
 
-	sort.Sort(w.scheduler)
 	jobs, err := w.scheduler.FindJobsByTag(g.ID.String(), state.String())
 	if err != nil {
 		return nil, err
 	}
+	sort.Sort(sortableJobs(jobs))
 
 	if allowAdhoc {
 		logger.Debugf("found %d light jobs, returning the first one", len(jobs))

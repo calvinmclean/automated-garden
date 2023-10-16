@@ -15,7 +15,24 @@ type listItem struct {
 	Selected      func() // The optional function which is called when the item is selected.
 }
 
-// List displays rows of items, each of which can be selected.
+// List displays rows of items, each of which can be selected. List items can be
+// shown as a single line or as two lines. They can be selected by pressing
+// their assigned shortcut key, navigating to them and pressing Enter, or
+// clicking on them with the mouse. The following key binds are available:
+//
+//   - Down arrow / tab: Move down one item.
+//   - Up arrow / backtab: Move up one item.
+//   - Home: Move to the first item.
+//   - End: Move to the last item.
+//   - Page down: Move down one page.
+//   - Page up: Move up one page.
+//   - Enter / Space: Select the current item.
+//   - Right / left: Scroll horizontally. Only if the list is wider than the
+//     available space.
+//
+// See [List.SetChangedFunc] for a way to be notified when the user navigates
+// to a list item. See [List.SetSelectedFunc] for a way to be notified when a
+// list item was selected.
 //
 // See https://github.com/rivo/tview/wiki/List for an example.
 type List struct {
@@ -64,8 +81,8 @@ type List struct {
 	// of the right arrow key.
 	overflowing bool
 
-	// An optional function which is called when the user has navigated to a list
-	// item.
+	// An optional function which is called when the user has navigated to a
+	// list item.
 	changed func(index int, mainText, secondaryText string, shortcut rune)
 
 	// An optional function which is called when a list item was selected. This
@@ -236,7 +253,7 @@ func (l *List) SetShortcutStyle(style tcell.Style) *List {
 
 // SetSelectedTextColor sets the text color of selected items. Note that the
 // color of main text characters that are different from the main text color
-// (e.g. color tags) is maintained.
+// (e.g. style tags) is maintained.
 func (l *List) SetSelectedTextColor(color tcell.Color) *List {
 	l.selectedStyle = l.selectedStyle.Foreground(color)
 	return l
@@ -497,7 +514,7 @@ func (l *List) Draw(screen tcell.Screen) {
 		}
 
 		// Main text.
-		_, printedWidth, _, end := printWithStyle(screen, item.MainText, x, y, l.horizontalOffset, width, AlignLeft, l.mainTextStyle, true)
+		_, end, printedWidth := printWithStyle(screen, item.MainText, x, y, l.horizontalOffset, width, AlignLeft, l.mainTextStyle, true)
 		if printedWidth > maxWidth {
 			maxWidth = printedWidth
 		}
@@ -534,7 +551,7 @@ func (l *List) Draw(screen tcell.Screen) {
 
 		// Secondary text.
 		if l.showSecondaryText {
-			_, printedWidth, _, end := printWithStyle(screen, item.SecondaryText, x, y, l.horizontalOffset, width, AlignLeft, l.secondaryTextStyle, true)
+			_, end, printedWidth := printWithStyle(screen, item.SecondaryText, x, y, l.horizontalOffset, width, AlignLeft, l.secondaryTextStyle, true)
 			if printedWidth > maxWidth {
 				maxWidth = printedWidth
 			}

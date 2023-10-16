@@ -192,6 +192,9 @@ type textAreaUndoItem struct {
 type TextArea struct {
 	*Box
 
+	// Whether or not this text area is disabled/read-only.
+	disabled bool
+
 	// The size of the text area. If set to 0, the text area will use the entire
 	// available space.
 	width, height int
@@ -382,6 +385,7 @@ func (t *TextArea) SetText(text string, cursorAtTheEnd bool) *TextArea {
 	t.cursor.row, t.cursor.actualColumn, t.cursor.column = 0, 0, 0
 	t.cursor.pos = [3]int{1, 0, -1}
 	t.undoStack = t.undoStack[:0]
+	t.nextUndo = 0
 
 	if len(text) > 0 {
 		t.spans = append(t.spans, textAreaSpan{
@@ -749,6 +753,15 @@ func (t *TextArea) GetFieldHeight() int {
 	return t.height
 }
 
+// SetDisabled sets whether or not the item is disabled / read-only.
+func (t *TextArea) SetDisabled(disabled bool) FormItem {
+	t.disabled = disabled
+	if t.finished != nil {
+		t.finished(-1)
+	}
+	return t
+}
+
 // SetMaxLength sets the maximum number of bytes allowed in the text area. A
 // value of 0 means there is no limit. If the text area currently contains more
 // bytes than this, it may violate this constraint.
@@ -848,6 +861,18 @@ func (t *TextArea) SetFinishedFunc(handler func(key tcell.Key)) FormItem {
 	return t
 }
 
+// Focus is called when this primitive receives focus.
+func (t *TextArea) Focus(delegate func(p Primitive)) {
+	// If we're part of a form and this item is disabled, there's nothing the
+	// user can do here so we're finished.
+	if t.finished != nil && t.disabled {
+		t.finished(-1)
+		return
+	}
+
+	t.Box.Focus(delegate)
+}
+
 // SetFormAttributes sets attributes shared by all form items.
 func (t *TextArea) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldTextColor, fieldBgColor tcell.Color) FormItem {
 	t.labelWidth = labelWidth
@@ -860,7 +885,7 @@ func (t *TextArea) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldT
 // replace deletes a range of text and inserts the given text at that position.
 // If the resulting text would exceed the maximum length, the function does not
 // do anything. The function returns the end position of the deleted/inserted
-// range. The provided row is the row of the deleted range start.
+// range.
 //
 // The function can hang if "deleteStart" is located after "deleteEnd".
 //
@@ -868,7 +893,8 @@ func (t *TextArea) SetFormAttributes(labelWidth int, labelColor, bgColor, fieldT
 // either appended to the end of a span or a span is shortened at the beginning
 // or the end (and nothing else).
 //
-// This function does not modify [TextArea.lineStarts].
+// This function only modifies [TextArea.lineStarts] to update span references
+// but does not change it to reflect the new layout.
 func (t *TextArea) replace(deleteStart, deleteEnd [3]int, insert string, continuation bool) [3]int {
 	// Maybe nothing needs to be done?
 	if deleteStart == deleteEnd && insert == "" || t.maxLength > 0 && len(insert) > 0 && t.length+len(insert) >= t.maxLength {
@@ -1048,7 +1074,7 @@ func (t *TextArea) Draw(screen tcell.Screen) {
 		x += labelWidth
 		width -= labelWidth
 	} else {
-		_, drawnWidth, _, _ := printWithStyle(screen, t.label, x, y, 0, width, AlignLeft, t.labelStyle, labelBg == tcell.ColorDefault)
+		_, _, drawnWidth := printWithStyle(screen, t.label, x, y, 0, width, AlignLeft, t.labelStyle, labelBg == tcell.ColorDefault)
 		x += drawnWidth
 		width -= drawnWidth
 	}
@@ -1066,7 +1092,10 @@ func (t *TextArea) Draw(screen tcell.Screen) {
 
 	// Draw the input element if necessary.
 	_, bg, _ := t.textStyle.Decompose()
-	if bg != t.GetBackgroundColor() {
+	if t.disabled {
+		bg = t.backgroundColor
+	}
+	if bg != t.backgroundColor {
 		for row := 0; row < height; row++ {
 			for column := 0; column < width; column++ {
 				screen.SetContent(x+column, y+row, ' ', nil, t.textStyle)
@@ -1144,6 +1173,9 @@ func (t *TextArea) Draw(screen tcell.Screen) {
 			fromRow > line ||
 			fromRow == line && fromColumn > posX {
 			style = t.textStyle
+			if t.disabled {
+				style = style.Background(t.backgroundColor)
+			}
 		}
 
 		// Draw character.
@@ -1169,49 +1201,14 @@ func (t *TextArea) Draw(screen tcell.Screen) {
 // not do anything if the text area already contains text or if there is no
 // placeholder text.
 func (t *TextArea) drawPlaceholder(screen tcell.Screen, x, y, width, height int) {
-	posX, posY := x, y
-	lastLineBreak, lastGraphemeBreak := x, x // Screen positions of the last possible line/grapheme break.
-	iterateString(t.placeholder, func(main rune, comb []rune, textPos, textWidth, screenPos, screenWidth, boundaries int) bool {
-		if posX+screenWidth > x+width {
-			// This character doesn't fit. Break over to the next line.
-			// Perform word wrapping first by copying the last word over to
-			// the next line.
-			clearX := lastLineBreak
-			if lastLineBreak == x {
-				clearX = lastGraphemeBreak
-			}
-			posY++
-			if posY >= y+height {
-				return true
-			}
-			newPosX := x
-			for clearX < posX {
-				main, comb, _, _ := screen.GetContent(clearX, posY-1)
-				screen.SetContent(clearX, posY-1, ' ', nil, tcell.StyleDefault.Background(t.backgroundColor))
-				screen.SetContent(newPosX, posY, main, comb, t.placeholderStyle)
-				clearX++
-				newPosX++
-			}
-			lastLineBreak, lastGraphemeBreak, posX = x, x, newPosX
-		}
-
-		// Draw this character.
-		screen.SetContent(posX, posY, main, comb, t.placeholderStyle)
-		posX += screenWidth
-		switch boundaries & uniseg.MaskLine {
-		case uniseg.LineMustBreak:
-			posY++
-			if posY >= y+height {
-				return true
-			}
-			posX = x
-		case uniseg.LineCanBreak:
-			lastLineBreak = posX
-		}
-		lastGraphemeBreak = posX
-
-		return false
-	})
+	// We use a TextView to draw the placeholder. It will take care of word
+	// wrapping etc.
+	textView := NewTextView().
+		SetText(t.placeholder).
+		SetTextStyle(t.placeholderStyle)
+	textView.SetBackgroundColor(t.backgroundColor).
+		SetRect(x, y, width, height)
+	textView.Draw(screen)
 }
 
 // reset resets many of the local variables of the text area because they cannot
@@ -1312,6 +1309,10 @@ func (t *TextArea) extendLines(width, maxLines int) {
 		if len(t.lineStarts) > maxLines {
 			break
 		}
+	}
+
+	if lineWidth > t.widestLine {
+		t.widestLine = lineWidth
 	}
 }
 
@@ -1810,6 +1811,10 @@ func (t *TextArea) getSelectedText() string {
 // InputHandler returns the handler for this primitive.
 func (t *TextArea) InputHandler() func(event *tcell.EventKey, setFocus func(p Primitive)) {
 	return t.WrapInputHandler(func(event *tcell.EventKey, setFocus func(p Primitive)) {
+		if t.disabled {
+			return
+		}
+
 		// All actions except a few specific ones are "other" actions.
 		newLastAction := taActionOther
 		defer func() {
@@ -2197,6 +2202,10 @@ func (t *TextArea) InputHandler() func(event *tcell.EventKey, setFocus func(p Pr
 // MouseHandler returns the mouse handler for this primitive.
 func (t *TextArea) MouseHandler() func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
 	return t.WrapMouseHandler(func(action MouseAction, event *tcell.EventMouse, setFocus func(p Primitive)) (consumed bool, capture Primitive) {
+		if t.disabled {
+			return false, nil
+		}
+
 		x, y := event.Position()
 		rectX, rectY, _, _ := t.GetInnerRect()
 		if !t.InRect(x, y) {
