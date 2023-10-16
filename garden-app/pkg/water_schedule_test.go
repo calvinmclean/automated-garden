@@ -208,7 +208,6 @@ func TestActivePeriodValidate(t *testing.T) {
 	}
 }
 
-// These tests have some potential to fail depending on what time of year it is right now, but I'll fix it if it happens
 func TestWaterScheduleIsActive(t *testing.T) {
 	tests := []struct {
 		name         string
@@ -289,6 +288,24 @@ func TestWaterScheduleIsActive(t *testing.T) {
 			true,
 		},
 		{
+			"WrapAroundYearStartMonth",
+			"December",
+			&ActivePeriod{
+				StartMonth: "December",
+				EndMonth:   "July",
+			},
+			true,
+		},
+		{
+			"WrapAroundYearEndMonth",
+			"July",
+			&ActivePeriod{
+				StartMonth: "December",
+				EndMonth:   "July",
+			},
+			true,
+		},
+		{
 			"WrapAroundYearBefore",
 			"November",
 			&ActivePeriod{
@@ -314,6 +331,33 @@ func TestWaterScheduleIsActive(t *testing.T) {
 				EndMonth:   "December",
 			},
 			true,
+		},
+		{
+			"WraparoundWhereCurrentMonthAfterStart",
+			"November",
+			&ActivePeriod{
+				StartMonth: "October",
+				EndMonth:   "May",
+			},
+			true,
+		},
+		{
+			"WraparoundWhereNextYearButBeforeEnd",
+			"January",
+			&ActivePeriod{
+				StartMonth: "October",
+				EndMonth:   "May",
+			},
+			true,
+		},
+		{
+			"WraparoundFalse",
+			"June",
+			&ActivePeriod{
+				StartMonth: "October",
+				EndMonth:   "May",
+			},
+			false,
 		},
 	}
 

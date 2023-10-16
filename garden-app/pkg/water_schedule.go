@@ -99,6 +99,7 @@ func (ws *WaterSchedule) IsActive(now time.Time) bool {
 		return true
 	}
 
+	// Run validate to make sure start/end values are set. No chance of error since validation has already happened
 	_ = ws.ActivePeriod.Validate()
 
 	// Set current year to this year for easy comparison
@@ -106,8 +107,14 @@ func (ws *WaterSchedule) IsActive(now time.Time) bool {
 	ws.ActivePeriod.end = ws.ActivePeriod.end.AddDate(now.Year(), 0, 0)
 
 	// Handle wraparound dates like December -> February (Winter)
+	// If the period starts before now, we need to bump the end time by a year, otherwise
+	// the start period needs to be last year
 	if ws.ActivePeriod.start.After(ws.ActivePeriod.end) {
-		ws.ActivePeriod.start = ws.ActivePeriod.start.AddDate(-1, 0, 0)
+		if ws.ActivePeriod.start.Before(now) {
+			ws.ActivePeriod.end = ws.ActivePeriod.end.AddDate(1, 0, 0)
+		} else {
+			ws.ActivePeriod.start = ws.ActivePeriod.start.AddDate(-1, 0, 0)
+		}
 	}
 
 	return now.Month() == ws.ActivePeriod.start.Month() || // currently start month
