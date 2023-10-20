@@ -7,7 +7,7 @@ WORKDIR /build
 RUN npm install && npm run build
 
 # build go app
-FROM golang:1.19-alpine AS build
+FROM golang:1.20-alpine AS build
 RUN mkdir /build
 ADD . /build
 WORKDIR /build

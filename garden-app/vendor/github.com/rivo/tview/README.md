@@ -22,7 +22,9 @@ Among these components are:
 
 They come with lots of customization options and can be easily extended to fit your needs.
 
-## Installation
+## Usage
+
+To add this package to your project:
 
 ```bash
 go get github.com/rivo/tview
@@ -53,6 +55,7 @@ For a presentation highlighting this package, compile and run the program found 
 
 ## Projects using `tview`
 
+- [K9s - Kubernetes CLI](https://github.com/derailed/k9s)
 - [IRCCloud Terminal Client](https://github.com/termoose/irccloud)
 - [Window manager for `tview`](https://github.com/epiclabs-io/winman)
 - [CLI bookmark manager](https://github.com/Endi1/drawer)
@@ -62,7 +65,6 @@ For a presentation highlighting this package, compile and run the program found 
 - [Terminal UI for todist](https://github.com/cyberdummy/todoista)
 - [Graphical kubectl wrapper](https://github.com/dcaiafa/kpick)
 - [Decred Decentralized Exchange ](https://github.com/decred/dcrdex)
-- [Kubernetes CLI To Manage Your Clusters In Style! ](https://github.com/derailed/k9s)
 - [A CLI file browser for Raspberry PI](https://github.com/destinmoulton/pixi)
 - [A tool to manage projects.](https://github.com/divramod/dp)
 - [A simple app for BMI monitoring](https://github.com/erleene/go-bmi)
@@ -112,6 +114,12 @@ For a presentation highlighting this package, compile and run the program found 
 - [tufw: A terminal UI for ufw.](https://github.com/peltho/tufw)
 - [gh: the GitHub CLI](https://github.com/cli/cli)
 - [piptui: Terminal UI to manage pip packages](https://github.com/glendsoza/piptui/)
+- [cross-clipboard: A cross-platform clipboard sharing](https://github.com/ntsd/cross-clipboard)
+- [tui-deck: nextcloud deck frontend](https://github.com/mebitek/tui-deck)
+- [ktop: A top-like tool for your Kubernetes clusters](https://github.com/vladimirvivien/ktop)
+- [blimp: UI for weather, network latency, application status, & more](https://github.com/merlinfuchs/blimp)
+- [Curly - A simple TUI leveraging curl to test endpoints](https://github.com/migcaraballo/curly)
+- [amtui: Alertmanager TUI](https://github.com/pehlicd/amtui)
 
 ## Documentation
 

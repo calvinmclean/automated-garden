@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/robfig/cron/v3"
 	"go.uber.org/atomic"
 )
@@ -24,15 +25,20 @@ type Job struct {
 	atTimes           []time.Duration // optional time(s) at which this Job runs when interval is day
 	startAtTime       time.Time       // optional time at which the Job starts
 	error             error           // error related to Job
-	previousRun       time.Time       // datetime of the run before last run
-	lastRun           time.Time       // datetime of last run
-	nextRun           time.Time       // datetime of next run
-	scheduledWeekdays []time.Weekday  // Specific days of the week to start on
-	daysOfTheMonth    []int           // Specific days of the month to run the job
-	tags              []string        // allow the user to tag Jobs with certain labels
-	timer             *time.Timer     // handles running tasks at specific time
-	cronSchedule      cron.Schedule   // stores the schedule when a task uses cron
-	runWithDetails    bool            // when true the job is passed as the last arg of the jobFunc
+
+	scheduledWeekdays []time.Weekday // Specific days of the week to start on
+	daysOfTheMonth    []int          // Specific days of the month to run the job
+	tags              []string       // allow the user to tag jobs with certain labels
+	timer             *time.Timer    // handles running tasks at specific time
+	cronSchedule      cron.Schedule  // stores the schedule when a task uses cron
+	runWithDetails    bool           // when true the job is passed as the last arg of the jobFunc
+}
+
+type jobRunTimes struct {
+	jobRunTimesMu *sync.Mutex
+	previousRun   time.Time // datetime of the run before last run
+	lastRun       time.Time // datetime of last run
+	nextRun       time.Time // datetime of next run
 }
 
 type random struct {
@@ -42,6 +48,8 @@ type random struct {
 }
 
 type jobFunction struct {
+	id                uuid.UUID          // unique identifier for the job
+	*jobRunTimes                         // tracking all the markers for job run times
 	eventListeners                       // additional functions to allow run 'em during job performing
 	function          interface{}        // task's function
 	parameters        []interface{}      // task's function parameters
@@ -49,6 +57,7 @@ type jobFunction struct {
 	jobName           string             // key of the distributed lock
 	funcName          string             // the name of the function - e.g. main.func1
 	runConfig         runConfig          // configuration for how many times to run the job
+	singletonQueueMu  *sync.Mutex        // mutex for singletonQueue
 	singletonQueue    chan struct{}      // queues jobs for the singleton runner to handle
 	singletonRunnerOn *atomic.Bool       // whether the runner function for singleton is running
 	ctx               context.Context    // for cancellation
@@ -57,13 +66,18 @@ type jobFunction struct {
 	runStartCount     *atomic.Int64      // number of times the job was started
 	runFinishCount    *atomic.Int64      // number of times the job was finished
 	singletonWg       *sync.WaitGroup    // used by singleton runner
+	singletonWgMu     *sync.Mutex        // use to protect the singletonWg
 	stopped           *atomic.Bool       // tracks whether the job is currently stopped
 	jobFuncNextRun    time.Time          // the next time the job is scheduled to run
 }
 
 type eventListeners struct {
-	onBeforeJobExecution interface{} // performs before job executing
-	onAfterJobExecution  interface{} // performs after job executing
+	onAfterJobExecution  interface{}                     // deprecated
+	onBeforeJobExecution interface{}                     // deprecated
+	beforeJobRuns        func(jobName string)            // called before the job executes
+	afterJobRuns         func(jobName string)            // called after the job executes
+	onError              func(jobName string, err error) // called when the job returns an error
+	noError              func(jobName string)            // called when no error is returned
 }
 
 type jobMutex struct {
@@ -72,6 +86,8 @@ type jobMutex struct {
 
 func (jf *jobFunction) copy() jobFunction {
 	cp := jobFunction{
+		id:                jf.id,
+		jobRunTimes:       jf.jobRunTimes,
 		eventListeners:    jf.eventListeners,
 		function:          jf.function,
 		parameters:        nil,
@@ -80,18 +96,27 @@ func (jf *jobFunction) copy() jobFunction {
 		jobName:           jf.jobName,
 		runConfig:         jf.runConfig,
 		singletonQueue:    jf.singletonQueue,
+		singletonQueueMu:  jf.singletonQueueMu,
 		ctx:               jf.ctx,
 		cancel:            jf.cancel,
 		isRunning:         jf.isRunning,
 		runStartCount:     jf.runStartCount,
 		runFinishCount:    jf.runFinishCount,
 		singletonWg:       jf.singletonWg,
+		singletonWgMu:     jf.singletonWgMu,
 		singletonRunnerOn: jf.singletonRunnerOn,
 		stopped:           jf.stopped,
 		jobFuncNextRun:    jf.jobFuncNextRun,
 	}
 	cp.parameters = append(cp.parameters, jf.parameters...)
 	return cp
+}
+
+func (jf *jobFunction) getName() string {
+	if jf.jobName != "" {
+		return jf.jobName
+	}
+	return jf.funcName
 }
 
 type runConfig struct {
@@ -118,9 +143,13 @@ func newJob(interval int, startImmediately bool, singletonMode bool) *Job {
 		mu:       &jobMutex{},
 		interval: interval,
 		unit:     seconds,
-		lastRun:  time.Time{},
-		nextRun:  time.Time{},
 		jobFunction: jobFunction{
+			id: uuid.New(),
+			jobRunTimes: &jobRunTimes{
+				jobRunTimesMu: &sync.Mutex{},
+				lastRun:       time.Time{},
+				nextRun:       time.Time{},
+			},
 			ctx:               ctx,
 			cancel:            cancel,
 			isRunning:         atomic.NewBool(false),
@@ -146,6 +175,15 @@ func (j *Job) Name(name string) {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	j.jobName = name
+}
+
+// GetName returns the name of the current job.
+// The name is either the name set using Job.Name() / Scheduler.Name() or
+// the name of the funcion as Go sees it, for example `main.func1`
+func (j *Job) GetName() string {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	return j.jobFunction.getName()
 }
 
 func (j *Job) setRandomInterval(a, b int) {
@@ -202,24 +240,21 @@ func (j *Job) getFirstAtTime() time.Duration {
 }
 
 func (j *Job) getAtTime(lastRun time.Time) time.Duration {
-	var r time.Duration
 	if len(j.atTimes) == 0 {
+		return 0
+	}
+
+	r := j.atTimes[0]
+
+	if len(j.atTimes) == 1 || lastRun.IsZero() {
 		return r
 	}
 
-	if len(j.atTimes) == 1 {
-		return j.atTimes[0]
-	}
-
-	if lastRun.IsZero() {
-		r = j.atTimes[0]
-	} else {
-		for _, d := range j.atTimes {
-			nt := time.Date(lastRun.Year(), lastRun.Month(), lastRun.Day(), 0, 0, 0, 0, lastRun.Location()).Add(d)
-			if nt.After(lastRun) {
-				r = d
-				break
-			}
+	for _, d := range j.atTimes {
+		nt := time.Date(lastRun.Year(), lastRun.Month(), lastRun.Day(), 0, 0, 0, 0, lastRun.Location()).Add(d)
+		if nt.After(lastRun) {
+			r = d
+			break
 		}
 	}
 
@@ -287,6 +322,12 @@ func (j *Job) setDuration(t time.Duration) {
 	j.duration = t
 }
 
+func (j *Job) setInterval(i int) {
+	j.mu.Lock()
+	defer j.mu.Unlock()
+	j.interval = i
+}
+
 // hasTags returns true if all tags are matched on this Job
 func (j *Job) hasTags(tags ...string) bool {
 	// Build map of all Job tags for easy comparison
@@ -340,7 +381,57 @@ func (j *Job) Tags() []string {
 	return j.tags
 }
 
-// SetEventListeners accepts two functions that will be called, one before and one after the job is run
+// EventListener functions utilize the job's name and are triggered
+// by or in the condition that the name suggests
+type EventListener func(j *Job)
+
+// BeforeJobRuns is called before the job is run
+func BeforeJobRuns(eventListenerFunc func(jobName string)) EventListener {
+	return func(j *Job) {
+		j.mu.Lock()
+		defer j.mu.Unlock()
+		j.eventListeners.beforeJobRuns = eventListenerFunc
+	}
+}
+
+// AfterJobRuns is called after the job is run
+// This is called even when an error is returned
+func AfterJobRuns(eventListenerFunc func(jobName string)) EventListener {
+	return func(j *Job) {
+		j.mu.Lock()
+		defer j.mu.Unlock()
+		j.eventListeners.afterJobRuns = eventListenerFunc
+	}
+}
+
+// WhenJobReturnsError is called when the job returns an error
+func WhenJobReturnsError(eventListenerFunc func(jobName string, err error)) EventListener {
+	return func(j *Job) {
+		j.mu.Lock()
+		defer j.mu.Unlock()
+		j.eventListeners.onError = eventListenerFunc
+	}
+}
+
+// WhenJobReturnsNoError is called when the job does not return an error
+// the function must accept a single parameter, which is an error
+func WhenJobReturnsNoError(eventListenerFunc func(jobName string)) EventListener {
+	return func(j *Job) {
+		j.mu.Lock()
+		defer j.mu.Unlock()
+		j.eventListeners.noError = eventListenerFunc
+	}
+}
+
+// RegisterEventListeners accepts EventListeners and registers them for the job
+// The event listeners are then called at the times described by each listener.
+func (j *Job) RegisterEventListeners(eventListeners ...EventListener) {
+	for _, el := range eventListeners {
+		el(j)
+	}
+}
+
+// Deprecated: SetEventListeners accepts two functions that will be called, one before and one after the job is run
 func (j *Job) SetEventListeners(onBeforeJobExecution interface{}, onAfterJobExecution interface{}) {
 	j.eventListeners = eventListeners{
 		onBeforeJobExecution: onBeforeJobExecution,
@@ -420,8 +511,16 @@ func (j *Job) SingletonMode() {
 	j.mu.Lock()
 	defer j.mu.Unlock()
 	j.runConfig.mode = singletonMode
+
+	j.jobFunction.singletonWgMu = &sync.Mutex{}
+	j.jobFunction.singletonWgMu.Lock()
 	j.jobFunction.singletonWg = &sync.WaitGroup{}
+	j.jobFunction.singletonWgMu.Unlock()
+
+	j.jobFunction.singletonQueueMu = &sync.Mutex{}
+	j.jobFunction.singletonQueueMu.Lock()
 	j.jobFunction.singletonQueue = make(chan struct{}, 100)
+	j.jobFunction.singletonQueueMu.Unlock()
 }
 
 // shouldRun evaluates if this job should run again
@@ -434,8 +533,8 @@ func (j *Job) shouldRun() bool {
 
 // LastRun returns the time the job was run last
 func (j *Job) LastRun() time.Time {
-	j.mu.RLock()
-	defer j.mu.RUnlock()
+	j.jobRunTimesMu.Lock()
+	defer j.jobRunTimesMu.Unlock()
 	return j.lastRun
 }
 
@@ -446,22 +545,22 @@ func (j *Job) setLastRun(t time.Time) {
 
 // NextRun returns the time the job will run next
 func (j *Job) NextRun() time.Time {
-	j.mu.RLock()
-	defer j.mu.RUnlock()
+	j.jobRunTimesMu.Lock()
+	defer j.jobRunTimesMu.Unlock()
 	return j.nextRun
 }
 
 func (j *Job) setNextRun(t time.Time) {
-	j.mu.Lock()
-	defer j.mu.Unlock()
+	j.jobRunTimesMu.Lock()
+	defer j.jobRunTimesMu.Unlock()
 	j.nextRun = t
 	j.jobFunction.jobFuncNextRun = t
 }
 
 // PreviousRun returns the job run time previous to LastRun
 func (j *Job) PreviousRun() time.Time {
-	j.mu.RLock()
-	defer j.mu.RUnlock()
+	j.jobRunTimesMu.Lock()
+	defer j.jobRunTimesMu.Unlock()
 	return j.previousRun
 }
 
@@ -509,9 +608,6 @@ func (j *Job) copy() Job {
 		atTimes:           j.atTimes,
 		startAtTime:       j.startAtTime,
 		error:             j.error,
-		lastRun:           j.lastRun,
-		nextRun:           j.nextRun,
-		previousRun:       j.previousRun,
 		scheduledWeekdays: j.scheduledWeekdays,
 		daysOfTheMonth:    j.daysOfTheMonth,
 		tags:              j.tags,
