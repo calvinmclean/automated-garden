@@ -20,11 +20,11 @@ const (
 // PlantsResource encapsulates the structs and dependencies necessary for the "/plants" API
 // to function, including storage, scheduling, and caching
 type PlantsResource struct {
-	GardensResource
+	*GardensResource
 }
 
 // NewPlantsResource creates a new PlantsResource
-func NewPlantsResource(gr GardensResource) (PlantsResource, error) {
+func NewPlantsResource(gr *GardensResource) (PlantsResource, error) {
 	return PlantsResource{
 		GardensResource: gr,
 	}, nil
@@ -40,7 +40,7 @@ func (pr PlantsResource) plantContextMiddleware(next http.Handler) http.Handler 
 		plantIDString := chi.URLParam(r, plantPathParam)
 		logger := getLoggerFromContext(ctx).WithField(plantIDLogField, plantIDString)
 
-		garden := getGardenFromContext(ctx)
+		garden := getGardenFromContext(r.Context()).Garden
 		plantID, err := xid.FromString(plantIDString)
 		if err != nil {
 			logger.WithError(err).Error("unable to parse PlantID")
@@ -67,7 +67,7 @@ func (pr PlantsResource) getPlant(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get Plant")
 
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 	plant := getPlantFromContext(r.Context())
 	logger.Debugf("responding with Plant: %+v", plant)
 
@@ -85,7 +85,7 @@ func (pr PlantsResource) updatePlant(w http.ResponseWriter, r *http.Request) {
 
 	plant := getPlantFromContext(r.Context())
 	request := &UpdatePlantRequest{}
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 
 	// Read the request body into existing Plant to overwrite fields
 	if err := render.Bind(r, request); err != nil {
@@ -127,7 +127,7 @@ func (pr PlantsResource) endDatePlant(w http.ResponseWriter, r *http.Request) {
 	logger.Info("received request to end-date Plant")
 
 	plant := getPlantFromContext(r.Context())
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 	now := time.Now()
 
 	// Permanently delete the Plant if it is already end-dated
@@ -167,7 +167,7 @@ func (pr PlantsResource) getAllPlants(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
 	logger.Info("received request to get all Plants")
 
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 	plants := []*pkg.Plant{}
 	for _, p := range garden.Plants {
 		if getEndDated || !p.EndDated() {
@@ -196,7 +196,7 @@ func (pr PlantsResource) createPlant(w http.ResponseWriter, r *http.Request) {
 	plant := request.Plant
 	logger.Debugf("request to create Plant: %+v", plant)
 
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 
 	// Don't allow creating Plant with nonexistent Zone
 	if _, ok := garden.Zones[plant.ZoneID]; !ok {

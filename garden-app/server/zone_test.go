@@ -94,7 +94,7 @@ func TestZoneContextMiddleware(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			garden := createExampleGarden()
 			garden.Zones[zone.ID] = tt.zone
-			ctx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			ctx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 			r := httptest.NewRequest("GET", tt.path, nil).WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -324,7 +324,7 @@ func TestGetZone(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
 			r := httptest.NewRequest("GET", fmt.Sprintf("/zone?exclude_weather_data=%t", tt.excludeWeatherData), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()
@@ -402,7 +402,7 @@ func TestZoneAction(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
 			r := httptest.NewRequest("POST", "/zone", strings.NewReader(tt.body)).WithContext(zoneCtx)
 			r.Header.Add("Content-Type", "application/json")
@@ -467,7 +467,7 @@ func TestUpdateZone(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
 			r := httptest.NewRequest("PATCH", "/zone", strings.NewReader(tt.body)).WithContext(zoneCtx)
 			r.Header.Add("Content-Type", "application/json")
@@ -528,7 +528,7 @@ func TestEndDateZone(t *testing.T) {
 			}
 
 			garden := createExampleGarden()
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, tt.zone)
 			r := httptest.NewRequest("DELETE", "/zone", nil).WithContext(zoneCtx)
 			r.Header.Add("Content-Type", "application/json")
@@ -567,7 +567,7 @@ func TestGetAllZones(t *testing.T) {
 	garden.Zones[zone.ID] = zone
 	garden.Zones[endDatedZone.ID] = endDatedZone
 
-	gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+	gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 
 	tests := []struct {
 		name      string
@@ -728,7 +728,7 @@ func TestCreateZone(t *testing.T) {
 			zr.worker.StartAsync()
 			defer zr.worker.Stop()
 
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
+			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: tt.garden})
 			r := httptest.NewRequest("POST", "/zone", strings.NewReader(tt.body)).WithContext(gardenCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -832,7 +832,7 @@ func TestWaterHistory(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
 			r := httptest.NewRequest("GET", fmt.Sprintf("/history%s", tt.queryParams), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()

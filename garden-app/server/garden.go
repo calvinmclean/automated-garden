@@ -30,8 +30,8 @@ type GardensResource struct {
 }
 
 // NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (GardensResource, error) {
-	gr := GardensResource{
+func NewGardenResource(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (*GardensResource, error) {
+	gr := &GardensResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		worker:         worker,
@@ -57,7 +57,7 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 // gardenContextMiddleware middleware is used to load a Garden object from the URL
 // parameters passed through as the request. In case the Garden could not be found,
 // we stop here and return a 404.
-func (gr GardensResource) gardenContextMiddleware(next http.Handler) http.Handler {
+func (gr *GardensResource) gardenContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -83,13 +83,13 @@ func (gr GardensResource) gardenContextMiddleware(next http.Handler) http.Handle
 		}
 		logger.Debugf("found Garden: %+v", garden)
 
-		ctx = newContextWithGarden(ctx, garden)
+		ctx = newContextWithGarden(ctx, gr.NewGardenResponse(garden))
 		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
+func (gr *GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new Garden")
 
@@ -129,14 +129,14 @@ func (gr GardensResource) createGarden(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, gr.NewGardenResponse(r.Context(), garden)); err != nil {
+	if err := render.Render(w, r, gr.NewGardenResponse(garden)); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // getAllGardens will return a list of all Gardens
-func (gr GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
+func (gr *GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 
 	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
@@ -150,34 +150,20 @@ func (gr GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request) 
 	}
 	logger.Debugf("found %d Gardens", len(gardens))
 
-	if err := render.Render(w, r, gr.NewAllGardensResponse(r.Context(), gardens)); err != nil {
+	if err := render.Render(w, r, gr.NewAllGardensResponse(gardens)); err != nil {
 		logger.WithError(err).Error("unable to render AllGardensResponse")
-		render.Render(w, r, ErrRender(err))
-	}
-}
-
-// getGarden will return a garden by ID/name
-func (gr GardensResource) getGarden(w http.ResponseWriter, r *http.Request) {
-	logger := getLoggerFromContext(r.Context())
-	logger.Info("received request to get Garden")
-
-	garden := getGardenFromContext(r.Context())
-	logger.Debugf("responding with Garden: %+v", garden)
-
-	gardenResponse := gr.NewGardenResponse(r.Context(), garden)
-	if err := render.Render(w, r, gardenResponse); err != nil {
-		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // endDatePlant will mark the Plant's end date as now and save it. If the Garden is already
 // end-dated, it will permanently delete it
-func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
+func (gr *GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to end-date Garden")
 
-	garden := getGardenFromContext(r.Context())
+	gardenResponse := getGardenFromContext(r.Context())
+	garden := gardenResponse.Garden
 	now := time.Now()
 
 	// Don't allow end-dating a Garden with active Zones
@@ -220,18 +206,19 @@ func (gr GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	if err := render.Render(w, r, gr.NewGardenResponse(r.Context(), garden)); err != nil {
+	if err := render.Render(w, r, gardenResponse); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // updateGarden updates any fields in the existing Garden from the request
-func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
+func (gr *GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update Garden")
 
-	garden := getGardenFromContext(r.Context())
+	gardenResponse := getGardenFromContext(r.Context())
+	garden := gardenResponse.Garden
 	request := &UpdateGardenRequest{}
 
 	// Read the request body into existing garden to overwrite fields
@@ -282,7 +269,7 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	if err := render.Render(w, r, gr.NewGardenResponse(r.Context(), garden)); err != nil {
+	if err := render.Render(w, r, gardenResponse); err != nil {
 		logger.WithError(err).Error("unable to render GardenResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -291,11 +278,12 @@ func (gr GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) {
 // gardenAction reads a GardenAction request and uses it to execute one of the actions
 // that is available to run against a Plant. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
-func (gr GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
+func (gr *GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to execute GardenAction")
 
-	garden := getGardenFromContext(r.Context())
+	gardenResponse := getGardenFromContext(r.Context())
+	garden := gardenResponse.Garden
 
 	action := &GardenActionRequest{}
 	if err := render.Bind(r, action); err != nil {

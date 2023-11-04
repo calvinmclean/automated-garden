@@ -31,12 +31,12 @@ func getLoggerFromContext(ctx context.Context) *logrus.Entry {
 	return logger
 }
 
-func newContextWithGarden(ctx context.Context, g *pkg.Garden) context.Context {
+func newContextWithGarden(ctx context.Context, g *GardenResponse) context.Context {
 	return context.WithValue(ctx, gardenCtxKey, g)
 }
 
-func getGardenFromContext(ctx context.Context) *pkg.Garden {
-	return ctx.Value(gardenCtxKey).(*pkg.Garden)
+func getGardenFromContext(ctx context.Context) *GardenResponse {
+	return ctx.Value(gardenCtxKey).(*GardenResponse)
 }
 
 func newContextWithZone(ctx context.Context, z *pkg.Zone) context.Context {
@@ -47,12 +47,12 @@ func getZoneFromContext(ctx context.Context) *pkg.Zone {
 	return ctx.Value(zoneCtxKey).(*pkg.Zone)
 }
 
-func newContextWithPlant(ctx context.Context, p *pkg.Plant) context.Context {
+func newContextWithPlant(ctx context.Context, p *PlantResponse) context.Context {
 	return context.WithValue(ctx, plantCtxKey, p)
 }
 
-func getPlantFromContext(ctx context.Context) *pkg.Plant {
-	return ctx.Value(plantCtxKey).(*pkg.Plant)
+func getPlantFromContext(ctx context.Context) *PlantResponse {
+	return ctx.Value(plantCtxKey).(*PlantResponse)
 }
 
 func newContextWithWeatherClient(ctx context.Context, wc *weather.Config) context.Context {

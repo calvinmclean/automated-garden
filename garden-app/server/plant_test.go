@@ -83,7 +83,7 @@ func TestGetPlant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := PlantsResource{
-				GardensResource: GardensResource{
+				GardensResource: &GardensResource{
 					storageClient: setupZonePlantGardenStorage(t),
 				},
 			}
@@ -137,7 +137,7 @@ func TestUpdatePlant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := PlantsResource{
-				GardensResource: GardensResource{
+				GardensResource: &GardensResource{
 					storageClient: setupZonePlantGardenStorage(t),
 				},
 			}
@@ -185,7 +185,7 @@ func TestEndDatePlant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := PlantsResource{
-				GardensResource: GardensResource{
+				GardensResource: &GardensResource{
 					storageClient: storageClient,
 				},
 			}
@@ -244,7 +244,7 @@ func TestGetAllPlants(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := PlantsResource{
-				GardensResource: GardensResource{
+				GardensResource: &GardensResource{
 					storageClient: storageClient,
 				},
 			}
@@ -310,7 +310,7 @@ func TestCreatePlant(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			pr := PlantsResource{
-				GardensResource: GardensResource{
+				GardensResource: &GardensResource{
 					storageClient: setupZonePlantGardenStorage(t),
 				},
 			}

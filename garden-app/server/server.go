@@ -51,7 +51,7 @@ type Server struct {
 	*http.Server
 	quit            chan os.Signal
 	logger          *logrus.Entry
-	gardensResource GardensResource
+	gardensResource *GardensResource
 	worker          *worker.Worker
 }
 
@@ -152,7 +152,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
 			r.Use(gardenResource.gardenContextMiddleware)
 
-			r.Get("/", gardenResource.getGarden)
+			r.Get("/", get[*GardenResponse](getGardenFromContext))
 			r.Patch("/", gardenResource.updateGarden)
 			r.Delete("/", gardenResource.endDateGarden)
 
