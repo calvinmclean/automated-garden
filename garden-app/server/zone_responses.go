@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -15,16 +14,22 @@ type AllZonesResponse struct {
 }
 
 // NewAllZonesResponse will create an AllZonesResponse from a list of Zones
-func (zr ZonesResource) NewAllZonesResponse(ctx context.Context, zones []*pkg.Zone, garden *pkg.Garden, excludeWeatherData bool) *AllZonesResponse {
+func (zr *ZonesResource) NewAllZonesResponse(zones []*pkg.Zone, garden *pkg.Garden) *AllZonesResponse {
 	zoneResponses := []*ZoneResponse{}
 	for _, z := range zones {
-		zoneResponses = append(zoneResponses, zr.NewZoneResponse(ctx, garden, z, excludeWeatherData))
+		zoneResponses = append(zoneResponses, zr.NewZoneResponse(garden, z))
 	}
 	return &AllZonesResponse{zoneResponses}
 }
 
 // Render ...
-func (zr *AllZonesResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+func (zr *AllZonesResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+	for _, z := range zr.Zones {
+		err := z.Render(nil, r)
+		if err != nil {
+			return fmt.Errorf("error rendering zone: %w", err)
+		}
+	}
 	return nil
 }
 
@@ -35,27 +40,40 @@ type ZoneResponse struct {
 	WeatherData *WeatherData     `json:"weather_data,omitempty"`
 	NextWater   NextWaterDetails `json:"next_water,omitempty"`
 	Links       []Link           `json:"links,omitempty"`
+
+	garden *pkg.Garden
+	zr     *ZonesResource
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
-func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden, zone *pkg.Zone, excludeWeatherData bool, links ...Link) *ZoneResponse {
-	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zone.ID.String())
+func (zr *ZonesResource) NewZoneResponse(garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
+	return &ZoneResponse{
+		Zone:  zone,
+		Links: links,
 
-	ws, err := zr.storageClient.GetMultipleWaterSchedules(zone.WaterScheduleIDs)
+		garden: garden,
+		zr:     zr,
+	}
+}
+
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response
+func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+	ctx := r.Context()
+	excludeWeatherData := excludeWeatherData(r)
+
+	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zr.Zone.ID.String())
+
+	ws, err := zr.zr.storageClient.GetMultipleWaterSchedules(zr.Zone.WaterScheduleIDs)
 	if err != nil {
 		logger.Errorf("unable to get WaterSchedule for ZoneResponse: %v", err)
 	}
 
-	response := &ZoneResponse{
-		Zone:  zone,
-		Links: links,
-	}
-
-	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
-	response.Links = append(response.Links,
+	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, zr.garden.ID)
+	zr.Links = append(zr.Links,
 		Link{
 			"self",
-			fmt.Sprintf("%s%s/%s", gardenPath, zoneBasePath, zone.ID),
+			fmt.Sprintf("%s%s/%s", gardenPath, zoneBasePath, zr.Zone.ID),
 		},
 		Link{
 			"garden",
@@ -63,60 +81,54 @@ func (zr ZonesResource) NewZoneResponse(ctx context.Context, garden *pkg.Garden,
 		},
 	)
 
-	if zone.EndDated() {
-		return response
+	if zr.Zone.EndDated() {
+		return nil
 	}
 
-	response.Links = append(response.Links,
+	zr.Links = append(zr.Links,
 		Link{
 			"action",
-			fmt.Sprintf("%s%s/%s/action", gardenPath, zoneBasePath, zone.ID),
+			fmt.Sprintf("%s%s/%s/action", gardenPath, zoneBasePath, zr.Zone.ID),
 		},
 		Link{
 			"history",
-			fmt.Sprintf("%s%s/%s/history", gardenPath, zoneBasePath, zone.ID),
+			fmt.Sprintf("%s%s/%s/history", gardenPath, zoneBasePath, zr.Zone.ID),
 		},
 	)
 
-	nextWaterSchedule := zr.worker.GetNextActiveWaterSchedule(ws)
+	nextWaterSchedule := zr.zr.worker.GetNextActiveWaterSchedule(ws)
 
 	if nextWaterSchedule == nil {
-		response.NextWater = NextWaterDetails{
+		zr.NextWater = NextWaterDetails{
 			Message: "no active WaterSchedules",
 		}
-		return response
+		return nil
 	}
 
-	response.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.worker, excludeWeatherData)
-	response.NextWater.WaterScheduleID = &nextWaterSchedule.ID
+	zr.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.zr.worker, excludeWeatherData)
+	zr.NextWater.WaterScheduleID = &nextWaterSchedule.ID
 
-	if zone.SkipCount != nil && *zone.SkipCount > 0 {
-		response.NextWater.Message = fmt.Sprintf("skip_count %d affected the time", *zone.SkipCount)
-		newNextTime := response.NextWater.Time.Add(time.Duration(*zone.SkipCount) * nextWaterSchedule.Interval.Duration)
-		response.NextWater.Time = &newNextTime
+	if zr.Zone.SkipCount != nil && *zr.Zone.SkipCount > 0 {
+		zr.NextWater.Message = fmt.Sprintf("skip_count %d affected the time", *zr.Zone.SkipCount)
+		newNextTime := zr.NextWater.Time.Add(time.Duration(*zr.Zone.SkipCount) * nextWaterSchedule.Interval.Duration)
+		zr.NextWater.Time = &newNextTime
 	}
 
 	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
-		response.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.storageClient)
+		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.zr.storageClient)
 
-		if nextWaterSchedule.HasSoilMoistureControl() && garden != nil {
+		if nextWaterSchedule.HasSoilMoistureControl() && zr.garden != nil {
 			logger.Debug("getting moisture data for Zone")
-			soilMoisture, err := zr.getMoisture(ctx, garden, zone)
+			soilMoisture, err := zr.zr.getMoisture(ctx, zr.garden, zr.Zone)
 			if err != nil {
 				logger.WithError(err).Warn("unable to get moisture data for Zone")
 			} else {
 				logger.Debugf("successfully got moisture data for Zone: %f", soilMoisture)
-				response.WeatherData.SoilMoisturePercent = &soilMoisture
+				zr.WeatherData.SoilMoisturePercent = &soilMoisture
 			}
 		}
 	}
 
-	return response
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (z *ZoneResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 

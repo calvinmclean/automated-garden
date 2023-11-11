@@ -182,7 +182,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 					r.Route(fmt.Sprintf("/{%s}", zonePathParam), func(r chi.Router) {
 						r.Use(zonesResource.zoneContextMiddleware)
 
-						r.Get("/", zonesResource.getZone)
+						r.Get("/", get[*ZoneResponse](getZoneFromContext))
 						r.Patch("/", zonesResource.updateZone)
 						r.Delete("/", zonesResource.endDateZone)
 

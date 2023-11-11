@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -44,12 +43,12 @@ func createExampleZone() *pkg.Zone {
 }
 
 func TestZoneContextMiddleware(t *testing.T) {
-	zr := ZonesResource{}
+	zr := &ZonesResource{}
 	zone := createExampleZone()
 	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		p := getZoneFromContext(r.Context())
-		if zone != p {
-			t.Errorf("Unexpected Zone saved in request context. Expected %v but got %v", zone, p)
+		z := getZoneFromContext(r.Context()).Zone
+		if zone != z {
+			t.Errorf("Unexpected Zone saved in request context. Expected %v but got %v", zone, z)
 		}
 		render.Status(r, http.StatusOK)
 	}
@@ -150,7 +149,7 @@ func TestZoneRestrictEndDatedMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.WithValue(context.Background(), zoneCtxKey, tt.zone)
+			ctx := newContextWithZone(context.Background(), &ZoneResponse{Zone: tt.zone})
 			r := httptest.NewRequest("GET", "/zone", nil).WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -309,7 +308,7 @@ func TestGetZone(t *testing.T) {
 			err = storageClient.SaveWeatherClientConfig(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
-			zr := ZonesResource{
+			zr := &ZonesResource{
 				influxdbClient: influxdbClient,
 				storageClient:  storageClient,
 				worker:         worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()),
@@ -325,10 +324,10 @@ func TestGetZone(t *testing.T) {
 			zone := createExampleZone()
 
 			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
-			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
+			zoneCtx := newContextWithZone(gardenCtx, &ZoneResponse{Zone: zone, zr: zr, garden: garden})
 			r := httptest.NewRequest("GET", fmt.Sprintf("/zone?exclude_weather_data=%t", tt.excludeWeatherData), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()
-			h := http.HandlerFunc(zr.getZone)
+			h := http.HandlerFunc(get[*ZoneResponse](getZoneFromContext))
 
 			h.ServeHTTP(w, r)
 
@@ -396,14 +395,14 @@ func TestZoneAction(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			zr := ZonesResource{
+			zr := &ZonesResource{
 				worker: worker.NewWorker(storageClient, nil, mqttClient, logrus.New()),
 			}
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
 			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
-			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
+			zoneCtx := newContextWithZone(gardenCtx, &ZoneResponse{Zone: zone, zr: zr, garden: garden})
 			r := httptest.NewRequest("POST", "/zone", strings.NewReader(tt.body)).WithContext(zoneCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -460,7 +459,7 @@ func TestUpdateZone(t *testing.T) {
 			err := storageClient.SaveWaterSchedule(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			zr := ZonesResource{
+			zr := &ZonesResource{
 				storageClient: storageClient,
 				worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
@@ -468,7 +467,7 @@ func TestUpdateZone(t *testing.T) {
 			zone := createExampleZone()
 
 			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
-			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
+			zoneCtx := newContextWithZone(gardenCtx, &ZoneResponse{Zone: zone, zr: zr, garden: garden})
 			r := httptest.NewRequest("PATCH", "/zone", strings.NewReader(tt.body)).WithContext(zoneCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -522,14 +521,14 @@ func TestEndDateZone(t *testing.T) {
 			err := storageClient.SaveWaterSchedule(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			zr := ZonesResource{
+			zr := &ZonesResource{
 				storageClient: storageClient,
 				worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 
 			garden := createExampleGarden()
 			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
-			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, tt.zone)
+			zoneCtx := newContextWithZone(gardenCtx, &ZoneResponse{Zone: tt.zone, zr: zr, garden: garden})
 			r := httptest.NewRequest("DELETE", "/zone", nil).WithContext(zoneCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -554,16 +553,16 @@ func TestEndDateZone(t *testing.T) {
 
 func TestGetAllZones(t *testing.T) {
 	storageClient := setupWaterScheduleStorage(t)
-	zr := ZonesResource{
+	zr := &ZonesResource{
 		worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 		storageClient: storageClient,
 	}
 	garden := createExampleGarden()
 	zone := createExampleZone()
 	endDatedZone := createExampleZone()
-	endDatedZone.ID = xid.New()
-	now := time.Now()
-	endDatedZone.EndDate = &now
+	endDatedZone.ID, _ = xid.FromString("cl85o60cj6rmh16lpmog")
+	endDate, _ := time.Parse(time.RFC3339Nano, "2023-11-11T22:01:12.733064-07:00")
+	endDatedZone.EndDate = &endDate
 	garden.Zones[zone.ID] = zone
 	garden.Zones[endDatedZone.ID] = endDatedZone
 
@@ -572,17 +571,20 @@ func TestGetAllZones(t *testing.T) {
 	tests := []struct {
 		name      string
 		targetURL string
-		expected  []*pkg.Zone
+		expected  string
+		reverse   string // in the case with 2 zones, sometimes they are in a different order
 	}{
 		{
 			"SuccessfulEndDatedFalse",
 			"/zone",
-			[]*pkg.Zone{zone},
+			`{"zones":[{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"skip_count":null,"next_water":{"message":"no active WaterSchedules"},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}]}`,
+			``,
 		},
 		{
 			"SuccessfulEndDatedTrue",
 			"/zone?end_dated=true",
-			[]*pkg.Zone{zone, endDatedZone},
+			`{"zones":[{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"skip_count":null,"next_water":{"message":"no active WaterSchedules"},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]},{"name":"test-zone","id":"cl85o60cj6rmh16lpmog","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","end_date":"2023-11-11T22:01:12.733064-07:00","water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"skip_count":null,"next_water":{},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/cl85o60cj6rmh16lpmog"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"}]}]}`,
+			`{"zones":[{"name":"test-zone","id":"cl85o60cj6rmh16lpmog","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","end_date":"2023-11-11T22:01:12.733064-07:00","water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"skip_count":null,"next_water":{},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/cl85o60cj6rmh16lpmog"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"}]},{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":["c5cvhpcbcv45e8bp16dg"],"skip_count":null,"next_water":{"message":"no active WaterSchedules"},"links":[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}]}]}`,
 		},
 	}
 
@@ -599,16 +601,10 @@ func TestGetAllZones(t *testing.T) {
 				t.Errorf("Unexpected status code: got %v, want %v", w.Code, http.StatusOK)
 			}
 
-			zoneJSON, _ := json.Marshal(zr.NewAllZonesResponse(context.Background(), tt.expected, garden, false))
-			// When the expected result contains more than one Zone, on some occasions it might be out of order
-			var reverseZoneJSON []byte
-			if len(tt.expected) > 1 {
-				reverseZoneJSON, _ = json.Marshal(zr.NewAllZonesResponse(context.Background(), []*pkg.Zone{tt.expected[1], tt.expected[0]}, &pkg.Garden{}, false))
-			}
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())
-			if actual != string(zoneJSON) && actual != string(reverseZoneJSON) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, string(zoneJSON))
+			if actual != tt.expected && actual != tt.reverse {
+				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
 			}
 		})
 	}
@@ -717,7 +713,7 @@ func TestCreateZone(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			zr := ZonesResource{
+			zr := &ZonesResource{
 				storageClient: storageClient,
 				worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
@@ -826,14 +822,14 @@ func TestWaterHistory(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(influxdbClient)
 
-			zr := ZonesResource{
+			zr := &ZonesResource{
 				influxdbClient: influxdbClient,
 			}
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
 			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
-			zoneCtx := context.WithValue(gardenCtx, zoneCtxKey, zone)
+			zoneCtx := newContextWithZone(gardenCtx, &ZoneResponse{Zone: zone, zr: zr, garden: garden})
 			r := httptest.NewRequest("GET", fmt.Sprintf("/history%s", tt.queryParams), nil).WithContext(zoneCtx)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(zr.waterHistory)
@@ -870,7 +866,7 @@ func TestGetNextWaterTime(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			zr := ZonesResource{
+			zr := &ZonesResource{
 				worker: worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 			ws := createExampleWaterSchedule()

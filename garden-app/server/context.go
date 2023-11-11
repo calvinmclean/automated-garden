@@ -39,12 +39,12 @@ func getGardenFromContext(ctx context.Context) *GardenResponse {
 	return ctx.Value(gardenCtxKey).(*GardenResponse)
 }
 
-func newContextWithZone(ctx context.Context, z *pkg.Zone) context.Context {
+func newContextWithZone(ctx context.Context, z *ZoneResponse) context.Context {
 	return context.WithValue(ctx, zoneCtxKey, z)
 }
 
-func getZoneFromContext(ctx context.Context) *pkg.Zone {
-	return ctx.Value(zoneCtxKey).(*pkg.Zone)
+func getZoneFromContext(ctx context.Context) *ZoneResponse {
+	return ctx.Value(zoneCtxKey).(*ZoneResponse)
 }
 
 func newContextWithPlant(ctx context.Context, p *PlantResponse) context.Context {
