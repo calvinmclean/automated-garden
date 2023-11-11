@@ -82,7 +82,7 @@ func TestGetPlant(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pr := PlantsResource{
+			pr := &PlantsResource{
 				GardensResource: &GardensResource{
 					storageClient: setupZonePlantGardenStorage(t),
 				},
@@ -95,7 +95,7 @@ func TestGetPlant(t *testing.T) {
 			router.Route(fmt.Sprintf("/gardens/{%s}/plants/{%s}", gardenPathParam, plantPathParam), func(r chi.Router) {
 				r.Use(pr.gardenContextMiddleware)
 				r.Use(pr.plantContextMiddleware)
-				r.Get("/", pr.getPlant)
+				r.Get("/", get[*PlantResponse](getPlantFromContext))
 			})
 			router.ServeHTTP(w, r)
 
@@ -136,7 +136,7 @@ func TestUpdatePlant(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pr := PlantsResource{
+			pr := &PlantsResource{
 				GardensResource: &GardensResource{
 					storageClient: setupZonePlantGardenStorage(t),
 				},
@@ -184,7 +184,7 @@ func TestEndDatePlant(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pr := PlantsResource{
+			pr := &PlantsResource{
 				GardensResource: &GardensResource{
 					storageClient: storageClient,
 				},
@@ -243,7 +243,7 @@ func TestGetAllPlants(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pr := PlantsResource{
+			pr := &PlantsResource{
 				GardensResource: &GardensResource{
 					storageClient: storageClient,
 				},
@@ -262,11 +262,11 @@ func TestGetAllPlants(t *testing.T) {
 
 			assert.Equal(t, http.StatusOK, w.Code)
 
-			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(context.Background(), tt.expected, createExampleGarden()))
+			plantJSON, _ := json.Marshal(pr.NewAllPlantsResponse(tt.expected, createExampleGarden()))
 			// When the expected result contains more than one Plant, on some occasions it might be out of order
 			var reversePlantJSON []byte
 			if len(tt.expected) > 1 {
-				reversePlantJSON, _ = json.Marshal(pr.NewAllPlantsResponse(context.Background(), []*pkg.Plant{tt.expected[1], tt.expected[0]}, &pkg.Garden{}))
+				reversePlantJSON, _ = json.Marshal(pr.NewAllPlantsResponse([]*pkg.Plant{tt.expected[1], tt.expected[0]}, &pkg.Garden{}))
 			}
 			// check HTTP response body
 			actual := strings.TrimSpace(w.Body.String())
@@ -309,7 +309,7 @@ func TestCreatePlant(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pr := PlantsResource{
+			pr := &PlantsResource{
 				GardensResource: &GardensResource{
 					storageClient: setupZonePlantGardenStorage(t),
 				},

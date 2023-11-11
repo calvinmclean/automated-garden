@@ -168,7 +168,8 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 					r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
 						r.Use(plantsResource.plantContextMiddleware)
 
-						r.Get("/", plantsResource.getPlant)
+						r.Get("/", get[*PlantResponse](getPlantFromContext))
+
 						r.Patch("/", plantsResource.updatePlant)
 						r.Delete("/", plantsResource.endDatePlant)
 					})
