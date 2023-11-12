@@ -25,15 +25,15 @@ type WeatherClientsResource struct {
 }
 
 // NewWeatherClientsResource creates a new WeatherClientsResource
-func NewWeatherClientsResource(storageClient *storage.Client) (WeatherClientsResource, error) {
-	wc := WeatherClientsResource{
+func NewWeatherClientsResource(storageClient *storage.Client) (*WeatherClientsResource, error) {
+	wc := &WeatherClientsResource{
 		storageClient: storageClient,
 	}
 
 	return wc, nil
 }
 
-func (wcr WeatherClientsResource) weatherClientContextMiddleware(next http.Handler) http.Handler {
+func (wcr *WeatherClientsResource) weatherClientContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -59,13 +59,13 @@ func (wcr WeatherClientsResource) weatherClientContextMiddleware(next http.Handl
 		}
 		logger.Debugf("found WeatherClient: %+v", weatherClientConfig)
 
-		ctx = newContextWithWeatherClient(ctx, weatherClientConfig)
+		ctx = newContextWithWeatherClient(ctx, wcr.NewWeatherClientResponse(weatherClientConfig))
 		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-func (wcr WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r *http.Request) {
+func (wcr *WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get all WeatherClients")
 
@@ -77,27 +77,13 @@ func (wcr WeatherClientsResource) getAllWeatherClients(w http.ResponseWriter, r 
 	}
 	logger.Debugf("found %d WeatherClients", len(weatherClientConfigs))
 
-	if err := render.Render(w, r, wcr.NewAllWeatherClientsResponse(r.Context(), weatherClientConfigs)); err != nil {
+	if err := render.Render(w, r, wcr.NewAllWeatherClientsResponse(weatherClientConfigs)); err != nil {
 		logger.WithError(err).Error("unable to render AllWeatherClientsResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func (wcr WeatherClientsResource) getWeatherClient(w http.ResponseWriter, r *http.Request) {
-	logger := getLoggerFromContext(r.Context())
-	logger.Info("received request to get WeatherClient")
-
-	weatherClient := getWeatherClientFromContext(r.Context())
-	logger.Debugf("responding with WeatherClient: %+v", weatherClient)
-
-	gardenResponse := wcr.NewWeatherClientResponse(r.Context(), weatherClient)
-	if err := render.Render(w, r, gardenResponse); err != nil {
-		logger.WithError(err).Error("unable to render WeatherClientResponse")
-		render.Render(w, r, ErrRender(err))
-	}
-}
-
-func (wcr WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (wcr *WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new WeatherClient")
 
@@ -124,13 +110,13 @@ func (wcr WeatherClientsResource) createWeatherClient(w http.ResponseWriter, r *
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, wcr.NewWeatherClientResponse(r.Context(), weatherClientConfig)); err != nil {
+	if err := render.Render(w, r, wcr.NewWeatherClientResponse(weatherClientConfig)); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func (wcr WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (wcr *WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update WeatherClient")
 
@@ -142,7 +128,8 @@ func (wcr WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *
 	}
 	logger.Debugf("request to update WeatherClient: %+v", request.Config)
 
-	weatherClient := getWeatherClientFromContext(r.Context())
+	weatherClientResp := getWeatherClientFromContext(r.Context())
+	weatherClient := weatherClientResp.Config
 
 	weatherClient.Patch(request.Config)
 
@@ -163,18 +150,19 @@ func (wcr WeatherClientsResource) updateWeatherClient(w http.ResponseWriter, r *
 	}
 
 	render.Status(r, http.StatusOK)
-	if err := render.Render(w, r, wcr.NewWeatherClientResponse(r.Context(), weatherClient)); err != nil {
+	if err := render.Render(w, r, weatherClientResp); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // deleteWeatherClient will delete the WeatherClient config from storage
-func (wcr WeatherClientsResource) deleteWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (wcr *WeatherClientsResource) deleteWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to delete a WeatherClient")
 
-	weatherClient := getWeatherClientFromContext(r.Context())
+	weatherClientResp := getWeatherClientFromContext(r.Context())
+	weatherClient := weatherClientResp.Config
 
 	// Unable to delete a WeatherClient that is being used by Zones
 	err := wcr.checkIfClientIsBeingUsed(weatherClient)
@@ -190,7 +178,7 @@ func (wcr WeatherClientsResource) deleteWeatherClient(w http.ResponseWriter, r *
 		return
 	}
 
-	if err := render.Render(w, r, wcr.NewWeatherClientResponse(r.Context(), weatherClient)); err != nil {
+	if err := render.Render(w, r, weatherClientResp); err != nil {
 		logger.WithError(err).Error("unable to render WeatherClientResponse")
 		render.Render(w, r, ErrRender(err))
 	}
@@ -209,7 +197,7 @@ func (wcr *WeatherClientsResource) checkIfClientIsBeingUsed(weatherClient *weath
 	return nil
 }
 
-func (wcr WeatherClientsResource) testWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (wcr *WeatherClientsResource) testWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to test WeatherClient")
 

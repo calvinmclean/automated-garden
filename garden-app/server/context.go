@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/sirupsen/logrus"
 )
 
@@ -55,12 +54,12 @@ func getPlantFromContext(ctx context.Context) *PlantResponse {
 	return ctx.Value(plantCtxKey).(*PlantResponse)
 }
 
-func newContextWithWeatherClient(ctx context.Context, wc *weather.Config) context.Context {
+func newContextWithWeatherClient(ctx context.Context, wc *WeatherClientResponse) context.Context {
 	return context.WithValue(ctx, weatherClientCtxKey, wc)
 }
 
-func getWeatherClientFromContext(ctx context.Context) *weather.Config {
-	return ctx.Value(weatherClientCtxKey).(*weather.Config)
+func getWeatherClientFromContext(ctx context.Context) *WeatherClientResponse {
+	return ctx.Value(weatherClientCtxKey).(*WeatherClientResponse)
 }
 
 func newContextWithWaterSchedule(ctx context.Context, ws *pkg.WaterSchedule) context.Context {

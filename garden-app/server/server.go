@@ -210,7 +210,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {
 			r.Use(weatherClientsResource.weatherClientContextMiddleware)
 
-			r.Get("/", weatherClientsResource.getWeatherClient)
+			r.Get("/", get[*WeatherClientResponse](getWeatherClientFromContext))
 			r.Patch("/", weatherClientsResource.updateWeatherClient)
 			r.Delete("/", weatherClientsResource.deleteWeatherClient)
 
