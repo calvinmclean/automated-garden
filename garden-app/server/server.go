@@ -229,7 +229,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		r.Route(fmt.Sprintf("/{%s}", waterSchedulePathParam), func(r chi.Router) {
 			r.Use(waterSchedulesResource.waterScheduleContextMiddleware)
 
-			r.Get("/", waterSchedulesResource.getWaterSchedule)
+			r.Get("/", get[*WaterScheduleResponse](getWaterScheduleFromContext))
 			r.Patch("/", waterSchedulesResource.updateWaterSchedule)
 			r.Delete("/", waterSchedulesResource.endDateWaterSchedule)
 		})

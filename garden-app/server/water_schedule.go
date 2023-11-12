@@ -48,7 +48,7 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 // waterScheduleContextMiddleware middleware is used to load a WaterSchedule object from the URL
 // parameters passed through as the request. In case the WaterSchedule could not be found,
 // we stop here and return a 404.
-func (wsr WaterSchedulesResource) waterScheduleContextMiddleware(next http.Handler) http.Handler {
+func (wsr *WaterSchedulesResource) waterScheduleContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -75,32 +75,19 @@ func (wsr WaterSchedulesResource) waterScheduleContextMiddleware(next http.Handl
 
 		logger.Debugf("found WaterSchedule: %+v", ws)
 
-		ctx = newContextWithWaterSchedule(ctx, ws)
+		ctx = newContextWithWaterSchedule(ctx, wsr.NewWaterScheduleResponse(ws))
 		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
 }
 
-// getWaterSchedule simply returns the WaterSchedule requested by the provided ID
-func (wsr WaterSchedulesResource) getWaterSchedule(w http.ResponseWriter, r *http.Request) {
-	logger := getLoggerFromContext(r.Context())
-	logger.Info("received request to get WaterSchedule")
-
-	ws := getWaterScheduleFromContext(r.Context())
-	logger.Debugf("responding with WaterSchedule: %+v", ws)
-
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
-		logger.WithError(err).Error("unable to render WaterScheduleResponse")
-		render.Render(w, r, ErrRender(err))
-	}
-}
-
 // updateWaterSchedule will change any specified fields of the WaterSchedule and save it
-func (wsr WaterSchedulesResource) updateWaterSchedule(w http.ResponseWriter, r *http.Request) {
+func (wsr *WaterSchedulesResource) updateWaterSchedule(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update WaterSchedule")
 
-	ws := getWaterScheduleFromContext(r.Context())
+	wsResponse := getWaterScheduleFromContext(r.Context())
+	ws := wsResponse.WaterSchedule
 	request := &UpdateWaterScheduleRequest{}
 
 	// Read the request body into existing WaterSchedule to overwrite fields
@@ -153,18 +140,19 @@ func (wsr WaterSchedulesResource) updateWaterSchedule(w http.ResponseWriter, r *
 		}
 	}
 
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, wsResponse); err != nil {
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // endDateWaterSchedule will mark the WaterSchedule's end date as now and save it
-func (wsr WaterSchedulesResource) endDateWaterSchedule(w http.ResponseWriter, r *http.Request) {
+func (wsr *WaterSchedulesResource) endDateWaterSchedule(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to end-date WaterSchedule")
 
-	ws := getWaterScheduleFromContext(r.Context())
+	wsResponse := getWaterScheduleFromContext(r.Context())
+	ws := wsResponse.WaterSchedule
 	now := time.Now()
 
 	// Unable to delete WaterSchedule with associated Zones
@@ -213,14 +201,14 @@ func (wsr WaterSchedulesResource) endDateWaterSchedule(w http.ResponseWriter, r 
 		return
 	}
 
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, wsResponse); err != nil {
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // getAllWaterSchedules will return a list of all WaterSchedules
-func (wsr WaterSchedulesResource) getAllWaterSchedules(w http.ResponseWriter, r *http.Request) {
+func (wsr *WaterSchedulesResource) getAllWaterSchedules(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 
 	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
@@ -234,14 +222,14 @@ func (wsr WaterSchedulesResource) getAllWaterSchedules(w http.ResponseWriter, r 
 	}
 	logger.Debugf("found %d WaterSchedules", len(waterSchedules))
 
-	if err := render.Render(w, r, wsr.NewAllWaterSchedulesResponse(r.Context(), waterSchedules, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, wsr.NewAllWaterSchedulesResponse(waterSchedules)); err != nil {
 		logger.WithError(err).Error("unable to render AllWaterSchedulesResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // createWaterSchedule will create a new WaterSchedule resource
-func (wsr WaterSchedulesResource) createWaterSchedule(w http.ResponseWriter, r *http.Request) {
+func (wsr *WaterSchedulesResource) createWaterSchedule(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new WaterSchedule")
 
@@ -287,13 +275,13 @@ func (wsr WaterSchedulesResource) createWaterSchedule(w http.ResponseWriter, r *
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(r.Context(), ws, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, wsr.NewWaterScheduleResponse(ws)); err != nil {
 		logger.WithError(err).Error("unable to render WaterScheduleResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func (wsr WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) (bool, error) {
+func (wsr *WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) (bool, error) {
 	if ws.HasTemperatureControl() {
 		exists, err := wsr.weatherClientExists(ws.WeatherControl.Temperature.ClientID)
 		if err != nil {
@@ -317,7 +305,7 @@ func (wsr WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) (bo
 	return true, nil
 }
 
-func (wsr WaterSchedulesResource) weatherClientExists(id xid.ID) (bool, error) {
+func (wsr *WaterSchedulesResource) weatherClientExists(id xid.ID) (bool, error) {
 	wc, err := wsr.storageClient.GetWeatherClientConfig(id)
 	if err != nil {
 		return false, fmt.Errorf("error getting WeatherClient with ID %q", id)

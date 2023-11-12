@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -17,26 +16,23 @@ type AllWaterSchedulesResponse struct {
 }
 
 // NewAllWaterSchedulesResponse will create an AllWaterSchedulesResponse from a list of WaterSchedules
-func (wsr WaterSchedulesResource) NewAllWaterSchedulesResponse(ctx context.Context, waterschedules []*pkg.WaterSchedule, excludeWeatherData bool) *AllWaterSchedulesResponse {
+func (wsr *WaterSchedulesResource) NewAllWaterSchedulesResponse(waterschedules []*pkg.WaterSchedule) *AllWaterSchedulesResponse {
 	waterscheduleResponses := []*WaterScheduleResponse{}
 	for _, ws := range waterschedules {
-		waterscheduleResponses = append(waterscheduleResponses, wsr.NewWaterScheduleResponse(ctx, ws, excludeWeatherData))
+		waterscheduleResponses = append(waterscheduleResponses, wsr.NewWaterScheduleResponse(ws))
 	}
 	return &AllWaterSchedulesResponse{waterscheduleResponses}
 }
 
 // Render ...
-func (zr *AllWaterSchedulesResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+func (asr *AllWaterSchedulesResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+	for _, ws := range asr.WaterSchedules {
+		err := ws.Render(nil, r)
+		if err != nil {
+			return fmt.Errorf("error rendering water schedule: %w", err)
+		}
+	}
 	return nil
-}
-
-// WaterScheduleResponse is used to represent a WaterSchedule in the response body with the additional Moisture data
-// and hypermedia Links fields
-type WaterScheduleResponse struct {
-	*pkg.WaterSchedule
-	WeatherData *WeatherData     `json:"weather_data,omitempty"`
-	NextWater   NextWaterDetails `json:"next_water,omitempty"`
-	Links       []Link           `json:"links,omitempty"`
 }
 
 // NextWaterDetails has information about the next time this WaterSchedule will be used
@@ -66,33 +62,44 @@ func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, excludeWe
 	return result
 }
 
+// WaterScheduleResponse is used to represent a WaterSchedule in the response body with the additional Moisture data
+// and hypermedia Links fields
+type WaterScheduleResponse struct {
+	*pkg.WaterSchedule
+	WeatherData *WeatherData     `json:"weather_data,omitempty"`
+	NextWater   NextWaterDetails `json:"next_water,omitempty"`
+	Links       []Link           `json:"links,omitempty"`
+
+	wsr *WaterSchedulesResource
+}
+
 // NewWaterScheduleResponse creates a self-referencing WaterScheduleResponse
-func (wsr WaterSchedulesResource) NewWaterScheduleResponse(ctx context.Context, ws *pkg.WaterSchedule, excludeWeatherData bool, links ...Link) *WaterScheduleResponse {
+func (wsr *WaterSchedulesResource) NewWaterScheduleResponse(ws *pkg.WaterSchedule, links ...Link) *WaterScheduleResponse {
 	response := &WaterScheduleResponse{
 		WaterSchedule: ws,
 		Links:         links,
+		wsr:           wsr,
 	}
+	return response
+}
 
-	response.Links = append(response.Links,
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response
+func (ws *WaterScheduleResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+	ws.Links = append(ws.Links,
 		Link{
 			"self",
 			fmt.Sprintf("%s/%s", waterScheduleBasePath, ws.ID),
 		},
 	)
 
-	if ws.HasWeatherControl() && !ws.EndDated() && !excludeWeatherData {
-		response.WeatherData = getWeatherData(ctx, ws, wsr.storageClient)
+	if ws.HasWeatherControl() && !ws.EndDated() && !excludeWeatherData(r) {
+		ws.WeatherData = getWeatherData(r.Context(), ws.WaterSchedule, ws.wsr.storageClient)
 	}
 
 	if !ws.EndDated() {
-		response.NextWater = GetNextWaterDetails(ws, wsr.worker, excludeWeatherData)
+		ws.NextWater = GetNextWaterDetails(ws.WaterSchedule, ws.wsr.worker, excludeWeatherData(r))
 	}
 
-	return response
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (z *WaterScheduleResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
