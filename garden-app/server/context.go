@@ -3,8 +3,6 @@ package server
 import (
 	"context"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/sirupsen/logrus"
 )
 
@@ -31,42 +29,42 @@ func getLoggerFromContext(ctx context.Context) *logrus.Entry {
 	return logger
 }
 
-func newContextWithGarden(ctx context.Context, g *pkg.Garden) context.Context {
+func newContextWithGarden(ctx context.Context, g *GardenResponse) context.Context {
 	return context.WithValue(ctx, gardenCtxKey, g)
 }
 
-func getGardenFromContext(ctx context.Context) *pkg.Garden {
-	return ctx.Value(gardenCtxKey).(*pkg.Garden)
+func getGardenFromContext(ctx context.Context) *GardenResponse {
+	return ctx.Value(gardenCtxKey).(*GardenResponse)
 }
 
-func newContextWithZone(ctx context.Context, z *pkg.Zone) context.Context {
+func newContextWithZone(ctx context.Context, z *ZoneResponse) context.Context {
 	return context.WithValue(ctx, zoneCtxKey, z)
 }
 
-func getZoneFromContext(ctx context.Context) *pkg.Zone {
-	return ctx.Value(zoneCtxKey).(*pkg.Zone)
+func getZoneFromContext(ctx context.Context) *ZoneResponse {
+	return ctx.Value(zoneCtxKey).(*ZoneResponse)
 }
 
-func newContextWithPlant(ctx context.Context, p *pkg.Plant) context.Context {
+func newContextWithPlant(ctx context.Context, p *PlantResponse) context.Context {
 	return context.WithValue(ctx, plantCtxKey, p)
 }
 
-func getPlantFromContext(ctx context.Context) *pkg.Plant {
-	return ctx.Value(plantCtxKey).(*pkg.Plant)
+func getPlantFromContext(ctx context.Context) *PlantResponse {
+	return ctx.Value(plantCtxKey).(*PlantResponse)
 }
 
-func newContextWithWeatherClient(ctx context.Context, wc *weather.Config) context.Context {
+func newContextWithWeatherClient(ctx context.Context, wc *WeatherClientResponse) context.Context {
 	return context.WithValue(ctx, weatherClientCtxKey, wc)
 }
 
-func getWeatherClientFromContext(ctx context.Context) *weather.Config {
-	return ctx.Value(weatherClientCtxKey).(*weather.Config)
+func getWeatherClientFromContext(ctx context.Context) *WeatherClientResponse {
+	return ctx.Value(weatherClientCtxKey).(*WeatherClientResponse)
 }
 
-func newContextWithWaterSchedule(ctx context.Context, ws *pkg.WaterSchedule) context.Context {
+func newContextWithWaterSchedule(ctx context.Context, ws *WaterScheduleResponse) context.Context {
 	return context.WithValue(ctx, waterScheduleCtxKey, ws)
 }
 
-func getWaterScheduleFromContext(ctx context.Context) *pkg.WaterSchedule {
-	return ctx.Value(waterScheduleCtxKey).(*pkg.WaterSchedule)
+func getWaterScheduleFromContext(ctx context.Context) *WaterScheduleResponse {
+	return ctx.Value(waterScheduleCtxKey).(*WaterScheduleResponse)
 }

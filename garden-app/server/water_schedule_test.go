@@ -178,7 +178,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			router := chi.NewRouter()
 			router.Route(fmt.Sprintf("/water_schedules/{%s}", waterSchedulePathParam), func(r chi.Router) {
 				r.Use(wsr.waterScheduleContextMiddleware)
-				r.Get("/", wsr.getWaterSchedule)
+				r.Get("/", get[*WaterScheduleResponse](getWaterScheduleFromContext))
 			})
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/water_schedules/%s?exclude_weather_data=%t", tt.waterSchedule.ID, tt.excludeWeatherData), nil)
@@ -247,7 +247,7 @@ func TestWaterScheduleContextMiddleware(t *testing.T) {
 			}
 
 			testHandler := func(w http.ResponseWriter, r *http.Request) {
-				ws := getWaterScheduleFromContext(r.Context())
+				ws := getWaterScheduleFromContext(r.Context()).WaterSchedule
 				assert.Equal(t, waterSchedule, ws)
 				render.Status(r, http.StatusOK)
 			}
@@ -385,7 +385,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			defer wsr.worker.Stop()
 
 			waterSchedule := createExampleWaterSchedule()
-			waterScheduleCtx := context.WithValue(context.Background(), waterScheduleCtxKey, waterSchedule)
+			waterScheduleCtx := newContextWithWaterSchedule(context.Background(), wsr.NewWaterScheduleResponse(waterSchedule))
 			r := httptest.NewRequest("PATCH", "/water_schedules", strings.NewReader(tt.body)).WithContext(waterScheduleCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -468,7 +468,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
-			waterScheduleCtx := context.WithValue(context.Background(), waterScheduleCtxKey, tt.waterSchedule)
+			waterScheduleCtx := newContextWithWaterSchedule(context.Background(), wsr.NewWaterScheduleResponse(tt.waterSchedule))
 			r := httptest.NewRequest("DELETE", "/water_schedules", nil).WithContext(waterScheduleCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()

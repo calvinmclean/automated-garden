@@ -75,7 +75,7 @@ func TestGetGarden(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			storageClient := setupZonePlantGardenStorage(t)
-			gr := GardensResource{
+			gr := &GardensResource{
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,
 				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
@@ -85,7 +85,7 @@ func TestGetGarden(t *testing.T) {
 			router := chi.NewRouter()
 			router.Route(fmt.Sprintf("/gardens/{%s}", gardenPathParam), func(r chi.Router) {
 				r.Use(gr.gardenContextMiddleware)
-				r.Get("/", gr.getGarden)
+				r.Get("/", get[*GardenResponse](getGardenFromContext))
 			})
 
 			r := httptest.NewRequest("GET", tt.path, nil)
@@ -144,7 +144,7 @@ func TestGardenRestrictEndDatedMiddleware(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
+			ctx := newContextWithGarden(context.Background(), &GardenResponse{Garden: tt.garden})
 			r := httptest.NewRequest("GET", "/garden", nil).WithContext(ctx)
 			w := httptest.NewRecorder()
 
@@ -229,7 +229,7 @@ func TestCreateGarden(t *testing.T) {
 			} else {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
 			}
-			gr := GardensResource{
+			gr := &GardensResource{
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,
 				config:         Config{},
@@ -295,7 +295,7 @@ func TestGetAllGardens(t *testing.T) {
 
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
-			gr := GardensResource{
+			gr := &GardensResource{
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,
 				config:         Config{},
@@ -360,13 +360,13 @@ func TestEndDateGarden(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient := setupZonePlantGardenStorage(t)
-			gr := GardensResource{
+			gr := &GardensResource{
 				storageClient: storageClient,
 				config:        Config{},
 				worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 
-			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
+			ctx := newContextWithGarden(context.Background(), &GardenResponse{Garden: tt.garden})
 			r := httptest.NewRequest("DELETE", "/garden", nil).WithContext(ctx)
 			w := httptest.NewRecorder()
 			h := http.HandlerFunc(gr.endDateGarden)
@@ -445,14 +445,14 @@ func TestUpdateGarden(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			storageClient := setupZonePlantGardenStorage(t)
-			gr := GardensResource{
+			gr := &GardensResource{
 				storageClient:  storageClient,
 				influxdbClient: influxdbClient,
 				config:         Config{},
 				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 
-			ctx := context.WithValue(context.Background(), gardenCtxKey, tt.garden)
+			ctx := newContextWithGarden(context.Background(), &GardenResponse{Garden: tt.garden, gr: gr})
 			r := httptest.NewRequest("PATCH", "/garden", strings.NewReader(tt.body)).WithContext(ctx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -523,12 +523,12 @@ func TestGardenAction(t *testing.T) {
 			mqttClient := new(mqtt.MockClient)
 			tt.setupMock(mqttClient)
 
-			gr := GardensResource{
+			gr := &GardensResource{
 				worker: worker.NewWorker(setupZonePlantGardenStorage(t), nil, mqttClient, logrus.New()),
 			}
 			garden := createExampleGarden()
 
-			gardenCtx := context.WithValue(context.Background(), gardenCtxKey, garden)
+			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
 			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body)).WithContext(gardenCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()

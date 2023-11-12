@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -15,11 +14,12 @@ type WeatherClientResponse struct {
 }
 
 // NewWeatherClientResponse creates a new WeatherClientResponse
-func (wcr WeatherClientsResource) NewWeatherClientResponse(_ context.Context, weatherClient *weather.Config, links ...Link) *WeatherClientResponse {
+func (wcr *WeatherClientsResource) NewWeatherClientResponse(weatherClient *weather.Config, links ...Link) *WeatherClientResponse {
 	response := &WeatherClientResponse{
 		Config: weatherClient,
+		Links:  links,
 	}
-	response.Links = append(links,
+	response.Links = append(response.Links,
 		Link{
 			"self",
 			fmt.Sprintf("%s/%s", weatherClientsBasePath, weatherClient.ID),
@@ -41,10 +41,10 @@ type AllWeatherClientsResponse struct {
 }
 
 // NewAllWeatherClientsResponse will create an AllWeatherClientResponse from a list of Zones
-func (wcr WeatherClientsResource) NewAllWeatherClientsResponse(ctx context.Context, weatherClients []*weather.Config) *AllWeatherClientsResponse {
+func (wcr *WeatherClientsResource) NewAllWeatherClientsResponse(weatherClients []*weather.Config) *AllWeatherClientsResponse {
 	weatherClientResponses := []*WeatherClientResponse{}
 	for _, c := range weatherClients {
-		weatherClientResponses = append(weatherClientResponses, wcr.NewWeatherClientResponse(ctx, c))
+		weatherClientResponses = append(weatherClientResponses, wcr.NewWeatherClientResponse(c))
 	}
 	return &AllWeatherClientsResponse{weatherClientResponses}
 }

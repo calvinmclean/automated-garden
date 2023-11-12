@@ -44,7 +44,7 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 // zoneContextMiddleware middleware is used to load a Zone object from the URL
 // parameters passed through as the request. In case the Zone could not be found,
 // we stop here and return a 404.
-func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
+func (zr *ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		ctx := r.Context()
 
@@ -57,7 +57,7 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		garden := getGardenFromContext(ctx)
+		garden := getGardenFromContext(r.Context()).Garden
 		zone := garden.Zones[zoneID]
 		if zone == nil {
 			logger.Info("zone not found")
@@ -66,7 +66,7 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 		}
 		logger.Debugf("found Zone: %+v", zone)
 
-		ctx = newContextWithZone(ctx, zone)
+		ctx = newContextWithZone(ctx, zr.NewZoneResponse(garden, zone))
 		ctx = newContextWithLogger(ctx, logger)
 		next.ServeHTTP(w, r.WithContext(ctx))
 	})
@@ -75,12 +75,13 @@ func (zr ZonesResource) zoneContextMiddleware(next http.Handler) http.Handler {
 // zoneAction reads a ZoneAction request and uses it to execute one of the actions
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
-func (zr ZonesResource) zoneAction(w http.ResponseWriter, r *http.Request) {
+func (zr *ZonesResource) zoneAction(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to execute ZoneAction")
 
-	garden := getGardenFromContext(r.Context())
-	zone := getZoneFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
+	zoneResponse := getZoneFromContext(r.Context())
+	zone := zoneResponse.Zone
 
 	action := &ZoneActionRequest{}
 	if err := render.Bind(r, action); err != nil {
@@ -100,29 +101,15 @@ func (zr ZonesResource) zoneAction(w http.ResponseWriter, r *http.Request) {
 	render.DefaultResponder(w, r, nil)
 }
 
-// getZone simply returns the Zone requested by the provided ID
-func (zr ZonesResource) getZone(w http.ResponseWriter, r *http.Request) {
-	logger := getLoggerFromContext(r.Context())
-	logger.Info("received request to get Zone")
-
-	garden := getGardenFromContext(r.Context())
-	zone := getZoneFromContext(r.Context())
-	logger.Debugf("responding with Zone: %+v", zone)
-
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
-		logger.WithError(err).Error("unable to render ZoneResponse")
-		render.Render(w, r, ErrRender(err))
-	}
-}
-
 // updateZone will change any specified fields of the Zone and save it
-func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
+func (zr *ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to update Zone")
 
-	zone := getZoneFromContext(r.Context())
+	zoneResponse := getZoneFromContext(r.Context())
+	zone := zoneResponse.Zone
 	request := &UpdateZoneRequest{}
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 
 	// Read the request body into existing zone to overwrite fields
 	if err := render.Bind(r, request); err != nil {
@@ -157,13 +144,13 @@ func (zr ZonesResource) updateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, zoneResponse); err != nil {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
-func (zr ZonesResource) waterSchedulesExist(ids []xid.ID) (bool, error) {
+func (zr *ZonesResource) waterSchedulesExist(ids []xid.ID) (bool, error) {
 	for _, id := range ids {
 		ws, err := zr.storageClient.GetWaterSchedule(id)
 		if err != nil {
@@ -178,12 +165,13 @@ func (zr ZonesResource) waterSchedulesExist(ids []xid.ID) (bool, error) {
 }
 
 // endDateZone will mark the Zone's end date as now and save it
-func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
+func (zr *ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to end-date Zone")
 
-	garden := getGardenFromContext(r.Context())
-	zone := getZoneFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
+	zoneResponse := getZoneFromContext(r.Context())
+	zone := zoneResponse.Zone
 	now := time.Now()
 
 	// Unable to delete Zone with associated Plants
@@ -226,20 +214,20 @@ func (zr ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, zoneResponse); err != nil {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // getAllZones will return a list of all Zones
-func (zr ZonesResource) getAllZones(w http.ResponseWriter, r *http.Request) {
+func (zr *ZonesResource) getAllZones(w http.ResponseWriter, r *http.Request) {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
 
 	logger := getLoggerFromContext(r.Context()).WithField("include_end_dated", getEndDated)
 	logger.Info("received request to get all Zones")
 
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 	zones := []*pkg.Zone{}
 	for _, z := range garden.Zones {
 		if getEndDated || (z.EndDate == nil || z.EndDate.After(time.Now())) {
@@ -248,14 +236,14 @@ func (zr ZonesResource) getAllZones(w http.ResponseWriter, r *http.Request) {
 	}
 	logger.Debugf("found %d Zones", len(zones))
 
-	if err := render.Render(w, r, zr.NewAllZonesResponse(r.Context(), zones, garden, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, zr.NewAllZonesResponse(zones, garden)); err != nil {
 		logger.WithError(err).Error("unable to render AllZonesResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // createZone will create a new Zone resource
-func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
+func (zr *ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to create new Zone")
 
@@ -269,7 +257,7 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	zone := request.Zone
 	logger.Debugf("request to create Zone: %+v", zone)
 
-	garden := getGardenFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
 
 	// Validate that adding a Zone does not exceed Garden.MaxZones
 	if garden.NumZones()+1 > *garden.MaxZones {
@@ -316,19 +304,20 @@ func (zr ZonesResource) createZone(w http.ResponseWriter, r *http.Request) {
 	}
 
 	render.Status(r, http.StatusCreated)
-	if err := render.Render(w, r, zr.NewZoneResponse(r.Context(), garden, zone, excludeWeatherData(r))); err != nil {
+	if err := render.Render(w, r, zr.NewZoneResponse(garden, zone)); err != nil {
 		logger.WithError(err).Error("unable to render ZoneResponse")
 		render.Render(w, r, ErrRender(err))
 	}
 }
 
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
-func (zr ZonesResource) waterHistory(w http.ResponseWriter, r *http.Request) {
+func (zr *ZonesResource) waterHistory(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
-	garden := getGardenFromContext(r.Context())
-	zone := getZoneFromContext(r.Context())
+	garden := getGardenFromContext(r.Context()).Garden
+	zoneResponse := getZoneFromContext(r.Context())
+	zone := zoneResponse.Zone
 
 	// Read query parameters and set default values
 	timeRangeString := r.URL.Query().Get("range")
@@ -372,7 +361,7 @@ func (zr ZonesResource) waterHistory(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (zr ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {
+func (zr *ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {
 	defer zr.influxdbClient.Close()
 
 	moisture, err := zr.influxdbClient.GetMoisture(ctx, *z.Position, g.TopicPrefix)
@@ -383,7 +372,7 @@ func (zr ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Z
 }
 
 // getWaterHistory gets previous WaterEvents for this Zone from InfluxDB
-func (zr ZonesResource) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WaterHistory, err error) {
+func (zr *ZonesResource) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WaterHistory, err error) {
 	defer zr.influxdbClient.Close()
 
 	history, err := zr.influxdbClient.GetWaterHistory(ctx, *zone.Position, garden.TopicPrefix, timeRange, limit)

@@ -78,7 +78,7 @@ func TestWeatherClientContextMiddleware(t *testing.T) {
 			wcr, _ := NewWeatherClientsResource(storageClient)
 
 			testHandler := func(w http.ResponseWriter, r *http.Request) {
-				wc := getWeatherClientFromContext(r.Context())
+				wc := getWeatherClientFromContext(r.Context()).Config
 				assert.Equal(t, weatherClient, wc)
 				render.Status(r, http.StatusOK)
 			}
@@ -98,10 +98,10 @@ func TestWeatherClientContextMiddleware(t *testing.T) {
 
 func TestGetWeatherClient(t *testing.T) {
 	wcr := WeatherClientsResource{}
-	weatherClientCtx := context.WithValue(context.Background(), weatherClientCtxKey, createExampleWeatherClientConfig())
+	weatherClientCtx := newContextWithWeatherClient(context.Background(), wcr.NewWeatherClientResponse(createExampleWeatherClientConfig()))
 	r := httptest.NewRequest("GET", "/weather_clients", nil).WithContext(weatherClientCtx)
 	w := httptest.NewRecorder()
-	h := http.HandlerFunc(wcr.getWeatherClient)
+	h := http.HandlerFunc(get[*WeatherClientResponse](getWeatherClientFromContext))
 
 	h.ServeHTTP(w, r)
 
@@ -244,7 +244,7 @@ func TestDeleteWeatherClient(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			wcr, _ := NewWeatherClientsResource(storageClient)
 
-			weatherClientCtx := context.WithValue(context.Background(), weatherClientCtxKey, tt.weatherClient)
+			weatherClientCtx := newContextWithWeatherClient(context.Background(), &WeatherClientResponse{Config: tt.weatherClient})
 			r := httptest.NewRequest("DELETE", "/weather_clients/"+tt.id, nil).WithContext(weatherClientCtx)
 			r.Header.Add("Content-Type", "application/json")
 			w := httptest.NewRecorder()
@@ -383,7 +383,7 @@ func TestTestWeatherClient(t *testing.T) {
 			wcr, _ := NewWeatherClientsResource(storageClient)
 			weatherClient := createExampleWeatherClientConfig()
 
-			weatherClientCtx := context.WithValue(context.Background(), weatherClientCtxKey, weatherClient)
+			weatherClientCtx := newContextWithWeatherClient(context.Background(), &WeatherClientResponse{Config: weatherClient})
 
 			r := httptest.NewRequest("GET", "/weather_clients/c5cvhpcbcv45e8bp16dg", nil).WithContext(weatherClientCtx)
 			w := httptest.NewRecorder()

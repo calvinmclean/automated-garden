@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 
@@ -14,16 +13,23 @@ type AllPlantsResponse struct {
 }
 
 // NewAllPlantsResponse will create an AllPlantsResponse from a list of Plants
-func (pr PlantsResource) NewAllPlantsResponse(ctx context.Context, plants []*pkg.Plant, garden *pkg.Garden) *AllPlantsResponse {
+func (pr *PlantsResource) NewAllPlantsResponse(plants []*pkg.Plant, garden *pkg.Garden) *AllPlantsResponse {
 	plantResponses := []*PlantResponse{}
 	for _, p := range plants {
-		plantResponses = append(plantResponses, pr.NewPlantResponse(ctx, garden, p))
+		plantResponses = append(plantResponses, pr.NewPlantResponse(garden, p))
 	}
 	return &AllPlantsResponse{plantResponses}
 }
 
 // Render will take the map of Plants and convert it to a list for a more RESTy response
-func (pr *AllPlantsResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+func (pr *AllPlantsResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+	for _, p := range pr.Plants {
+		err := p.Render(nil, r)
+		if err != nil {
+			return fmt.Errorf("error rendering plant: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -35,7 +41,7 @@ type PlantResponse struct {
 }
 
 // NewPlantResponse creates a self-referencing PlantResponse
-func (pr PlantsResource) NewPlantResponse(_ context.Context, garden *pkg.Garden, plant *pkg.Plant, links ...Link) *PlantResponse {
+func (pr *PlantsResource) NewPlantResponse(garden *pkg.Garden, plant *pkg.Plant, links ...Link) *PlantResponse {
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	links = append(links,
 		Link{

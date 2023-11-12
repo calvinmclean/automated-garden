@@ -51,7 +51,7 @@ type Server struct {
 	*http.Server
 	quit            chan os.Signal
 	logger          *logrus.Entry
-	gardensResource GardensResource
+	gardensResource *GardensResource
 	worker          *worker.Worker
 }
 
@@ -152,7 +152,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
 			r.Use(gardenResource.gardenContextMiddleware)
 
-			r.Get("/", gardenResource.getGarden)
+			r.Get("/", get[*GardenResponse](getGardenFromContext))
 			r.Patch("/", gardenResource.updateGarden)
 			r.Delete("/", gardenResource.endDateGarden)
 
@@ -168,7 +168,8 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 					r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
 						r.Use(plantsResource.plantContextMiddleware)
 
-						r.Get("/", plantsResource.getPlant)
+						r.Get("/", get[*PlantResponse](getPlantFromContext))
+
 						r.Patch("/", plantsResource.updatePlant)
 						r.Delete("/", plantsResource.endDatePlant)
 					})
@@ -181,7 +182,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 					r.Route(fmt.Sprintf("/{%s}", zonePathParam), func(r chi.Router) {
 						r.Use(zonesResource.zoneContextMiddleware)
 
-						r.Get("/", zonesResource.getZone)
+						r.Get("/", get[*ZoneResponse](getZoneFromContext))
 						r.Patch("/", zonesResource.updateZone)
 						r.Delete("/", zonesResource.endDateZone)
 
@@ -209,7 +210,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {
 			r.Use(weatherClientsResource.weatherClientContextMiddleware)
 
-			r.Get("/", weatherClientsResource.getWeatherClient)
+			r.Get("/", get[*WeatherClientResponse](getWeatherClientFromContext))
 			r.Patch("/", weatherClientsResource.updateWeatherClient)
 			r.Delete("/", weatherClientsResource.deleteWeatherClient)
 
@@ -228,7 +229,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		r.Route(fmt.Sprintf("/{%s}", waterSchedulePathParam), func(r chi.Router) {
 			r.Use(waterSchedulesResource.waterScheduleContextMiddleware)
 
-			r.Get("/", waterSchedulesResource.getWaterSchedule)
+			r.Get("/", get[*WaterScheduleResponse](getWaterScheduleFromContext))
 			r.Patch("/", waterSchedulesResource.updateWaterSchedule)
 			r.Delete("/", waterSchedulesResource.endDateWaterSchedule)
 		})
