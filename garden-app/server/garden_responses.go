@@ -1,6 +1,7 @@
 package server
 
 import (
+	_ "embed"
 	"fmt"
 	"net/http"
 	"time"
@@ -136,59 +137,11 @@ type AllGardensResponse struct {
 	Gardens []*GardenResponse `json:"gardens"`
 }
 
+//go:embed templates/gardens.html
+var gardensHTML []byte
+
 func (gr *AllGardensResponse) HTML() string {
-	return `
-<div class="container">
-	<div class="row">
-{{ range .Gardens }}
-		<div class="col-lg-6">
-			<div class=".col-lg-4 card" style="margin: 5%;"><a href="#/gardens/{{ .ID }}"
-					style="text-decoration: none;">
-					<div class="text-center card-header">
-						<h5 class="card-title">{{ .Name }}<span id="status-badge-{{ .ID }}"
-								class="badge text-bg-primary"><i class="bi-wifi"></i> UP</span> </h5>
-					</div>
-				</a>
-				<div class="card-body">
-					<p class="card-text">
-					<div class="container">
-						<div class="row">
-							<div class="col">
-								<div class="badge-lg s-dnUhypD8r_0u"><span
-										class="badge text-bg-warning rounded-pill">1 Zones <i
-											class="bi-grid"></i></span></div>
-							</div>
-							<div class="col">
-								<div class="badge-lg s-dnUhypD8r_0u"><span
-										class="badge text-bg-success rounded-pill">0 Plants <i
-											class="bi-tree"></i></span></div>
-							</div>
-						</div>
-						<div class="row"></div>
-					</div>
-					</p>
-				</div>
-				<div class="card-footer">
-					<div class="row">
-						<div class="col">
-							<div class="btn-group"><button type="button" aria-expanded="false"
-									class="dropdown-toggle btn btn-primary">Actions</button>
-								<div class="dropdown-menu" data-popper-placement="bottom-start"
-									style="position: absolute; inset: 0px auto auto 0px; margin: 0px; transform: translate3d(221px, 268px, 0px);">
-									<button type="button" class="dropdown-item"><i class="bi-sign-stop-fill"></i>
-										Stop Watering</button>
-								</div>
-							</div>
-						</div>
-						<div class="col offset-sm-6"><i id="info-{{ .ID }}" class="bi-info-circle"></i>
-						</div>
-					</div>
-				</div>
-			</div>
-		</div>
-{{ end }}
-	</div>
-</div>`
+	return string(gardensHTML)
 }
 
 // NewAllGardensResponse will create an AllGardensResponse from a list of Gardens
