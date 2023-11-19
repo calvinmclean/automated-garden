@@ -6,6 +6,27 @@ import (
 	"strings"
 )
 
+const autoDarkModeJS = `
+<script>
+(() => {
+	'use strict'
+
+	const getPreferredTheme = () => {
+		return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+	}
+
+	const setTheme = theme => {
+		document.documentElement.setAttribute('data-bs-theme', theme)
+	}
+
+	setTheme(getPreferredTheme())
+
+	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
+		setTheme(getPreferredTheme())
+	})
+})()
+</script>`
+
 type HTMLer interface {
 	HTML() string
 }
@@ -29,8 +50,8 @@ func renderHTML(htmler HTMLer, data any) string {
 		"ToLower": strings.ToLower,
 	})
 
+	templates = template.Must(templates.New("autoDarkModeJS").Parse(autoDarkModeJS))
 	templates = template.Must(templates.New("innerHTML").Parse(htmler.HTML()))
-
 	templates = template.Must(templates.New("GardenApp").Parse(`<!doctype html>
 <html>
 <head>
@@ -43,6 +64,8 @@ func renderHTML(htmler HTMLer, data any) string {
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.8"></script>
 	<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
+	
+	{{ template "autoDarkModeJS" }}
 </head>
 
 <body>
