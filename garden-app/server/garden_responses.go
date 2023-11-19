@@ -1,9 +1,9 @@
 package server
 
 import (
-	_ "embed"
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -137,10 +137,15 @@ type AllGardensResponse struct {
 	Gardens []*GardenResponse `json:"gardens"`
 }
 
-//go:embed templates/gardens.html
-var gardensHTML []byte
+// TODO: re-enable this and figure out dev setup to automatically switch between embed and read
+// //go:embed templates/gardens.html
+// var gardensHTML []byte
 
-func (gr *AllGardensResponse) HTML() string {
+func (agr *AllGardensResponse) HTML() string {
+	gardensHTML, err := os.ReadFile("server/templates/gardens.html")
+	if err != nil {
+		panic(err)
+	}
 	return string(gardensHTML)
 }
 

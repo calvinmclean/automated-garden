@@ -69,6 +69,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	r.Use(loggerMiddleware(logger))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(3 * time.Second))
+	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	render.Respond = func(w http.ResponseWriter, r *http.Request, v interface{}) {
 		switch render.GetAcceptedContentType(r) {

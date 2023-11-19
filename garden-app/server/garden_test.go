@@ -501,6 +501,16 @@ func TestGardenAction(t *testing.T) {
 			http.StatusAccepted,
 		},
 		{
+			"SuccessfulLightActionUsingHTMXFlattenedInput",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
+				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
+			},
+			`{"light_state":"on"}`,
+			"null",
+			http.StatusAccepted,
+		},
+		{
 			"ExecuteErrorForLightAction",
 			func(mqttClient *mqtt.MockClient) {
 				mqttClient.On("LightTopic", "test-garden").Return("", errors.New("template error"))

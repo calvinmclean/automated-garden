@@ -3,6 +3,7 @@ package server
 import (
 	"bytes"
 	"html/template"
+	"strings"
 )
 
 type HTMLer interface {
@@ -10,7 +11,25 @@ type HTMLer interface {
 }
 
 func renderHTML(htmler HTMLer, data any) string {
-	templates := template.Must(template.New("innerHTML").Parse(htmler.HTML()))
+	templates := template.New("base").Funcs(map[string]any{
+		// args is used to create input maps when including sub-templates. It converts a slice to a map
+		// by using N as the key and N+1 as a value
+		"args": func(input ...string) map[string]any {
+			result := map[string]any{}
+			if len(input) < 2 {
+				return result
+			}
+
+			for i := 0; i+1 < len(input); i++ {
+				result[input[i]] = input[i+1]
+			}
+
+			return result
+		},
+		"ToLower": strings.ToLower,
+	})
+
+	templates = template.Must(templates.New("innerHTML").Parse(htmler.HTML()))
 
 	templates = template.Must(templates.New("GardenApp").Parse(`<!doctype html>
 <html>
@@ -22,6 +41,8 @@ func renderHTML(htmler HTMLer, data any) string {
 	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
 	<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+	<script src="https://unpkg.com/htmx.org@1.9.8"></script>
+	<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 </head>
 
 <body>
