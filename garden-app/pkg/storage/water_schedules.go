@@ -15,17 +15,17 @@ func waterScheduleKey(id xid.ID) string {
 
 // GetWaterSchedule ...
 func (c *Client) GetWaterSchedule(id xid.ID) (*pkg.WaterSchedule, error) {
-	return getOne[pkg.WaterSchedule](c, waterScheduleKey(id))
+	return GetOne[pkg.WaterSchedule](c, waterScheduleKey(id))
 }
 
 // GetWaterSchedules ...
 func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, error) {
-	return getMultiple[*pkg.WaterSchedule](c, getEndDated, waterSchedulePrefix)
+	return GetMultiple[*pkg.WaterSchedule](c, getEndDated, waterSchedulePrefix)
 }
 
 // SaveWaterSchedule ...
 func (c *Client) SaveWaterSchedule(ws *pkg.WaterSchedule) error {
-	return save[*pkg.WaterSchedule](c, ws, waterScheduleKey(ws.ID))
+	return Save[*pkg.WaterSchedule](c, ws, waterScheduleKey(ws.ID))
 }
 
 // DeleteWaterSchedule ...

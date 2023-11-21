@@ -13,17 +13,17 @@ func gardenKey(id xid.ID) string {
 
 // GetGarden ...
 func (c *Client) GetGarden(id xid.ID) (*pkg.Garden, error) {
-	return getOne[pkg.Garden](c, gardenKey(id))
+	return GetOne[pkg.Garden](c, gardenKey(id))
 }
 
 // GetGardens ...
 func (c *Client) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
-	return getMultiple[*pkg.Garden](c, getEndDated, gardenPrefix)
+	return GetMultiple[*pkg.Garden](c, getEndDated, gardenPrefix)
 }
 
 // SaveGarden ...
 func (c *Client) SaveGarden(g *pkg.Garden) error {
-	return save[*pkg.Garden](c, g, gardenKey(g.ID))
+	return Save[*pkg.Garden](c, g, gardenKey(g.ID))
 }
 
 // DeleteGarden ...

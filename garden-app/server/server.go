@@ -215,24 +215,12 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		})
 	})
 
-	weatherClientsResource, err := NewWeatherClientsResource(storageClient)
+	weatherClientsResource, err := NewWeatherClientsAPI(storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
-	r.Route(weatherClientsBasePath, func(r chi.Router) {
-		r.Post("/", weatherClientsResource.createWeatherClient)
-		r.Get("/", weatherClientsResource.getAllWeatherClients)
 
-		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {
-			r.Use(weatherClientsResource.weatherClientContextMiddleware)
-
-			r.Get("/", get[*WeatherClientResponse](getWeatherClientFromContext))
-			r.Patch("/", weatherClientsResource.updateWeatherClient)
-			r.Delete("/", weatherClientsResource.deleteWeatherClient)
-
-			r.Get("/test", weatherClientsResource.testWeatherClient)
-		})
-	})
+	r.Mount("/", weatherClientsResource.Router())
 
 	waterSchedulesResource, err := NewWaterSchedulesResource(storageClient, worker)
 	if err != nil {
@@ -365,7 +353,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if wc.ID.IsNil() {
 			return errors.New("invalid WeatherClient: missing required field 'id'")
 		}
-		err = (&WeatherClientRequest{wc}).Bind(nil)
+		err = (&WeatherConfig{Config: wc}).Bind(nil)
 		if err != nil {
 			return fmt.Errorf("invalid WeatherClient %q: %w", wc.ID, err)
 		}

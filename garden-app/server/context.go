@@ -53,14 +53,6 @@ func getPlantFromContext(ctx context.Context) *PlantResponse {
 	return ctx.Value(plantCtxKey).(*PlantResponse)
 }
 
-func newContextWithWeatherClient(ctx context.Context, wc *WeatherClientResponse) context.Context {
-	return context.WithValue(ctx, weatherClientCtxKey, wc)
-}
-
-func getWeatherClientFromContext(ctx context.Context) *WeatherClientResponse {
-	return ctx.Value(weatherClientCtxKey).(*WeatherClientResponse)
-}
-
 func newContextWithWaterSchedule(ctx context.Context, ws *WaterScheduleResponse) context.Context {
 	return context.WithValue(ctx, waterScheduleCtxKey, ws)
 }

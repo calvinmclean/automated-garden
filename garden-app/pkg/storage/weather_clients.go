@@ -13,10 +13,13 @@ const weatherClientPrefix = "WeatherClient_"
 func weatherClientKey(id xid.ID) string {
 	return weatherClientPrefix + id.String()
 }
+func WeatherClientKey(id string) string {
+	return weatherClientPrefix + id
+}
 
 // GetWeatherClient ...
 func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
-	clientConfig, err := getOne[weather.Config](c, weatherClientKey(id))
+	clientConfig, err := GetOne[weather.Config](c, weatherClientKey(id))
 	if err != nil {
 		return nil, fmt.Errorf("error getting weather client config: %w", err)
 	}
@@ -33,17 +36,17 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 
 // GetWeatherClientConfig ...
 func (c *Client) GetWeatherClientConfig(id xid.ID) (*weather.Config, error) {
-	return getOne[weather.Config](c, weatherClientKey(id))
+	return GetOne[weather.Config](c, weatherClientKey(id))
 }
 
 // GetWeatherClientConfigs ...
 func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error) {
-	return getMultiple[*weather.Config](c, true, weatherClientPrefix)
+	return GetMultiple[*weather.Config](c, true, weatherClientPrefix)
 }
 
 // SaveWeatherClientConfig ...
 func (c *Client) SaveWeatherClientConfig(wc *weather.Config) error {
-	return save[*weather.Config](c, wc, weatherClientKey(wc.ID))
+	return Save[*weather.Config](c, wc, weatherClientKey(wc.ID))
 }
 
 // DeleteWeatherClientConfig ...
@@ -52,7 +55,7 @@ func (c *Client) DeleteWeatherClientConfig(id xid.ID) error {
 }
 
 // GetWaterSchedulesUsingWeatherClient will return all WaterSchedules that rely on this WeatherClient
-func (c *Client) GetWaterSchedulesUsingWeatherClient(id xid.ID) ([]*pkg.WaterSchedule, error) {
+func (c *Client) GetWaterSchedulesUsingWeatherClient(id string) ([]*pkg.WaterSchedule, error) {
 	waterSchedules, err := c.GetWaterSchedules(false)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get all WaterSchedules: %w", err)
@@ -62,12 +65,12 @@ func (c *Client) GetWaterSchedulesUsingWeatherClient(id xid.ID) ([]*pkg.WaterSch
 	for _, ws := range waterSchedules {
 		if ws.HasWeatherControl() {
 			if ws.HasRainControl() {
-				if ws.WeatherControl.Rain.ClientID == id {
+				if ws.WeatherControl.Rain.ClientID.String() == id {
 					results = append(results, ws)
 				}
 			}
 			if ws.HasTemperatureControl() {
-				if ws.WeatherControl.Temperature.ClientID == id {
+				if ws.WeatherControl.Temperature.ClientID.String() == id {
 					results = append(results, ws)
 				}
 			}

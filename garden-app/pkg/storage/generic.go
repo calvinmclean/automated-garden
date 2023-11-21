@@ -9,9 +9,13 @@ import (
 	"github.com/madflojo/hord"
 )
 
-// getOne will use the provided key to read data from the data source. Then, it will Unmarshal
+func Delete(c *Client, key string) error {
+	return c.db.Delete(key)
+}
+
+// GetOne will use the provided key to read data from the data source. Then, it will Unmarshal
 // into the generic type
-func getOne[T any](c *Client, key string) (*T, error) {
+func GetOne[T any](c *Client, key string) (*T, error) {
 	if c.db == nil {
 		return nil, fmt.Errorf("error missing database connection")
 	}
@@ -33,10 +37,10 @@ func getOne[T any](c *Client, key string) (*T, error) {
 	return &result, nil
 }
 
-// getMultiple will use the provided prefix to read data from the data source. Then, it will use getOne
+// GetMultiple will use the provided prefix to read data from the data source. Then, it will use getOne
 // to read each element into the correct type. These types must support `pkg.EndDateable` to allow
 // excluding end-dated resources
-func getMultiple[T pkg.EndDateable](c *Client, getEndDated bool, prefix string) ([]T, error) {
+func GetMultiple[T pkg.EndDateable](c *Client, getEndDated bool, prefix string) ([]T, error) {
 	keys, err := c.db.Keys()
 	if err != nil {
 		return nil, fmt.Errorf("error getting keys: %w", err)
@@ -48,7 +52,7 @@ func getMultiple[T pkg.EndDateable](c *Client, getEndDated bool, prefix string) 
 			continue
 		}
 
-		result, err := getOne[T](c, key)
+		result, err := GetOne[T](c, key)
 		if err != nil {
 			return nil, fmt.Errorf("error getting data: %w", err)
 		}
@@ -64,8 +68,8 @@ func getMultiple[T pkg.EndDateable](c *Client, getEndDated bool, prefix string) 
 	return results, nil
 }
 
-// save marshals the provided item and writes it to the database
-func save[T any](c *Client, item T, key string) error {
+// Save marshals the provided item and writes it to the database
+func Save[T any](c *Client, item T, key string) error {
 	asBytes, err := c.marshal(item)
 	if err != nil {
 		return fmt.Errorf("error marshalling data: %w", err)
