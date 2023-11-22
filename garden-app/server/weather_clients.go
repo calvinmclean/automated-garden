@@ -15,7 +15,6 @@ import (
 
 const (
 	weatherClientsBasePath  = "/weather_clients"
-	weatherClientPathParam  = "clientID"
 	weatherClientIDLogField = "weather_client_id"
 )
 
@@ -35,23 +34,38 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 	wcr.api = babyapi.NewAPI[*weather.Config](weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 	wcr.api.SetStorage(wcr.storageClient)
 
+	wcr.api.AddMiddlewares(chi.Middlewares{
+		func(next http.Handler) http.Handler {
+			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				ctx := r.Context()
+
+				id := wcr.api.GetIDParam(r)
+				if id != "" {
+					logger := babyapi.GetLoggerFromContext(ctx).With(weatherClientIDLogField, id)
+					ctx = babyapi.NewContextWithLogger(ctx, logger)
+				}
+				next.ServeHTTP(w, r.WithContext(ctx))
+			})
+		},
+	})
+
 	wcr.api.AddCustomRoute(chi.Route{
 		Pattern: "/",
 		Handlers: map[string]http.Handler{
 			http.MethodPost: wcr.api.ReadRequestBodyAndDo(func(r *http.Request, weatherClientConfig *weather.Config) render.Renderer {
-				logger := getLoggerFromContext(r.Context())
+				logger := babyapi.GetLoggerFromContext(r.Context())
 				logger.Info("received request to create new WeatherClient")
 
-				logger.Debugf("request to create WeatherClient: %+v", weatherClientConfig)
+				logger.Debug("request to create WeatherClient", "request", weatherClientConfig)
 
 				// Assign values to fields that may not be set in the request
 				weatherClientConfig.ID = xid.New()
-				logger.Debugf("new WeatherClient ID: %v", weatherClientConfig.ID)
+				logger.Debug("new WeatherClient ID", weatherClientIDLogField, weatherClientConfig.ID)
 
 				// Save the WeatherClient
 				logger.Debug("saving WeatherClient")
 				if err := wcr.storageClient.Set(weatherClientConfig); err != nil {
-					logger.WithError(err).Error("unable to save WeatherClient Config")
+					logger.Error("unable to save WeatherClient Config", "error", err)
 					return InternalServerError(err)
 				}
 
@@ -65,7 +79,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		Pattern: "/test",
 		Handlers: map[string]http.Handler{
 			http.MethodGet: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				logger := getLoggerFromContext(r.Context())
+				logger := babyapi.GetLoggerFromContext(r.Context())
 				logger.Info("received request to test WeatherClient")
 
 				weatherClient, httpErr := wcr.api.GetRequestedResource(r)
@@ -80,21 +94,21 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 					return wcr.storageClient.Set(weatherClient)
 				})
 				if err != nil {
-					logger.WithError(err).Error("unable to get WeatherClient")
+					logger.Error("unable to get WeatherClient", "error", err)
 					render.Render(w, r, InternalServerError(err))
 					return
 				}
 
 				rd, err := wc.GetTotalRain(72 * time.Hour)
 				if err != nil {
-					logger.WithError(err).Error("unable to get total rain in the last 72 hours")
+					logger.Error("unable to get total rain in the last 72 hours", "error", err)
 					render.Render(w, r, InternalServerError(err))
 					return
 				}
 
 				td, err := wc.GetAverageHighTemperature(72 * time.Hour)
 				if err != nil {
-					logger.WithError(err).Error("unable to get average high temperature in the last 72 hours")
+					logger.Error("unable to get average high temperature in the last 72 hours", "error", err)
 					render.Render(w, r, InternalServerError(err))
 					return
 				}
@@ -109,7 +123,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 				}}
 
 				if err := render.Render(w, r, resp); err != nil {
-					logger.WithError(err).Error("unable to render WeatherClientResponse")
+					logger.Error("unable to render WeatherClientResponse", "error", err)
 					render.Render(w, r, ErrRender(err))
 				}
 			}),
@@ -138,9 +152,6 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 			return fmt.Errorf("unable to delete WeatherClient used by %d WaterSchedules", len(waterSchedules))
 		}
 
-		if err != nil {
-			return fmt.Errorf("unable to delete WeatherClient used by WaterSchedule: %w", err)
-		}
 		return nil
 	})
 
