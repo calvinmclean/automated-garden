@@ -344,7 +344,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	weatherClients, err := storageClient.GetWeatherClientConfigs()
+	weatherClients, err := storageClient.WeatherClientConfigs.GetAll(true)
 	if err != nil {
 		return fmt.Errorf("unable to get all WeatherClients: %w", err)
 	}
@@ -353,7 +353,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if wc.ID.IsNil() {
 			return errors.New("invalid WeatherClient: missing required field 'id'")
 		}
-		err = (&WeatherConfig{Config: wc}).Bind(nil)
+		err = wc.Bind(&http.Request{Method: http.MethodPost})
 		if err != nil {
 			return fmt.Errorf("invalid WeatherClient %q: %w", wc.ID, err)
 		}

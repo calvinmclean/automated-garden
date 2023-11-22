@@ -75,6 +75,10 @@ type Garden struct {
 	TemperatureHumiditySensor *bool             `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
 }
 
+func (g *Garden) GetID() string {
+	return g.ID.String()
+}
+
 // String...
 func (g *Garden) String() string {
 	return fmt.Sprintf("%+v", *g)

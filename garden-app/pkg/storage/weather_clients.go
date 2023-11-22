@@ -8,18 +8,9 @@ import (
 	"github.com/rs/xid"
 )
 
-const weatherClientPrefix = "WeatherClient_"
-
-func weatherClientKey(id xid.ID) string {
-	return weatherClientPrefix + id.String()
-}
-func WeatherClientKey(id string) string {
-	return weatherClientPrefix + id
-}
-
 // GetWeatherClient ...
 func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
-	clientConfig, err := GetOne[weather.Config](c, weatherClientKey(id))
+	clientConfig, err := c.WeatherClientConfigs.Get(id.String())
 	if err != nil {
 		return nil, fmt.Errorf("error getting weather client config: %w", err)
 	}
@@ -30,28 +21,8 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 
 	return weather.NewClient(clientConfig, func(weatherClientOptions map[string]interface{}) error {
 		clientConfig.Options = weatherClientOptions
-		return c.SaveWeatherClientConfig(clientConfig)
+		return c.WeatherClientConfigs.Set(clientConfig)
 	})
-}
-
-// GetWeatherClientConfig ...
-func (c *Client) GetWeatherClientConfig(id xid.ID) (*weather.Config, error) {
-	return GetOne[weather.Config](c, weatherClientKey(id))
-}
-
-// GetWeatherClientConfigs ...
-func (c *Client) GetWeatherClientConfigs() ([]*weather.Config, error) {
-	return GetMultiple[*weather.Config](c, true, weatherClientPrefix)
-}
-
-// SaveWeatherClientConfig ...
-func (c *Client) SaveWeatherClientConfig(wc *weather.Config) error {
-	return Save[*weather.Config](c, wc, weatherClientKey(wc.ID))
-}
-
-// DeleteWeatherClientConfig ...
-func (c *Client) DeleteWeatherClientConfig(id xid.ID) error {
-	return c.db.Delete(weatherClientKey(id))
 }
 
 // GetWaterSchedulesUsingWeatherClient will return all WaterSchedules that rely on this WeatherClient

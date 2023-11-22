@@ -22,27 +22,26 @@ const (
 // WeatherClientsAPI encapsulates the structs and dependencies necessary for the WeatherClients API
 // to function, including storage and configuring
 type WeatherClientsAPI struct {
-	storageClient *WeatherStorageClient
-	api           *babyapi.API[*WeatherConfig]
+	storageClient *storage.TypedClient[*weather.Config]
+	api           *babyapi.API[*weather.Config]
 }
 
 // NewWeatherClientsAPI creates a new WeatherClientsResource
 func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, error) {
 	wcr := &WeatherClientsAPI{
-		storageClient: &WeatherStorageClient{storageClient},
+		storageClient: storageClient.WeatherClientConfigs,
 	}
 
-	wcr.api = babyapi.NewAPI[*WeatherConfig](weatherClientsBasePath, func() *WeatherConfig { return &WeatherConfig{} })
+	wcr.api = babyapi.NewAPI[*weather.Config](weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 	wcr.api.SetStorage(wcr.storageClient)
 
 	wcr.api.AddCustomRoute(chi.Route{
 		Pattern: "/",
 		Handlers: map[string]http.Handler{
-			http.MethodPost: wcr.api.ReadRequestBodyAndDo(func(r *http.Request, request *WeatherConfig) render.Renderer {
+			http.MethodPost: wcr.api.ReadRequestBodyAndDo(func(r *http.Request, weatherClientConfig *weather.Config) render.Renderer {
 				logger := getLoggerFromContext(r.Context())
 				logger.Info("received request to create new WeatherClient")
 
-				weatherClientConfig := request.Config
 				logger.Debugf("request to create WeatherClient: %+v", weatherClientConfig)
 
 				// Assign values to fields that may not be set in the request
@@ -51,13 +50,13 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 
 				// Save the WeatherClient
 				logger.Debug("saving WeatherClient")
-				if err := wcr.storageClient.Set(&WeatherConfig{Config: weatherClientConfig}); err != nil {
+				if err := wcr.storageClient.Set(weatherClientConfig); err != nil {
 					logger.WithError(err).Error("unable to save WeatherClient Config")
 					return InternalServerError(err)
 				}
 
 				render.Status(r, http.StatusCreated)
-				return request
+				return weatherClientConfig
 			}),
 		},
 	})
@@ -76,8 +75,8 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 					return
 				}
 
-				wc, err := weather.NewClient(weatherClient.Config, func(weatherClientOptions map[string]interface{}) error {
-					weatherClient.Config.Options = weatherClientOptions
+				wc, err := weather.NewClient(weatherClient, func(weatherClientOptions map[string]interface{}) error {
+					weatherClient.Options = weatherClientOptions
 					return wcr.storageClient.Set(weatherClient)
 				})
 				if err != nil {
@@ -117,11 +116,11 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		},
 	})
 
-	wcr.api.SetPATCH(func(old, new *WeatherConfig) error {
-		old.Patch(new.Config)
+	wcr.api.SetPATCH(func(old, new *weather.Config) error {
+		old.Patch(new)
 
 		// make sure a valid WeatherClient can still be created
-		_, err := weather.NewClient(old.Config, func(map[string]interface{}) error { return nil })
+		_, err := weather.NewClient(old, func(map[string]interface{}) error { return nil })
 		if err != nil {
 			return fmt.Errorf("invalid request to update WeatherClient: %w", err)
 		}

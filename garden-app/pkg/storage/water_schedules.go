@@ -7,30 +7,24 @@ import (
 	"github.com/rs/xid"
 )
 
-const waterSchedulePrefix = "WaterSchedule_"
-
-func waterScheduleKey(id xid.ID) string {
-	return waterSchedulePrefix + id.String()
-}
-
 // GetWaterSchedule ...
 func (c *Client) GetWaterSchedule(id xid.ID) (*pkg.WaterSchedule, error) {
-	return GetOne[pkg.WaterSchedule](c, waterScheduleKey(id))
+	return c.WaterSchedules.Get(id.String())
 }
 
 // GetWaterSchedules ...
 func (c *Client) GetWaterSchedules(getEndDated bool) ([]*pkg.WaterSchedule, error) {
-	return GetMultiple[*pkg.WaterSchedule](c, getEndDated, waterSchedulePrefix)
+	return c.WaterSchedules.GetAll(getEndDated)
 }
 
 // SaveWaterSchedule ...
 func (c *Client) SaveWaterSchedule(ws *pkg.WaterSchedule) error {
-	return Save[*pkg.WaterSchedule](c, ws, waterScheduleKey(ws.ID))
+	return c.WaterSchedules.Set(ws)
 }
 
 // DeleteWaterSchedule ...
 func (c *Client) DeleteWaterSchedule(id xid.ID) error {
-	return c.db.Delete(waterScheduleKey(id))
+	return c.WaterSchedules.Delete(id.String())
 }
 
 // GetMultipleWaterSchedules ...

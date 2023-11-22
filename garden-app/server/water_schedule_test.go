@@ -168,7 +168,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			err = storageClient.SaveWaterSchedule(tt.waterSchedule)
 			assert.NoError(t, err)
 
-			err = storageClient.SaveWeatherClientConfig(createExampleWeatherClientConfig())
+			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
@@ -374,7 +374,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			err = storageClient.SaveWeatherClientConfig(createExampleWeatherClientConfig())
+			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			wsr := WaterSchedulesResource{

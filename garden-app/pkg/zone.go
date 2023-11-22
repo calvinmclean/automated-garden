@@ -23,6 +23,10 @@ type Zone struct {
 	SkipCount        *uint        `json:"skip_count" yaml:"skip_count"`
 }
 
+func (z *Zone) GetID() string {
+	return z.ID.String()
+}
+
 // String...
 func (z *Zone) String() string {
 	return fmt.Sprintf("%+v", *z)

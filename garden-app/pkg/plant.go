@@ -44,6 +44,10 @@ func (pd *PlantDetails) Patch(new *PlantDetails) {
 	}
 }
 
+func (p *Plant) GetID() string {
+	return p.ID.String()
+}
+
 // EndDated returns true if the Plant is end-dated
 func (p *Plant) EndDated() bool {
 	return p.EndDate != nil && p.EndDate.Before(time.Now())

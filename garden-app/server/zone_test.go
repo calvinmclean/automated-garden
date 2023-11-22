@@ -305,7 +305,7 @@ func TestGetZone(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			err = storageClient.SaveWeatherClientConfig(createExampleWeatherClientConfig())
+			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			zr := &ZonesResource{

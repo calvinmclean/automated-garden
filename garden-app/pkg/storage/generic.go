@@ -6,41 +6,90 @@ import (
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
 	"github.com/madflojo/hord"
 )
 
-func Delete(c *Client, key string) error {
+type Client struct {
+	Gardens              *TypedClient[*pkg.Garden]
+	Zones                *TypedClient[*pkg.Zone]
+	Plants               *TypedClient[*pkg.Plant]
+	WaterSchedules       *TypedClient[*pkg.WaterSchedule]
+	WeatherClientConfigs *TypedClient[*weather.Config]
+}
+
+func NewClient(config Config) (*Client, error) {
+	bc, err := NewBaseClient(config)
+	if err != nil {
+		return nil, fmt.Errorf("error creating base client: %w", err)
+	}
+
+	return &Client{
+		Gardens:              NewTypedClient[*pkg.Garden](bc, "Garden"),
+		Zones:                NewTypedClient[*pkg.Zone](bc, "Zone"),
+		Plants:               NewTypedClient[*pkg.Plant](bc, "Plant"),
+		WaterSchedules:       NewTypedClient[*pkg.WaterSchedule](bc, "WaterSchedule"),
+		WeatherClientConfigs: NewTypedClient[*weather.Config](bc, "WeatherClient"),
+	}, nil
+}
+
+type Resource interface {
+	pkg.EndDateable
+	// babyapi.Resource
+	GetID() string
+}
+
+// Client is a wrapper around hord.Database to allow for easy interactions with resources
+type TypedClient[T Resource] struct {
+	prefix string
+	*BaseClient
+}
+
+func NewTypedClient[T Resource](bc *BaseClient, prefix string) *TypedClient[T] {
+	return &TypedClient[T]{prefix, bc}
+}
+
+func (c *TypedClient[T]) key(id string) string {
+	return fmt.Sprintf("%s_%s", c.prefix, id)
+}
+
+func (c *TypedClient[T]) Delete(key string) error {
 	return c.db.Delete(key)
 }
 
-// GetOne will use the provided key to read data from the data source. Then, it will Unmarshal
+// Get will use the provided key to read data from the data source. Then, it will Unmarshal
 // into the generic type
-func GetOne[T any](c *Client, key string) (*T, error) {
+func (c *TypedClient[T]) Get(id string) (T, error) {
+	return c.get(c.key(id))
+}
+
+func (c *TypedClient[T]) get(key string) (T, error) {
 	if c.db == nil {
-		return nil, fmt.Errorf("error missing database connection")
+		return *new(T), fmt.Errorf("error missing database connection")
 	}
 
 	dataBytes, err := c.db.Get(key)
 	if err != nil {
 		if errors.Is(hord.ErrNil, err) {
-			return nil, nil
+			return *new(T), babyapi.ErrNotFound
 		}
-		return nil, fmt.Errorf("error getting data: %w", err)
+		return *new(T), fmt.Errorf("error getting data: %w", err)
 	}
 
 	var result T
 	err = c.unmarshal(dataBytes, &result)
 	if err != nil {
-		return nil, fmt.Errorf("error parsing data: %w", err)
+		return *new(T), fmt.Errorf("error parsing data: %w", err)
 	}
 
-	return &result, nil
+	return result, nil
 }
 
-// GetMultiple will use the provided prefix to read data from the data source. Then, it will use getOne
+// GetAll will use the provided prefix to read data from the data source. Then, it will use getOne
 // to read each element into the correct type. These types must support `pkg.EndDateable` to allow
 // excluding end-dated resources
-func GetMultiple[T pkg.EndDateable](c *Client, getEndDated bool, prefix string) ([]T, error) {
+func (c *TypedClient[T]) GetAll(getEndDated bool) ([]T, error) {
 	keys, err := c.db.Keys()
 	if err != nil {
 		return nil, fmt.Errorf("error getting keys: %w", err)
@@ -48,34 +97,31 @@ func GetMultiple[T pkg.EndDateable](c *Client, getEndDated bool, prefix string) 
 
 	results := []T{}
 	for _, key := range keys {
-		if !strings.HasPrefix(key, prefix) {
+		if !strings.HasPrefix(key, c.prefix) {
 			continue
 		}
 
-		result, err := GetOne[T](c, key)
+		result, err := c.get(key)
 		if err != nil {
 			return nil, fmt.Errorf("error getting data: %w", err)
 		}
-		if result == nil {
-			continue
-		}
 
-		if getEndDated || !(*result).EndDated() {
-			results = append(results, *result)
+		if getEndDated || !result.EndDated() {
+			results = append(results, result)
 		}
 	}
 
 	return results, nil
 }
 
-// Save marshals the provided item and writes it to the database
-func Save[T any](c *Client, item T, key string) error {
+// Set marshals the provided item and writes it to the database
+func (c *TypedClient[T]) Set(item T) error {
 	asBytes, err := c.marshal(item)
 	if err != nil {
 		return fmt.Errorf("error marshalling data: %w", err)
 	}
 
-	err = c.db.Set(key, asBytes)
+	err = c.db.Set(c.key(item.GetID()), asBytes)
 	if err != nil {
 		return fmt.Errorf("error writing data to database: %w", err)
 	}

@@ -23,6 +23,10 @@ type WaterSchedule struct {
 	ActivePeriod   *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
 }
 
+func (ws *WaterSchedule) GetID() string {
+	return ws.ID.String()
+}
+
 // String...
 func (ws *WaterSchedule) String() string {
 	return fmt.Sprintf("%+v", *ws)

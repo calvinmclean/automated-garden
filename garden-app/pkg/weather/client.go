@@ -1,7 +1,9 @@
 package weather
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
@@ -36,6 +38,58 @@ type Config struct {
 	ID      xid.ID                 `json:"id" yaml:"id"`
 	Type    string                 `json:"type" yaml:"type"`
 	Options map[string]interface{} `json:"options" yaml:"options"`
+	Links   []Link                 `json:"links,omitempty"`
+}
+
+// TODO: remove and put in reusable spot
+// Link is used for HATEOAS-style REST hypermedia
+type Link struct {
+	Rel  string `json:"rel,omitempty"`
+	HRef string `json:"href"`
+}
+
+func (wc *Config) GetID() string {
+	return wc.ID.String()
+}
+
+func (wc *Config) Render(_ http.ResponseWriter, _ *http.Request) error {
+	if wc != nil {
+		wc.Links = append(wc.Links,
+			Link{
+				"self",
+				fmt.Sprintf("%s/%s", "/weather_clients", wc.ID),
+			},
+		)
+	}
+
+	return nil
+}
+
+func (wc *Config) Bind(r *http.Request) error {
+	if wc == nil {
+		return errors.New("missing required WeatherClient fields")
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		if wc.Type == "" {
+			return errors.New("missing required type field")
+		}
+		if wc.Options == nil {
+			return errors.New("missing required options field")
+		}
+		_, err := NewClient(wc, func(map[string]interface{}) error { return nil })
+		if err != nil {
+			return fmt.Errorf("failed to create valid client using config: %w", err)
+		}
+
+	case http.MethodPatch:
+		if wc.ID != xid.NilID() {
+			return errors.New("updating ID is not allowed")
+		}
+	}
+
+	return nil
 }
 
 // NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will

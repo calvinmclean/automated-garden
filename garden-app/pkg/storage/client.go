@@ -18,83 +18,84 @@ type Config struct {
 	Options map[string]interface{} `mapstructure:"options"`
 }
 
-// Client is a wrapper around hord.Database to allow for easy interactions with resources
-type Client struct {
+type BaseClient struct {
 	db        hord.Database
 	options   map[string]interface{}
 	unmarshal func([]byte, interface{}) error
 	marshal   func(interface{}) ([]byte, error)
 }
 
-// NewClient will create a new DB connection for one of the supported hord backends:
+// NewBaseClient will create a new DB connection for one of the supported hord backends:
 //   - hashmap
 //   - redis
-func NewClient(config Config) (*Client, error) {
+func NewBaseClient(config Config) (*BaseClient, error) {
+	client := &BaseClient{
+		options: config.Options,
+	}
+	var err error
 	switch config.Driver {
 	case "hashmap":
-		return newFileClient(config.Options)
+		err = client.initFileDB(config.Options)
 	case "redis":
-		return newRedisClient(config.Options)
+		err = client.initRedisDB(config.Options)
 	default:
 		return nil, fmt.Errorf("invalid KV driver: %q", config.Driver)
 	}
-}
-
-func newFileClient(options map[string]interface{}) (*Client, error) {
-	var cfg hashmap.Config
-	err := mapstructure.Decode(options, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding config: %w", err)
-	}
-
-	db, err := hashmap.Dial(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating database connection: %w", err)
-	}
-
-	err = db.Setup()
-	if err != nil {
-		return nil, fmt.Errorf("error setting up database: %w", err)
-	}
-
-	client := &Client{
-		db:      db,
-		options: options,
-	}
-
-	switch filepath.Ext(cfg.Filename) {
-	case ".json", "":
-		client.unmarshal = json.Unmarshal
-		client.marshal = json.Marshal
-	case ".yml", ".yaml":
-		client.unmarshal = yaml.Unmarshal
-		client.marshal = yaml.Marshal
+		return nil, fmt.Errorf("error initializing DB: %w", err)
 	}
 
 	return client, nil
 }
 
-func newRedisClient(options map[string]interface{}) (*Client, error) {
+func (c *BaseClient) initFileDB(options map[string]interface{}) error {
+	var cfg hashmap.Config
+	err := mapstructure.Decode(options, &cfg)
+	if err != nil {
+		return fmt.Errorf("error decoding config: %w", err)
+	}
+
+	c.db, err = hashmap.Dial(cfg)
+	if err != nil {
+		return fmt.Errorf("error creating database connection: %w", err)
+	}
+
+	err = c.db.Setup()
+	if err != nil {
+		return fmt.Errorf("error setting up database: %w", err)
+	}
+
+	switch filepath.Ext(cfg.Filename) {
+	case ".json", "":
+		c.unmarshal = json.Unmarshal
+		c.marshal = json.Marshal
+	case ".yml", ".yaml":
+		c.unmarshal = yaml.Unmarshal
+		c.marshal = yaml.Marshal
+	}
+
+	return nil
+}
+
+func (c *BaseClient) initRedisDB(options map[string]interface{}) error {
 	var cfg redis.Config
 	err := mapstructure.Decode(options, &cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding config: %w", err)
+		return fmt.Errorf("error decoding config: %w", err)
 	}
 
-	db, err := redis.Dial(cfg)
+	c.db, err = redis.Dial(cfg)
 	if err != nil {
-		return nil, fmt.Errorf("error creating database connection: %w", err)
+		return fmt.Errorf("error creating database connection: %w", err)
 	}
 
-	err = db.Setup()
+	err = c.db.Setup()
 	if err != nil {
-		return nil, fmt.Errorf("error setting up database: %w", err)
+		return fmt.Errorf("error setting up database: %w", err)
 	}
 
-	return &Client{
-		db:        db,
-		options:   options,
-		unmarshal: json.Unmarshal,
-		marshal:   json.Marshal,
-	}, nil
+	c.unmarshal = json.Unmarshal
+	c.marshal = json.Marshal
+
+	return nil
 }

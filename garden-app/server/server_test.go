@@ -107,14 +107,14 @@ func TestValidateAllStoredResources(t *testing.T) {
 		{
 			"InvalidWeatherClientMissingID",
 			func(s *storage.Client) error {
-				return s.SaveWeatherClientConfig(&weather.Config{})
+				return s.WeatherClientConfigs.Set(&weather.Config{})
 			},
 			"invalid WeatherClient: missing required field 'id'",
 		},
 		{
 			"InvalidWeatherClient",
 			func(s *storage.Client) error {
-				return s.SaveWeatherClientConfig(&weather.Config{
+				return s.WeatherClientConfigs.Set(&weather.Config{
 					ID: id,
 				})
 			},

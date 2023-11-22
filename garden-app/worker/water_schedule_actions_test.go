@@ -150,7 +150,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -176,7 +176,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -203,7 +203,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -230,7 +230,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -257,7 +257,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -284,7 +284,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -311,7 +311,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -338,7 +338,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -365,7 +365,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -392,7 +392,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -419,7 +419,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -446,7 +446,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -476,7 +476,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{
@@ -508,7 +508,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				SkipCount: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
 					ID:   weatherClientID,
 					Type: "fake",
 					Options: map[string]interface{}{

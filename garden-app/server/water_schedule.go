@@ -306,7 +306,7 @@ func (wsr *WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) (b
 }
 
 func (wsr *WaterSchedulesResource) weatherClientExists(id xid.ID) (bool, error) {
-	wc, err := wsr.storageClient.GetWeatherClientConfig(id)
+	wc, err := wsr.storageClient.WeatherClientConfigs.Get(id.String())
 	if err != nil {
 		return false, fmt.Errorf("error getting WeatherClient with ID %q", id)
 	}

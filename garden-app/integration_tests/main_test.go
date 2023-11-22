@@ -295,7 +295,7 @@ func CreateWaterScheduleTest(t *testing.T) string {
 }
 
 func CreateWeatherClientTest(t *testing.T, opts fake.Config) xid.ID {
-	var wcr server.WeatherConfig
+	var wcr weather.Config
 
 	t.Run("CreateWeatherClient", func(t *testing.T) {
 		status, err := makeRequest(http.MethodPost, "/weather_clients", fmt.Sprintf(`{

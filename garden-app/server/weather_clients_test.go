@@ -64,13 +64,13 @@ func TestUpdateWeatherClient(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(&WeatherConfig{Config: createExampleWeatherClientConfig()})
+			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("PATCH", "/weather_clients/c5cvhpcbcv45e8bp16dg", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*WeatherConfig](t, wcr.api, r)
+			w := babyapi.Test[*weather.Config](t, wcr.api, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -112,13 +112,13 @@ func TestGetWeatherClient(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(&WeatherConfig{Config: createExampleWeatherClientConfig()})
+			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", "/weather_clients/"+tt.id, http.NoBody)
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*WeatherConfig](t, wcr.api, r)
+			w := babyapi.Test[*weather.Config](t, wcr.api, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -127,14 +127,14 @@ func TestGetWeatherClient(t *testing.T) {
 }
 
 func TestDeleteWeatherClient(t *testing.T) {
-	weatherClient := &WeatherConfig{Config: createExampleWeatherClientConfig()}
+	weatherClient := createExampleWeatherClientConfig()
 
 	storageClient, err := storage.NewClient(storage.Config{
 		Driver: "hashmap",
 	})
 	assert.NoError(t, err)
 
-	weatherClientWithWS := &WeatherConfig{Config: createExampleWeatherClientConfig()}
+	weatherClientWithWS := createExampleWeatherClientConfig()
 	weatherClientWithWS.ID = id2
 
 	ws1 := createExampleWaterSchedule()
@@ -164,10 +164,9 @@ func TestDeleteWeatherClient(t *testing.T) {
 	err = storageClient.SaveWaterSchedule(ws2)
 	assert.NoError(t, err)
 
-	wsc := &WeatherStorageClient{storageClient}
-	err = wsc.Set(weatherClient)
+	err = storageClient.WeatherClientConfigs.Set(weatherClient)
 	assert.NoError(t, err)
-	err = wsc.Set(weatherClientWithWS)
+	err = storageClient.WeatherClientConfigs.Set(weatherClientWithWS)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -201,7 +200,7 @@ func TestDeleteWeatherClient(t *testing.T) {
 			r := httptest.NewRequest("DELETE", "/weather_clients/"+tt.id, http.NoBody)
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*WeatherConfig](t, wcr.api, r)
+			w := babyapi.Test[*weather.Config](t, wcr.api, r)
 
 			assert.Equal(t, tt.code, w.Code)
 		})
@@ -231,12 +230,12 @@ func TestGetAllWeatherClients(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(&WeatherConfig{Config: createExampleWeatherClientConfig()})
+			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", "/weather_clients", http.NoBody)
 
-			w := babyapi.Test[*WeatherConfig](t, wcr.api, r)
+			w := babyapi.Test[*weather.Config](t, wcr.api, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -278,7 +277,7 @@ func TestCreateWeatherClient(t *testing.T) {
 			r := httptest.NewRequest("POST", "/weather_clients", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*WeatherConfig](t, wcr.api, r)
+			w := babyapi.Test[*weather.Config](t, wcr.api, r)
 
 			// check HTTP response status code
 			if w.Code != tt.code {
@@ -318,11 +317,11 @@ func TestTestWeatherClient(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(&WeatherConfig{Config: createExampleWeatherClientConfig()})
+			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", "/weather_clients/c5cvhpcbcv45e8bp16dg/test", http.NoBody)
-			w := babyapi.Test[*WeatherConfig](t, wcr.api, r)
+			w := babyapi.Test[*weather.Config](t, wcr.api, r)
 
 			// check HTTP response status code
 			assert.Equal(t, tt.expectedStatus, w.Code)
@@ -337,7 +336,7 @@ func TestTestWeatherClient(t *testing.T) {
 func TestWeatherClientRequest(t *testing.T) {
 	tests := []struct {
 		name string
-		req  *WeatherConfig
+		req  *weather.Config
 		err  string
 	}{
 		{
@@ -346,34 +345,23 @@ func TestWeatherClientRequest(t *testing.T) {
 			"missing required WeatherClient fields",
 		},
 		{
-			"EmptyError",
-			&WeatherConfig{},
-			"missing required WeatherClient fields",
-		},
-		{
 			"EmptyTypeError",
-			&WeatherConfig{
-				Config: &weather.Config{},
-			},
+			&weather.Config{},
 			"missing required type field",
 		},
 		{
 			"EmptyOptionsError",
-			&WeatherConfig{
-				Config: &weather.Config{
-					Type: "fake",
-				},
+			&weather.Config{
+				Type: "fake",
 			},
 			"missing required options field",
 		},
 		{
 			"ErrorCreatingClientWithConfigs",
-			&WeatherConfig{
-				Config: &weather.Config{
-					Type: "fake",
-					Options: map[string]interface{}{
-						"key": "value",
-					},
+			&weather.Config{
+				Type: "fake",
+				Options: map[string]interface{}{
+					"key": "value",
 				},
 			},
 			"failed to create valid client using config: time: invalid duration \"\"",
@@ -381,9 +369,7 @@ func TestWeatherClientRequest(t *testing.T) {
 	}
 
 	t.Run("Successful", func(t *testing.T) {
-		req := &WeatherConfig{
-			Config: createExampleWeatherClientConfig(),
-		}
+		req := createExampleWeatherClientConfig()
 		r := httptest.NewRequest(http.MethodPost, "/", nil)
 		err := req.Bind(r)
 		assert.NoError(t, err)
@@ -401,7 +387,7 @@ func TestWeatherClientRequest(t *testing.T) {
 func TestUpdateWeatherClientRequest(t *testing.T) {
 	tests := []struct {
 		name string
-		req  *WeatherConfig
+		req  *weather.Config
 		err  string
 	}{
 		{
@@ -410,24 +396,17 @@ func TestUpdateWeatherClientRequest(t *testing.T) {
 			"missing required WeatherClient fields",
 		},
 		{
-			"EmptyWeatherClientError",
-			&WeatherConfig{},
-			"missing required WeatherClient fields",
-		},
-		{
 			"ManualSpecificationOfIDError",
-			&WeatherConfig{
-				Config: &weather.Config{ID: xid.New()},
+			&weather.Config{
+				ID: xid.New(),
 			},
 			"updating ID is not allowed",
 		},
 	}
 
 	t.Run("Successful", func(t *testing.T) {
-		wsr := &WeatherConfig{
-			Config: &weather.Config{
-				Type: "fake",
-			},
+		wsr := &weather.Config{
+			Type: "fake",
 		}
 		r := httptest.NewRequest(http.MethodPatch, "/", nil)
 		err := wsr.Bind(r)
