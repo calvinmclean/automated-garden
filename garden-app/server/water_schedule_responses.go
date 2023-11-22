@@ -10,31 +10,6 @@ import (
 	"github.com/rs/xid"
 )
 
-// AllWaterSchedulesResponse is a simple struct being used to render and return a list of all WaterSchedules
-type AllWaterSchedulesResponse struct {
-	WaterSchedules []*WaterScheduleResponse `json:"water_schedules"`
-}
-
-// NewAllWaterSchedulesResponse will create an AllWaterSchedulesResponse from a list of WaterSchedules
-func (wsr *WaterSchedulesResource) NewAllWaterSchedulesResponse(waterschedules []*pkg.WaterSchedule) *AllWaterSchedulesResponse {
-	waterscheduleResponses := []*WaterScheduleResponse{}
-	for _, ws := range waterschedules {
-		waterscheduleResponses = append(waterscheduleResponses, wsr.NewWaterScheduleResponse(ws))
-	}
-	return &AllWaterSchedulesResponse{waterscheduleResponses}
-}
-
-// Render ...
-func (asr *AllWaterSchedulesResponse) Render(_ http.ResponseWriter, r *http.Request) error {
-	for _, ws := range asr.WaterSchedules {
-		err := ws.Render(nil, r)
-		if err != nil {
-			return fmt.Errorf("error rendering water schedule: %w", err)
-		}
-	}
-	return nil
-}
-
 // NextWaterDetails has information about the next time this WaterSchedule will be used
 type NextWaterDetails struct {
 	Time            *time.Time `json:"time,omitempty"`

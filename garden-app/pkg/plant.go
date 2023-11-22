@@ -53,6 +53,10 @@ func (p *Plant) EndDated() bool {
 	return p.EndDate != nil && p.EndDate.Before(time.Now())
 }
 
+func (p *Plant) SetEndDate(now time.Time) {
+	p.EndDate = &now
+}
+
 // Patch allows for easily updating individual fields of a Plant by passing in a new Plant containing
 // the desired values
 func (p *Plant) Patch(newPlant *Plant) {

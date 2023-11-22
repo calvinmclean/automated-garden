@@ -1,7 +1,9 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
@@ -21,6 +23,10 @@ type WaterSchedule struct {
 	Name           string           `json:"name,omitempty" yaml:"name,omitempty"`
 	Description    string           `json:"description,omitempty" yaml:"description,omitempty"`
 	ActivePeriod   *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
+
+	WeatherData *WeatherData     `json:"weather_data,omitempty"`
+	NextWater   NextWaterDetails `json:"next_water,omitempty"`
+	Links       []Link           `json:"links,omitempty"`
 }
 
 func (ws *WaterSchedule) GetID() string {
@@ -35,6 +41,10 @@ func (ws *WaterSchedule) String() string {
 // EndDated returns true if the WaterSchedule is end-dated
 func (ws *WaterSchedule) EndDated() bool {
 	return ws.EndDate != nil && ws.EndDate.Before(time.Now())
+}
+
+func (ws *WaterSchedule) SetEndDate(now time.Time) {
+	ws.EndDate = &now
 }
 
 // HasWeatherControl is used to determine if weather conditions should be checked before watering the Zone
@@ -162,4 +172,139 @@ func (ap *ActivePeriod) Patch(new *ActivePeriod) {
 	if new.EndMonth != "" {
 		ap.EndMonth = new.EndMonth
 	}
+}
+
+// NextWaterDetails has information about the next time this WaterSchedule will be used
+type NextWaterDetails struct {
+	Time            *time.Time `json:"time,omitempty"`
+	Duration        string     `json:"duration,omitempty"`
+	WaterScheduleID *xid.ID    `json:"water_schedule_id,omitempty"`
+	Message         string     `json:"message,omitempty"`
+}
+
+// WeatherData is used to represent the data used for WeatherControl to a user
+type WeatherData struct {
+	Rain                *RainData        `json:"rain,omitempty"`
+	Temperature         *TemperatureData `json:"average_temperature,omitempty"`
+	SoilMoisturePercent *float64         `json:"soil_moisture_percent,omitempty"`
+}
+
+// RainData shows the total rain in the last watering interval and the scaling factor it would result in
+type RainData struct {
+	MM          float32 `json:"mm"`
+	ScaleFactor float32 `json:"scale_factor"`
+}
+
+// TemperatureData shows the average high temperatures in the last watering interval and the scaling factor it would result in
+type TemperatureData struct {
+	Celsius     float32 `json:"celsius"`
+	ScaleFactor float32 `json:"scale_factor"`
+}
+
+// Link is used for HATEOAS-style REST hypermedia
+type Link struct {
+	Rel  string `json:"rel,omitempty"`
+	HRef string `json:"href"`
+}
+
+func (ws *WaterSchedule) Render(_ http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+func (ws *WaterSchedule) Bind(r *http.Request) error {
+	if ws == nil {
+		return errors.New("missing required WaterSchedule fields")
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		if ws.Interval == nil {
+			return errors.New("missing required interval field")
+		}
+		if ws.Duration == nil {
+			return errors.New("missing required duration field")
+		}
+		if ws.StartTime == nil {
+			return errors.New("missing required start_time field")
+		}
+		if ws.WeatherControl != nil {
+			err := ValidateWeatherControl(ws.WeatherControl)
+			if err != nil {
+				return fmt.Errorf("error validating weather_control: %w", err)
+			}
+		}
+		if ws.ActivePeriod != nil {
+			err := ws.ActivePeriod.Validate()
+			if err != nil {
+				return fmt.Errorf("error validating active_period: %w", err)
+			}
+		}
+	case http.MethodPatch:
+		if ws.ID != xid.NilID() {
+			return errors.New("updating ID is not allowed")
+		}
+		if ws.EndDate != nil {
+			return errors.New("to end-date a WaterSchedule, please use the DELETE endpoint")
+		}
+
+		// Check that StartTime is in the future
+		if ws.StartTime != nil && time.Since(*ws.StartTime) > 0 {
+			return fmt.Errorf("unable to set start_time to time in the past")
+		}
+
+		if ws.ActivePeriod != nil {
+			err := ws.ActivePeriod.Validate()
+			if err != nil {
+				return fmt.Errorf("error validating active_period: %w", err)
+			}
+		}
+	}
+
+	return nil
+}
+
+// ValidateWeatherControl validates input for the WeatherControl of a WaterSchedule
+func ValidateWeatherControl(wc *weather.Control) error {
+	if wc.Temperature != nil {
+		err := ValidateScaleControl(wc.Temperature)
+		if err != nil {
+			return fmt.Errorf("error validating temperature_control: %w", err)
+		}
+	}
+	if wc.Rain != nil {
+		err := ValidateScaleControl(wc.Rain)
+		if err != nil {
+			return fmt.Errorf("error validating rain_control: %w", err)
+		}
+	}
+	if wc.SoilMoisture != nil {
+		if wc.SoilMoisture.MinimumMoisture == nil {
+			return errors.New("error validating moisture_control: missing required field: minimum_moisture")
+		}
+	}
+	return nil
+}
+
+// ValidateScaleControl validates input for ScaleControl
+func ValidateScaleControl(sc *weather.ScaleControl) error {
+	errStringFormat := "missing required field: %s"
+	if sc.BaselineValue == nil {
+		return fmt.Errorf(errStringFormat, "baseline_value")
+	}
+	if sc.Factor == nil {
+		return fmt.Errorf(errStringFormat, "factor")
+	}
+	if *sc.Factor > float32(1) || *sc.Factor < float32(0) {
+		return errors.New("factor must be between 0 and 1")
+	}
+	if sc.Range == nil {
+		return fmt.Errorf(errStringFormat, "range")
+	}
+	if *sc.Range < float32(0) {
+		return errors.New("range must be a positive number")
+	}
+	if sc.ClientID.IsNil() {
+		return fmt.Errorf(errStringFormat, "client_id")
+	}
+	return nil
 }

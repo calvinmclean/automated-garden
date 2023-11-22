@@ -219,25 +219,13 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
-
-	r.Mount("/", weatherClientsResource.Router())
+	r.Mount("/", weatherClientsResource.api.Router())
 
 	waterSchedulesResource, err := NewWaterSchedulesResource(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
 	}
-	r.Route(waterScheduleBasePath, func(r chi.Router) {
-		r.Post("/", waterSchedulesResource.createWaterSchedule)
-		r.Get("/", waterSchedulesResource.getAllWaterSchedules)
-
-		r.Route(fmt.Sprintf("/{%s}", waterSchedulePathParam), func(r chi.Router) {
-			r.Use(waterSchedulesResource.waterScheduleContextMiddleware)
-
-			r.Get("/", get[*WaterScheduleResponse](getWaterScheduleFromContext))
-			r.Patch("/", waterSchedulesResource.updateWaterSchedule)
-			r.Delete("/", waterSchedulesResource.endDateWaterSchedule)
-		})
-	})
+	r.Mount("/", waterSchedulesResource.api.Router())
 
 	return &Server{
 		// nolint:gosec
@@ -329,7 +317,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	waterSchedules, err := storageClient.GetWaterSchedules(true)
+	waterSchedules, err := storageClient.WaterSchedules.GetAll(true)
 	if err != nil {
 		return fmt.Errorf("unable to get all WaterSchedules: %w", err)
 	}
@@ -338,7 +326,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if ws.ID.IsNil() {
 			return errors.New("invalid WaterSchedule: missing required field 'id'")
 		}
-		err = (&WaterScheduleRequest{ws}).Bind(nil)
+		err = ws.Bind(&http.Request{Method: http.MethodPost})
 		if err != nil {
 			return fmt.Errorf("invalid WaterSchedule %q: %w", ws.ID, err)
 		}

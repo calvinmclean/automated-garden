@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
@@ -35,7 +36,7 @@ func NewClient(config Config) (*Client, error) {
 }
 
 type Resource interface {
-	pkg.EndDateable
+	babyapi.EndDateable
 	// babyapi.Resource
 	GetID() string
 }
@@ -54,8 +55,21 @@ func (c *TypedClient[T]) key(id string) string {
 	return fmt.Sprintf("%s_%s", c.prefix, id)
 }
 
-func (c *TypedClient[T]) Delete(key string) error {
-	return c.db.Delete(key)
+// TODO: end-date instead of delete!
+func (c *TypedClient[T]) Delete(id string) error {
+	key := c.key(id)
+
+	result, err := c.get(key)
+	if err != nil {
+		return fmt.Errorf("error getting resource before deleting: %w", err)
+	}
+	if result.EndDated() {
+		return c.db.Delete(key)
+	}
+
+	result.SetEndDate(time.Now())
+
+	return c.Set(result)
 }
 
 // Get will use the provided key to read data from the data source. Then, it will Unmarshal

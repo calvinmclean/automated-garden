@@ -37,6 +37,10 @@ func (z *Zone) EndDated() bool {
 	return z.EndDate != nil && z.EndDate.Before(time.Now())
 }
 
+func (z *Zone) SetEndDate(now time.Time) {
+	z.EndDate = &now
+}
+
 // Patch allows for easily updating individual fields of a Zone by passing in a new Zone containing
 // the desired values
 func (z *Zone) Patch(newZone *Zone) {

@@ -155,6 +155,10 @@ func (g *Garden) EndDated() bool {
 	return g.EndDate != nil && g.EndDate.Before(time.Now())
 }
 
+func (g *Garden) SetEndDate(now time.Time) {
+	g.EndDate = &now
+}
+
 // Patch allows for easily updating individual fields of a Garden by passing in a new Garden containing
 // the desired values
 func (g *Garden) Patch(newGarden *Garden) {

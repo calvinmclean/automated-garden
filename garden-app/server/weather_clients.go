@@ -52,7 +52,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 	wcr.api.AddCustomRoute(chi.Route{
 		Pattern: "/",
 		Handlers: map[string]http.Handler{
-			http.MethodPost: wcr.api.ReadRequestBodyAndDo(func(r *http.Request, weatherClientConfig *weather.Config) render.Renderer {
+			http.MethodPost: wcr.api.ReadRequestBodyAndDo(func(r *http.Request, weatherClientConfig *weather.Config) (*weather.Config, *babyapi.ErrResponse) {
 				logger := babyapi.GetLoggerFromContext(r.Context())
 				logger.Info("received request to create new WeatherClient")
 
@@ -66,11 +66,11 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 				logger.Debug("saving WeatherClient")
 				if err := wcr.storageClient.Set(weatherClientConfig); err != nil {
 					logger.Error("unable to save WeatherClient Config", "error", err)
-					return InternalServerError(err)
+					return nil, babyapi.InternalServerError(err)
 				}
 
 				render.Status(r, http.StatusCreated)
-				return weatherClientConfig
+				return weatherClientConfig, nil
 			}),
 		},
 	})
@@ -156,10 +156,6 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 	})
 
 	return wcr, nil
-}
-
-func (wcr *WeatherClientsAPI) Router() chi.Router {
-	return wcr.api.Router()
 }
 
 // WeatherClientTestResponse is used to return WeatherData from testing that the client works

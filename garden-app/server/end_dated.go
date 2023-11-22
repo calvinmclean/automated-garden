@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
 )
 
@@ -12,7 +12,7 @@ import (
 func restrictEndDatedMiddleware(resourceName string, ctxKey contextKey) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			resource := r.Context().Value(ctxKey).(pkg.EndDateable)
+			resource := r.Context().Value(ctxKey).(babyapi.EndDateable)
 			logger := getLoggerFromContext(r.Context())
 
 			if resource.EndDated() {

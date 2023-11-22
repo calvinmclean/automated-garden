@@ -129,6 +129,9 @@ func (c *Config) EndDated() bool {
 	return false
 }
 
+func (c *Config) SetEndDate(now time.Time) {
+}
+
 // clientWrapper wraps any other implementation of the interface in order to add basic Prometheus summary metrics
 // and caching
 type clientWrapper struct {
