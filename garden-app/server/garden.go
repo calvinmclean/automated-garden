@@ -156,7 +156,7 @@ func (gr *GardensResource) getAllGardens(w http.ResponseWriter, r *http.Request)
 	}
 }
 
-// endDatePlant will mark the Plant's end date as now and save it. If the Garden is already
+// endDateGarden will mark the Garden's end date as now and save it. If the Garden is already
 // end-dated, it will permanently delete it
 func (gr *GardensResource) endDateGarden(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())
@@ -230,7 +230,7 @@ func (gr *GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) 
 
 	logger.Debugf("update request: %+v", request)
 
-	// Validate that new MaxPlants (if defined) is not less than NumZones
+	// Validate that new MaxZones (if defined) is not less than NumZones
 	if request.Garden.MaxZones != nil && *request.Garden.MaxZones < garden.NumZones() {
 		err := fmt.Errorf("unable to set max_zones less than current num_zones=%d", garden.NumZones())
 		logger.WithError(err).Error("unable to update Garden")
@@ -276,7 +276,7 @@ func (gr *GardensResource) updateGarden(w http.ResponseWriter, r *http.Request) 
 }
 
 // gardenAction reads a GardenAction request and uses it to execute one of the actions
-// that is available to run against a Plant. This one endpoint is used for all the different
+// that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (gr *GardensResource) gardenAction(w http.ResponseWriter, r *http.Request) {
 	logger := getLoggerFromContext(r.Context())

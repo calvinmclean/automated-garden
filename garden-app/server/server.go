@@ -146,10 +146,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
-	plantsResource, err := NewPlantsResource(gardenResource)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", plantBasePath, err)
-	}
 	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
@@ -176,20 +172,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 			r.Route("/", func(r chi.Router) {
 				r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
 				r.Post("/action", gardenResource.gardenAction)
-
-				r.Route(plantBasePath, func(r chi.Router) {
-					r.Post("/", plantsResource.createPlant)
-					r.Get("/", plantsResource.getAllPlants)
-
-					r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
-						r.Use(plantsResource.plantContextMiddleware)
-
-						r.Get("/", get[*PlantResponse](getPlantFromContext))
-
-						r.Patch("/", plantsResource.updatePlant)
-						r.Delete("/", plantsResource.endDatePlant)
-					})
-				})
 
 				r.Route(zoneBasePath, func(r chi.Router) {
 					r.Post("/", zonesResource.createZone)
@@ -282,9 +264,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 	}
 
 	for _, g := range gardens {
-		// Remove Plants and Zones because g.Bind doesn't allow them
-		plants := g.Plants
-		g.Plants = nil
+		// Remove Zones because g.Bind doesn't allow them
 		zones := g.Zones
 		g.Zones = nil
 
@@ -303,16 +283,6 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 			err = (&ZoneRequest{z}).Bind(nil)
 			if err != nil {
 				return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
-			}
-		}
-
-		for _, p := range plants {
-			if p.ID.IsNil() {
-				return errors.New("invalid Plant: missing required field 'id'")
-			}
-			err = (&PlantRequest{p}).Bind(nil)
-			if err != nil {
-				return fmt.Errorf("invalid Plant %q: %w", p.ID, err)
 			}
 		}
 	}

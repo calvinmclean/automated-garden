@@ -174,14 +174,6 @@ func (zr *ZonesResource) endDateZone(w http.ResponseWriter, r *http.Request) {
 	zone := zoneResponse.Zone
 	now := time.Now()
 
-	// Unable to delete Zone with associated Plants
-	if numPlants := len(garden.PlantsByZone(zone.ID, false)); numPlants > 0 {
-		err := fmt.Errorf("unable to end-date Zone with %d Plants", numPlants)
-		logger.WithError(err).Error("unable to end-date Zone")
-		render.Render(w, r, ErrInvalidRequest(err))
-		return
-	}
-
 	// Permanently delete the Zone if it is already end-dated
 	if zone.EndDated() {
 		logger.Info("permanently deleting Zone")

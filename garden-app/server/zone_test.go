@@ -42,6 +42,26 @@ func createExampleZone() *pkg.Zone {
 	}
 }
 
+func setupZoneAndGardenStorage(t *testing.T) *storage.Client {
+	t.Helper()
+
+	garden := createExampleGarden()
+	zone := createExampleZone()
+
+	storageClient, err := storage.NewClient(storage.Config{
+		Driver: "hashmap",
+	})
+	assert.NoError(t, err)
+
+	err = storageClient.SaveGarden(garden)
+	assert.NoError(t, err)
+
+	err = storageClient.SaveZone(garden.ID, zone)
+	assert.NoError(t, err)
+
+	return storageClient
+}
+
 func TestZoneContextMiddleware(t *testing.T) {
 	zr := &ZonesResource{}
 	zone := createExampleZone()
@@ -454,7 +474,7 @@ func TestUpdateZone(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storageClient := setupZonePlantGardenStorage(t)
+			storageClient := setupZoneAndGardenStorage(t)
 
 			err := storageClient.SaveWaterSchedule(createExampleWaterSchedule())
 			assert.NoError(t, err)
@@ -516,7 +536,7 @@ func TestEndDateZone(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storageClient := setupZonePlantGardenStorage(t)
+			storageClient := setupZoneAndGardenStorage(t)
 
 			err := storageClient.SaveWaterSchedule(createExampleWaterSchedule())
 			assert.NoError(t, err)
@@ -706,7 +726,7 @@ func TestCreateZone(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storageClient := setupZonePlantGardenStorage(t)
+			storageClient := setupZoneAndGardenStorage(t)
 
 			for _, ws := range tt.waterSchedules {
 				err := storageClient.SaveWaterSchedule(ws)

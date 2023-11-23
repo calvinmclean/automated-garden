@@ -11,10 +11,7 @@ type contextKey int
 const (
 	loggerCtxKey contextKey = iota
 	gardenCtxKey
-	plantCtxKey
 	zoneCtxKey
-	weatherClientCtxKey
-	waterScheduleCtxKey
 )
 
 func newContextWithLogger(ctx context.Context, logger *logrus.Entry) context.Context {
@@ -43,20 +40,4 @@ func newContextWithZone(ctx context.Context, z *ZoneResponse) context.Context {
 
 func getZoneFromContext(ctx context.Context) *ZoneResponse {
 	return ctx.Value(zoneCtxKey).(*ZoneResponse)
-}
-
-func newContextWithPlant(ctx context.Context, p *PlantResponse) context.Context {
-	return context.WithValue(ctx, plantCtxKey, p)
-}
-
-func getPlantFromContext(ctx context.Context) *PlantResponse {
-	return ctx.Value(plantCtxKey).(*PlantResponse)
-}
-
-func newContextWithWaterSchedule(ctx context.Context, ws *WaterScheduleResponse) context.Context {
-	return context.WithValue(ctx, waterScheduleCtxKey, ws)
-}
-
-func getWaterScheduleFromContext(ctx context.Context) *WaterScheduleResponse {
-	return ctx.Value(waterScheduleCtxKey).(*WaterScheduleResponse)
 }

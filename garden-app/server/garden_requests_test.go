@@ -78,7 +78,7 @@ func TestGardenActionRequest(t *testing.T) {
 			r := httptest.NewRequest("", "/", nil)
 			err := tt.ar.Bind(r)
 			if err == nil {
-				t.Error("Expected error reading PlantActionRequest JSON, but none occurred")
+				t.Error("Expected error reading GardenActionRequest JSON, but none occurred")
 				return
 			}
 			if err.Error() != tt.err {
@@ -202,20 +202,6 @@ func TestGardenRequest(t *testing.T) {
 				},
 			},
 			"max_zones must not be 0",
-		},
-		{
-			"CreatingPlantsNotAllowedError",
-			&GardenRequest{
-				Garden: &pkg.Garden{
-					Name:        "garden",
-					TopicPrefix: "garden",
-					MaxZones:    &one,
-					Plants: map[xid.ID]*pkg.Plant{
-						xid.New(): {},
-					},
-				},
-			},
-			"cannot add or modify Plants with this request",
 		},
 		{
 			"CreatingZonesNotAllowedError",
@@ -392,17 +378,6 @@ func TestUpdateGardenRequest(t *testing.T) {
 			"one or more invalid characters in Garden topic_prefix",
 		},
 		{
-			"CreatingPlantsNotAllowedError",
-			&UpdateGardenRequest{
-				Garden: &pkg.Garden{
-					Plants: map[xid.ID]*pkg.Plant{
-						xid.New(): {},
-					},
-				},
-			},
-			"cannot add or modify Plants with this request",
-		},
-		{
 			"DurationGreaterThanOrEqualTo24HoursError",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
@@ -434,13 +409,13 @@ func TestUpdateGardenRequest(t *testing.T) {
 			"to end-date a Garden, please use the DELETE endpoint",
 		},
 		{
-			"MaxPlantsZeroError",
+			"MaxZonesZeroError",
 			&UpdateGardenRequest{
 				Garden: &pkg.Garden{
 					MaxZones: &zero,
 				},
 			},
-			"max_plants must not be 0",
+			"max_zones must not be 0",
 		},
 	}
 

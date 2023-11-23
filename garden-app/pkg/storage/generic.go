@@ -15,7 +15,6 @@ import (
 type Client struct {
 	Gardens              *TypedClient[*pkg.Garden]
 	Zones                *TypedClient[*pkg.Zone]
-	Plants               *TypedClient[*pkg.Plant]
 	WaterSchedules       *TypedClient[*pkg.WaterSchedule]
 	WeatherClientConfigs *TypedClient[*weather.Config]
 }
@@ -29,7 +28,6 @@ func NewClient(config Config) (*Client, error) {
 	return &Client{
 		Gardens:              NewTypedClient[*pkg.Garden](bc, "Garden"),
 		Zones:                NewTypedClient[*pkg.Zone](bc, "Zone"),
-		Plants:               NewTypedClient[*pkg.Plant](bc, "Plant"),
 		WaterSchedules:       NewTypedClient[*pkg.WaterSchedule](bc, "WaterSchedule"),
 		WeatherClientConfigs: NewTypedClient[*weather.Config](bc, "WeatherClient"),
 	}, nil

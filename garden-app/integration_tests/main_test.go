@@ -106,7 +106,6 @@ func GardenTests(t *testing.T) {
 		assert.Equal(t, gardenID, g.ID.String())
 		assert.Equal(t, uint(3), *g.MaxZones)
 		assert.Equal(t, uint(0), g.NumZones)
-		assert.Equal(t, uint(0), g.NumPlants)
 	})
 	t.Run("ExecuteStopAction", func(t *testing.T) {
 		status, err := makeRequest(

@@ -103,7 +103,7 @@ func TestGardenPatch(t *testing.T) {
 			&Garden{TopicPrefix: "topic"},
 		},
 		{
-			"PatchMaxPlants",
+			"PatchMaxZones",
 			&Garden{MaxZones: &ten},
 		},
 		{
@@ -191,56 +191,6 @@ func TestGardenPatch(t *testing.T) {
 			t.Errorf("Expected nil EndDate, but got: %v", g.EndDate)
 		}
 	})
-}
-
-func TestGardenNumPlants(t *testing.T) {
-	endDate := time.Now().Add(-1 * time.Minute)
-	tests := []struct {
-		name     string
-		garden   *Garden
-		expected uint
-	}{
-		{
-			"NoPlants",
-			&Garden{},
-			0,
-		},
-		{
-			"NoActivePlants",
-			&Garden{
-				Plants: map[xid.ID]*Plant{
-					xid.New(): {EndDate: &endDate},
-				},
-			},
-			0,
-		},
-		{
-			"NoEndDatedPlants",
-			&Garden{
-				Plants: map[xid.ID]*Plant{
-					xid.New(): {},
-				},
-			},
-			1,
-		},
-		{
-			"EndDatedAndActivePlants",
-			&Garden{
-				Plants: map[xid.ID]*Plant{
-					xid.New(): {EndDate: &endDate},
-					xid.New(): {},
-				},
-			},
-			1,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if tt.garden.NumPlants() != tt.expected {
-				t.Errorf("Unexpected result: expected=%v, actual=%v", tt.expected, tt.garden.NumPlants())
-			}
-		})
-	}
 }
 
 func TestLightStateString(t *testing.T) {
@@ -433,59 +383,5 @@ func TestHasTemperatureHumiditySensor(t *testing.T) {
 	for _, tt := range tests {
 		g := &Garden{TemperatureHumiditySensor: tt.val}
 		assert.Equal(t, tt.expected, g.HasTemperatureHumiditySensor())
-	}
-}
-
-func TestPlantsByZone(t *testing.T) {
-	zone := &Zone{ID: xid.New()}
-	plant := &Plant{ID: xid.New(), ZoneID: zone.ID}
-	past := time.Now().Add(-1 * time.Hour)
-	endDatedPlant := &Plant{ID: xid.New(), EndDate: &past, ZoneID: zone.ID}
-
-	tests := []struct {
-		name        string
-		garden      *Garden
-		zoneID      xid.ID
-		getEndDated bool
-		expectedLen int
-	}{
-		{
-			"Zero",
-			&Garden{
-				Zones: map[xid.ID]*Zone{zone.ID: zone},
-			},
-			zone.ID,
-			true,
-			0,
-		},
-		{
-			"NoEndDated",
-			&Garden{
-				Zones:  map[xid.ID]*Zone{zone.ID: zone},
-				Plants: map[xid.ID]*Plant{plant.ID: plant, endDatedPlant.ID: endDatedPlant},
-			},
-			zone.ID,
-			false,
-			1,
-		},
-		{
-			"GetEndDated",
-			&Garden{
-				Zones:  map[xid.ID]*Zone{zone.ID: zone},
-				Plants: map[xid.ID]*Plant{plant.ID: plant, endDatedPlant.ID: endDatedPlant},
-			},
-			zone.ID,
-			true,
-			2,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			plants := tt.garden.PlantsByZone(tt.zoneID, tt.getEndDated)
-			if len(plants) != tt.expectedLen {
-				t.Errorf("Expected %d Plants but got %d", tt.expectedLen, len(plants))
-			}
-		})
 	}
 }

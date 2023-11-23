@@ -10,8 +10,8 @@ import (
 	"github.com/rs/xid"
 )
 
-// WaterSchedule allows the user to have more control over how the Plant is watered using an Interval
-// and optional MinimumMoisture which acts as the threshold the Plant's soil should be above.
+// WaterSchedule allows the user to have more control over how the Zone is watered using an Interval
+// and optional MinimumMoisture which acts as the threshold the Zone's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
 	ID             xid.ID           `json:"id" yaml:"id"`

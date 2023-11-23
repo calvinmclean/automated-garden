@@ -37,9 +37,6 @@ func (g *GardenRequest) Bind(_ *http.Request) error {
 	} else if *g.MaxZones == 0 {
 		return errors.New("max_zones must not be 0")
 	}
-	if len(g.Plants) > 0 {
-		return errors.New("cannot add or modify Plants with this request")
-	}
 	if len(g.Zones) > 0 {
 		return errors.New("cannot add or modify Zones with this request")
 	}
@@ -81,14 +78,11 @@ func (g *UpdateGardenRequest) Bind(_ *http.Request) error {
 	if illegalRegexp.MatchString(g.TopicPrefix) {
 		return errors.New("one or more invalid characters in Garden topic_prefix")
 	}
-	if len(g.Plants) > 0 {
-		return errors.New("cannot add or modify Plants with this request")
-	}
 	if g.EndDate != nil {
 		return errors.New("to end-date a Garden, please use the DELETE endpoint")
 	}
 	if g.MaxZones != nil && *g.MaxZones == 0 {
-		return errors.New("max_plants must not be 0")
+		return errors.New("max_zones must not be 0")
 	}
 
 	if g.LightSchedule != nil {
@@ -125,7 +119,6 @@ func (gar *GardenActionRequest) Bind(_ *http.Request) error {
 	if gar == nil {
 		return errors.New("missing required action fields")
 	}
-
 	if gar.GardenAction == nil {
 		gar.GardenAction = &action.GardenAction{}
 	}

@@ -16,9 +16,7 @@ type GardenResponse struct {
 	NextLightAction         *NextLightAction         `json:"next_light_action,omitempty"`
 	Health                  *pkg.GardenHealth        `json:"health,omitempty"`
 	TemperatureHumidityData *TemperatureHumidityData `json:"temperature_humidity_data,omitempty"`
-	NumPlants               uint                     `json:"num_plants"`
 	NumZones                uint                     `json:"num_zones"`
-	Plants                  Link                     `json:"plants"`
 	Zones                   Link                     `json:"zones"`
 	Links                   []Link                   `json:"links,omitempty"`
 
@@ -52,12 +50,9 @@ func (gr *GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) 
 func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
-	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, plantBasePath)
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, zoneBasePath)
 
-	g.NumPlants = g.Garden.NumPlants()
 	g.NumZones = g.Garden.NumZones()
-	g.Plants = Link{"collection", plantsPath}
 	g.Zones = Link{"collection", zonesPath}
 	g.Links = append(g.Links,
 		Link{
@@ -71,10 +66,6 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	}
 
 	g.Links = append(g.Links,
-		Link{
-			"plants",
-			plantsPath,
-		},
 		Link{
 			"zones",
 			zonesPath,

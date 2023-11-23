@@ -7,9 +7,9 @@ import (
 	"github.com/rs/xid"
 )
 
-// Zone represents a "waterable resource" that is owned by a Garden and can be associated with multiple Plants.
+// Zone represents a "waterable resource" that is owned by a Garden..
 // This allows for more complex Garden setups where a large irrigation system will be watering entire groups of
-// Plants rather than watering individually. This contains the important information for managing WaterSchedules
+// Zones rather than watering individually. This contains the important information for managing WaterSchedules
 // and some additional details describing the Zone. The Position is an integer that tells the controller which
 // part of hardware needs to be switched on to start watering
 type Zone struct {

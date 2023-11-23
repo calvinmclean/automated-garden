@@ -25,8 +25,8 @@ type LightAction struct {
 	ForDuration *pkg.Duration  `json:"for_duration"`
 }
 
-// StopAction is an action for stopping watering of a Plant. It doesn't stop watering a specific Plant, only what is
-// currently watering and optionally clearing the queue of Plants to water.
+// StopAction is an action for stopping watering of a Zone. It doesn't stop watering a specific Zone, only what is
+// currently watering and optionally clearing the queue of Zones to water.
 type StopAction struct {
 	All bool `json:"all"`
 }
