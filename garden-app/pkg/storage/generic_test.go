@@ -47,7 +47,9 @@ func TestGetMultipleErrors(t *testing.T) {
 		err := c.Set(&pkg.Garden{ID: id})
 		assert.NoError(t, err)
 
-		_, err = c.GetAll(true)
+		_, err = c.GetAll(func(g *pkg.Garden) bool {
+			return true
+		})
 		assert.Error(t, err)
 		assert.Equal(t, "error getting data: error parsing data: unmarshal error", err.Error())
 	})

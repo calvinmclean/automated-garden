@@ -540,7 +540,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.SaveGarden(&pkg.Garden{ID: id, Zones: map[xid.ID]*pkg.Zone{id: {ID: id}}})
 				assert.NoError(t, err)
-				err = sc.SaveZone(id, &pkg.Zone{ID: id})
+				err = sc.Zones.Set(&pkg.Zone{ID: id, GardenID: id})
 				assert.NoError(t, err)
 				// no other mock calls are made because watering is skipped
 			},

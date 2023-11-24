@@ -134,10 +134,10 @@ func TestScheduleWaterAction(t *testing.T) {
 	wsNotInStorage.StartTime = &startTime
 	wsNotActive.StartTime = &startTime
 
-	err = storageClient.SaveWaterSchedule(ws)
+	err = storageClient.WaterSchedules.Set(ws)
 	assert.NoError(t, err)
 
-	err = storageClient.SaveWaterSchedule(wsNotActive)
+	err = storageClient.WaterSchedules.Set(wsNotActive)
 	assert.NoError(t, err)
 
 	err = worker.ScheduleWaterAction(ws)

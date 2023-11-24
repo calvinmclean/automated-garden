@@ -37,19 +37,6 @@ func TestValidateAllStoredResources(t *testing.T) {
 			"invalid Garden \"c5cvhpcbcv45e8bp16dg\": missing required name field",
 		},
 		{
-			"InvalidZoneMissingID",
-			func(s *storage.Client) error {
-				g := createExampleGarden()
-				err := s.SaveGarden(g)
-				if err != nil {
-					return err
-				}
-
-				return s.SaveZone(g.ID, &pkg.Zone{})
-			},
-			"invalid Zone: missing required field 'id'",
-		},
-		{
 			"InvalidZone",
 			func(s *storage.Client) error {
 				g := createExampleGarden()
@@ -58,21 +45,21 @@ func TestValidateAllStoredResources(t *testing.T) {
 					return err
 				}
 
-				return s.SaveZone(g.ID, &pkg.Zone{ID: id})
+				return s.Zones.Set(&pkg.Zone{ID: id, GardenID: g.ID})
 			},
 			"invalid Zone \"c5cvhpcbcv45e8bp16dg\": missing required position field",
 		},
 		{
 			"InvalidWaterScheduleMissingID",
 			func(s *storage.Client) error {
-				return s.SaveWaterSchedule(&pkg.WaterSchedule{})
+				return s.WaterSchedules.Set(&pkg.WaterSchedule{})
 			},
 			"invalid WaterSchedule: missing required field 'id'",
 		},
 		{
 			"InvalidWaterSchedule",
 			func(s *storage.Client) error {
-				return s.SaveWaterSchedule(&pkg.WaterSchedule{
+				return s.WaterSchedules.Set(&pkg.WaterSchedule{
 					ID: id,
 				})
 			},

@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -157,6 +158,8 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 	r.Handle("/*", http.FileServer(http.FS(static)))
 
+	// TODO: move end-date middleware to be compatible here
+	// r.Mount("/", gardenResource.api.Router())
 	r.Route(gardenBasePath, func(r chi.Router) {
 		r.Post("/", gardenResource.createGarden)
 		r.Get("/", gardenResource.getAllGardens)
@@ -173,26 +176,8 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 				r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
 				r.Post("/action", gardenResource.gardenAction)
 
-				r.Route(zoneBasePath, func(r chi.Router) {
-					r.Post("/", zonesResource.createZone)
-					r.Get("/", zonesResource.getAllZones)
-
-					r.Route(fmt.Sprintf("/{%s}", zonePathParam), func(r chi.Router) {
-						r.Use(zonesResource.zoneContextMiddleware)
-
-						r.Get("/", get[*ZoneResponse](getZoneFromContext))
-						r.Patch("/", zonesResource.updateZone)
-						r.Delete("/", zonesResource.endDateZone)
-
-						// Add new middleware to restrict certain paths to non-end-dated Zones
-						r.Route("/", func(r chi.Router) {
-							r.Use(restrictEndDatedMiddleware("Zone", zoneCtxKey))
-
-							r.Post("/action", zonesResource.zoneAction)
-							r.Get("/history", zonesResource.waterHistory)
-						})
-					})
-				})
+				// TODO: move end-date middleware to be compatible here
+				r.Mount("/", zonesResource.api.Router())
 			})
 		})
 	})
@@ -265,7 +250,6 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 
 	for _, g := range gardens {
 		// Remove Zones because g.Bind doesn't allow them
-		zones := g.Zones
 		g.Zones = nil
 
 		if g.ID.IsNil() {
@@ -276,18 +260,25 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
 		}
 
+		zones, err := storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
+			return z.GardenID == g.ID
+		})
+		if err != nil {
+			return fmt.Errorf("unable to get all Zones for Garden %q: %w", g.ID, err)
+		}
+
 		for _, z := range zones {
 			if z.ID.IsNil() {
 				return errors.New("invalid Zone: missing required field 'id'")
 			}
-			err = (&ZoneRequest{z}).Bind(nil)
+			err = z.Bind(&http.Request{Method: http.MethodPost})
 			if err != nil {
 				return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
 			}
 		}
 	}
 
-	waterSchedules, err := storageClient.WaterSchedules.GetAll(true)
+	waterSchedules, err := storageClient.WaterSchedules.GetAll(nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WaterSchedules: %w", err)
 	}
@@ -302,7 +293,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	weatherClients, err := storageClient.WeatherClientConfigs.GetAll(true)
+	weatherClients, err := storageClient.WeatherClientConfigs.GetAll(nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WeatherClients: %w", err)
 	}

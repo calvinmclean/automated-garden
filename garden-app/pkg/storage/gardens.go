@@ -12,7 +12,9 @@ func (c *Client) GetGarden(id xid.ID) (*pkg.Garden, error) {
 
 // GetGardens ...
 func (c *Client) GetGardens(getEndDated bool) ([]*pkg.Garden, error) {
-	return c.Gardens.GetAll(getEndDated)
+	return c.Gardens.GetAll(func(g *pkg.Garden) bool {
+		return getEndDated || !g.EndDated()
+	})
 }
 
 // SaveGarden ...

@@ -33,22 +33,6 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 	}
 }
 
-func setupWaterScheduleStorage(t *testing.T) *storage.Client {
-	t.Helper()
-
-	ws := createExampleWaterSchedule()
-
-	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
-	})
-	assert.NoError(t, err)
-
-	err = storageClient.SaveWaterSchedule(ws)
-	assert.NoError(t, err)
-
-	return storageClient
-}
-
 func TestGetWaterSchedule(t *testing.T) {
 	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 
@@ -337,7 +321,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			if tt.zone != nil {
 				err = storageClient.SaveGarden(createExampleGarden())
 				assert.NoError(t, err)
-				err = storageClient.SaveZone(id, zone)
+				err = storageClient.Zones.Set(zone)
 				assert.NoError(t, err)
 			}
 

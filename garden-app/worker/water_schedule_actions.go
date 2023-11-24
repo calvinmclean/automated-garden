@@ -16,7 +16,7 @@ import (
 func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) error {
 	if z.SkipCount != nil && *z.SkipCount > 0 {
 		*z.SkipCount--
-		err := w.storageClient.SaveZone(g.ID, z)
+		err := w.storageClient.Zones.Set(z)
 		if err != nil {
 			return fmt.Errorf("unable to save Zone after decrementing SkipCount: %w", err)
 		}

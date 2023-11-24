@@ -6,32 +6,8 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/go-chi/chi/v5"
 )
-
-// AllZonesResponse is a simple struct being used to render and return a list of all Zones
-type AllZonesResponse struct {
-	Zones []*ZoneResponse `json:"zones"`
-}
-
-// NewAllZonesResponse will create an AllZonesResponse from a list of Zones
-func (zr *ZonesResource) NewAllZonesResponse(zones []*pkg.Zone, garden *pkg.Garden) *AllZonesResponse {
-	zoneResponses := []*ZoneResponse{}
-	for _, z := range zones {
-		zoneResponses = append(zoneResponses, zr.NewZoneResponse(garden, z))
-	}
-	return &AllZonesResponse{zoneResponses}
-}
-
-// Render ...
-func (zr *AllZonesResponse) Render(_ http.ResponseWriter, r *http.Request) error {
-	for _, z := range zr.Zones {
-		err := z.Render(nil, r)
-		if err != nil {
-			return fmt.Errorf("error rendering zone: %w", err)
-		}
-	}
-	return nil
-}
 
 // ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
 // and hypermedia Links fields
@@ -41,18 +17,16 @@ type ZoneResponse struct {
 	NextWater   NextWaterDetails `json:"next_water,omitempty"`
 	Links       []Link           `json:"links,omitempty"`
 
-	garden *pkg.Garden
-	zr     *ZonesResource
+	zr *ZonesResource
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
-func (zr *ZonesResource) NewZoneResponse(garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
+func (zr *ZonesResource) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneResponse {
 	return &ZoneResponse{
 		Zone:  zone,
 		Links: links,
 
-		garden: garden,
-		zr:     zr,
+		zr: zr,
 	}
 }
 
@@ -64,12 +38,25 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 
 	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zr.Zone.ID.String())
 
-	ws, err := zr.zr.storageClient.GetMultipleWaterSchedules(zr.Zone.WaterScheduleIDs)
-	if err != nil {
-		logger.Errorf("unable to get WaterSchedule for ZoneResponse: %v", err)
+	ws := []*pkg.WaterSchedule{}
+	for _, id := range zr.Zone.WaterScheduleIDs {
+		result, err := zr.zr.storageClient.WaterSchedules.Get(id.String())
+		if err != nil {
+			return fmt.Errorf("unable to get WaterSchedule for ZoneResponse: %w", err)
+		}
+
+		ws = append(ws, result)
 	}
 
-	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, zr.garden.ID)
+	// TODO: improve how these url params are accessed
+	// TODO: put this in middleware since it's used in mutlple parts?
+	gardenID := chi.URLParam(r, "/gardensID")
+	garden, err := zr.zr.storageClient.Gardens.Get(gardenID)
+	if err != nil {
+		return fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
+	}
+
+	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	zr.Links = append(zr.Links,
 		Link{
 			"self",
@@ -117,9 +104,9 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
 		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.zr.storageClient)
 
-		if nextWaterSchedule.HasSoilMoistureControl() && zr.garden != nil {
+		if nextWaterSchedule.HasSoilMoistureControl() && garden != nil {
 			logger.Debug("getting moisture data for Zone")
-			soilMoisture, err := zr.zr.getMoisture(ctx, zr.garden, zr.Zone)
+			soilMoisture, err := zr.zr.getMoisture(ctx, garden, zr.Zone)
 			if err != nil {
 				logger.WithError(err).Warn("unable to get moisture data for Zone")
 			} else {

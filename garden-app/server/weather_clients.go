@@ -130,18 +130,6 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		},
 	})
 
-	wcr.api.SetPATCH(func(old, new *weather.Config) error {
-		old.Patch(new)
-
-		// make sure a valid WeatherClient can still be created
-		_, err := weather.NewClient(old, func(map[string]interface{}) error { return nil })
-		if err != nil {
-			return fmt.Errorf("invalid request to update WeatherClient: %w", err)
-		}
-
-		return nil
-	})
-
 	wcr.api.SetBeforeDelete(func(r *http.Request, id string) error {
 		waterSchedules, err := storageClient.GetWaterSchedulesUsingWeatherClient(id)
 		if err != nil {

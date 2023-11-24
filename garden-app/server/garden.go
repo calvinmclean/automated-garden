@@ -16,7 +16,7 @@ import (
 
 const (
 	gardenBasePath   = "/gardens"
-	gardenPathParam  = "gardenID"
+	gardenPathParam  = "/gardensID"
 	gardenIDLogField = "garden_id"
 )
 

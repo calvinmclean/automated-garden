@@ -159,9 +159,9 @@ func TestDeleteWeatherClient(t *testing.T) {
 		},
 	}
 
-	err = storageClient.SaveWaterSchedule(ws1)
+	err = storageClient.WaterSchedules.Set(ws1)
 	assert.NoError(t, err)
-	err = storageClient.SaveWaterSchedule(ws2)
+	err = storageClient.WaterSchedules.Set(ws2)
 	assert.NoError(t, err)
 
 	err = storageClient.WeatherClientConfigs.Set(weatherClient)

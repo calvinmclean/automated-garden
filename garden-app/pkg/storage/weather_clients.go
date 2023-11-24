@@ -27,7 +27,7 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 
 // GetWaterSchedulesUsingWeatherClient will return all WaterSchedules that rely on this WeatherClient
 func (c *Client) GetWaterSchedulesUsingWeatherClient(id string) ([]*pkg.WaterSchedule, error) {
-	waterSchedules, err := c.GetWaterSchedules(false)
+	waterSchedules, err := c.WaterSchedules.GetAll(nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get all WaterSchedules: %w", err)
 	}

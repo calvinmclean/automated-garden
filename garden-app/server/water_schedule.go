@@ -35,7 +35,9 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 	}
 
 	// Initialize WaterActions for each WaterSchedule from the storage client
-	allWaterSchedules, err := wsr.storageClient.WaterSchedules.GetAll(false)
+	allWaterSchedules, err := wsr.storageClient.WaterSchedules.GetAll(func(ws *pkg.WaterSchedule) bool {
+		return !ws.EndDated()
+	})
 	if err != nil {
 		return wsr, fmt.Errorf("unable to get WaterSchedules: %v", err)
 	}
@@ -58,33 +60,30 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 		},
 	})
 
-	wsr.api.SetPATCH(func(old, new *pkg.WaterSchedule) error {
+	wsr.api.SetPATCH(func(old, new *pkg.WaterSchedule) *babyapi.ErrResponse {
 		wasEndDated := old.EndDated()
 
 		old.Patch(new)
 
 		// Validate the new WaterSchedule.WeatherControl
 		if old.WeatherControl != nil {
-			exists, err := wsr.weatherClientsExist(old)
+			err := wsr.weatherClientsExist(old)
 			if err != nil {
-				return fmt.Errorf("unable to get WeatherClients for WaterSchedule: %w", err)
-			}
-			if !exists {
-				return fmt.Errorf("unable to get WeatherClients for WaterSchedule")
+				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClients for WaterSchedule: %w", err))
 			}
 
-			// TODO: This needs to be 400 error
 			err = pkg.ValidateWeatherControl(old.WeatherControl)
 			if err != nil {
-				return fmt.Errorf("invalid WaterSchedule.WeatherControl after patching: %w", err)
+				return babyapi.ErrInvalidRequest(fmt.Errorf("invalid WaterSchedule.WeatherControl after patching: %w", err))
 			}
 		}
 
 		// Update the water schedule for the WaterSchedule if it was changed or EndDate is removed
 		if (wasEndDated && old.EndDate == nil) || old.Interval != nil || old.Duration != nil || old.StartTime != nil {
 			// logger.Info("updating/resetting WaterSchedule for WaterSchedule")
-			if err := wsr.worker.ResetWaterSchedule(old); err != nil {
-				return fmt.Errorf("unable to update/reset WaterSchedule: %w", err)
+			err := wsr.worker.ResetWaterSchedule(old)
+			if err != nil {
+				return babyapi.InternalServerError(fmt.Errorf("unable to update/reset WaterSchedule: %w", err))
 			}
 		}
 
@@ -119,6 +118,8 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 		return nil
 	})
 
+	wsr.api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
+
 	return wsr, err
 }
 
@@ -129,17 +130,13 @@ func (wsr *WaterSchedulesResource) createWaterSchedule(r *http.Request, ws *pkg.
 
 	logger.Debug("request to create WaterSchedule", "water_schedule", ws)
 
-	exists, err := wsr.weatherClientsExist(ws)
+	err := wsr.weatherClientsExist(ws)
 	if err != nil {
 		if errors.Is(err, babyapi.ErrNotFound) {
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClients for WaterSchedule %w", err))
 		}
 		logger.Error("unable to get WeatherClients for WaterSchedule", "error", err)
 		return nil, babyapi.InternalServerError(err)
-	}
-	if !exists {
-		logger.Error("invalid WeatherClient used in WaterSchedule", "error", err)
-		return nil, babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClient for WaterSchedule"))
 	}
 
 	// Assign values to fields that may not be set in the request
@@ -163,38 +160,28 @@ func (wsr *WaterSchedulesResource) createWaterSchedule(r *http.Request, ws *pkg.
 	return ws, nil
 }
 
-func (wsr *WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) (bool, error) {
+func (wsr *WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) error {
 	if ws.HasTemperatureControl() {
-		exists, err := wsr.weatherClientExists(ws.WeatherControl.Temperature.ClientID)
+		err := wsr.weatherClientExists(ws.WeatherControl.Temperature.ClientID)
 		if err != nil {
-			return false, fmt.Errorf("error getting client for TemperatureControl: %w", err)
-		}
-		if !exists {
-			return false, nil
+			return fmt.Errorf("error getting client for TemperatureControl: %w", err)
 		}
 	}
 
 	if ws.HasRainControl() {
-		exists, err := wsr.weatherClientExists(ws.WeatherControl.Rain.ClientID)
+		err := wsr.weatherClientExists(ws.WeatherControl.Rain.ClientID)
 		if err != nil {
-			return false, fmt.Errorf("error getting client for RainControl: %w", err)
-		}
-		if !exists {
-			return false, nil
+			return fmt.Errorf("error getting client for RainControl: %w", err)
 		}
 	}
 
-	return true, nil
+	return nil
 }
 
-func (wsr *WaterSchedulesResource) weatherClientExists(id xid.ID) (bool, error) {
-	wc, err := wsr.storageClient.WaterSchedules.Get(id.String())
+func (wsr *WaterSchedulesResource) weatherClientExists(id xid.ID) error {
+	_, err := wsr.storageClient.WaterSchedules.Get(id.String())
 	if err != nil {
-		return false, fmt.Errorf("error getting WeatherClient with ID %q: %w", id, err)
+		return fmt.Errorf("error getting WeatherClient with ID %q: %w", id, err)
 	}
-	if wc == nil {
-		return false, nil
-	}
-
-	return true, nil
+	return nil
 }

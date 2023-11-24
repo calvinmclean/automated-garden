@@ -1,7 +1,9 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/rs/xid"
@@ -16,6 +18,7 @@ type Zone struct {
 	Name             string       `json:"name" yaml:"name,omitempty"`
 	Details          *ZoneDetails `json:"details,omitempty" yaml:"details,omitempty"`
 	ID               xid.ID       `json:"id" yaml:"id,omitempty"`
+	GardenID         xid.ID       `json:"garden_id" yaml:"id,omitempty"`
 	Position         *uint        `json:"position" yaml:"position"`
 	CreatedAt        *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate          *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`
@@ -106,4 +109,39 @@ type WaterHistory struct {
 type ZoneAndGarden struct {
 	*Zone
 	*Garden
+}
+
+func (z *Zone) Bind(r *http.Request) error {
+	if z == nil {
+		return errors.New("missing required Zone fields")
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		if z.Position == nil {
+			return errors.New("missing required position field")
+		}
+		if len(z.WaterScheduleIDs) == 0 {
+			return errors.New("missing required water_schedule_ids field")
+		}
+		if z.Name == "" {
+			return errors.New("missing required name field")
+		}
+	case http.MethodPatch:
+		if z.ID != xid.NilID() {
+			return errors.New("updating ID is not allowed")
+		}
+		if z.EndDate != nil {
+			return errors.New("to end-date a Zone, please use the DELETE endpoint")
+		}
+		if z.GardenID != xid.NilID() {
+			return errors.New("unable to change GardenID")
+		}
+	}
+
+	return nil
+}
+
+func (z *Zone) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }

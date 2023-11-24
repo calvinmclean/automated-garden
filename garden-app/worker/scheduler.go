@@ -49,7 +49,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *logrus.Entry) {
 			// Get WaterSchedule from storage in case the ActivePeriod or WeatherControl are changed
-			ws, err := w.storageClient.GetWaterSchedule(waterSchedule.ID)
+			ws, err := w.storageClient.WaterSchedules.Get(waterSchedule.ID.String())
 			if err != nil {
 				jobLogger.Errorf("error getting WaterSchedule %q when executing scheduled Job: %v", waterSchedule.ID, err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()

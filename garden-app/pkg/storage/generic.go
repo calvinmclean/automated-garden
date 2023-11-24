@@ -101,7 +101,7 @@ func (c *TypedClient[T]) get(key string) (T, error) {
 // GetAll will use the provided prefix to read data from the data source. Then, it will use getOne
 // to read each element into the correct type. These types must support `pkg.EndDateable` to allow
 // excluding end-dated resources
-func (c *TypedClient[T]) GetAll(getEndDated bool) ([]T, error) {
+func (c *TypedClient[T]) GetAll(filter babyapi.FilterFunc[T]) ([]T, error) {
 	keys, err := c.db.Keys()
 	if err != nil {
 		return nil, fmt.Errorf("error getting keys: %w", err)
@@ -118,7 +118,7 @@ func (c *TypedClient[T]) GetAll(getEndDated bool) ([]T, error) {
 			return nil, fmt.Errorf("error getting data: %w", err)
 		}
 
-		if getEndDated || !result.EndDated() {
+		if filter == nil || filter(result) {
 			results = append(results, result)
 		}
 	}

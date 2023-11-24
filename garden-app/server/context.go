@@ -11,7 +11,6 @@ type contextKey int
 const (
 	loggerCtxKey contextKey = iota
 	gardenCtxKey
-	zoneCtxKey
 )
 
 func newContextWithLogger(ctx context.Context, logger *logrus.Entry) context.Context {
@@ -32,12 +31,4 @@ func newContextWithGarden(ctx context.Context, g *GardenResponse) context.Contex
 
 func getGardenFromContext(ctx context.Context) *GardenResponse {
 	return ctx.Value(gardenCtxKey).(*GardenResponse)
-}
-
-func newContextWithZone(ctx context.Context, z *ZoneResponse) context.Context {
-	return context.WithValue(ctx, zoneCtxKey, z)
-}
-
-func getZoneFromContext(ctx context.Context) *ZoneResponse {
-	return ctx.Value(zoneCtxKey).(*ZoneResponse)
 }

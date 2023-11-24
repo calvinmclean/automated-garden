@@ -8,6 +8,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
+	"github.com/calvinmclean/babyapi"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/xid"
@@ -111,7 +112,7 @@ func NewClient(c *Config, storageCallback func(map[string]interface{}) error) (c
 }
 
 // Patch allows modifying an existing Config with fields from a new one
-func (c *Config) Patch(newConfig *Config) {
+func (c *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
 	if newConfig.Type != "" {
 		c.Type = newConfig.Type
 	}
@@ -122,6 +123,14 @@ func (c *Config) Patch(newConfig *Config) {
 	for k, v := range newConfig.Options {
 		c.Options[k] = v
 	}
+
+	// make sure a valid WeatherClient can still be created
+	_, err := NewClient(c, func(map[string]interface{}) error { return nil })
+	if err != nil {
+		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
+	}
+
+	return nil
 }
 
 // EndDated allows this to satisfy an interface even though the resources does not have end-dates
