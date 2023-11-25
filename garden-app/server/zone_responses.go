@@ -7,7 +7,6 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
-	"github.com/go-chi/chi/v5"
 )
 
 // ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
@@ -49,9 +48,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		ws = append(ws, result)
 	}
 
-	// TODO: improve how these url params are accessed
-	// TODO: put this in middleware since it's used in mutlple parts?
-	gardenID := chi.URLParam(r, "/gardensID")
+	gardenID := zr.zr.GetGardenIDParam(r)
 	garden, err := zr.zr.storageClient.Gardens.Get(gardenID)
 	if err != nil {
 		return fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)

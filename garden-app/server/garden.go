@@ -67,21 +67,6 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 
 	gr.api.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
 
-	gr.api.SetBeforePatch(func(r *http.Request, old, new *pkg.Garden) *babyapi.ErrResponse {
-		if new.MaxZones != nil {
-			// TODO: Move this to a generic BeforeSave or AfterUpdateCreate since it is always relevant before saving changes, even if MaxZones isn't necessarily changed
-			numZones, err := gr.numZones(old.ID.String())
-			if err != nil {
-				return babyapi.InternalServerError(err)
-			}
-			if *new.MaxZones < numZones {
-				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to set max_zones less than current num_zones=%d", numZones))
-			}
-		}
-
-		return nil
-	})
-
 	gr.api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := gr.api.GetIDParam(r)
@@ -118,6 +103,14 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 
 func (gr *GardensResource) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
+
+	numZones, err := gr.numZones(garden.ID.String())
+	if err != nil {
+		return babyapi.InternalServerError(err)
+	}
+	if *garden.MaxZones < numZones {
+		return babyapi.ErrInvalidRequest(fmt.Errorf("unable to set max_zones less than current num_zones=%d", numZones))
+	}
 
 	// If LightSchedule is empty, remove the scheduled Job
 	if garden.LightSchedule == nil {

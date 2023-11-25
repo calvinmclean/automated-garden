@@ -146,7 +146,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
-	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker)
+	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker, gardenResource.api.GetIDParam)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}

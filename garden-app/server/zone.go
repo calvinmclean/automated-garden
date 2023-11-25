@@ -33,7 +33,7 @@ type ZonesResource struct {
 }
 
 // NewZonesResource creates a new ZonesResource
-func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesResource, error) {
+func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker, getGardenIDParam babyapi.GetIDParamFunc) (ZonesResource, error) {
 	zr := ZonesResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
@@ -45,6 +45,8 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 	zr.api.ResponseWrapper(func(z *pkg.Zone) render.Renderer {
 		return zr.NewZoneResponse(z)
 	})
+
+	zr.api.SetParentIDParam("Garden", getGardenIDParam)
 
 	zr.api.SetOnCreateOrUpdate(zr.onCreateOrUpdate)
 
@@ -78,9 +80,7 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 	})
 
 	zr.api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
-		// TODO: improve how these url params are accessed
-		// TODO: put this in middleware since it's used in mutlple parts?
-		gardenID := chi.URLParam(r, "/gardensID")
+		gardenID := zr.GetGardenIDParam(r)
 		gardenIDFilter := filterZoneByGardenID(gardenID)
 
 		endDateFilter := EndDatedFilter[*pkg.Zone](r)
@@ -90,6 +90,10 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 	})
 
 	return zr, nil
+}
+
+func (zr *ZonesResource) GetGardenIDParam(r *http.Request) string {
+	return zr.api.GetParentIDParam("Garden", r)
 }
 
 // zoneAction reads a ZoneAction request and uses it to execute one of the actions
@@ -102,10 +106,7 @@ func (zr *ZonesResource) zoneAction(r *http.Request, zone *pkg.Zone) (render.Ren
 	if zone.EndDated() {
 		return nil, babyapi.ErrInvalidRequest(errors.New("unable to execute action on end-dated zone"))
 	}
-
-	// TODO: improve how these url params are accessed
-	// TODO: put this in middleware since it's used in mutlple parts?
-	gardenID := chi.URLParam(r, "/gardensID")
+	gardenID := zr.GetGardenIDParam(r)
 	garden, err := zr.storageClient.Gardens.Get(gardenID)
 	if err != nil {
 		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
@@ -143,9 +144,7 @@ func (zr *ZonesResource) waterSchedulesExist(ids []xid.ID) error {
 func (zr *ZonesResource) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
-	// TODO: improve how these url params are accessed
-	// TODO: put this in middleware since it's used in mutlple parts?
-	gardenID := chi.URLParam(r, "/gardensID")
+	gardenID := zr.GetGardenIDParam(r)
 	garden, err := zr.storageClient.Gardens.Get(gardenID)
 	if err != nil {
 		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
@@ -199,9 +198,7 @@ func (zr *ZonesResource) waterHistory(r *http.Request, zone *pkg.Zone) (render.R
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
-	// TODO: improve how these url params are accessed
-	// TODO: put this in middleware since it's used in mutlple parts?
-	gardenID := chi.URLParam(r, "/gardensID")
+	gardenID := zr.GetGardenIDParam(r)
 	garden, err := zr.storageClient.Gardens.Get(gardenID)
 	if err != nil {
 		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
