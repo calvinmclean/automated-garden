@@ -237,22 +237,20 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if err != nil {
 			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
 		}
+	}
 
-		zones, err := storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
-			return z.GardenID == g.ID
-		})
-		if err != nil {
-			return fmt.Errorf("unable to get all Zones for Garden %q: %w", g.ID, err)
+	zones, err := storageClient.Zones.GetAll(nil)
+	if err != nil {
+		return fmt.Errorf("unable to get all Zones: %w", err)
+	}
+
+	for _, z := range zones {
+		if z.ID.IsNil() {
+			return errors.New("invalid Zone: missing required field 'id'")
 		}
-
-		for _, z := range zones {
-			if z.ID.IsNil() {
-				return errors.New("invalid Zone: missing required field 'id'")
-			}
-			err = z.Bind(&http.Request{Method: http.MethodPost})
-			if err != nil {
-				return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
-			}
+		err = z.Bind(&http.Request{Method: http.MethodPost})
+		if err != nil {
+			return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
 		}
 	}
 

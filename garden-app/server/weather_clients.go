@@ -44,23 +44,20 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		},
 	})
 
-	wcr.api.SetBeforeAfterDelete(
-		func(r *http.Request) *babyapi.ErrResponse {
-			id := wcr.api.GetIDParam(r)
+	wcr.api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+		id := wcr.api.GetIDParam(r)
 
-			waterSchedules, err := storageClient.GetWaterSchedulesUsingWeatherClient(id)
-			if err != nil {
-				return babyapi.InternalServerError(fmt.Errorf("unable to get WaterSchedules using WeatherClient %q: %w", id, err))
-			}
+		waterSchedules, err := storageClient.GetWaterSchedulesUsingWeatherClient(id)
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("unable to get WaterSchedules using WeatherClient %q: %w", id, err))
+		}
 
-			if len(waterSchedules) > 0 {
-				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to delete WeatherClient used by %d WaterSchedules", len(waterSchedules)))
-			}
+		if len(waterSchedules) > 0 {
+			return babyapi.ErrInvalidRequest(fmt.Errorf("unable to delete WeatherClient used by %d WaterSchedules", len(waterSchedules)))
+		}
 
-			return nil
-		},
-		nil,
-	)
+		return nil
+	})
 
 	return wcr, nil
 }

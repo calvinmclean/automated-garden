@@ -62,23 +62,20 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 		},
 	})
 
-	zr.api.SetBeforeAfterPatch(
-		func(r *http.Request, old, request *pkg.Zone) *babyapi.ErrResponse {
-			if len(request.WaterScheduleIDs) != 0 {
-				err := zr.waterSchedulesExist(request.WaterScheduleIDs)
-				if err != nil {
-					if errors.Is(err, babyapi.ErrNotFound) {
-						err = fmt.Errorf("unable to update Zone with non-existent WaterSchedule %q: %w", request.WaterScheduleIDs, err)
-						return babyapi.ErrInvalidRequest(err)
-					}
-					return babyapi.InternalServerError(fmt.Errorf("unable to get WaterSchedules %q for updating Zone: %w", request.WaterScheduleIDs, err))
+	zr.api.SetBeforePatch(func(r *http.Request, old, request *pkg.Zone) *babyapi.ErrResponse {
+		if len(request.WaterScheduleIDs) != 0 {
+			err := zr.waterSchedulesExist(request.WaterScheduleIDs)
+			if err != nil {
+				if errors.Is(err, babyapi.ErrNotFound) {
+					err = fmt.Errorf("unable to update Zone with non-existent WaterSchedule %q: %w", request.WaterScheduleIDs, err)
+					return babyapi.ErrInvalidRequest(err)
 				}
+				return babyapi.InternalServerError(fmt.Errorf("unable to get WaterSchedules %q for updating Zone: %w", request.WaterScheduleIDs, err))
 			}
+		}
 
-			return nil
-		},
-		nil,
-	)
+		return nil
+	})
 
 	zr.api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
 		// TODO: improve how these url params are accessed

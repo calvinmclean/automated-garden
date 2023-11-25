@@ -67,55 +67,51 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 
 	gr.api.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
 
-	gr.api.SetBeforeAfterPatch(
-		func(r *http.Request, old, new *pkg.Garden) *babyapi.ErrResponse {
-			if new.MaxZones != nil {
-				// TODO: Move this to a generic BeforeSave or AfterUpdateCreate since it is always relevant before saving changes, even if MaxZones isn't necessarily changed
-				numZones, err := gr.numZones(old.ID.String())
-				if err != nil {
-					return babyapi.InternalServerError(err)
-				}
-				if *new.MaxZones < numZones {
-					return babyapi.ErrInvalidRequest(fmt.Errorf("unable to set max_zones less than current num_zones=%d", numZones))
-				}
-			}
-
-			return nil
-		},
-		nil,
-	)
-
-	gr.api.SetBeforeAfterDelete(
-		func(r *http.Request) *babyapi.ErrResponse {
-			logger := babyapi.GetLoggerFromContext(r.Context())
-			gardenID := gr.api.GetIDParam(r)
-
-			// Don't allow end-dating a Garden with active Zones
-			numZones, err := gr.numZones(gardenID)
+	gr.api.SetBeforePatch(func(r *http.Request, old, new *pkg.Garden) *babyapi.ErrResponse {
+		if new.MaxZones != nil {
+			// TODO: Move this to a generic BeforeSave or AfterUpdateCreate since it is always relevant before saving changes, even if MaxZones isn't necessarily changed
+			numZones, err := gr.numZones(old.ID.String())
 			if err != nil {
-				return babyapi.InternalServerError(fmt.Errorf("error getting number of Zones for garden: %w", err))
-			}
-			if numZones > 0 {
-				err := errors.New("unable to end-date Garden with active Zones")
-				logger.Error("unable to end-date Garden", "error", err)
-				return babyapi.ErrInvalidRequest(err)
-			}
-
-			return nil
-		},
-		func(r *http.Request) *babyapi.ErrResponse {
-			logger := babyapi.GetLoggerFromContext(r.Context())
-			gardenID := gr.api.GetIDParam(r)
-
-			// Remove scheduled light actions
-			logger.Info("removing scheduled LightActions for Garden")
-			if err := gr.worker.RemoveJobsByID(gardenID); err != nil {
-				logger.Error("unable to remove scheduled LightActions", "error", err)
 				return babyapi.InternalServerError(err)
 			}
-			return nil
-		},
-	)
+			if *new.MaxZones < numZones {
+				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to set max_zones less than current num_zones=%d", numZones))
+			}
+		}
+
+		return nil
+	})
+
+	gr.api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+		logger := babyapi.GetLoggerFromContext(r.Context())
+		gardenID := gr.api.GetIDParam(r)
+
+		// Don't allow end-dating a Garden with active Zones
+		numZones, err := gr.numZones(gardenID)
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("error getting number of Zones for garden: %w", err))
+		}
+		if numZones > 0 {
+			err := errors.New("unable to end-date Garden with active Zones")
+			logger.Error("unable to end-date Garden", "error", err)
+			return babyapi.ErrInvalidRequest(err)
+		}
+
+		return nil
+	})
+
+	gr.api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
+		logger := babyapi.GetLoggerFromContext(r.Context())
+		gardenID := gr.api.GetIDParam(r)
+
+		// Remove scheduled light actions
+		logger.Info("removing scheduled LightActions for Garden")
+		if err := gr.worker.RemoveJobsByID(gardenID); err != nil {
+			logger.Error("unable to remove scheduled LightActions", "error", err)
+			return babyapi.InternalServerError(err)
+		}
+		return nil
+	})
 
 	return gr, nil
 }

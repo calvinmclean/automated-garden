@@ -53,35 +53,34 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 
 	wsr.api.SetOnCreateOrUpdate(wsr.onCreateOrUpdate)
 
-	wsr.api.SetBeforeAfterDelete(
-		func(r *http.Request) *babyapi.ErrResponse {
-			id := wsr.api.GetIDParam(r)
+	wsr.api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+		id := wsr.api.GetIDParam(r)
 
-			// Unable to delete WaterSchedule with associated Zones
-			zones, err := wsr.storageClient.GetZonesUsingWaterSchedule(id)
-			if err != nil {
-				return babyapi.InternalServerError(fmt.Errorf("unable to get Zones using WaterSchedule: %w", err))
-			}
-			if numZones := len(zones); numZones > 0 {
-				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to end-date WaterSchedule with %d Zones", numZones))
-			}
+		// Unable to delete WaterSchedule with associated Zones
+		zones, err := wsr.storageClient.GetZonesUsingWaterSchedule(id)
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("unable to get Zones using WaterSchedule: %w", err))
+		}
+		if numZones := len(zones); numZones > 0 {
+			return babyapi.ErrInvalidRequest(fmt.Errorf("unable to end-date WaterSchedule with %d Zones", numZones))
+		}
 
-			return nil
-		},
-		func(r *http.Request) *babyapi.ErrResponse {
-			logger := babyapi.GetLoggerFromContext(r.Context())
-			id := wsr.api.GetIDParam(r)
+		return nil
+	})
 
-			// Remove scheduled WaterActions
-			logger.Info("removing scheduled WaterActions for WaterSchedule")
-			err := wsr.worker.RemoveJobsByID(id)
-			if err != nil {
-				return babyapi.InternalServerError(fmt.Errorf("unable to remove scheduled WaterActions: %w", err))
-			}
+	wsr.api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
+		logger := babyapi.GetLoggerFromContext(r.Context())
+		id := wsr.api.GetIDParam(r)
 
-			return nil
-		},
-	)
+		// Remove scheduled WaterActions
+		logger.Info("removing scheduled WaterActions for WaterSchedule")
+		err := wsr.worker.RemoveJobsByID(id)
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("unable to remove scheduled WaterActions: %w", err))
+		}
+
+		return nil
+	})
 
 	wsr.api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
 
