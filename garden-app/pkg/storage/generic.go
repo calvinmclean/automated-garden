@@ -33,19 +33,18 @@ func NewClient(config Config) (*Client, error) {
 	}, nil
 }
 
-type Resource interface {
-	babyapi.EndDateable
-	// babyapi.Resource
-	GetID() string
+type EndDateableResource interface {
+	pkg.EndDateable
+	babyapi.Resource
 }
 
 // Client is a wrapper around hord.Database to allow for easy interactions with resources
-type TypedClient[T Resource] struct {
+type TypedClient[T EndDateableResource] struct {
 	prefix string
 	*BaseClient
 }
 
-func NewTypedClient[T Resource](bc *BaseClient, prefix string) *TypedClient[T] {
+func NewTypedClient[T EndDateableResource](bc *BaseClient, prefix string) *TypedClient[T] {
 	return &TypedClient[T]{prefix, bc}
 }
 
@@ -53,7 +52,6 @@ func (c *TypedClient[T]) key(id string) string {
 	return fmt.Sprintf("%s_%s", c.prefix, id)
 }
 
-// TODO: end-date instead of delete!
 func (c *TypedClient[T]) Delete(id string) error {
 	key := c.key(id)
 

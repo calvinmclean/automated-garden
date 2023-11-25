@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
 	"github.com/madflojo/hord"
 	"github.com/madflojo/hord/drivers/hashmap"
@@ -101,7 +102,7 @@ func (c *BaseClient) initRedisDB(options map[string]interface{}) error {
 	return nil
 }
 
-func FilterEndDated[T babyapi.EndDateable](getEndDated bool) babyapi.FilterFunc[T] {
+func FilterEndDated[T pkg.EndDateable](getEndDated bool) babyapi.FilterFunc[T] {
 	return func(item T) bool {
 		return getEndDated || !item.EndDated()
 	}

@@ -159,9 +159,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 
 	gardenResource.api.AddNestedAPIs(zonesResource.api.Router())
 	gardenResource.api.Route(r)
-	// TODO: move end-date middleware to be compatible here
-	// TODO:
-	// r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
 
 	weatherClientsResource, err := NewWeatherClientsAPI(storageClient)
 	if err != nil {

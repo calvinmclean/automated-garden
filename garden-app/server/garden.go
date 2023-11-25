@@ -147,6 +147,10 @@ func (gr *GardensResource) gardenAction(r *http.Request, garden *pkg.Garden) (re
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute GardenAction")
 
+	if garden.EndDated() {
+		return nil, babyapi.ErrInvalidRequest(errors.New("unable to execute action on end-dated garden"))
+	}
+
 	action := &GardenActionRequest{}
 	if err := render.Bind(r, action); err != nil {
 		logger.Error("invalid request for GardenAction", "error", err)
