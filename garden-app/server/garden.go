@@ -111,31 +111,38 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 
 	gr.api.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
 
-	gr.api.SetBeforeDelete(func(r *http.Request, gardenID string) error {
-		// Don't allow end-dating a Garden with active Zones
-		numZones, err := gr.numZones(gardenID)
-		if err != nil {
-			return fmt.Errorf("error getting number of Zones for garden: %w", err)
-		}
-		if numZones > 0 {
-			err := errors.New("unable to end-date Garden with active Zones")
-			// logger.WithError(err).Error("unable to end-date Garden")
-			// render.Render(w, r, ErrInvalidRequest(err))
-			// TODO: return 400 error?
-			return err
-		}
+	gr.api.SetBeforeAfter(
+		http.MethodDelete,
+		func(r *http.Request) *babyapi.ErrResponse {
+			logger := babyapi.GetLoggerFromContext(r.Context())
+			gardenID := gr.api.GetIDParam(r)
 
-		// TODO: After Delete?
-		// Remove scheduled light actions
-		// logger.Info("removing scheduled LightActions for Garden")
-		if err := gr.worker.RemoveJobsByID(gardenID); err != nil {
-			// logger.WithError(err).Error("unable to remove scheduled LightActions")
-			// render.Render(w, r, InternalServerError(err))
-			return err
-		}
+			// Don't allow end-dating a Garden with active Zones
+			numZones, err := gr.numZones(gardenID)
+			if err != nil {
+				return babyapi.InternalServerError(fmt.Errorf("error getting number of Zones for garden: %w", err))
+			}
+			if numZones > 0 {
+				err := errors.New("unable to end-date Garden with active Zones")
+				logger.Error("unable to end-date Garden", "error", err)
+				return babyapi.ErrInvalidRequest(err)
+			}
 
-		return nil
-	})
+			return nil
+		},
+		func(r *http.Request) *babyapi.ErrResponse {
+			logger := babyapi.GetLoggerFromContext(r.Context())
+			gardenID := gr.api.GetIDParam(r)
+
+			// Remove scheduled light actions
+			logger.Info("removing scheduled LightActions for Garden")
+			if err := gr.worker.RemoveJobsByID(gardenID); err != nil {
+				logger.Error("unable to remove scheduled LightActions", "error", err)
+				return babyapi.InternalServerError(err)
+			}
+			return nil
+		},
+	)
 
 	return gr, nil
 }

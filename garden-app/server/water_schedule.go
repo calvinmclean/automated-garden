@@ -90,33 +90,36 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 		return nil
 	})
 
-	wsr.api.SetBeforeDelete(func(r *http.Request, id string) error {
-		ws, httpErr := wsr.api.GetRequestedResource(r)
-		if err != nil {
-			return httpErr
-		}
+	wsr.api.SetBeforeAfter(
+		http.MethodDelete,
+		func(r *http.Request) *babyapi.ErrResponse {
+			id := wsr.api.GetIDParam(r)
 
-		// Unable to delete WaterSchedule with associated Zones
-		zones, err := wsr.storageClient.GetZonesUsingWaterSchedule(ws.ID)
-		if err != nil {
-			return fmt.Errorf("unable to get Zones using WaterSchedule: %w", err)
-		}
-		if numZones := len(zones); numZones > 0 {
-			// TODO: 400 error
-			return fmt.Errorf("unable to end-date WaterSchedule with %d Zones", numZones)
-		}
+			// Unable to delete WaterSchedule with associated Zones
+			zones, err := wsr.storageClient.GetZonesUsingWaterSchedule(id)
+			if err != nil {
+				return babyapi.InternalServerError(fmt.Errorf("unable to get Zones using WaterSchedule: %w", err))
+			}
+			if numZones := len(zones); numZones > 0 {
+				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to end-date WaterSchedule with %d Zones", numZones))
+			}
 
-		logger := babyapi.GetLoggerFromContext(r.Context())
+			return nil
+		},
+		func(r *http.Request) *babyapi.ErrResponse {
+			logger := babyapi.GetLoggerFromContext(r.Context())
+			id := wsr.api.GetIDParam(r)
 
-		// TODO: after delete?
-		// Remove scheduled WaterActions
-		logger.Info("removing scheduled WaterActions for WaterSchedule")
-		if err := wsr.worker.RemoveJobsByID(ws.ID.String()); err != nil {
-			return fmt.Errorf("unable to remove scheduled WaterActions: %w", err)
-		}
+			// Remove scheduled WaterActions
+			logger.Info("removing scheduled WaterActions for WaterSchedule")
+			err := wsr.worker.RemoveJobsByID(id)
+			if err != nil {
+				return babyapi.InternalServerError(fmt.Errorf("unable to remove scheduled WaterActions: %w", err))
+			}
 
-		return nil
-	})
+			return nil
+		},
+	)
 
 	wsr.api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
 

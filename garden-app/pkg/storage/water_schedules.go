@@ -4,11 +4,10 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/rs/xid"
 )
 
 // GetZonesUsingWaterSchedule will find all Zones that use this WaterSchedule and return the Zones along with the Gardens they belong to
-func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, error) {
+func (c *Client) GetZonesUsingWaterSchedule(id string) ([]*pkg.ZoneAndGarden, error) {
 	gardens, err := c.Gardens.GetAll(FilterEndDated[*pkg.Garden](false))
 	if err != nil {
 		return nil, fmt.Errorf("unable to get all Gardens: %w", err)
@@ -25,7 +24,7 @@ func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, er
 
 		for _, z := range zones {
 			for _, wsID := range z.WaterScheduleIDs {
-				if wsID == id {
+				if wsID.String() == id {
 					results = append(results, &pkg.ZoneAndGarden{Zone: z, Garden: g})
 				}
 			}
