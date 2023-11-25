@@ -60,38 +60,36 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 		},
 	})
 
-	wsr.api.SetPATCH(func(old, new *pkg.WaterSchedule) *babyapi.ErrResponse {
-		wasEndDated := old.EndDated()
+	// TODO: this is very similar to what is done for createWaterSchedule except that it uses ResetWaterSchedule instead of StartWaterSchedule
+	wsr.api.SetBeforeAfterPatch(
+		nil,
+		func(r *http.Request, ws, patchRequest *pkg.WaterSchedule) *babyapi.ErrResponse {
+			// Validate the new WaterSchedule.WeatherControl
+			if ws.WeatherControl != nil {
+				err := wsr.weatherClientsExist(ws)
+				if err != nil {
+					return babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClients for WaterSchedule: %w", err))
+				}
 
-		old.Patch(new)
-
-		// Validate the new WaterSchedule.WeatherControl
-		if old.WeatherControl != nil {
-			err := wsr.weatherClientsExist(old)
-			if err != nil {
-				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClients for WaterSchedule: %w", err))
+				err = pkg.ValidateWeatherControl(ws.WeatherControl)
+				if err != nil {
+					return babyapi.ErrInvalidRequest(fmt.Errorf("invalid WaterSchedule.WeatherControl after patching: %w", err))
+				}
 			}
 
-			err = pkg.ValidateWeatherControl(old.WeatherControl)
-			if err != nil {
-				return babyapi.ErrInvalidRequest(fmt.Errorf("invalid WaterSchedule.WeatherControl after patching: %w", err))
+			// Update the water schedule for the WaterSchedule if it was changed or EndDate is removed
+			if !ws.EndDated() || ws.Interval != nil || ws.Duration != nil || ws.StartTime != nil {
+				// logger.Info("updating/resetting WaterSchedule for WaterSchedule")
+				err := wsr.worker.ResetWaterSchedule(ws)
+				if err != nil {
+					return babyapi.InternalServerError(fmt.Errorf("unable to update/reset WaterSchedule: %w", err))
+				}
 			}
-		}
+			return nil
+		},
+	)
 
-		// Update the water schedule for the WaterSchedule if it was changed or EndDate is removed
-		if (wasEndDated && old.EndDate == nil) || old.Interval != nil || old.Duration != nil || old.StartTime != nil {
-			// logger.Info("updating/resetting WaterSchedule for WaterSchedule")
-			err := wsr.worker.ResetWaterSchedule(old)
-			if err != nil {
-				return babyapi.InternalServerError(fmt.Errorf("unable to update/reset WaterSchedule: %w", err))
-			}
-		}
-
-		return nil
-	})
-
-	wsr.api.SetBeforeAfter(
-		http.MethodDelete,
+	wsr.api.SetBeforeAfterDelete(
 		func(r *http.Request) *babyapi.ErrResponse {
 			id := wsr.api.GetIDParam(r)
 

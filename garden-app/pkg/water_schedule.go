@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 )
 
@@ -55,7 +56,7 @@ func (ws *WaterSchedule) HasWeatherControl() bool {
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
-func (ws *WaterSchedule) Patch(new *WaterSchedule) {
+func (ws *WaterSchedule) Patch(new *WaterSchedule) *babyapi.ErrResponse {
 	if new.Duration != nil {
 		ws.Duration = new.Duration
 	}
@@ -86,6 +87,8 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) {
 		}
 		ws.ActivePeriod.Patch(new.ActivePeriod)
 	}
+
+	return nil
 }
 
 // HasRainControl is used to determine if rain conditions should be checked before watering the Zone

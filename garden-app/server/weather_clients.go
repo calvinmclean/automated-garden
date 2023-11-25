@@ -130,8 +130,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		},
 	})
 
-	wcr.api.SetBeforeAfter(
-		http.MethodDelete,
+	wcr.api.SetBeforeAfterDelete(
 		func(r *http.Request) *babyapi.ErrResponse {
 			id := wcr.api.GetIDParam(r)
 

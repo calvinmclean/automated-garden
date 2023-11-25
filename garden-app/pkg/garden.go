@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 )
 
@@ -162,7 +163,7 @@ func (g *Garden) SetEndDate(now time.Time) {
 
 // Patch allows for easily updating individual fields of a Garden by passing in a new Garden containing
 // the desired values
-func (g *Garden) Patch(newGarden *Garden) {
+func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 	if newGarden.Name != "" {
 		g.Name = newGarden.Name
 	}
@@ -193,6 +194,8 @@ func (g *Garden) Patch(newGarden *Garden) {
 	if newGarden.TemperatureHumiditySensor != nil {
 		g.TemperatureHumiditySensor = newGarden.TemperatureHumiditySensor
 	}
+
+	return nil
 }
 
 // HasTemperatureHumiditySensor determines if the Garden has a sensor configured

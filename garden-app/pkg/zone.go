@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 )
 
@@ -46,7 +47,7 @@ func (z *Zone) SetEndDate(now time.Time) {
 
 // Patch allows for easily updating individual fields of a Zone by passing in a new Zone containing
 // the desired values
-func (z *Zone) Patch(newZone *Zone) {
+func (z *Zone) Patch(newZone *Zone) *babyapi.ErrResponse {
 	if newZone.Name != "" {
 		z.Name = newZone.Name
 	}
@@ -74,6 +75,8 @@ func (z *Zone) Patch(newZone *Zone) {
 		}
 		z.Details.Patch(newZone.Details)
 	}
+
+	return nil
 }
 
 // ZoneDetails is a struct holding some additional details about a Zone that are primarily for user convenience
