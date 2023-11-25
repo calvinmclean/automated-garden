@@ -39,14 +39,6 @@ type Config struct {
 	ID      xid.ID                 `json:"id" yaml:"id"`
 	Type    string                 `json:"type" yaml:"type"`
 	Options map[string]interface{} `json:"options" yaml:"options"`
-	Links   []Link                 `json:"links,omitempty"`
-}
-
-// TODO: remove and put in reusable spot
-// Link is used for HATEOAS-style REST hypermedia
-type Link struct {
-	Rel  string `json:"rel,omitempty"`
-	HRef string `json:"href"`
 }
 
 func (wc *Config) GetID() string {
@@ -54,15 +46,6 @@ func (wc *Config) GetID() string {
 }
 
 func (wc *Config) Render(_ http.ResponseWriter, _ *http.Request) error {
-	if wc != nil {
-		wc.Links = append(wc.Links,
-			Link{
-				"self",
-				fmt.Sprintf("%s/%s", "/weather_clients", wc.ID),
-			},
-		)
-	}
-
 	return nil
 }
 

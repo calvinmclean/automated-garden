@@ -24,10 +24,6 @@ type WaterSchedule struct {
 	Name           string           `json:"name,omitempty" yaml:"name,omitempty"`
 	Description    string           `json:"description,omitempty" yaml:"description,omitempty"`
 	ActivePeriod   *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
-
-	WeatherData *WeatherData     `json:"weather_data,omitempty"`
-	NextWater   NextWaterDetails `json:"next_water,omitempty"`
-	Links       []Link           `json:"links,omitempty"`
 }
 
 func (ws *WaterSchedule) GetID() string {
@@ -202,12 +198,6 @@ type RainData struct {
 type TemperatureData struct {
 	Celsius     float32 `json:"celsius"`
 	ScaleFactor float32 `json:"scale_factor"`
-}
-
-// Link is used for HATEOAS-style REST hypermedia
-type Link struct {
-	Rel  string `json:"rel,omitempty"`
-	HRef string `json:"href"`
 }
 
 func (ws *WaterSchedule) Render(_ http.ResponseWriter, r *http.Request) error {
