@@ -45,7 +45,11 @@ func (wc *Config) GetID() string {
 	return wc.ID.String()
 }
 
-func (wc *Config) Render(_ http.ResponseWriter, _ *http.Request) error {
+func (wc *Config) Render(w http.ResponseWriter, r *http.Request) error {
+	if r.Method == http.MethodPost {
+		// Set ID when creating a new WeatherConfig
+		wc.ID = xid.New()
+	}
 	return nil
 }
 

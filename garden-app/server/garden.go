@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -13,7 +12,6 @@ import (
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/rs/xid"
 )
 
 const (
@@ -58,12 +56,7 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 		return gr.NewGardenResponse(g)
 	})
 
-	gr.api.AddCustomRoute(chi.Route{
-		Pattern: "/",
-		Handlers: map[string]http.Handler{
-			http.MethodPost: gr.api.ReadRequestBodyAndDo(gr.createGarden),
-		},
-	})
+	gr.api.SetOnCreateOrUpdate(gr.onCreateOrUpdate)
 
 	gr.api.AddCustomIDRoute(chi.Route{
 		Pattern: "/action",
@@ -89,28 +82,7 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 
 			return nil
 		},
-		func(r *http.Request, old, new *pkg.Garden) *babyapi.ErrResponse {
-			logger := babyapi.GetLoggerFromContext(r.Context())
-
-			// If LightSchedule is empty, remove the scheduled Job
-			if old.LightSchedule == nil {
-				logger.Info("removing LightSchedule")
-				if err := gr.worker.RemoveJobsByID(old.ID.String()); err != nil {
-					logger.Error("unable to remove LightSchedule for Garden", "error", err)
-					return babyapi.InternalServerError(err)
-				}
-			}
-
-			// Update the light schedule for the Garden (if it exists)
-			if old.LightSchedule != nil {
-				logger.Info("updating/resetting LightSchedule for Garden")
-				if err := gr.worker.ResetLightSchedule(old); err != nil {
-					logger.Error("unable to update/reset LightSchedule", "light_schedule", old.LightSchedule, "error", err)
-					return babyapi.InternalServerError(err)
-				}
-			}
-			return nil
-		},
+		nil,
 	)
 
 	gr.api.SetBeforeAfterDelete(
@@ -148,38 +120,28 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 	return gr, nil
 }
 
-func (gr *GardensResource) createGarden(r *http.Request, garden *pkg.Garden) (*pkg.Garden, *babyapi.ErrResponse) {
+func (gr *GardensResource) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
-	logger.Info("received request to create new Garden")
 
-	logger.Debug("request to create Garden", "garden", garden)
-
-	// Assign new unique ID and CreatedAt to garden
-	garden.ID = xid.New()
-	if garden.CreatedAt == nil {
-		now := time.Now()
-		garden.CreatedAt = &now
-	}
-	logger.Debug("new garden ID", "id", garden.ID)
-
-	// Start light schedule (if applicable)
-	if garden.LightSchedule != nil {
-		if err := gr.worker.ScheduleLightActions(garden); err != nil {
-			logger.Error("unable to schedule LightAction", "error", err)
-			return nil, babyapi.InternalServerError(err)
+	// If LightSchedule is empty, remove the scheduled Job
+	if garden.LightSchedule == nil {
+		logger.Info("removing LightSchedule")
+		if err := gr.worker.RemoveJobsByID(garden.ID.String()); err != nil {
+			logger.Error("unable to remove LightSchedule for Garden", "error", err)
+			return babyapi.InternalServerError(err)
 		}
 	}
 
-	// Save the Garden
-	logger.Debug("saving Garden")
-	err := gr.storageClient.Gardens.Set(garden)
-	if err != nil {
-		logger.Error("unable to save Garden", "error", err)
-		return nil, babyapi.InternalServerError(err)
+	// Update the light schedule for the Garden (if it exists)
+	if garden.LightSchedule != nil {
+		logger.Info("updating/resetting LightSchedule for Garden")
+		if err := gr.worker.ResetLightSchedule(garden); err != nil {
+			logger.Error("unable to update/reset LightSchedule", "light_schedule", garden.LightSchedule, "error", err)
+			return babyapi.InternalServerError(err)
+		}
 	}
 
-	render.Status(r, http.StatusCreated)
-	return garden, nil
+	return nil
 }
 
 // gardenAction reads a GardenAction request and uses it to execute one of the actions

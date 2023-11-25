@@ -419,13 +419,13 @@ func TestCreateWaterSchedule(t *testing.T) {
 		{
 			"ErrorRainWeatherClientDNE",
 			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
-			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule error getting client for RainControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for RainControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
 			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
-			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule error getting client for TemperatureControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
+			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for TemperatureControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 		{

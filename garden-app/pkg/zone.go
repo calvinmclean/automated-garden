@@ -130,6 +130,10 @@ func (z *Zone) Bind(r *http.Request) error {
 		if z.Name == "" {
 			return errors.New("missing required name field")
 		}
+		// Set ID when creating a new Zone
+		z.ID = xid.New()
+		now := time.Now()
+		z.CreatedAt = &now
 	case http.MethodPatch:
 		if z.ID != xid.NilID() {
 			return errors.New("updating ID is not allowed")

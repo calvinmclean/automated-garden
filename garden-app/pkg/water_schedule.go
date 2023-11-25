@@ -232,6 +232,8 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 				return fmt.Errorf("error validating active_period: %w", err)
 			}
 		}
+		// Set ID when creating a new WaterSchedule
+		ws.ID = xid.New()
 	case http.MethodPatch:
 		if ws.ID != xid.NilID() {
 			return errors.New("updating ID is not allowed")

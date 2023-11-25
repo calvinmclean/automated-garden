@@ -10,7 +10,6 @@ import (
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/rs/xid"
 )
 
 const (
@@ -36,13 +35,6 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 
 	wcr.api.ResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc}
-	})
-
-	wcr.api.AddCustomRoute(chi.Route{
-		Pattern: "/",
-		Handlers: map[string]http.Handler{
-			http.MethodPost: wcr.api.ReadRequestBodyAndDo(wcr.createWeatherClient),
-		},
 	})
 
 	wcr.api.AddCustomIDRoute(chi.Route{
@@ -121,27 +113,6 @@ func (api *WeatherClientsAPI) testWeatherClient(w http.ResponseWriter, r *http.R
 		logger.Error("unable to render WeatherClientResponse", "error", err)
 		render.Render(w, r, ErrRender(err))
 	}
-}
-
-func (api *WeatherClientsAPI) createWeatherClient(r *http.Request, weatherClientConfig *weather.Config) (*weather.Config, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
-	logger.Info("received request to create new WeatherClient")
-
-	logger.Debug("request to create WeatherClient", "request", weatherClientConfig)
-
-	// Assign values to fields that may not be set in the request
-	weatherClientConfig.ID = xid.New()
-	logger.Debug("new WeatherClient ID", weatherClientIDLogField, weatherClientConfig.ID)
-
-	// Save the WeatherClient
-	logger.Debug("saving WeatherClient")
-	if err := api.storageClient.Set(weatherClientConfig); err != nil {
-		logger.Error("unable to save WeatherClient Config", "error", err)
-		return nil, babyapi.InternalServerError(err)
-	}
-
-	render.Status(r, http.StatusCreated)
-	return weatherClientConfig, nil
 }
 
 // WeatherClientTestResponse is used to return WeatherData from testing that the client works

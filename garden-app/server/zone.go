@@ -46,12 +46,7 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 		return zr.NewZoneResponse(z)
 	})
 
-	zr.api.AddCustomRoute(chi.Route{
-		Pattern: "/",
-		Handlers: map[string]http.Handler{
-			http.MethodPost: zr.api.ReadRequestBodyAndDo(zr.createZone),
-		},
-	})
+	zr.api.SetOnCreateOrUpdate(zr.onCreateOrUpdate)
 
 	zr.api.AddCustomIDRoute(chi.Route{
 		Pattern: "/action",
@@ -148,12 +143,8 @@ func (zr *ZonesResource) waterSchedulesExist(ids []xid.ID) error {
 	return nil
 }
 
-// createZone will create a new Zone resource
-func (zr *ZonesResource) createZone(r *http.Request, zone *pkg.Zone) (*pkg.Zone, *babyapi.ErrResponse) {
+func (zr *ZonesResource) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
-	logger.Info("received request to create new Zone")
-
-	logger.Debug("request to create Zone", "zone", zone)
 
 	// TODO: improve how these url params are accessed
 	// TODO: put this in middleware since it's used in mutlple parts?
@@ -162,7 +153,7 @@ func (zr *ZonesResource) createZone(r *http.Request, zone *pkg.Zone) (*pkg.Zone,
 	if err != nil {
 		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
 		logger.Error("unable to get garden for zone", "error", err)
-		return nil, babyapi.InternalServerError(err)
+		return babyapi.InternalServerError(err)
 	}
 
 	zonesForGarden, err := zr.storageClient.Gardens.GetAll(func(g *pkg.Garden) bool {
@@ -171,25 +162,25 @@ func (zr *ZonesResource) createZone(r *http.Request, zone *pkg.Zone) (*pkg.Zone,
 	if err != nil {
 		err = fmt.Errorf("error getting all zones for Garden %q: %w", gardenID, err)
 		logger.Error("unable to get all zones", "error", err)
-		return nil, babyapi.InternalServerError(err)
+		return babyapi.InternalServerError(err)
 	}
 
 	zone.GardenID, err = xid.FromString(gardenID)
 	if err != nil {
-		return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid GardenID: %w", err))
+		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid GardenID: %w", err))
 	}
 
 	// Validate that adding a Zone does not exceed Garden.MaxZones
 	if uint(len(zonesForGarden)+1) > *garden.MaxZones {
 		err := fmt.Errorf("adding a Zone would exceed Garden's max_zones=%d", *garden.MaxZones)
 		logger.Error("invalid request to create Zone", "error", err)
-		return nil, babyapi.ErrInvalidRequest(err)
+		return babyapi.ErrInvalidRequest(err)
 	}
 	// Validate that ZonePosition works for a Garden with MaxZones (remember ZonePosition is zero-indexed)
 	if *zone.Position >= *garden.MaxZones {
 		err := fmt.Errorf("position invalid for Garden with max_zones=%d", *garden.MaxZones)
 		logger.Error("invalid request to create Zone", "error", err)
-		return nil, babyapi.ErrInvalidRequest(err)
+		return babyapi.ErrInvalidRequest(err)
 	}
 	// Validate water schedules exists
 	err = zr.waterSchedulesExist(zone.WaterScheduleIDs)
@@ -197,29 +188,13 @@ func (zr *ZonesResource) createZone(r *http.Request, zone *pkg.Zone) (*pkg.Zone,
 		if errors.Is(err, babyapi.ErrNotFound) {
 			err = fmt.Errorf("unable to create Zone with non-existent WaterSchedule %q: %w", zone.WaterScheduleIDs, err)
 			logger.Error("invalid request to create Zone", "error", err)
-			return nil, babyapi.ErrInvalidRequest(err)
+			return babyapi.ErrInvalidRequest(err)
 		}
 		logger.Error("unable to get WaterSchedules for new Zone", "water_schedule_ids", zone.WaterScheduleIDs, "error", err)
-		return nil, babyapi.InternalServerError(err)
+		return babyapi.InternalServerError(err)
 	}
 
-	// Assign values to fields that may not be set in the request
-	zone.ID = xid.New()
-	if zone.CreatedAt == nil {
-		now := time.Now()
-		zone.CreatedAt = &now
-	}
-	logger.Debug("new zone ID", "id", zone.ID)
-
-	// Save the Zone
-	logger.Debug("saving Zone")
-	if err := zr.storageClient.Zones.Set(zone); err != nil {
-		logger.Error("unable to save Zone", "error", err)
-		return nil, babyapi.InternalServerError(err)
-	}
-
-	render.Status(r, http.StatusCreated)
-	return zone, nil
+	return nil
 }
 
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
