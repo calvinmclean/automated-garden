@@ -90,9 +90,7 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 		// TODO: improve how these url params are accessed
 		// TODO: put this in middleware since it's used in mutlple parts?
 		gardenID := chi.URLParam(r, "/gardensID")
-		gardenIDFilter := func(z *pkg.Zone) bool {
-			return z.GardenID.String() == gardenID
-		}
+		gardenIDFilter := filterZoneByGardenID(gardenID)
 
 		endDateFilter := EndDatedFilter[*pkg.Zone](r)
 		return func(z *pkg.Zone) bool {
@@ -138,12 +136,6 @@ func (zr *ZonesResource) zoneAction(r *http.Request, zone *pkg.Zone) (render.Ren
 
 	render.Status(r, http.StatusAccepted)
 	return &ZoneActionResponse{}, nil
-}
-
-type ZoneActionResponse struct{}
-
-func (*ZoneActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
-	return nil
 }
 
 func (zr *ZonesResource) waterSchedulesExist(ids []xid.ID) error {

@@ -29,7 +29,6 @@ func createExampleGarden() *pkg.Garden {
 		TopicPrefix: "test-garden",
 		MaxZones:    &two,
 		ID:          id,
-		Zones:       map[xid.ID]*pkg.Zone{},
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
@@ -64,7 +63,13 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	storageClient := &storage.Client{}
 
 	garden := createExampleGarden()
-	garden.Zones[id] = createExampleZone()
+	zone := createExampleZone()
+
+	err := storageClient.Gardens.Set(garden)
+	assert.NoError(t, err)
+
+	err = storageClient.Zones.Set(zone)
+	assert.NoError(t, err)
 
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
@@ -81,7 +86,7 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	startTime := time.Now().Add(250 * time.Millisecond)
 	ws.StartTime = &startTime
 
-	err := worker.ScheduleWaterAction(ws)
+	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
 	time.Sleep(1000 * time.Millisecond)
@@ -99,9 +104,12 @@ func TestScheduleWaterAction(t *testing.T) {
 	defer weather.ResetCache()
 
 	garden := createExampleGarden()
-	garden.Zones[id] = createExampleZone()
+	zone := createExampleZone()
 
-	err = storageClient.SaveGarden(garden)
+	err = storageClient.Gardens.Set(garden)
+	assert.NoError(t, err)
+
+	err = storageClient.Zones.Set(zone)
 	assert.NoError(t, err)
 
 	influxdbClient := new(influxdb.MockClient)
@@ -533,7 +541,7 @@ func TestRemoveJobsByID(t *testing.T) {
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
-	err = worker.RemoveJobsByID(ws.ID)
+	err = worker.RemoveJobsByID(ws.ID.String())
 	assert.NoError(t, err)
 
 	// This also gets coverage for GetNextWaterTime when no Job exists

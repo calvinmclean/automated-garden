@@ -156,15 +156,13 @@ func GardenTests(t *testing.T) {
 		// meaning adhoc action is going to be predictably delayed
 		maxZones := uint(1)
 		startTime := time.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second)
-		newGarden := &server.GardenRequest{
-			Garden: &pkg.Garden{
-				Name:        "TestGarden",
-				TopicPrefix: "test",
-				MaxZones:    &maxZones,
-				LightSchedule: &pkg.LightSchedule{
-					Duration:  &pkg.Duration{Duration: 14 * time.Hour},
-					StartTime: startTime.Format(pkg.LightTimeFormat),
-				},
+		newGarden := &pkg.Garden{
+			Name:        "TestGarden",
+			TopicPrefix: "test",
+			MaxZones:    &maxZones,
+			LightSchedule: &pkg.LightSchedule{
+				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
+				StartTime: startTime.Format(pkg.LightTimeFormat),
 			},
 		}
 

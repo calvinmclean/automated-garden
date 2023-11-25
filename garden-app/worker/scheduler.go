@@ -9,7 +9,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/go-co-op/gocron"
-	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 )
 
@@ -89,7 +88,7 @@ func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, ws)
 	logger.Debugf("resetting WaterSchedule")
 
-	if err := w.RemoveJobsByID(ws.ID); err != nil {
+	if err := w.RemoveJobsByID(ws.ID.String()); err != nil {
 		return err
 	}
 	return w.ScheduleWaterAction(ws)
@@ -215,7 +214,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		if g.LightSchedule.AdhocOnTime.Before(time.Now()) {
 			logger.Debug("adhoc ON time is in the past and is being removed")
 			g.LightSchedule.AdhocOnTime = nil
-			return w.storageClient.SaveGarden(g)
+			return w.storageClient.Gardens.Set(g)
 		}
 
 		nextOnJob, err := w.getNextLightJob(g, pkg.LightStateOn, false)
@@ -251,7 +250,7 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Debug("resetting LightSchedule")
 
-	if err := w.RemoveJobsByID(g.ID); err != nil {
+	if err := w.RemoveJobsByID(g.ID.String()); err != nil {
 		return err
 	}
 	return w.ScheduleLightActions(g)
@@ -339,12 +338,12 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		return fmt.Errorf("error scheduling ad-hoc light action: %w", err)
 	}
 
-	return w.storageClient.SaveGarden(g)
+	return w.storageClient.Gardens.Set(g)
 }
 
 // RemoveJobsByID will remove Jobs tagged with the specific xid
-func (w *Worker) RemoveJobsByID(id xid.ID) error {
-	jobs, err := w.scheduler.FindJobsByTag(id.String())
+func (w *Worker) RemoveJobsByID(id string) error {
+	jobs, err := w.scheduler.FindJobsByTag(id)
 	if err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
@@ -352,7 +351,7 @@ func (w *Worker) RemoveJobsByID(id xid.ID) error {
 	for _, j := range jobs {
 		scheduleJobsGauge.WithLabelValues(j.Tags()[0:2]...).Dec()
 	}
-	if err := w.scheduler.RemoveByTags(id.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+	if err := w.scheduler.RemoveByTags(id); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
 	return nil
@@ -421,7 +420,7 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 		actionLogger.Debug("removing AdhocOnTime")
 		// Now set AdhocOnTime to nil and save
 		g.LightSchedule.AdhocOnTime = nil
-		err = w.storageClient.SaveGarden(g)
+		err = w.storageClient.Gardens.Set(g)
 		if err != nil {
 			actionLogger.Errorf("error saving Garden after removing AdhocOnTime: %v", err)
 			schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()

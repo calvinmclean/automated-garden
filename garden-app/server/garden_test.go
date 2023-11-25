@@ -1,27 +1,26 @@
 package server
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/render"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func createExampleGarden() *pkg.Garden {
@@ -33,7 +32,6 @@ func createExampleGarden() *pkg.Garden {
 		TopicPrefix: "test-garden",
 		MaxZones:    &two,
 		ID:          id,
-		Zones:       map[xid.ID]*pkg.Zone{},
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
@@ -52,14 +50,8 @@ func TestGetGarden(t *testing.T) {
 		{
 			"Successful",
 			"/gardens/c5cvhpcbcv45e8bp16dg",
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"c5cvhpcbcv45e8bp16dg","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"c5cvhpcbcv45e8bp16dg","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/action"}\]}`,
 			http.StatusOK,
-		},
-		{
-			"ErrorInvalidID",
-			"/gardens/not-an-xid",
-			`{"status":"Invalid request.","error":"xid: invalid ID"}`,
-			http.StatusBadRequest,
 		},
 		{
 			"StatusNotFound",
@@ -74,90 +66,19 @@ func TestGetGarden(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			storageClient := setupZoneAndGardenStorage(t)
-			gr := &GardensResource{
-				storageClient:  storageClient,
-				influxdbClient: influxdbClient,
-				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
-				config:         Config{},
-			}
 
-			router := chi.NewRouter()
-			router.Route(fmt.Sprintf("/gardens/{%s}", gardenPathParam), func(r chi.Router) {
-				r.Use(gr.gardenContextMiddleware)
-				r.Get("/", get[*GardenResponse](getGardenFromContext))
-			})
+			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			assert.NoError(t, err)
 
-			r := httptest.NewRequest("GET", tt.path, nil)
-			w := httptest.NewRecorder()
+			gr.worker.StartAsync()
 
-			router.ServeHTTP(w, r)
+			r := httptest.NewRequest("GET", tt.path, http.NoBody)
+			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
 
-			// check HTTP response status code
-			if w.Code != tt.code {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
-			}
+			assert.Equal(t, tt.code, w.Code)
+			assert.Regexp(t, tt.expected, strings.TrimSpace(w.Body.String()))
 
-			matcher := regexp.MustCompile(tt.expected)
-			actual := strings.TrimSpace(w.Body.String())
-			if !matcher.MatchString(actual) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-			}
-		})
-	}
-}
-
-func TestGardenRestrictEndDatedMiddleware(t *testing.T) {
-	garden := createExampleGarden()
-	endDatedGarden := createExampleGarden()
-	endDate := time.Now().Add(-1 * time.Minute)
-	endDatedGarden.EndDate = &endDate
-	testHandler := func(w http.ResponseWriter, r *http.Request) {
-		render.Status(r, http.StatusOK)
-	}
-
-	router := chi.NewRouter()
-	router.Route("/garden", func(r chi.Router) {
-		r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
-		r.Get("/", testHandler)
-	})
-
-	tests := []struct {
-		name     string
-		garden   *pkg.Garden
-		code     int
-		expected string
-	}{
-		{
-			"GardenNotEndDated",
-			garden,
-			http.StatusOK,
-			"",
-		},
-		{
-			"GardenEndDated",
-			endDatedGarden,
-			http.StatusBadRequest,
-			`{"status":"Invalid request.","error":"resource not available for end-dated Garden"}`,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			ctx := newContextWithGarden(context.Background(), &GardenResponse{Garden: tt.garden})
-			r := httptest.NewRequest("GET", "/garden", nil).WithContext(ctx)
-			w := httptest.NewRecorder()
-
-			router.ServeHTTP(w, r)
-
-			// check HTTP response status code
-			if w.Code != tt.code {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
-			}
-			// check HTTP response body
-			actual := strings.TrimSpace(w.Body.String())
-			if actual != tt.expected {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
-			}
+			gr.worker.Stop()
 		})
 	}
 }
@@ -174,35 +95,35 @@ func TestCreateGarden(t *testing.T) {
 			"Successful",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"SuccessfulWithTemperatureAndHumidity",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"temperature_humidity_data":{"temperature_celsius":50,"humidity_percentage":50},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"temperature_humidity_data":{"temperature_celsius":50,"humidity_percentage":50},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"SuccessfulButErrorGettingTemperatureAndHumidity",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
 			true,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"ErrorNegativeMaxZones",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones":-2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
 			false,
-			`{"status":"Invalid request.","error":"json: cannot unmarshal number -2 into Go struct field GardenRequest.max_zones of type uint"}`,
+			`{"status":"Invalid request.","error":"json: cannot unmarshal number -2 into Go struct field Garden.max_zones of type uint"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorInvalidRequestBody",
 			"{}",
 			false,
-			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
+			`{"status":"Invalid request.","error":"missing required name field"}`,
 			http.StatusBadRequest,
 		},
 		{
@@ -228,31 +149,15 @@ func TestCreateGarden(t *testing.T) {
 			} else {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
 			}
-			gr := &GardensResource{
-				storageClient:  storageClient,
-				influxdbClient: influxdbClient,
-				config:         Config{},
-				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
-			}
+			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			assert.NoError(t, err)
 
-			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body))
+			r := httptest.NewRequest("POST", "/gardens", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(gr.createGarden)
+			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
 
-			h.ServeHTTP(w, r)
-
-			// check HTTP response status code
-			if w.Code != tt.code {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
-			}
-
-			// check HTTP response body
-			matcher := regexp.MustCompile(tt.expectedRegexp)
-			actual := strings.TrimSpace(w.Body.String())
-			if !matcher.MatchString(actual) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-			}
+			assert.Equal(t, tt.code, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
 		})
 	}
 }
@@ -269,13 +174,13 @@ func TestGetAllGardens(t *testing.T) {
 		{
 			"SuccessfulEndDatedFalse",
 			"/gardens",
-			`{"gardens":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"items":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfulEndDatedTrue",
 			"/gardens?end_dated=true",
-			`{"gardens":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"items":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
 			http.StatusOK,
 		},
 	}
@@ -288,36 +193,22 @@ func TestGetAllGardens(t *testing.T) {
 			assert.NoError(t, err)
 
 			for _, g := range gardens {
-				err = storageClient.SaveGarden(g)
+				err = storageClient.Gardens.Set(g)
 				assert.NoError(t, err)
 			}
 
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
-			gr := &GardensResource{
-				storageClient:  storageClient,
-				influxdbClient: influxdbClient,
-				config:         Config{},
-				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
-			}
 
-			r := httptest.NewRequest("GET", tt.targetURL, nil)
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(gr.getAllGardens)
+			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			assert.NoError(t, err)
 
-			h.ServeHTTP(w, r)
+			r := httptest.NewRequest("GET", tt.targetURL, http.NoBody)
+			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
 
-			// check HTTP response status code
-			if w.Code != tt.status {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
-			}
-
-			// check HTTP response body
-			matcher := regexp.MustCompile(tt.expectedRegexp)
+			assert.Equal(t, http.StatusOK, w.Code)
 			actual := strings.TrimSpace(w.Body.String())
-			if !matcher.MatchString(actual) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-			}
+			assert.Regexp(t, tt.expectedRegexp, actual)
 		})
 	}
 }
@@ -328,29 +219,33 @@ func TestEndDateGarden(t *testing.T) {
 	endDatedGarden.EndDate = &now
 
 	gardenWithZone := createExampleGarden()
-	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
+	zone := createExampleZone()
 
 	tests := []struct {
 		name           string
 		garden         *pkg.Garden
+		zone           *pkg.Zone
 		expectedRegexp string
 		status         int
 	}{
 		{
 			"Successful",
 			createExampleGarden(),
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","end_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"}\]}`,
-			http.StatusOK,
+			nil,
+			``,
+			http.StatusNoContent,
 		},
 		{
 			"SuccessfullyDeleteGarden",
 			endDatedGarden,
-			"",
+			nil,
+			``,
 			http.StatusNoContent,
 		},
 		{
 			"ErrorEndDatingGardenWithZones",
 			gardenWithZone,
+			zone,
 			`{"status":"Invalid request.","error":"unable to end-date Garden with active Zones"}`,
 			http.StatusBadRequest,
 		},
@@ -358,31 +253,28 @@ func TestEndDateGarden(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			storageClient := setupZoneAndGardenStorage(t)
-			gr := &GardensResource{
-				storageClient: storageClient,
-				config:        Config{},
-				worker:        worker.NewWorker(storageClient, nil, nil, logrus.New()),
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+
+			err = storageClient.Gardens.Set(tt.garden)
+			assert.NoError(t, err)
+
+			if tt.zone != nil {
+				err = storageClient.Zones.Set(tt.zone)
+				assert.NoError(t, err)
 			}
 
-			ctx := newContextWithGarden(context.Background(), &GardenResponse{Garden: tt.garden})
-			r := httptest.NewRequest("DELETE", "/garden", nil).WithContext(ctx)
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(gr.endDateGarden)
+			gr, err := NewGardenResource(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			assert.NoError(t, err)
 
-			h.ServeHTTP(w, r)
+			r := httptest.NewRequest("DELETE", fmt.Sprintf("/gardens/%s", tt.garden.ID), http.NoBody)
+			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
 
-			// check HTTP response status code
-			if w.Code != tt.status {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
-			}
+			assert.Equal(t, tt.status, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
 
-			// check HTTP response body
-			matcher := regexp.MustCompile(tt.expectedRegexp)
-			actual := strings.TrimSpace(w.Body.String())
-			if !matcher.MatchString(actual) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-			}
 		})
 	}
 }
@@ -392,12 +284,14 @@ func TestUpdateGarden(t *testing.T) {
 	gardenWithoutLight.LightSchedule = nil
 
 	gardenWithZone := createExampleGarden()
-	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
-	gardenWithZone.Zones[xid.New()] = &pkg.Zone{}
+	zone1 := createExampleZone()
+	zone2 := createExampleZone()
+	zone2.ID = xid.New()
 
 	tests := []struct {
 		name           string
 		garden         *pkg.Garden
+		zones          []*pkg.Zone
 		body           string
 		expectedRegexp string
 		status         int
@@ -405,34 +299,39 @@ func TestUpdateGarden(t *testing.T) {
 		{
 			"Successful",
 			createExampleGarden(),
+			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfullyRemoveLightSchedule",
 			createExampleGarden(),
+			nil,
 			`{"name": "new name","light_schedule": {}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfullyAddLightSchedule",
 			gardenWithoutLight,
+			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"zones":{"rel":"collection","href":"/gardens/[0-9a-v]{20}/zones"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
 			"ErrorInvalidRequestBody",
 			createExampleGarden(),
-			"{}",
-			`{"status":"Invalid request.","error":"missing required Garden fields"}`,
+			nil,
+			"abc",
+			`{"status":"Invalid request.","error":"invalid character 'a' looking for beginning of value"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorReducingMaxZones",
 			gardenWithZone,
+			[]*pkg.Zone{zone1, zone2},
 			`{"max_zones": 1}`,
 			`{"status":"Invalid request.","error":"unable to set max_zones less than current num_zones=2"}`,
 			http.StatusBadRequest,
@@ -444,32 +343,21 @@ func TestUpdateGarden(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			storageClient := setupZoneAndGardenStorage(t)
-			gr := &GardensResource{
-				storageClient:  storageClient,
-				influxdbClient: influxdbClient,
-				config:         Config{},
-				worker:         worker.NewWorker(storageClient, nil, nil, logrus.New()),
+
+			for _, z := range tt.zones {
+				err := storageClient.Zones.Set(z)
+				assert.NoError(t, err)
 			}
 
-			ctx := newContextWithGarden(context.Background(), &GardenResponse{Garden: tt.garden, gr: gr})
-			r := httptest.NewRequest("PATCH", "/garden", strings.NewReader(tt.body)).WithContext(ctx)
+			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			assert.NoError(t, err)
+
+			r := httptest.NewRequest("PATCH", "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(gr.updateGarden)
+			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
 
-			h.ServeHTTP(w, r)
-
-			// check HTTP response status code
-			if w.Code != tt.status {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
-			}
-
-			// check HTTP response body
-			matcher := regexp.MustCompile(tt.expectedRegexp)
-			actual := strings.TrimSpace(w.Body.String())
-			if !matcher.MatchString(actual) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-			}
+			assert.Equal(t, tt.status, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
 		})
 	}
 }
@@ -496,7 +384,7 @@ func TestGardenAction(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
 			},
 			`{"light":{"state":"on"}}`,
-			"null",
+			"{}",
 			http.StatusAccepted,
 		},
 		{
@@ -506,7 +394,7 @@ func TestGardenAction(t *testing.T) {
 				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
 			},
 			`{"light_state":"on"}`,
-			"null",
+			"{}",
 			http.StatusAccepted,
 		},
 		{
@@ -532,30 +420,375 @@ func TestGardenAction(t *testing.T) {
 			mqttClient := new(mqtt.MockClient)
 			tt.setupMock(mqttClient)
 
-			gr := &GardensResource{
-				worker: worker.NewWorker(setupZoneAndGardenStorage(t), nil, mqttClient, logrus.New()),
-			}
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+
+			gr, err := NewGardenResource(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, logrus.New()))
+			assert.NoError(t, err)
+
 			garden := createExampleGarden()
+			err = storageClient.Gardens.Set(garden)
+			assert.NoError(t, err)
 
-			gardenCtx := newContextWithGarden(context.Background(), &GardenResponse{Garden: garden})
-			r := httptest.NewRequest("POST", "/garden", strings.NewReader(tt.body)).WithContext(gardenCtx)
+			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := httptest.NewRecorder()
-			h := http.HandlerFunc(gr.gardenAction)
+			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
 
-			h.ServeHTTP(w, r)
-
-			// check HTTP response status code
-			if w.Code != tt.status {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.status)
-			}
-
-			// check HTTP response body
-			actual := strings.TrimSpace(w.Body.String())
-			if actual != tt.expected {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, tt.expected)
-			}
+			assert.Equal(t, tt.status, w.Code)
+			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
 			mqttClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGardenActionRequest(t *testing.T) {
+	tests := []struct {
+		name string
+		ar   *GardenActionRequest
+		err  string
+	}{
+		{
+			"EmptyRequestError",
+			nil,
+			"missing required action fields",
+		},
+		{
+			"EmptyActionError",
+			&GardenActionRequest{},
+			"missing required action fields",
+		},
+		{
+			"EmptyGardenActionError",
+			&GardenActionRequest{
+				GardenAction: &action.GardenAction{},
+			},
+			"missing required action fields",
+		},
+	}
+
+	t.Run("SuccessfulLightAction", func(t *testing.T) {
+		ar := &GardenActionRequest{
+			GardenAction: &action.GardenAction{
+				Light: &action.LightAction{
+					State: pkg.LightStateOn,
+				},
+			},
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading GardenActionRequest JSON: %v", err)
+		}
+	})
+	t.Run("SuccessfulLightActionFlattened", func(t *testing.T) {
+		on := pkg.LightStateOn
+		ar := &GardenActionRequest{
+			LightState: &on,
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		require.NoError(t, err)
+		assert.Equal(t, ar.Light.State, on)
+	})
+	t.Run("SuccessfulStopAction", func(t *testing.T) {
+		ar := &GardenActionRequest{
+			GardenAction: &action.GardenAction{
+				Stop: &action.StopAction{},
+			},
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading GardenActionRequest JSON: %v", err)
+		}
+	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest("", "/", nil)
+			err := tt.ar.Bind(r)
+			if err == nil {
+				t.Error("Expected error reading GardenActionRequest JSON, but none occurred")
+				return
+			}
+			if err.Error() != tt.err {
+				t.Errorf("Unexpected error string: %v", err)
+			}
+		})
+	}
+}
+
+func TestGardenRequest(t *testing.T) {
+	zero := uint(0)
+	one := uint(1)
+	tests := []struct {
+		name string
+		gr   *pkg.Garden
+		err  string
+	}{
+		{
+			"EmptyRequestError",
+			nil,
+			"missing required Garden fields",
+		},
+		{
+			"MissingNameError",
+			&pkg.Garden{},
+			"missing required name field",
+		},
+		{
+			"MissingTopicPrefixError",
+			&pkg.Garden{
+				Name: "garden",
+			},
+			"missing required topic_prefix field",
+		},
+		{
+			"InvalidTopicPrefixError$",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden$",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError#",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden#",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError*",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden*",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError>",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden>",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError+",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden+",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError/",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden/",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"MissingMaxZonesError",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden",
+			},
+			"missing required max_zones field",
+		},
+		{
+			"MaxZonesZeroError",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden",
+				MaxZones:    &zero,
+			},
+			"max_zones must not be 0",
+		},
+		{
+			"EmptyLightScheduleDurationError",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden",
+				MaxZones:    &one,
+				LightSchedule: &pkg.LightSchedule{
+					StartTime: "22:00:01-07:00",
+				},
+			},
+			"missing required light_schedule.duration field",
+		},
+		{
+			"EmptyLightScheduleStartTimeError",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden",
+				MaxZones:    &one,
+				LightSchedule: &pkg.LightSchedule{
+					Duration: &pkg.Duration{Duration: time.Minute},
+				},
+			},
+			"missing required light_schedule.start_time field",
+		},
+		{
+			"DurationGreaterThanOrEqualTo24HoursError",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden",
+				MaxZones:    &one,
+				LightSchedule: &pkg.LightSchedule{
+					Duration: &pkg.Duration{Duration: 25 * time.Hour},
+				},
+			},
+			"invalid light_schedule.duration >= 24 hours: 25h0m0s",
+		},
+		{
+			"BadStartTimeError",
+			&pkg.Garden{
+				Name:        "garden",
+				TopicPrefix: "garden",
+				MaxZones:    &one,
+				LightSchedule: &pkg.LightSchedule{
+					Duration:  &pkg.Duration{Duration: time.Minute},
+					StartTime: "NOT A TIME",
+				},
+			},
+			"invalid time format for light_schedule.start_time: NOT A TIME",
+		},
+	}
+
+	t.Run("Successful", func(t *testing.T) {
+		gr := &pkg.Garden{
+			TopicPrefix: "garden",
+			Name:        "garden",
+			MaxZones:    &one,
+		}
+		r := httptest.NewRequest(http.MethodPost, "/", http.NoBody)
+		err := gr.Bind(r)
+		assert.NoError(t, err)
+	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPost, "/", http.NoBody)
+			err := tt.gr.Bind(r)
+			assert.Equal(t, tt.err, err.Error())
+		})
+	}
+}
+
+func TestUpdateGardenRequest(t *testing.T) {
+	now := time.Now()
+	zero := uint(0)
+	tests := []struct {
+		name string
+		gr   *pkg.Garden
+		err  string
+	}{
+		{
+			"EmptyRequestError",
+			nil,
+			"missing required Garden fields",
+		},
+		{
+			"InvalidTopicPrefixError$",
+			&pkg.Garden{
+				TopicPrefix: "garden$",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError#",
+			&pkg.Garden{
+				TopicPrefix: "garden#",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError*",
+			&pkg.Garden{
+				TopicPrefix: "garden*",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError>",
+			&pkg.Garden{
+				TopicPrefix: "garden>",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError+",
+			&pkg.Garden{
+				TopicPrefix: "garden+",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"InvalidTopicPrefixError/",
+			&pkg.Garden{
+				TopicPrefix: "garden/",
+			},
+			"one or more invalid characters in Garden topic_prefix",
+		},
+		{
+			"DurationGreaterThanOrEqualTo24HoursError",
+			&pkg.Garden{
+				LightSchedule: &pkg.LightSchedule{
+					Duration: &pkg.Duration{Duration: 25 * time.Hour},
+				},
+			},
+			"invalid light_schedule.duration >= 24 hours: 25h0m0s",
+		},
+		{
+			"InvalidLightScheduleStartTimeError",
+			&pkg.Garden{
+				LightSchedule: &pkg.LightSchedule{
+					StartTime: "NOT A TIME",
+				},
+			},
+			"invalid time format for light_schedule.start_time: NOT A TIME",
+		},
+		{
+			"EndDateError",
+			&pkg.Garden{
+				EndDate: &now,
+			},
+			"to end-date a Garden, please use the DELETE endpoint",
+		},
+		{
+			"MaxZonesZeroError",
+			&pkg.Garden{
+				MaxZones: &zero,
+			},
+			"max_zones must not be 0",
+		},
+	}
+
+	t.Run("Successful", func(t *testing.T) {
+		gr := &pkg.Garden{
+			Name: "garden",
+		}
+		r := httptest.NewRequest(http.MethodPatch, "/", http.NoBody)
+		err := gr.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading pkg.Garden JSON: %v", err)
+		}
+	})
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodPatch, "/", http.NoBody)
+			err := tt.gr.Bind(r)
+			if err == nil {
+				t.Error("Expected error reading pkg.Garden JSON, but none occurred")
+				return
+			}
+			if err.Error() != tt.err {
+				t.Errorf("Unexpected error string: %v", err)
+			}
 		})
 	}
 }

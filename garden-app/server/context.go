@@ -17,18 +17,11 @@ func newContextWithLogger(ctx context.Context, logger *logrus.Entry) context.Con
 	return context.WithValue(ctx, loggerCtxKey, logger)
 }
 
+// TODO: REMOVE
 func getLoggerFromContext(ctx context.Context) *logrus.Entry {
 	if logger, ok := ctx.Value(loggerCtxKey).(*logrus.Entry); ok {
 		return logger
 	}
 	logger := logrus.New().WithField("", "")
 	return logger
-}
-
-func newContextWithGarden(ctx context.Context, g *GardenResponse) context.Context {
-	return context.WithValue(ctx, gardenCtxKey, g)
-}
-
-func getGardenFromContext(ctx context.Context) *GardenResponse {
-	return ctx.Value(gardenCtxKey).(*GardenResponse)
 }

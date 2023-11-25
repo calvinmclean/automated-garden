@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/calvinmclean/babyapi"
 	"github.com/madflojo/hord"
 	"github.com/madflojo/hord/drivers/hashmap"
 	"github.com/madflojo/hord/drivers/redis"
@@ -98,4 +99,10 @@ func (c *BaseClient) initRedisDB(options map[string]interface{}) error {
 	c.marshal = json.Marshal
 
 	return nil
+}
+
+func FilterEndDated[T babyapi.EndDateable](getEndDated bool) babyapi.FilterFunc[T] {
+	return func(item T) bool {
+		return getEndDated || !item.EndDated()
+	}
 }

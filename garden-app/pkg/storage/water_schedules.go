@@ -9,7 +9,7 @@ import (
 
 // GetZonesUsingWaterSchedule will find all Zones that use this WaterSchedule and return the Zones along with the Gardens they belong to
 func (c *Client) GetZonesUsingWaterSchedule(id xid.ID) ([]*pkg.ZoneAndGarden, error) {
-	gardens, err := c.GetGardens(false)
+	gardens, err := c.Gardens.GetAll(FilterEndDated[*pkg.Garden](false))
 	if err != nil {
 		return nil, fmt.Errorf("unable to get all Gardens: %w", err)
 	}

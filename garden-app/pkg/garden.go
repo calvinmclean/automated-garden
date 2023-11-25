@@ -3,7 +3,10 @@ package pkg
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"net/http"
+	"regexp"
 	"strings"
 	"time"
 
@@ -63,15 +66,14 @@ func (l *LightState) UnmarshalJSON(data []byte) error {
 
 // Garden is the representation of a single garden-controller device
 type Garden struct {
-	Name                      string           `json:"name" yaml:"name,omitempty"`
-	TopicPrefix               string           `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
-	ID                        xid.ID           `json:"id" yaml:"id,omitempty"`
-	Zones                     map[xid.ID]*Zone `json:"zones" yaml:"zones,omitempty"`
-	MaxZones                  *uint            `json:"max_zones" yaml:"max_zones"`
-	CreatedAt                 *time.Time       `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate                   *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	LightSchedule             *LightSchedule   `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
-	TemperatureHumiditySensor *bool            `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
+	Name                      string         `json:"name" yaml:"name,omitempty"`
+	TopicPrefix               string         `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
+	ID                        xid.ID         `json:"id" yaml:"id,omitempty"`
+	MaxZones                  *uint          `json:"max_zones" yaml:"max_zones"`
+	CreatedAt                 *time.Time     `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate                   *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	LightSchedule             *LightSchedule `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
+	TemperatureHumiditySensor *bool          `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
 }
 
 func (g *Garden) GetID() string {
@@ -193,18 +195,84 @@ func (g *Garden) Patch(newGarden *Garden) {
 	}
 }
 
-// NumZones returns the number of non-end-dated Zones that are part of this Garden
-func (g *Garden) NumZones() uint {
-	result := uint(0)
-	for _, z := range g.Zones {
-		if !z.EndDated() {
-			result++
-		}
-	}
-	return result
-}
-
 // HasTemperatureHumiditySensor determines if the Garden has a sensor configured
 func (g *Garden) HasTemperatureHumiditySensor() bool {
 	return g.TemperatureHumiditySensor != nil && *g.TemperatureHumiditySensor
+}
+
+func (g *Garden) Bind(r *http.Request) error {
+	if g == nil {
+		return errors.New("missing required Garden fields")
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		if g.Name == "" {
+			return errors.New("missing required name field")
+		}
+		if g.TopicPrefix == "" {
+			return errors.New("missing required topic_prefix field")
+		}
+		illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
+		if illegalRegexp.MatchString(g.TopicPrefix) {
+			return errors.New("one or more invalid characters in Garden topic_prefix")
+		}
+		if g.MaxZones == nil {
+			return errors.New("missing required max_zones field")
+		} else if *g.MaxZones == 0 {
+			return errors.New("max_zones must not be 0")
+		}
+		if g.LightSchedule != nil {
+			if g.LightSchedule.Duration == nil {
+				return errors.New("missing required light_schedule.duration field")
+			}
+
+			// Check that Duration is valid Duration
+			if g.LightSchedule.Duration.Duration >= 24*time.Hour {
+				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
+			}
+
+			if g.LightSchedule.StartTime == "" {
+				return errors.New("missing required light_schedule.start_time field")
+			}
+			// Check that LightSchedule.StartTime is valid
+			_, err := time.Parse(LightTimeFormat, g.LightSchedule.StartTime)
+			if err != nil {
+				return fmt.Errorf("invalid time format for light_schedule.start_time: %s", g.LightSchedule.StartTime)
+			}
+		}
+	case http.MethodPatch:
+		illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
+		if illegalRegexp.MatchString(g.TopicPrefix) {
+			return errors.New("one or more invalid characters in Garden topic_prefix")
+		}
+		if g.EndDate != nil {
+			return errors.New("to end-date a Garden, please use the DELETE endpoint")
+		}
+		if g.MaxZones != nil && *g.MaxZones == 0 {
+			return errors.New("max_zones must not be 0")
+		}
+
+		if g.LightSchedule != nil {
+			// Check that Duration is valid Duration
+			if g.LightSchedule.Duration != nil {
+				if g.LightSchedule.Duration.Duration >= 24*time.Hour {
+					return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
+				}
+			}
+			// Check that LightSchedule.StartTime is valid
+			if g.LightSchedule.StartTime != "" {
+				_, err := time.Parse(LightTimeFormat, g.LightSchedule.StartTime)
+				if err != nil {
+					return fmt.Errorf("invalid time format for light_schedule.start_time: %s", g.LightSchedule.StartTime)
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func (g *Garden) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
 }

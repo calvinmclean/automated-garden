@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -264,13 +263,7 @@ func TestGetZone(t *testing.T) {
 			w := babyapi.TestWithParentRoute[*pkg.Zone](t, zr.api, "/gardens/{/gardensID}", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
-
-			// check HTTP response body
-			matcher := regexp.MustCompile(tt.expectedRegexp)
-			actual := strings.TrimSpace(w.Body.String())
-			if !matcher.MatchString(actual) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-			}
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
 
 			zr.worker.Stop()
 			influxdbClient.AssertExpectations(t)

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 )
 
 // GardenResponse is used to represent a Garden in the response body with the additional Moisture data
@@ -17,7 +18,6 @@ type GardenResponse struct {
 	Health                  *pkg.GardenHealth        `json:"health,omitempty"`
 	TemperatureHumidityData *TemperatureHumidityData `json:"temperature_humidity_data,omitempty"`
 	NumZones                uint                     `json:"num_zones"`
-	Zones                   Link                     `json:"zones"`
 	Links                   []Link                   `json:"links,omitempty"`
 
 	gr *GardensResource
@@ -52,8 +52,11 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, zoneBasePath)
 
-	g.NumZones = g.Garden.NumZones()
-	g.Zones = Link{"collection", zonesPath}
+	var err error
+	g.NumZones, err = g.gr.numZones(g.ID.String())
+	if err != nil {
+		return fmt.Errorf("error getting number of Zones for garden: %w", err)
+	}
 	g.Links = append(g.Links,
 		Link{
 			"self",
@@ -158,5 +161,26 @@ func (agr *AllGardensResponse) Render(_ http.ResponseWriter, r *http.Request) er
 			return fmt.Errorf("error rendering garden: %w", err)
 		}
 	}
+	return nil
+}
+
+// NumZones returns the number of non-end-dated Zones that are part of this Garden
+func (gr *GardensResource) numZones(gardenID string) (uint, error) {
+	zones, err := gr.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
+		gardenIDFilter := filterZoneByGardenID(gardenID)
+		endDateFilter := storage.FilterEndDated[*pkg.Zone](false)
+
+		return gardenIDFilter(z) && endDateFilter(z)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("error getting Zones for Garden: %w", err)
+	}
+
+	return uint(len(zones)), nil
+}
+
+type GardenActionResponse struct{}
+
+func (*GardenActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

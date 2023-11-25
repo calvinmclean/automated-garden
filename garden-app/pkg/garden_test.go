@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
-	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -325,47 +324,6 @@ func TestLightStateMarshal(t *testing.T) {
 			t.Errorf("Expected empty string but got: %v", string(result))
 		}
 	})
-}
-
-func TestNumZones(t *testing.T) {
-	past := time.Now().Add(-1 * time.Hour)
-	tests := []struct {
-		name     string
-		garden   *Garden
-		expected uint
-	}{
-		{
-			"Zero",
-			&Garden{},
-			0,
-		},
-		{
-			"One",
-			&Garden{
-				Zones: map[xid.ID]*Zone{xid.New(): {}},
-			},
-			1,
-		},
-		{
-			"OneWithEndDated",
-			&Garden{
-				Zones: map[xid.ID]*Zone{
-					xid.New(): {},
-					xid.New(): {EndDate: &past},
-				},
-			},
-			1,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.garden.NumZones()
-			if result != tt.expected {
-				t.Errorf("Expected %d but got %d", tt.expected, result)
-			}
-		})
-	}
 }
 
 func TestHasTemperatureHumiditySensor(t *testing.T) {

@@ -23,14 +23,14 @@ func TestValidateAllStoredResources(t *testing.T) {
 		{
 			"InvalidGardenMissingID",
 			func(s *storage.Client) error {
-				return s.SaveGarden(&pkg.Garden{})
+				return s.Gardens.Set(&pkg.Garden{})
 			},
 			"invalid Garden: missing required field 'id'",
 		},
 		{
 			"InvalidGarden",
 			func(s *storage.Client) error {
-				return s.SaveGarden(&pkg.Garden{
+				return s.Gardens.Set(&pkg.Garden{
 					ID: id,
 				})
 			},
@@ -40,7 +40,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 			"InvalidZone",
 			func(s *storage.Client) error {
 				g := createExampleGarden()
-				err := s.SaveGarden(g)
+				err := s.Gardens.Set(g)
 				if err != nil {
 					return err
 				}

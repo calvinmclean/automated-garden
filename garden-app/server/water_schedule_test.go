@@ -319,7 +319,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			assert.NoError(t, err)
 
 			if tt.zone != nil {
-				err = storageClient.SaveGarden(createExampleGarden())
+				err = storageClient.Gardens.Set(createExampleGarden())
 				assert.NoError(t, err)
 				err = storageClient.Zones.Set(zone)
 				assert.NoError(t, err)

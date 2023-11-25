@@ -538,7 +538,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				SkipCount: uintPointer(1),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveGarden(&pkg.Garden{ID: id, Zones: map[xid.ID]*pkg.Zone{id: {ID: id}}})
+				err := sc.Gardens.Set(&pkg.Garden{ID: id})
 				assert.NoError(t, err)
 				err = sc.Zones.Set(&pkg.Zone{ID: id, GardenID: id})
 				assert.NoError(t, err)

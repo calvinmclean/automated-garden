@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/chi/v5"
 )
 
@@ -150,5 +151,17 @@ func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryRes
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
 func (resp ZoneWaterHistoryResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func filterZoneByGardenID(gardenID string) babyapi.FilterFunc[*pkg.Zone] {
+	return func(z *pkg.Zone) bool {
+		return z.GardenID.String() == gardenID
+	}
+}
+
+type ZoneActionResponse struct{}
+
+func (*ZoneActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

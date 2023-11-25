@@ -111,7 +111,7 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 		// TODO: after delete?
 		// Remove scheduled WaterActions
 		logger.Info("removing scheduled WaterActions for WaterSchedule")
-		if err := wsr.worker.RemoveJobsByID(ws.ID); err != nil {
+		if err := wsr.worker.RemoveJobsByID(ws.ID.String()); err != nil {
 			return fmt.Errorf("unable to remove scheduled WaterActions: %w", err)
 		}
 

@@ -159,28 +159,10 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	r.Handle("/*", http.FileServer(http.FS(static)))
 
 	// TODO: move end-date middleware to be compatible here
-	// r.Mount("/", gardenResource.api.Router())
-	r.Route(gardenBasePath, func(r chi.Router) {
-		r.Post("/", gardenResource.createGarden)
-		r.Get("/", gardenResource.getAllGardens)
-
-		r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
-			r.Use(gardenResource.gardenContextMiddleware)
-
-			r.Get("/", get[*GardenResponse](getGardenFromContext))
-			r.Patch("/", gardenResource.updateGarden)
-			r.Delete("/", gardenResource.endDateGarden)
-
-			// Add new middleware to restrict certain paths to non-end-dated Gardens
-			r.Route("/", func(r chi.Router) {
-				r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
-				r.Post("/action", gardenResource.gardenAction)
-
-				// TODO: move end-date middleware to be compatible here
-				r.Mount("/", zonesResource.api.Router())
-			})
-		})
-	})
+	gardenResource.api.AddNestedAPIs(zonesResource.api.Router())
+	r.Mount("/", gardenResource.api.Router())
+	// TODO:
+	// r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
 
 	weatherClientsResource, err := NewWeatherClientsAPI(storageClient)
 	if err != nil {
@@ -243,19 +225,16 @@ func (s *Server) Stop() {
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types
 func validateAllStoredResources(storageClient *storage.Client) error {
-	gardens, err := storageClient.GetGardens(true)
+	gardens, err := storageClient.Gardens.GetAll(storage.FilterEndDated[*pkg.Garden](true))
 	if err != nil {
 		return fmt.Errorf("unable to get all Gardens: %w", err)
 	}
 
 	for _, g := range gardens {
-		// Remove Zones because g.Bind doesn't allow them
-		g.Zones = nil
-
 		if g.ID.IsNil() {
 			return errors.New("invalid Garden: missing required field 'id'")
 		}
-		err = (&GardenRequest{g}).Bind(nil)
+		err = g.Bind(&http.Request{Method: http.MethodPost})
 		if err != nil {
 			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
 		}

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
 )
@@ -28,7 +29,5 @@ func restrictEndDatedMiddleware(resourceName string, ctxKey contextKey) func(htt
 
 func EndDatedFilter[T babyapi.EndDateable](r *http.Request) babyapi.FilterFunc[T] {
 	getEndDated := r.URL.Query().Get("end_dated") == "true"
-	return func(ws T) bool {
-		return getEndDated || !ws.EndDated()
-	}
+	return storage.FilterEndDated[T](getEndDated)
 }
