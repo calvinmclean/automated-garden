@@ -17,8 +17,7 @@ import (
 )
 
 const (
-	gardenBasePath   = "/gardens"
-	gardenIDLogField = "garden_id"
+	gardenBasePath = "/gardens"
 )
 
 // GardensResource encapsulates the structs and dependencies necessary for the "/gardens" API

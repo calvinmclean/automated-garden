@@ -37,7 +37,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	excludeWeatherData := excludeWeatherData(r)
 
-	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zr.Zone.ID.String())
+	logger := babyapi.GetLoggerFromContext(r.Context())
 
 	ws := []*pkg.WaterSchedule{}
 	for _, id := range zr.Zone.WaterScheduleIDs {
@@ -109,9 +109,9 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 			logger.Debug("getting moisture data for Zone")
 			soilMoisture, err := zr.zr.getMoisture(ctx, garden, zr.Zone)
 			if err != nil {
-				logger.WithError(err).Warn("unable to get moisture data for Zone")
+				logger.Warn("unable to get moisture data for Zone", "error", err)
 			} else {
-				logger.Debugf("successfully got moisture data for Zone: %f", soilMoisture)
+				logger.Debug("successfully got moisture data for Zone", "moisture", soilMoisture)
 				zr.WeatherData.SoilMoisturePercent = &soilMoisture
 			}
 		}

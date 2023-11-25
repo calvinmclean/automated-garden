@@ -8,6 +8,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/babyapi"
 )
 
 // GardenResponse is used to represent a Garden in the response body with the additional Moisture data
@@ -113,8 +114,8 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	if g.Garden.HasTemperatureHumiditySensor() {
 		t, h, err := g.gr.influxdbClient.GetTemperatureAndHumidity(ctx, g.Garden.TopicPrefix)
 		if err != nil {
-			logger := getLoggerFromContext(ctx).WithField(gardenIDLogField, g.Garden.ID.String())
-			logger.WithError(err).Error("error getting temperature and humidity data: %w", err)
+			logger := babyapi.GetLoggerFromContext(r.Context())
+			logger.Error("error getting temperature and humidity data", "error", err)
 			return nil
 		}
 		g.TemperatureHumidityData = &TemperatureHumidityData{

@@ -67,7 +67,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.RealIP)
-	r.Use(loggerMiddleware(logger))
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(3 * time.Second))
 	r.Use(render.SetContentType(render.ContentTypeJSON))
@@ -158,9 +157,9 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 	r.Handle("/*", http.FileServer(http.FS(static)))
 
-	// TODO: move end-date middleware to be compatible here
 	gardenResource.api.AddNestedAPIs(zonesResource.api.Router())
-	r.Mount("/", gardenResource.api.Router())
+	gardenResource.api.Route(r)
+	// TODO: move end-date middleware to be compatible here
 	// TODO:
 	// r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
 
@@ -168,13 +167,13 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
-	r.Mount("/", weatherClientsResource.api.Router())
+	weatherClientsResource.api.Route(r)
 
 	waterSchedulesResource, err := NewWaterSchedulesResource(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
 	}
-	r.Mount("/", waterSchedulesResource.api.Router())
+	waterSchedulesResource.api.Route(r)
 
 	return &Server{
 		// nolint:gosec

@@ -18,7 +18,7 @@ type Zone struct {
 	Name             string       `json:"name" yaml:"name,omitempty"`
 	Details          *ZoneDetails `json:"details,omitempty" yaml:"details,omitempty"`
 	ID               xid.ID       `json:"id" yaml:"id,omitempty"`
-	GardenID         xid.ID       `json:"garden_id" yaml:"id,omitempty"`
+	GardenID         xid.ID       `json:"garden_id" yaml:"garden_id,omitempty"`
 	Position         *uint        `json:"position" yaml:"position"`
 	CreatedAt        *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate          *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`

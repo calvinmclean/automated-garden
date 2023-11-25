@@ -20,9 +20,7 @@ import (
 )
 
 const (
-	zoneBasePath   = "/zones"
-	zonePathParam  = "zoneID"
-	zoneIDLogField = "zone_id"
+	zoneBasePath = "/zones"
 )
 
 // ZonesResource encapsulates the structs and dependencies necessary for the "/zones" API
