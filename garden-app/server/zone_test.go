@@ -242,7 +242,7 @@ func TestGetZone(t *testing.T) {
 			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
-			zr, err := NewZonesResource(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
 			assert.NoError(t, err)
 			zr.worker.StartAsync()
 
@@ -260,7 +260,7 @@ func TestGetZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s?exclude_weather_data=%t", garden.ID, zone.ID, tt.excludeWeatherData), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -318,7 +318,7 @@ func TestZoneAction(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			zr, err := NewZonesResource(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, logrus.New()))
 			assert.NoError(t, err)
 
 			zr.worker.StartAsync()
@@ -333,7 +333,7 @@ func TestZoneAction(t *testing.T) {
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -384,7 +384,7 @@ func TestUpdateZone(t *testing.T) {
 			err := storageClient.WaterSchedules.Set(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			zr, err := NewZonesResource(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
@@ -392,7 +392,7 @@ func TestUpdateZone(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -432,14 +432,14 @@ func TestEndDateZone(t *testing.T) {
 			err := storageClient.WaterSchedules.Set(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			zr, err := NewZonesResource(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
 			r := httptest.NewRequest("DELETE", fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -449,7 +449,7 @@ func TestEndDateZone(t *testing.T) {
 
 func TestGetAllZones(t *testing.T) {
 	storageClient := setupWaterScheduleStorage(t)
-	zr, err := NewZonesResource(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+	zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 	assert.NoError(t, err)
 
 	garden := createExampleGarden()
@@ -490,7 +490,7 @@ func TestGetAllZones(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones%s", garden.ID, tt.targetURL), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			actual := strings.TrimSpace(w.Body.String())
@@ -629,7 +629,7 @@ func TestCreateZone(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			zr, err := NewZonesResource(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			for _, ws := range tt.waterSchedules {
@@ -641,7 +641,7 @@ func TestCreateZone(t *testing.T) {
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones", tt.garden.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, tt.garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -781,7 +781,7 @@ func TestUpdateZonePUT(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			zr, err := NewZonesResource(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			for _, ws := range tt.waterSchedules {
@@ -793,7 +793,7 @@ func TestUpdateZonePUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, tt.garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -881,7 +881,7 @@ func TestWaterHistory(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			zr, err := NewZonesResource(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
@@ -893,7 +893,7 @@ func TestWaterHistory(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s/history%s", garden.ID, zone.ID, tt.queryParams), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.api, garden, "Gardens", "/gardens", r)
+			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -918,7 +918,7 @@ func TestGetNextWaterTime(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			zr := &ZonesResource{
+			zr := &ZonesAPI{
 				worker: worker.NewWorker(storageClient, nil, nil, logrus.New()),
 			}
 			ws := createExampleWaterSchedule()

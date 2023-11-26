@@ -52,7 +52,7 @@ type Server struct {
 	*http.Server
 	quit            chan os.Signal
 	logger          *logrus.Entry
-	gardensResource *GardensResource
+	gardensResource *GardensAPI
 	worker          *worker.Worker
 }
 
@@ -142,11 +142,11 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, baseLogger)
 
 	// Create API routes/handlers
-	gardenResource, err := NewGardenResource(cfg, storageClient, influxdbClient, worker)
+	gardenAPI, err := NewGardensAPI(cfg, storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
-	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker)
+	zonesResource, err := NewZonesAPI(storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
@@ -157,27 +157,27 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 	r.Handle("/*", http.FileServer(http.FS(static)))
 
-	gardenResource.api.AddNestedAPI(zonesResource.api)
-	gardenResource.api.Route(r)
+	gardenAPI.AddNestedAPI(zonesResource)
+	gardenAPI.Route(r)
 
-	weatherClientsResource, err := NewWeatherClientsAPI(storageClient)
+	weatherClientsAPI, err := NewWeatherClientsAPI(storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
-	weatherClientsResource.api.Route(r)
+	weatherClientsAPI.Route(r)
 
-	waterSchedulesResource, err := NewWaterSchedulesResource(storageClient, worker)
+	waterSchedulesAPI, err := NewWaterSchedulesAPI(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
 	}
-	waterSchedulesResource.api.Route(r)
+	waterSchedulesAPI.Route(r)
 
 	return &Server{
 		// nolint:gosec
 		&http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: r},
 		make(chan os.Signal, 1),
 		logger,
-		gardenResource,
+		gardenAPI,
 		worker,
 	}, nil
 }

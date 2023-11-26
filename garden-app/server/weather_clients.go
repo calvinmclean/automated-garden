@@ -20,32 +20,33 @@ const (
 // WeatherClientsAPI encapsulates the structs and dependencies necessary for the WeatherClients API
 // to function, including storage and configuring
 type WeatherClientsAPI struct {
+	*babyapi.API[*weather.Config]
+
 	storageClient *storage.TypedClient[*weather.Config]
-	api           *babyapi.API[*weather.Config]
 }
 
 // NewWeatherClientsAPI creates a new WeatherClientsResource
 func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, error) {
-	wcr := &WeatherClientsAPI{
+	api := &WeatherClientsAPI{
 		storageClient: storageClient.WeatherClientConfigs,
 	}
 
-	wcr.api = babyapi.NewAPI[*weather.Config]("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
-	wcr.api.SetStorage(wcr.storageClient)
+	api.API = babyapi.NewAPI[*weather.Config]("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
+	api.SetStorage(api.storageClient)
 
-	wcr.api.ResponseWrapper(func(wc *weather.Config) render.Renderer {
+	api.ResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc}
 	})
 
-	wcr.api.AddCustomIDRoute(chi.Route{
+	api.AddCustomIDRoute(chi.Route{
 		Pattern: "/test",
 		Handlers: map[string]http.Handler{
-			http.MethodGet: http.HandlerFunc(wcr.testWeatherClient),
+			http.MethodGet: http.HandlerFunc(api.testWeatherClient),
 		},
 	})
 
-	wcr.api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
-		id := wcr.api.GetIDParam(r)
+	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+		id := api.GetIDParam(r)
 
 		waterSchedules, err := storageClient.GetWaterSchedulesUsingWeatherClient(id)
 		if err != nil {
@@ -59,14 +60,14 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		return nil
 	})
 
-	return wcr, nil
+	return api, nil
 }
 
 func (api *WeatherClientsAPI) testWeatherClient(w http.ResponseWriter, r *http.Request) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to test WeatherClient")
 
-	weatherClient, httpErr := api.api.GetRequestedResource(r)
+	weatherClient, httpErr := api.GetRequestedResource(r)
 	if httpErr != nil {
 		logger.Error("error getting requested resource", "error", httpErr.Error())
 		render.Render(w, r, httpErr)

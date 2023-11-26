@@ -21,7 +21,7 @@ type GardenResponse struct {
 	NumZones                uint                     `json:"num_zones"`
 	Links                   []Link                   `json:"links,omitempty"`
 
-	gr *GardensResource
+	api *GardensAPI
 }
 
 // NextLightAction contains the time and state for the next scheduled LightAction
@@ -37,12 +37,12 @@ type TemperatureHumidityData struct {
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
-func (gr *GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
+func (api *GardensAPI) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
 	return &GardenResponse{
 		Garden: garden,
 		Links:  links,
 
-		gr: gr,
+		api: api,
 	}
 }
 
@@ -54,7 +54,7 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, zoneBasePath)
 
 	var err error
-	g.NumZones, err = g.gr.numZones(g.ID.String())
+	g.NumZones, err = g.api.numZones(g.ID.String())
 	if err != nil {
 		return fmt.Errorf("error getting number of Zones for garden: %w", err)
 	}
@@ -80,11 +80,11 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	g.Health = g.Garden.Health(ctx, g.gr.influxdbClient)
+	g.Health = g.Garden.Health(ctx, g.api.influxdbClient)
 
 	if g.Garden.LightSchedule != nil {
-		nextOnTime := g.gr.worker.GetNextLightTime(g.Garden, pkg.LightStateOn)
-		nextOffTime := g.gr.worker.GetNextLightTime(g.Garden, pkg.LightStateOff)
+		nextOnTime := g.api.worker.GetNextLightTime(g.Garden, pkg.LightStateOn)
+		nextOffTime := g.api.worker.GetNextLightTime(g.Garden, pkg.LightStateOff)
 		if nextOnTime != nil && nextOffTime != nil {
 			// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
 			if nextOnTime.Before(*nextOffTime) {
@@ -112,7 +112,7 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	}
 
 	if g.Garden.HasTemperatureHumiditySensor() {
-		t, h, err := g.gr.influxdbClient.GetTemperatureAndHumidity(ctx, g.Garden.TopicPrefix)
+		t, h, err := g.api.influxdbClient.GetTemperatureAndHumidity(ctx, g.Garden.TopicPrefix)
 		if err != nil {
 			logger := babyapi.GetLoggerFromContext(r.Context())
 			logger.Error("error getting temperature and humidity data", "error", err)
@@ -145,8 +145,8 @@ func (agr *AllGardensResponse) HTML() string {
 }
 
 // NumZones returns the number of non-end-dated Zones that are part of this Garden
-func (gr *GardensResource) numZones(gardenID string) (uint, error) {
-	zones, err := gr.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
+func (api *GardensAPI) numZones(gardenID string) (uint, error) {
+	zones, err := api.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
 		gardenIDFilter := filterZoneByGardenID(gardenID)
 		endDateFilter := storage.FilterEndDated[*pkg.Zone](false)
 

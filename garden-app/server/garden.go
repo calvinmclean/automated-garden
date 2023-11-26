@@ -18,19 +18,20 @@ const (
 	gardenBasePath = "/gardens"
 )
 
-// GardensResource encapsulates the structs and dependencies necessary for the "/gardens" API
+// GardensAPI encapsulates the structs and dependencies necessary for the "/gardens" API
 // to function, including storage and configurating
-type GardensResource struct {
+type GardensAPI struct {
+	*babyapi.API[*pkg.Garden]
+
 	storageClient  *storage.Client
 	influxdbClient influxdb.Client
 	worker         *worker.Worker
 	config         Config
-	api            *babyapi.API[*pkg.Garden]
 }
 
-// NewGardenResource creates a new GardenResource
-func NewGardenResource(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (*GardensResource, error) {
-	gr := &GardensResource{
+// NewGardensAPI creates a new GardenResource
+func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (*GardensAPI, error) {
+	gr := &GardensAPI{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		worker:         worker,
@@ -50,26 +51,26 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 		}
 	}
 
-	gr.api = babyapi.NewAPI[*pkg.Garden]("Gardens", gardenBasePath, func() *pkg.Garden { return &pkg.Garden{} })
-	gr.api.SetStorage(gr.storageClient.Gardens)
-	gr.api.ResponseWrapper(func(g *pkg.Garden) render.Renderer {
+	gr.API = babyapi.NewAPI[*pkg.Garden]("Gardens", gardenBasePath, func() *pkg.Garden { return &pkg.Garden{} })
+	gr.SetStorage(gr.storageClient.Gardens)
+	gr.ResponseWrapper(func(g *pkg.Garden) render.Renderer {
 		return gr.NewGardenResponse(g)
 	})
 
-	gr.api.SetOnCreateOrUpdate(gr.onCreateOrUpdate)
+	gr.SetOnCreateOrUpdate(gr.onCreateOrUpdate)
 
-	gr.api.AddCustomIDRoute(chi.Route{
+	gr.AddCustomIDRoute(chi.Route{
 		Pattern: "/action",
 		Handlers: map[string]http.Handler{
-			http.MethodPost: gr.api.GetRequestedResourceAndDo(gr.gardenAction),
+			http.MethodPost: gr.GetRequestedResourceAndDo(gr.gardenAction),
 		},
 	})
 
-	gr.api.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
+	gr.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
 
-	gr.api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+	gr.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
-		gardenID := gr.api.GetIDParam(r)
+		gardenID := gr.GetIDParam(r)
 
 		// Don't allow end-dating a Garden with active Zones
 		numZones, err := gr.numZones(gardenID)
@@ -85,9 +86,9 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 		return nil
 	})
 
-	gr.api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
+	gr.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
-		gardenID := gr.api.GetIDParam(r)
+		gardenID := gr.GetIDParam(r)
 
 		// Remove scheduled light actions
 		logger.Info("removing scheduled LightActions for Garden")
@@ -101,7 +102,7 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 	return gr, nil
 }
 
-func (gr *GardensResource) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
+func (gr *GardensAPI) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
 	numZones, err := gr.numZones(garden.ID.String())
@@ -136,7 +137,7 @@ func (gr *GardensResource) onCreateOrUpdate(r *http.Request, garden *pkg.Garden)
 // gardenAction reads a GardenAction request and uses it to execute one of the actions
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
-func (gr *GardensResource) gardenAction(r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+func (gr *GardensAPI) gardenAction(r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute GardenAction")
 

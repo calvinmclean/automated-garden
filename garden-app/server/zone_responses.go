@@ -17,16 +17,16 @@ type ZoneResponse struct {
 	NextWater   NextWaterDetails `json:"next_water,omitempty"`
 	Links       []Link           `json:"links,omitempty"`
 
-	zr *ZonesResource
+	api *ZonesAPI
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
-func (zr *ZonesResource) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneResponse {
+func (api *ZonesAPI) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneResponse {
 	return &ZoneResponse{
 		Zone:  zone,
 		Links: links,
 
-		zr: zr,
+		api: api,
 	}
 }
 
@@ -40,7 +40,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 
 	ws := []*pkg.WaterSchedule{}
 	for _, id := range zr.Zone.WaterScheduleIDs {
-		result, err := zr.zr.storageClient.WaterSchedules.Get(id.String())
+		result, err := zr.api.storageClient.WaterSchedules.Get(id.String())
 		if err != nil {
 			return fmt.Errorf("unable to get WaterSchedule for ZoneResponse: %w", err)
 		}
@@ -48,7 +48,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		ws = append(ws, result)
 	}
 
-	garden, httpErr := zr.zr.getGardenFromRequest(r)
+	garden, httpErr := zr.api.getGardenFromRequest(r)
 	if httpErr != nil {
 		logger.Error("unable to get garden for zone", "error", httpErr)
 		return httpErr
@@ -81,7 +81,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	nextWaterSchedule := zr.zr.worker.GetNextActiveWaterSchedule(ws)
+	nextWaterSchedule := zr.api.worker.GetNextActiveWaterSchedule(ws)
 
 	if nextWaterSchedule == nil {
 		zr.NextWater = NextWaterDetails{
@@ -90,7 +90,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	zr.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.zr.worker, excludeWeatherData)
+	zr.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.api.worker, excludeWeatherData)
 	zr.NextWater.WaterScheduleID = &nextWaterSchedule.ID.ID
 
 	if zr.Zone.SkipCount != nil && *zr.Zone.SkipCount > 0 {
@@ -100,11 +100,11 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	}
 
 	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
-		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.zr.storageClient)
+		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.api.storageClient)
 
 		if nextWaterSchedule.HasSoilMoistureControl() && garden != nil {
 			logger.Debug("getting moisture data for Zone")
-			soilMoisture, err := zr.zr.getMoisture(ctx, garden, zr.Zone)
+			soilMoisture, err := zr.api.getMoisture(ctx, garden, zr.Zone)
 			if err != nil {
 				logger.Warn("unable to get moisture data for Zone", "error", err)
 			} else {

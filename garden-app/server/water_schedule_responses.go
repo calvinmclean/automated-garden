@@ -45,15 +45,15 @@ type WaterScheduleResponse struct {
 	NextWater   NextWaterDetails `json:"next_water,omitempty"`
 	Links       []Link           `json:"links,omitempty"`
 
-	wsr *WaterSchedulesResource
+	api *WaterSchedulesAPI
 }
 
 // NewWaterScheduleResponse creates a self-referencing WaterScheduleResponse
-func (wsr *WaterSchedulesResource) NewWaterScheduleResponse(ws *pkg.WaterSchedule, links ...Link) *WaterScheduleResponse {
+func (api *WaterSchedulesAPI) NewWaterScheduleResponse(ws *pkg.WaterSchedule, links ...Link) *WaterScheduleResponse {
 	response := &WaterScheduleResponse{
 		WaterSchedule: ws,
 		Links:         links,
-		wsr:           wsr,
+		api:           api,
 	}
 	return response
 }
@@ -69,11 +69,11 @@ func (ws *WaterScheduleResponse) Render(_ http.ResponseWriter, r *http.Request) 
 	)
 
 	if ws.HasWeatherControl() && !ws.EndDated() && !excludeWeatherData(r) {
-		ws.WeatherData = getWeatherData(r.Context(), ws.WaterSchedule, ws.wsr.storageClient)
+		ws.WeatherData = getWeatherData(r.Context(), ws.WaterSchedule, ws.api.storageClient)
 	}
 
 	if !ws.EndDated() {
-		ws.NextWater = GetNextWaterDetails(ws.WaterSchedule, ws.wsr.worker, excludeWeatherData(r))
+		ws.NextWater = GetNextWaterDetails(ws.WaterSchedule, ws.api.worker, excludeWeatherData(r))
 	}
 
 	return nil

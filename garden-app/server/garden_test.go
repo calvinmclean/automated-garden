@@ -67,13 +67,13 @@ func TestGetGarden(t *testing.T) {
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			storageClient := setupZoneAndGardenStorage(t)
 
-			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			gr.worker.StartAsync()
 
 			r := httptest.NewRequest("GET", tt.path, http.NoBody)
-			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -156,12 +156,12 @@ func TestCreateGarden(t *testing.T) {
 			} else {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
 			}
-			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("POST", "/gardens", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -253,12 +253,12 @@ func TestUpdateGardenPUT(t *testing.T) {
 			} else {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
 			}
-			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -304,11 +304,11 @@ func TestGetAllGardens(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 
-			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", tt.targetURL, http.NoBody)
-			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			actual := strings.TrimSpace(w.Body.String())
@@ -370,11 +370,11 @@ func TestEndDateGarden(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			gr, err := NewGardenResource(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			gr, err := NewGardensAPI(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("DELETE", fmt.Sprintf("/gardens/%s", tt.garden.ID), http.NoBody)
-			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -453,12 +453,12 @@ func TestUpdateGarden(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("PATCH", "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -529,7 +529,7 @@ func TestGardenAction(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			gr, err := NewGardenResource(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, logrus.New()))
+			gr, err := NewGardensAPI(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, logrus.New()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
@@ -538,7 +538,7 @@ func TestGardenAction(t *testing.T) {
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))

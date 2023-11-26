@@ -144,14 +144,14 @@ func TestGetWaterSchedule(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+		wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 		require.NoError(t, err)
 		wsr.worker.StartAsync()
 
 		r := httptest.NewRequest("GET", "/water_schedules/"+id2.String(), http.NoBody)
 		r.Header.Add("Content-Type", "application/json")
 
-		w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
+		w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
 
 		// check HTTP response status code
 		if w.Code != http.StatusNotFound {
@@ -179,12 +179,12 @@ func TestGetWaterSchedule(t *testing.T) {
 			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
 			require.NoError(t, err)
 			wsr.worker.StartAsync()
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/water_schedules/%s?exclude_weather_data=%t", tt.waterSchedule.ID, tt.excludeWeatherData), http.NoBody)
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
+			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
 
 			// check HTTP response status code
 			if w.Code != http.StatusOK {
@@ -256,7 +256,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -264,7 +264,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 
 			r := httptest.NewRequest("PATCH", "/water_schedules/"+createExampleWaterSchedule().GetID(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
+			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -328,14 +328,14 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(tt.waterSchedule)
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
 			r := httptest.NewRequest("DELETE", "/water_schedules/"+tt.waterSchedule.GetID(), http.NoBody)
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
+			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Equal(t, tt.expectedResponse, strings.TrimSpace(w.Body.String()))
@@ -378,14 +378,14 @@ func TestGetAllWaterSchedules(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(endDatedWaterSchedule)
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
 			r := httptest.NewRequest("GET", tt.targetURL, nil)
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
+			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
 
 			var actual babyapi.ResourceList[*pkg.WaterSchedule]
 			err = json.NewDecoder(w.Body).Decode(&actual)
@@ -449,7 +449,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -457,7 +457,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 
 			r := httptest.NewRequest("POST", "/water_schedules", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
+			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, regexp.MustCompile(tt.expectedRegexp), strings.TrimSpace(w.Body.String()))
@@ -521,7 +521,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(ws)
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesResource(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -529,7 +529,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, "/water_schedules/"+ws.GetID(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
+			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, regexp.MustCompile(tt.expectedRegexp), strings.TrimSpace(w.Body.String()))

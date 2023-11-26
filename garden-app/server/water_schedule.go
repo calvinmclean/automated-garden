@@ -18,46 +18,47 @@ const (
 	waterScheduleIDLogField = "water_schedule_id"
 )
 
-// WaterSchedulesResource provides and API for interacting with WaterSchedules
-type WaterSchedulesResource struct {
+// WaterSchedulesAPI provides and API for interacting with WaterSchedules
+type WaterSchedulesAPI struct {
+	*babyapi.API[*pkg.WaterSchedule]
+
 	storageClient *storage.Client
-	api           *babyapi.API[*pkg.WaterSchedule]
 	worker        *worker.Worker
 }
 
-// NewWaterSchedulesResource creates a new WaterSchedulesResource
-func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Worker) (WaterSchedulesResource, error) {
-	wsr := WaterSchedulesResource{
+// NewWaterSchedulesAPI creates a new WaterSchedulesResource
+func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) (WaterSchedulesAPI, error) {
+	api := WaterSchedulesAPI{
 		storageClient: storageClient,
 		worker:        worker,
 	}
 
 	// Initialize WaterActions for each WaterSchedule from the storage client
-	allWaterSchedules, err := wsr.storageClient.WaterSchedules.GetAll(func(ws *pkg.WaterSchedule) bool {
+	allWaterSchedules, err := api.storageClient.WaterSchedules.GetAll(func(ws *pkg.WaterSchedule) bool {
 		return !ws.EndDated()
 	})
 	if err != nil {
-		return wsr, fmt.Errorf("unable to get WaterSchedules: %v", err)
+		return api, fmt.Errorf("unable to get WaterSchedules: %v", err)
 	}
 	for _, ws := range allWaterSchedules {
-		if err = wsr.worker.ScheduleWaterAction(ws); err != nil {
-			return wsr, fmt.Errorf("unable to add WaterAction for WaterSchedule %v: %v", ws.ID, err)
+		if err = api.worker.ScheduleWaterAction(ws); err != nil {
+			return api, fmt.Errorf("unable to add WaterAction for WaterSchedule %v: %v", ws.ID, err)
 		}
 	}
 
-	wsr.api = babyapi.NewAPI[*pkg.WaterSchedule]("WaterSchedules", waterScheduleBasePath, func() *pkg.WaterSchedule { return &pkg.WaterSchedule{} })
-	wsr.api.SetStorage(wsr.storageClient.WaterSchedules)
-	wsr.api.ResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
-		return wsr.NewWaterScheduleResponse(ws)
+	api.API = babyapi.NewAPI[*pkg.WaterSchedule]("WaterSchedules", waterScheduleBasePath, func() *pkg.WaterSchedule { return &pkg.WaterSchedule{} })
+	api.SetStorage(api.storageClient.WaterSchedules)
+	api.ResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
+		return api.NewWaterScheduleResponse(ws)
 	})
 
-	wsr.api.SetOnCreateOrUpdate(wsr.onCreateOrUpdate)
+	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
-	wsr.api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
-		id := wsr.api.GetIDParam(r)
+	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+		id := api.GetIDParam(r)
 
 		// Unable to delete WaterSchedule with associated Zones
-		zones, err := wsr.storageClient.GetZonesUsingWaterSchedule(id)
+		zones, err := api.storageClient.GetZonesUsingWaterSchedule(id)
 		if err != nil {
 			return babyapi.InternalServerError(fmt.Errorf("unable to get Zones using WaterSchedule: %w", err))
 		}
@@ -68,13 +69,13 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 		return nil
 	})
 
-	wsr.api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
-		id := wsr.api.GetIDParam(r)
+		id := api.GetIDParam(r)
 
 		// Remove scheduled WaterActions
 		logger.Info("removing scheduled WaterActions for WaterSchedule")
-		err := wsr.worker.RemoveJobsByID(id)
+		err := api.worker.RemoveJobsByID(id)
 		if err != nil {
 			return babyapi.InternalServerError(fmt.Errorf("unable to remove scheduled WaterActions: %w", err))
 		}
@@ -82,15 +83,15 @@ func NewWaterSchedulesResource(storageClient *storage.Client, worker *worker.Wor
 		return nil
 	})
 
-	wsr.api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
+	api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
 
-	return wsr, err
+	return api, err
 }
 
-func (wsr *WaterSchedulesResource) onCreateOrUpdate(r *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
+func (api *WaterSchedulesAPI) onCreateOrUpdate(r *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
 	// Validate the new WaterSchedule.WeatherControl
 	if ws.WeatherControl != nil {
-		err := wsr.weatherClientsExist(ws)
+		err := api.weatherClientsExist(ws)
 		if err != nil {
 			if errors.Is(err, babyapi.ErrNotFound) {
 				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClients for WaterSchedule: %w", err))
@@ -106,7 +107,7 @@ func (wsr *WaterSchedulesResource) onCreateOrUpdate(r *http.Request, ws *pkg.Wat
 
 	if !ws.EndDated() {
 		// logger.Info("updating/resetting WaterSchedule for WaterSchedule")
-		err := wsr.worker.ResetWaterSchedule(ws)
+		err := api.worker.ResetWaterSchedule(ws)
 		if err != nil {
 			return babyapi.InternalServerError(fmt.Errorf("unable to update/reset WaterSchedule: %w", err))
 		}
@@ -115,16 +116,16 @@ func (wsr *WaterSchedulesResource) onCreateOrUpdate(r *http.Request, ws *pkg.Wat
 	return nil
 }
 
-func (wsr *WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) error {
+func (api *WaterSchedulesAPI) weatherClientsExist(ws *pkg.WaterSchedule) error {
 	if ws.HasTemperatureControl() {
-		err := wsr.weatherClientExists(ws.WeatherControl.Temperature.ClientID)
+		err := api.weatherClientExists(ws.WeatherControl.Temperature.ClientID)
 		if err != nil {
 			return fmt.Errorf("error getting client for TemperatureControl: %w", err)
 		}
 	}
 
 	if ws.HasRainControl() {
-		err := wsr.weatherClientExists(ws.WeatherControl.Rain.ClientID)
+		err := api.weatherClientExists(ws.WeatherControl.Rain.ClientID)
 		if err != nil {
 			return fmt.Errorf("error getting client for RainControl: %w", err)
 		}
@@ -133,8 +134,8 @@ func (wsr *WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) er
 	return nil
 }
 
-func (wsr *WaterSchedulesResource) weatherClientExists(id xid.ID) error {
-	_, err := wsr.storageClient.WeatherClientConfigs.Get(id.String())
+func (api *WaterSchedulesAPI) weatherClientExists(id xid.ID) error {
+	_, err := api.storageClient.WeatherClientConfigs.Get(id.String())
 	if err != nil {
 		return fmt.Errorf("error getting WeatherClient with ID %q: %w", id, err)
 	}

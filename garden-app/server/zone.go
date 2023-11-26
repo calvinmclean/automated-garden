@@ -23,48 +23,49 @@ const (
 	zoneBasePath = "/zones"
 )
 
-// ZonesResource encapsulates the structs and dependencies necessary for the "/zones" API
+// ZonesAPI encapsulates the structs and dependencies necessary for the "/zones" API
 // to function, including storage, scheduling, and caching
-type ZonesResource struct {
+type ZonesAPI struct {
+	*babyapi.API[*pkg.Zone]
+
 	storageClient  *storage.Client
 	influxdbClient influxdb.Client
 	worker         *worker.Worker
-	api            *babyapi.API[*pkg.Zone]
 }
 
-// NewZonesResource creates a new ZonesResource
-func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesResource, error) {
-	zr := ZonesResource{
+// NewZonesAPI creates a new ZonesResource
+func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesAPI, error) {
+	api := ZonesAPI{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		worker:         worker,
 	}
 
-	zr.api = babyapi.NewAPI[*pkg.Zone]("Zones", zoneBasePath, func() *pkg.Zone { return &pkg.Zone{} })
-	zr.api.SetStorage(zr.storageClient.Zones)
-	zr.api.ResponseWrapper(func(z *pkg.Zone) render.Renderer {
-		return zr.NewZoneResponse(z)
+	api.API = babyapi.NewAPI[*pkg.Zone]("Zones", zoneBasePath, func() *pkg.Zone { return &pkg.Zone{} })
+	api.SetStorage(api.storageClient.Zones)
+	api.ResponseWrapper(func(z *pkg.Zone) render.Renderer {
+		return api.NewZoneResponse(z)
 	})
 
-	zr.api.SetOnCreateOrUpdate(zr.onCreateOrUpdate)
+	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
-	zr.api.AddCustomIDRoute(chi.Route{
+	api.AddCustomIDRoute(chi.Route{
 		Pattern: "/action",
 		Handlers: map[string]http.Handler{
-			http.MethodPost: zr.api.GetRequestedResourceAndDo(zr.zoneAction),
+			http.MethodPost: api.GetRequestedResourceAndDo(api.zoneAction),
 		},
 	})
 
-	zr.api.AddCustomIDRoute(chi.Route{
+	api.AddCustomIDRoute(chi.Route{
 		Pattern: "/history",
 		Handlers: map[string]http.Handler{
-			http.MethodGet: zr.api.GetRequestedResourceAndDo(zr.waterHistory),
+			http.MethodGet: api.GetRequestedResourceAndDo(api.waterHistory),
 		},
 	})
 
-	zr.api.SetBeforePatch(func(r *http.Request, old, request *pkg.Zone) *babyapi.ErrResponse {
+	api.SetBeforePatch(func(r *http.Request, old, request *pkg.Zone) *babyapi.ErrResponse {
 		if len(request.WaterScheduleIDs) != 0 {
-			err := zr.waterSchedulesExist(request.WaterScheduleIDs)
+			err := api.waterSchedulesExist(request.WaterScheduleIDs)
 			if err != nil {
 				if errors.Is(err, babyapi.ErrNotFound) {
 					err = fmt.Errorf("unable to update Zone with non-existent WaterSchedule %q: %w", request.WaterScheduleIDs, err)
@@ -77,8 +78,8 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 		return nil
 	})
 
-	zr.api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
-		gardenID := zr.api.GetParentIDParam(r)
+	api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
+		gardenID := api.GetParentIDParam(r)
 		gardenIDFilter := filterZoneByGardenID(gardenID)
 
 		endDateFilter := EndDatedFilter[*pkg.Zone](r)
@@ -87,20 +88,20 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 		}
 	})
 
-	return zr, nil
+	return api, nil
 }
 
 // zoneAction reads a ZoneAction request and uses it to execute one of the actions
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
-func (zr *ZonesResource) zoneAction(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
+func (api *ZonesAPI) zoneAction(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute ZoneAction")
 
 	if zone.EndDated() {
 		return nil, babyapi.ErrInvalidRequest(errors.New("unable to execute action on end-dated zone"))
 	}
-	garden, httpErr := zr.getGardenFromRequest(r)
+	garden, httpErr := api.getGardenFromRequest(r)
 	if httpErr != nil {
 		logger.Error("unable to get garden for zone", "error", httpErr)
 		return nil, httpErr
@@ -113,7 +114,7 @@ func (zr *ZonesResource) zoneAction(r *http.Request, zone *pkg.Zone) (render.Ren
 	}
 	logger.Debug("zone action", "action", action)
 
-	if err := zr.worker.ExecuteZoneAction(garden, zone, action.ZoneAction); err != nil {
+	if err := api.worker.ExecuteZoneAction(garden, zone, action.ZoneAction); err != nil {
 		logger.Error("unable to execute ZoneAction", "error", err)
 		return nil, babyapi.InternalServerError(err)
 	}
@@ -122,9 +123,9 @@ func (zr *ZonesResource) zoneAction(r *http.Request, zone *pkg.Zone) (render.Ren
 	return &ZoneActionResponse{}, nil
 }
 
-func (zr *ZonesResource) waterSchedulesExist(ids []xid.ID) error {
+func (api *ZonesAPI) waterSchedulesExist(ids []xid.ID) error {
 	for _, id := range ids {
-		_, err := zr.storageClient.WaterSchedules.Get(id.String())
+		_, err := api.storageClient.WaterSchedules.Get(id.String())
 		if err != nil {
 			return fmt.Errorf("error getting WaterSchedule with ID %q: %w", id, err)
 		}
@@ -133,34 +134,34 @@ func (zr *ZonesResource) waterSchedulesExist(ids []xid.ID) error {
 	return nil
 }
 
-func (zr *ZonesResource) getGardenFromRequest(r *http.Request) (*pkg.Garden, *babyapi.ErrResponse) {
-	garden, err := babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), zr.api.ParentContextKey())
+func (api *ZonesAPI) getGardenFromRequest(r *http.Request) (*pkg.Garden, *babyapi.ErrResponse) {
+	garden, err := babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), api.ParentContextKey())
 	if err != nil {
 		if errors.Is(err, babyapi.ErrNotFound) {
 			return nil, babyapi.ErrNotFoundResponse
 		}
-		err = fmt.Errorf("error getting Garden %q for Zone: %w", zr.api.GetParentIDParam(r), err)
+		err = fmt.Errorf("error getting Garden %q for Zone: %w", api.GetParentIDParam(r), err)
 		return nil, babyapi.InternalServerError(err)
 	}
 
 	return garden, nil
 }
 
-func (zr *ZonesResource) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
+func (api *ZonesAPI) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
-	gardenID := zr.api.GetParentIDParam(r)
+	gardenID := api.GetParentIDParam(r)
 	if !zone.GardenID.IsNil() && gardenID != zone.GardenID.String() {
 		return babyapi.ErrInvalidRequest(fmt.Errorf("garden_id for zone must match URL path"))
 	}
 
-	garden, httpErr := zr.getGardenFromRequest(r)
+	garden, httpErr := api.getGardenFromRequest(r)
 	if httpErr != nil {
 		logger.Error("unable to get garden for zone", "error", httpErr)
 		return httpErr
 	}
 
-	zonesForGarden, err := zr.storageClient.Gardens.GetAll(func(g *pkg.Garden) bool {
+	zonesForGarden, err := api.storageClient.Gardens.GetAll(func(g *pkg.Garden) bool {
 		return g.ID.String() == gardenID
 	})
 	if err != nil {
@@ -187,7 +188,7 @@ func (zr *ZonesResource) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *baby
 		return babyapi.ErrInvalidRequest(err)
 	}
 	// Validate water schedules exists
-	err = zr.waterSchedulesExist(zone.WaterScheduleIDs)
+	err = api.waterSchedulesExist(zone.WaterScheduleIDs)
 	if err != nil {
 		if errors.Is(err, babyapi.ErrNotFound) {
 			err = fmt.Errorf("unable to create Zone with non-existent WaterSchedule %q: %w", zone.WaterScheduleIDs, err)
@@ -202,11 +203,11 @@ func (zr *ZonesResource) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *baby
 }
 
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
-func (zr *ZonesResource) waterHistory(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
+func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
-	garden, httpErr := zr.getGardenFromRequest(r)
+	garden, httpErr := api.getGardenFromRequest(r)
 	if httpErr != nil {
 		logger.Error("unable to get garden for zone", "error", httpErr)
 		return nil, httpErr
@@ -238,7 +239,7 @@ func (zr *ZonesResource) waterHistory(r *http.Request, zone *pkg.Zone) (render.R
 	}
 
 	logger.Debug("getting water history from InfluxDB")
-	history, err := zr.getWaterHistory(r.Context(), zone, garden, timeRange, limit)
+	history, err := api.getWaterHistory(r.Context(), zone, garden, timeRange, limit)
 	if err != nil {
 		logger.Error("unable to get water history from InfluxDB", "error", err)
 		return nil, babyapi.InternalServerError(err)
@@ -248,10 +249,10 @@ func (zr *ZonesResource) waterHistory(r *http.Request, zone *pkg.Zone) (render.R
 	return NewZoneWaterHistoryResponse(history), nil
 }
 
-func (zr *ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {
-	defer zr.influxdbClient.Close()
+func (api *ZonesAPI) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {
+	defer api.influxdbClient.Close()
 
-	moisture, err := zr.influxdbClient.GetMoisture(ctx, *z.Position, g.TopicPrefix)
+	moisture, err := api.influxdbClient.GetMoisture(ctx, *z.Position, g.TopicPrefix)
 	if err != nil {
 		return 0, err
 	}
@@ -259,10 +260,10 @@ func (zr *ZonesResource) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.
 }
 
 // getWaterHistory gets previous WaterEvents for this Zone from InfluxDB
-func (zr *ZonesResource) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WaterHistory, err error) {
-	defer zr.influxdbClient.Close()
+func (api *ZonesAPI) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WaterHistory, err error) {
+	defer api.influxdbClient.Close()
 
-	history, err := zr.influxdbClient.GetWaterHistory(ctx, *zone.Position, garden.TopicPrefix, timeRange, limit)
+	history, err := api.influxdbClient.GetWaterHistory(ctx, *zone.Position, garden.TopicPrefix, timeRange, limit)
 	if err != nil {
 		return
 	}
