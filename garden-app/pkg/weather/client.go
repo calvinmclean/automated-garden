@@ -46,10 +46,6 @@ func (wc *Config) GetID() string {
 }
 
 func (wc *Config) Render(w http.ResponseWriter, r *http.Request) error {
-	if r.Method == http.MethodPost {
-		// Set ID when creating a new WeatherConfig
-		wc.ID = xid.New()
-	}
 	return nil
 }
 
@@ -60,6 +56,16 @@ func (wc *Config) Bind(r *http.Request) error {
 
 	switch r.Method {
 	case http.MethodPost:
+		if !wc.ID.IsZero() {
+			return errors.New("unable to manually set ID")
+		}
+
+		wc.ID = xid.New()
+		fallthrough
+	case http.MethodPut:
+		if wc.ID.IsZero() {
+			return errors.New("missing required id field")
+		}
 		if wc.Type == "" {
 			return errors.New("missing required type field")
 		}

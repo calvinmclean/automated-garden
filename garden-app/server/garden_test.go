@@ -133,6 +133,13 @@ func TestCreateGarden(t *testing.T) {
 			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
 			http.StatusBadRequest,
 		},
+		{
+			"ErrorCannotSetID",
+			`{"id":"c5cvhpcbcv45e8bp16dg", "name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
+			false,
+			`{"status":"Invalid request.","error":"unable to manually set ID"}`,
+			http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -153,6 +160,103 @@ func TestCreateGarden(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("POST", "/gardens", strings.NewReader(tt.body))
+			r.Header.Add("Content-Type", "application/json")
+			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
+
+			assert.Equal(t, tt.code, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
+		})
+	}
+}
+
+func TestUpdateGardenPUT(t *testing.T) {
+	tests := []struct {
+		name                     string
+		body                     string
+		temperatureHumidityError bool
+		expectedRegexp           string
+		code                     int
+	}{
+		{
+			"Successful",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
+			false,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"SuccessfulWithTemperatureAndHumidity",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
+			false,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"SuccessfulButErrorGettingTemperatureAndHumidity",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
+			true,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"ErrorNegativeMaxZones",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name": "test-garden", "topic_prefix": "test-garden", "max_zones":-2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
+			false,
+			`{"status":"Invalid request.","error":"json: cannot unmarshal number -2 into Go struct field Garden.max_zones of type uint"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorInvalidRequestBody",
+			`{}`,
+			false,
+			`{"status":"Invalid request.","error":"missing required id field"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorWrongID",
+			`{"id":"chkodpg3lcj13q82mq40","name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
+			false,
+			`{"status":"Invalid request.","error":"id must match URL path"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorInvalidRequestBody",
+			`{"id":"c5cvhpcbcv45e8bp16dg"}`,
+			false,
+			`{"status":"Invalid request.","error":"missing required name field"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorBadRequestInvalidStartTime",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-garden", "topic_prefix":"test-garden", "max_zones": 1,"light_schedule": {"duration":"1h","start_time":"NOT A TIME"}}`,
+			false,
+			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
+			http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+
+			garden := createExampleGarden()
+			err = storageClient.Gardens.Set(garden)
+			assert.NoError(t, err)
+
+			influxdbClient := new(influxdb.MockClient)
+			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
+			if tt.temperatureHumidityError {
+				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(0.0, 0.0, errors.New("influxdb error"))
+			} else {
+				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
+			}
+			gr, err := NewGardenResource(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			assert.NoError(t, err)
+
+			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 			w := babyapi.Test[*pkg.Garden](t, gr.api, r)
 

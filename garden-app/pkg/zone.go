@@ -121,6 +121,19 @@ func (z *Zone) Bind(r *http.Request) error {
 
 	switch r.Method {
 	case http.MethodPost:
+		if !z.ID.IsZero() {
+			return errors.New("unable to manually set ID")
+		}
+
+		// Set ID when creating a new Zone with POST
+		z.ID = xid.New()
+		now := time.Now()
+		z.CreatedAt = &now
+		fallthrough
+	case http.MethodPut:
+		if z.ID.IsZero() {
+			return errors.New("missing required id field")
+		}
 		if z.Position == nil {
 			return errors.New("missing required position field")
 		}
@@ -130,18 +143,14 @@ func (z *Zone) Bind(r *http.Request) error {
 		if z.Name == "" {
 			return errors.New("missing required name field")
 		}
-		// Set ID when creating a new Zone
-		z.ID = xid.New()
-		now := time.Now()
-		z.CreatedAt = &now
 	case http.MethodPatch:
-		if z.ID != xid.NilID() {
+		if !z.ID.IsNil() {
 			return errors.New("updating ID is not allowed")
 		}
 		if z.EndDate != nil {
 			return errors.New("to end-date a Zone, please use the DELETE endpoint")
 		}
-		if z.GardenID != xid.NilID() {
+		if !z.GardenID.IsNil() {
 			return errors.New("unable to change GardenID")
 		}
 	}

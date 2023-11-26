@@ -395,7 +395,7 @@ func TestUpdateZone(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			r := httptest.NewRequest("PATCH", fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), strings.NewReader(tt.body))
+			r := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 			w := babyapi.TestWithParentRoute[*pkg.Zone](t, zr.api, "/gardens/{gardenID}", r)
 
@@ -559,6 +559,30 @@ func TestCreateZone(t *testing.T) {
 			http.StatusCreated,
 		},
 		{
+			"SuccessfulWithGardenIDSet",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"garden_id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			fmt.Sprintf(`{"name":"test-zone","id":"[0-9a-v]{20}","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"%d-%02d-%02dT11:24:52.891386-07:00","duration":"1s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}"},{"rel":"garden","href":"/gardens/[0-9a-v]{20}"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/action"},{"rel":"history","href":"/gardens/[0-9a-v]{20}/zones/[0-9a-v]{20}/history"}\]}`, expectedNextWaterTime.Year(), expectedNextWaterTime.Month(), expectedNextWaterTime.Day()),
+			http.StatusCreated,
+		},
+		{
+			"ErrorCannotSetGardenIDDifferentFromPath",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"garden_id":"chkodpg3lcj13q82mq40","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"garden_id for zone must match URL path"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorCannotSetID",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"unable to manually set ID"}`,
+			http.StatusBadRequest,
+		},
+		{
 			"ErrorNegativeZonePosition",
 			nil,
 			createExampleGarden(),
@@ -620,6 +644,158 @@ func TestCreateZone(t *testing.T) {
 			defer zr.worker.Stop()
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones", tt.garden.ID), strings.NewReader(tt.body))
+			r.Header.Add("Content-Type", "application/json")
+			w := babyapi.TestWithParentRoute[*pkg.Zone](t, zr.api, "/gardens/{gardenID}", r)
+
+			assert.Equal(t, tt.code, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
+		})
+	}
+}
+
+func TestUpdateZonePUT(t *testing.T) {
+	otherCreatedAt := createdAt.Add(-1 * time.Second)
+	otherWS := &pkg.WaterSchedule{
+		ID:        id2,
+		Duration:  &pkg.Duration{Duration: time.Second * 10},
+		Interval:  &pkg.Duration{Duration: time.Hour * 24},
+		StartTime: &otherCreatedAt,
+	}
+	gardenWithZone := createExampleGarden()
+	gardenWithZone.ID = id2
+	one := uint(1)
+	gardenWithZone.MaxZones = &one
+
+	tests := []struct {
+		name           string
+		waterSchedules []*pkg.WaterSchedule
+		garden         *pkg.Garden
+		body           string
+		expectedRegexp string
+		code           int
+	}{
+		{
+			"Successful",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"SuccessfulWithGardenIDSet",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"ErrorCannotSetGardenIDDifferentFromPath",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","garden_id":"chkodpg3lcj13q82mq40","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"garden_id for zone must match URL path"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorMissingID",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"missing required id field"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorWrongID",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"id":"chkodpg3lcj13q82mq40","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"id must match URL path"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"SuccessfulWithSkipCount",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","skip_count":3,"position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"SuccessfulMultipleWaterSchedules",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule(), otherWS},
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"]}`,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"ErrorNegativeZonePosition",
+			nil,
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":-1,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"json: cannot unmarshal number -1 into Go struct field Zone.position of type uint"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorMaxZonesExceeded",
+			nil,
+			gardenWithZone,
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"adding a Zone would exceed Garden's max_zones=1"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorInvalidZonePosition",
+			nil,
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":2,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"position invalid for Garden with max_zones=2"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorBadRequestBadJSON",
+			nil,
+			createExampleGarden(),
+			"this is not json",
+			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorWaterScheduleNotFound",
+			nil,
+			createExampleGarden(),
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"unable to create Zone with non-existent WaterSchedule \[\\\"c5cvhpcbcv45e8bp16dg\\\"\]: error getting WaterSchedule with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
+			http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := setupStorage(t, tt.garden)
+
+			zone := createExampleZone()
+			err := storageClient.Zones.Set(zone)
+			assert.NoError(t, err)
+
+			for _, ws := range tt.waterSchedules {
+				err := storageClient.WaterSchedules.Set(ws)
+				assert.NoError(t, err)
+			}
+
+			zr, err := NewZonesResource(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()), testGetGardenParam)
+			assert.NoError(t, err)
+
+			for _, ws := range tt.waterSchedules {
+				err := zr.worker.ScheduleWaterAction(ws)
+				assert.NoError(t, err)
+			}
+			zr.worker.StartAsync()
+			defer zr.worker.Stop()
+
+			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 			w := babyapi.TestWithParentRoute[*pkg.Zone](t, zr.api, "/gardens/{gardenID}", r)
 

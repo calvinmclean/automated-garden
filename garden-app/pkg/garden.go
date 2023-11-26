@@ -210,6 +210,19 @@ func (g *Garden) Bind(r *http.Request) error {
 
 	switch r.Method {
 	case http.MethodPost:
+		if !g.ID.IsZero() {
+			return errors.New("unable to manually set ID")
+		}
+
+		// Set ID when creating a new Garden
+		g.ID = xid.New()
+		now := time.Now()
+		g.CreatedAt = &now
+		fallthrough
+	case http.MethodPut:
+		if g.ID.IsZero() {
+			return errors.New("missing required id field")
+		}
 		if g.Name == "" {
 			return errors.New("missing required name field")
 		}
@@ -244,10 +257,6 @@ func (g *Garden) Bind(r *http.Request) error {
 				return fmt.Errorf("invalid time format for light_schedule.start_time: %s", g.LightSchedule.StartTime)
 			}
 		}
-		// Set ID when creating a new Garden
-		g.ID = xid.New()
-		now := time.Now()
-		g.CreatedAt = &now
 	case http.MethodPatch:
 		illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
 		if illegalRegexp.MatchString(g.TopicPrefix) {

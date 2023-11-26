@@ -211,6 +211,17 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 
 	switch r.Method {
 	case http.MethodPost:
+		if !ws.ID.IsZero() {
+			return errors.New("unable to manually set ID")
+		}
+
+		// Set ID when creating a new WaterSchedule
+		ws.ID = xid.New()
+		fallthrough
+	case http.MethodPut:
+		if ws.ID.IsZero() {
+			return errors.New("missing required id field")
+		}
 		if ws.Interval == nil {
 			return errors.New("missing required interval field")
 		}
@@ -232,8 +243,6 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 				return fmt.Errorf("error validating active_period: %w", err)
 			}
 		}
-		// Set ID when creating a new WaterSchedule
-		ws.ID = xid.New()
 	case http.MethodPatch:
 		if ws.ID != xid.NilID() {
 			return errors.New("updating ID is not allowed")

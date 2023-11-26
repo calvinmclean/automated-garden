@@ -145,6 +145,10 @@ func (zr *ZonesResource) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *baby
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
 	gardenID := zr.GetGardenIDParam(r)
+	if !zone.GardenID.IsNil() && gardenID != zone.GardenID.String() {
+		return babyapi.ErrInvalidRequest(fmt.Errorf("garden_id for zone must match URL path"))
+	}
+
 	garden, err := zr.storageClient.Gardens.Get(gardenID)
 	if err != nil {
 		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)

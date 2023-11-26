@@ -230,7 +230,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if g.ID.IsNil() {
 			return errors.New("invalid Garden: missing required field 'id'")
 		}
-		err = g.Bind(&http.Request{Method: http.MethodPost})
+		err = g.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
 		}
@@ -245,7 +245,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if z.ID.IsNil() {
 			return errors.New("invalid Zone: missing required field 'id'")
 		}
-		err = z.Bind(&http.Request{Method: http.MethodPost})
+		err = z.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
 		}
@@ -260,7 +260,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if ws.ID.IsNil() {
 			return errors.New("invalid WaterSchedule: missing required field 'id'")
 		}
-		err = ws.Bind(&http.Request{Method: http.MethodPost})
+		err = ws.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid WaterSchedule %q: %w", ws.ID, err)
 		}
@@ -275,7 +275,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if wc.ID.IsNil() {
 			return errors.New("invalid WeatherClient: missing required field 'id'")
 		}
-		err = wc.Bind(&http.Request{Method: http.MethodPost})
+		err = wc.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid WeatherClient %q: %w", wc.ID, err)
 		}

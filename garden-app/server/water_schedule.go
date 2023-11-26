@@ -134,7 +134,7 @@ func (wsr *WaterSchedulesResource) weatherClientsExist(ws *pkg.WaterSchedule) er
 }
 
 func (wsr *WaterSchedulesResource) weatherClientExists(id xid.ID) error {
-	_, err := wsr.storageClient.WaterSchedules.Get(id.String())
+	_, err := wsr.storageClient.WeatherClientConfigs.Get(id.String())
 	if err != nil {
 		return fmt.Errorf("error getting WeatherClient with ID %q: %w", id, err)
 	}

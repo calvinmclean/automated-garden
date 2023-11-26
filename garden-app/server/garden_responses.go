@@ -144,27 +144,6 @@ func (agr *AllGardensResponse) HTML() string {
 	return string(gardensHTML)
 }
 
-// NewAllGardensResponse will create an AllGardensResponse from a list of Gardens
-func (gr *GardensResource) NewAllGardensResponse(gardens []*pkg.Garden) *AllGardensResponse {
-	gardenResponses := []*GardenResponse{}
-	for _, g := range gardens {
-		gardenResponses = append(gardenResponses, gr.NewGardenResponse(g))
-	}
-	return &AllGardensResponse{gardenResponses}
-}
-
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (agr *AllGardensResponse) Render(_ http.ResponseWriter, r *http.Request) error {
-	for _, g := range agr.Gardens {
-		err := g.Render(nil, r)
-		if err != nil {
-			return fmt.Errorf("error rendering garden: %w", err)
-		}
-	}
-	return nil
-}
-
 // NumZones returns the number of non-end-dated Zones that are part of this Garden
 func (gr *GardensResource) numZones(gardenID string) (uint, error) {
 	zones, err := gr.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {

@@ -3,7 +3,6 @@ package server
 import (
 	"net/http"
 	"net/http/httptest"
-	"regexp"
 	"strings"
 	"testing"
 
@@ -262,6 +261,12 @@ func TestCreateWeatherClient(t *testing.T) {
 			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
 			http.StatusBadRequest,
 		},
+		{
+			"ErrorCannotSetID",
+			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"status":"Invalid request.","error":"unable to manually set ID"}`,
+			http.StatusBadRequest,
+		},
 	}
 
 	for _, tt := range tests {
@@ -279,21 +284,69 @@ func TestCreateWeatherClient(t *testing.T) {
 
 			w := babyapi.Test[*weather.Config](t, wcr.api, r)
 
-			// check HTTP response status code
-			if w.Code != tt.code {
-				t.Errorf("Unexpected status code: got %v, want %v", w.Code, tt.code)
-			}
-
-			// check HTTP response body
-			matcher := regexp.MustCompile(tt.expectedRegexp)
-			actual := strings.TrimSpace(w.Body.String())
-			if !matcher.MatchString(actual) {
-				t.Errorf("Unexpected response body:\nactual   = %v\nexpected = %v", actual, matcher.String())
-			}
+			assert.Equal(t, tt.code, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
 		})
 	}
 }
 
+func TestUpdateWeatherClientPUT(t *testing.T) {
+	tests := []struct {
+		name           string
+		body           string
+		expectedRegexp string
+		code           int
+	}{
+		{
+			"Successful",
+			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			``,
+			http.StatusNoContent,
+		},
+		{
+			"ErrorBadRequestBadJSON",
+			"this is not json",
+			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorMissingID",
+			`{"type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"status":"Invalid request.","error":"missing required id field"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorWrongID",
+			`{"id":"chkodpg3lcj13q82mq40","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"status":"Invalid request.","error":"id must match URL path"}`,
+			http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+
+			wc := createExampleWeatherClientConfig()
+			err = storageClient.WeatherClientConfigs.Set(wc)
+			assert.NoError(t, err)
+
+			wcr, err := NewWeatherClientsAPI(storageClient)
+			require.NoError(t, err)
+
+			r := httptest.NewRequest(http.MethodPut, "/weather_clients/"+wc.ID.String(), strings.NewReader(tt.body))
+			r.Header.Add("Content-Type", "application/json")
+
+			w := babyapi.Test[*weather.Config](t, wcr.api, r)
+
+			assert.Equal(t, tt.code, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
+		})
+	}
+}
 func TestTestWeatherClient(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -370,7 +423,8 @@ func TestWeatherClientRequest(t *testing.T) {
 
 	t.Run("Successful", func(t *testing.T) {
 		req := createExampleWeatherClientConfig()
-		r := httptest.NewRequest(http.MethodPost, "/", nil)
+		req.ID = xid.NilID()
+		r := httptest.NewRequest(http.MethodPost, "/", http.NoBody)
 		err := req.Bind(r)
 		assert.NoError(t, err)
 	})
