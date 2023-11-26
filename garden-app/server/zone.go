@@ -33,20 +33,18 @@ type ZonesResource struct {
 }
 
 // NewZonesResource creates a new ZonesResource
-func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker, getGardenIDParam babyapi.GetIDParamFunc) (ZonesResource, error) {
+func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesResource, error) {
 	zr := ZonesResource{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		worker:         worker,
 	}
 
-	zr.api = babyapi.NewAPI[*pkg.Zone](zoneBasePath, func() *pkg.Zone { return &pkg.Zone{} })
+	zr.api = babyapi.NewAPI[*pkg.Zone]("Zones", zoneBasePath, func() *pkg.Zone { return &pkg.Zone{} })
 	zr.api.SetStorage(zr.storageClient.Zones)
 	zr.api.ResponseWrapper(func(z *pkg.Zone) render.Renderer {
 		return zr.NewZoneResponse(z)
 	})
-
-	zr.api.SetParentIDParam("Garden", getGardenIDParam)
 
 	zr.api.SetOnCreateOrUpdate(zr.onCreateOrUpdate)
 
@@ -80,7 +78,7 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 	})
 
 	zr.api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
-		gardenID := zr.GetGardenIDParam(r)
+		gardenID := zr.api.GetParentIDParam(r)
 		gardenIDFilter := filterZoneByGardenID(gardenID)
 
 		endDateFilter := EndDatedFilter[*pkg.Zone](r)
@@ -90,10 +88,6 @@ func NewZonesResource(storageClient *storage.Client, influxdbClient influxdb.Cli
 	})
 
 	return zr, nil
-}
-
-func (zr *ZonesResource) GetGardenIDParam(r *http.Request) string {
-	return zr.api.GetParentIDParam("Garden", r)
 }
 
 // zoneAction reads a ZoneAction request and uses it to execute one of the actions
@@ -106,12 +100,10 @@ func (zr *ZonesResource) zoneAction(r *http.Request, zone *pkg.Zone) (render.Ren
 	if zone.EndDated() {
 		return nil, babyapi.ErrInvalidRequest(errors.New("unable to execute action on end-dated zone"))
 	}
-	gardenID := zr.GetGardenIDParam(r)
-	garden, err := zr.storageClient.Gardens.Get(gardenID)
-	if err != nil {
-		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
-		logger.Error("unable to get garden for zone", "error", err)
-		return nil, babyapi.InternalServerError(err)
+	garden, httpErr := zr.getGardenFromRequest(r)
+	if httpErr != nil {
+		logger.Error("unable to get garden for zone", "error", httpErr)
+		return nil, httpErr
 	}
 
 	action := &ZoneActionRequest{}
@@ -141,19 +133,31 @@ func (zr *ZonesResource) waterSchedulesExist(ids []xid.ID) error {
 	return nil
 }
 
+func (zr *ZonesResource) getGardenFromRequest(r *http.Request) (*pkg.Garden, *babyapi.ErrResponse) {
+	garden, err := babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), zr.api.ParentContextKey())
+	if err != nil {
+		if errors.Is(err, babyapi.ErrNotFound) {
+			return nil, babyapi.ErrNotFoundResponse
+		}
+		err = fmt.Errorf("error getting Garden %q for Zone: %w", zr.api.GetParentIDParam(r), err)
+		return nil, babyapi.InternalServerError(err)
+	}
+
+	return garden, nil
+}
+
 func (zr *ZonesResource) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
-	gardenID := zr.GetGardenIDParam(r)
+	gardenID := zr.api.GetParentIDParam(r)
 	if !zone.GardenID.IsNil() && gardenID != zone.GardenID.String() {
 		return babyapi.ErrInvalidRequest(fmt.Errorf("garden_id for zone must match URL path"))
 	}
 
-	garden, err := zr.storageClient.Gardens.Get(gardenID)
-	if err != nil {
-		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
-		logger.Error("unable to get garden for zone", "error", err)
-		return babyapi.InternalServerError(err)
+	garden, httpErr := zr.getGardenFromRequest(r)
+	if httpErr != nil {
+		logger.Error("unable to get garden for zone", "error", httpErr)
+		return httpErr
 	}
 
 	zonesForGarden, err := zr.storageClient.Gardens.GetAll(func(g *pkg.Garden) bool {
@@ -202,12 +206,10 @@ func (zr *ZonesResource) waterHistory(r *http.Request, zone *pkg.Zone) (render.R
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
-	gardenID := zr.GetGardenIDParam(r)
-	garden, err := zr.storageClient.Gardens.Get(gardenID)
-	if err != nil {
-		err = fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
-		logger.Error("unable to get garden for zone", "error", err)
-		return nil, babyapi.InternalServerError(err)
+	garden, httpErr := zr.getGardenFromRequest(r)
+	if httpErr != nil {
+		logger.Error("unable to get garden for zone", "error", httpErr)
+		return nil, httpErr
 	}
 
 	// Read query parameters and set default values

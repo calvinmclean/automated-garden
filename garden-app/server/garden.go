@@ -50,7 +50,7 @@ func NewGardenResource(config Config, storageClient *storage.Client, influxdbCli
 		}
 	}
 
-	gr.api = babyapi.NewAPI[*pkg.Garden](gardenBasePath, func() *pkg.Garden { return &pkg.Garden{} })
+	gr.api = babyapi.NewAPI[*pkg.Garden]("Gardens", gardenBasePath, func() *pkg.Garden { return &pkg.Garden{} })
 	gr.api.SetStorage(gr.storageClient.Gardens)
 	gr.api.ResponseWrapper(func(g *pkg.Garden) render.Renderer {
 		return gr.NewGardenResponse(g)

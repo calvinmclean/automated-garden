@@ -30,7 +30,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		storageClient: storageClient.WeatherClientConfigs,
 	}
 
-	wcr.api = babyapi.NewAPI[*weather.Config](weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
+	wcr.api = babyapi.NewAPI[*weather.Config]("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 	wcr.api.SetStorage(wcr.storageClient)
 
 	wcr.api.ResponseWrapper(func(wc *weather.Config) render.Renderer {

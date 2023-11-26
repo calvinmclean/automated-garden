@@ -146,7 +146,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
-	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker, gardenResource.api.GetIDParam)
+	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
@@ -157,7 +157,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 	r.Handle("/*", http.FileServer(http.FS(static)))
 
-	gardenResource.api.AddNestedAPIs(zonesResource.api.Router())
+	gardenResource.api.AddNestedAPI(zonesResource.api)
 	gardenResource.api.Route(r)
 
 	weatherClientsResource, err := NewWeatherClientsAPI(storageClient)

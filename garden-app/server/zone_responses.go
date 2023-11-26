@@ -48,10 +48,10 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		ws = append(ws, result)
 	}
 
-	gardenID := zr.zr.GetGardenIDParam(r)
-	garden, err := zr.zr.storageClient.Gardens.Get(gardenID)
-	if err != nil {
-		return fmt.Errorf("error getting Garden %q for Zone: %w", gardenID, err)
+	garden, httpErr := zr.zr.getGardenFromRequest(r)
+	if httpErr != nil {
+		logger.Error("unable to get garden for zone", "error", httpErr)
+		return httpErr
 	}
 
 	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
