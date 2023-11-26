@@ -39,7 +39,7 @@ func createExampleZone() *pkg.Zone {
 	return &pkg.Zone{
 		Name:             "test-zone",
 		Position:         &pos,
-		ID:               id,
+		ID:               babyapi.ID{ID: id},
 		GardenID:         id,
 		CreatedAt:        &createdAt,
 		WaterScheduleIDs: []xid.ID{id},
@@ -66,7 +66,7 @@ func setupStorage(t *testing.T, garden *pkg.Garden) *storage.Client {
 	t.Helper()
 
 	zone := createExampleZone()
-	zone.GardenID = garden.ID
+	zone.GardenID = garden.ID.ID
 
 	storageClient, err := storage.NewClient(storage.Config{
 		Driver: "hashmap",
@@ -129,7 +129,7 @@ func TestGetZone(t *testing.T) {
 			"SuccessfulWithMoisture",
 			false,
 			[]*pkg.WaterSchedule{{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 				StartTime: &createdAt,
@@ -149,7 +149,7 @@ func TestGetZone(t *testing.T) {
 			"SuccessfulWithMoistureRainAndTemperatureData",
 			false,
 			[]*pkg.WaterSchedule{{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				StartTime: &createdAt,
@@ -181,7 +181,7 @@ func TestGetZone(t *testing.T) {
 			"SuccessfulWithMoistureRainAndTemperatureDataButWeatherDataExcluded",
 			true,
 			[]*pkg.WaterSchedule{{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				StartTime: &createdAt,
@@ -210,7 +210,7 @@ func TestGetZone(t *testing.T) {
 			"ErrorGettingMoisture",
 			false,
 			[]*pkg.WaterSchedule{{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: &createdAt,
@@ -460,7 +460,8 @@ func TestGetAllZones(t *testing.T) {
 	garden := createExampleGarden()
 	zone := createExampleZone()
 	endDatedZone := createExampleZone()
-	endDatedZone.ID, _ = xid.FromString("cl85o60cj6rmh16lpmog")
+	endDatedZoneID, _ := xid.FromString("cl85o60cj6rmh16lpmog")
+	endDatedZone.ID = babyapi.ID{ID: endDatedZoneID}
 	endDate, _ := time.Parse(time.RFC3339Nano, "2023-11-11T22:01:12.733064-07:00")
 	endDatedZone.EndDate = &endDate
 
@@ -508,13 +509,13 @@ func TestGetAllZones(t *testing.T) {
 func TestCreateZone(t *testing.T) {
 	otherCreatedAt := createdAt.Add(-1 * time.Second)
 	otherWS := &pkg.WaterSchedule{
-		ID:        id2,
+		ID:        babyapi.ID{ID: id2},
 		Duration:  &pkg.Duration{Duration: time.Second * 10},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: &otherCreatedAt,
 	}
 	gardenWithZone := createExampleGarden()
-	gardenWithZone.ID = id2
+	gardenWithZone.ID = babyapi.ID{ID: id2}
 	one := uint(1)
 	gardenWithZone.MaxZones = &one
 
@@ -656,13 +657,13 @@ func TestCreateZone(t *testing.T) {
 func TestUpdateZonePUT(t *testing.T) {
 	otherCreatedAt := createdAt.Add(-1 * time.Second)
 	otherWS := &pkg.WaterSchedule{
-		ID:        id2,
+		ID:        babyapi.ID{ID: id2},
 		Duration:  &pkg.Duration{Duration: time.Second * 10},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: &otherCreatedAt,
 	}
 	gardenWithZone := createExampleGarden()
-	gardenWithZone.ID = id2
+	gardenWithZone.ID = babyapi.ID{ID: id2}
 	one := uint(1)
 	gardenWithZone.MaxZones = &one
 
@@ -1005,7 +1006,7 @@ func TestUpdateZoneRequest(t *testing.T) {
 	}{
 		{
 			"ManualSpecificationOfIDError",
-			&pkg.Zone{ID: xid.New()},
+			&pkg.Zone{ID: babyapi.NewID()},
 			"updating ID is not allowed",
 		},
 		{

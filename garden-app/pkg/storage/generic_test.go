@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
@@ -27,7 +28,7 @@ func TestGetOneErrors(t *testing.T) {
 	t.Run("ErrorUnmarshal", func(t *testing.T) {
 		c.unmarshal = unmarshalError
 
-		err := c.Set(&pkg.Garden{ID: id})
+		err := c.Set(&pkg.Garden{ID: babyapi.ID{ID: id}})
 		assert.NoError(t, err)
 
 		_, err = c.Get(id.String())
@@ -44,7 +45,7 @@ func TestGetMultipleErrors(t *testing.T) {
 	t.Run("ErrorUnmarshal", func(t *testing.T) {
 		c.unmarshal = unmarshalError
 
-		err := c.Set(&pkg.Garden{ID: id})
+		err := c.Set(&pkg.Garden{ID: babyapi.ID{ID: id}})
 		assert.NoError(t, err)
 
 		_, err = c.GetAll(func(g *pkg.Garden) bool {
@@ -63,7 +64,7 @@ func TestSaveErrors(t *testing.T) {
 	t.Run("ErrorMarshal", func(t *testing.T) {
 		c.marshal = marshalError
 
-		err := c.Set(&pkg.Garden{ID: id})
+		err := c.Set(&pkg.Garden{ID: babyapi.ID{ID: id}})
 		assert.Error(t, err)
 		assert.Equal(t, "error marshalling data: marshal error", err.Error())
 	})

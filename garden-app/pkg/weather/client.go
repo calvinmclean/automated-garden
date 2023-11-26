@@ -11,7 +11,6 @@ import (
 	"github.com/calvinmclean/babyapi"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/xid"
 )
 
 var (
@@ -36,7 +35,7 @@ type Client interface {
 
 // Config is used to identify and configure a client type
 type Config struct {
-	ID      xid.ID                 `json:"id" yaml:"id"`
+	ID      babyapi.ID             `json:"id" yaml:"id"`
 	Type    string                 `json:"type" yaml:"type"`
 	Options map[string]interface{} `json:"options" yaml:"options"`
 }
@@ -54,18 +53,13 @@ func (wc *Config) Bind(r *http.Request) error {
 		return errors.New("missing required WeatherClient fields")
 	}
 
-	switch r.Method {
-	case http.MethodPost:
-		if !wc.ID.IsZero() {
-			return errors.New("unable to manually set ID")
-		}
+	err := wc.ID.Bind(r)
+	if err != nil {
+		return err
+	}
 
-		wc.ID = xid.New()
-		fallthrough
-	case http.MethodPut:
-		if wc.ID.IsZero() {
-			return errors.New("missing required id field")
-		}
+	switch r.Method {
+	case http.MethodPut, http.MethodPost:
 		if wc.Type == "" {
 			return errors.New("missing required type field")
 		}
@@ -75,11 +69,6 @@ func (wc *Config) Bind(r *http.Request) error {
 		_, err := NewClient(wc, func(map[string]interface{}) error { return nil })
 		if err != nil {
 			return fmt.Errorf("failed to create valid client using config: %w", err)
-		}
-
-	case http.MethodPatch:
-		if wc.ID != xid.NilID() {
-			return errors.New("updating ID is not allowed")
 		}
 	}
 

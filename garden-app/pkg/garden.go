@@ -12,7 +12,6 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/babyapi"
-	"github.com/rs/xid"
 )
 
 const (
@@ -69,7 +68,7 @@ func (l *LightState) UnmarshalJSON(data []byte) error {
 type Garden struct {
 	Name                      string         `json:"name" yaml:"name,omitempty"`
 	TopicPrefix               string         `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
-	ID                        xid.ID         `json:"id" yaml:"id,omitempty"`
+	ID                        babyapi.ID     `json:"id" yaml:"id,omitempty"`
 	MaxZones                  *uint          `json:"max_zones" yaml:"max_zones"`
 	CreatedAt                 *time.Time     `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate                   *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`
@@ -208,21 +207,17 @@ func (g *Garden) Bind(r *http.Request) error {
 		return errors.New("missing required Garden fields")
 	}
 
+	err := g.ID.Bind(r)
+	if err != nil {
+		return err
+	}
+
 	switch r.Method {
 	case http.MethodPost:
-		if !g.ID.IsZero() {
-			return errors.New("unable to manually set ID")
-		}
-
-		// Set ID when creating a new Garden
-		g.ID = xid.New()
 		now := time.Now()
 		g.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
-		if g.ID.IsZero() {
-			return errors.New("missing required id field")
-		}
 		if g.Name == "" {
 			return errors.New("missing required name field")
 		}

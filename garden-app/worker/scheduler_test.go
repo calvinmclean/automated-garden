@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
@@ -28,7 +29,7 @@ func createExampleGarden() *pkg.Garden {
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
 		MaxZones:    &two,
-		ID:          id,
+		ID:          babyapi.ID{ID: id},
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
@@ -42,7 +43,7 @@ func createExampleZone() *pkg.Zone {
 	p := uint(0)
 	return &pkg.Zone{
 		Name:             "test zone",
-		ID:               id,
+		ID:               babyapi.ID{ID: id},
 		CreatedAt:        &createdAt,
 		Position:         &p,
 		WaterScheduleIDs: []xid.ID{id},
@@ -52,7 +53,7 @@ func createExampleZone() *pkg.Zone {
 func createExampleWaterSchedule() *pkg.WaterSchedule {
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	return &pkg.WaterSchedule{
-		ID:        id,
+		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: &createdAt,
@@ -126,10 +127,10 @@ func TestScheduleWaterAction(t *testing.T) {
 	ws := createExampleWaterSchedule()
 
 	wsNotInStorage := createExampleWaterSchedule()
-	wsNotInStorage.ID = id2
+	wsNotInStorage.ID = babyapi.ID{ID: id2}
 
 	wsNotActive := createExampleWaterSchedule()
-	wsNotActive.ID = xid.New()
+	wsNotActive.ID = babyapi.NewID()
 	currentTime := time.Now()
 	wsNotActive.ActivePeriod = &pkg.ActivePeriod{
 		StartMonth: currentTime.AddDate(0, 1, 0).String(),
@@ -567,42 +568,42 @@ func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
 
 	ws1 := &pkg.WaterSchedule{
 		Name:      "ws1",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(5 * time.Minute),
 	}
 	ws2 := &pkg.WaterSchedule{
 		Name:      "ws2",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(1 * time.Minute),
 	}
 	ws3 := &pkg.WaterSchedule{
 		Name:      "ws3",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(3 * time.Minute),
 	}
 	ws4 := &pkg.WaterSchedule{
 		Name:      "ws4",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(2 * time.Minute),
 	}
 	unscheduled := &pkg.WaterSchedule{
 		Name:      "unscheduled",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(2 * time.Minute),
 	}
 	inactive := &pkg.WaterSchedule{
 		Name:      "inactive",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(2 * time.Minute),

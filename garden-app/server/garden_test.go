@@ -31,7 +31,7 @@ func createExampleGarden() *pkg.Garden {
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
 		MaxZones:    &two,
-		ID:          id,
+		ID:          babyapi.ID{ID: id},
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
@@ -390,7 +390,7 @@ func TestUpdateGarden(t *testing.T) {
 	gardenWithZone := createExampleGarden()
 	zone1 := createExampleZone()
 	zone2 := createExampleZone()
-	zone2.ID = xid.New()
+	zone2.ID = babyapi.NewID()
 
 	tests := []struct {
 		name           string

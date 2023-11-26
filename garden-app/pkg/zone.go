@@ -18,7 +18,7 @@ import (
 type Zone struct {
 	Name             string       `json:"name" yaml:"name,omitempty"`
 	Details          *ZoneDetails `json:"details,omitempty" yaml:"details,omitempty"`
-	ID               xid.ID       `json:"id" yaml:"id,omitempty"`
+	ID               babyapi.ID   `json:"id" yaml:"id,omitempty"`
 	GardenID         xid.ID       `json:"garden_id" yaml:"garden_id,omitempty"`
 	Position         *uint        `json:"position" yaml:"position"`
 	CreatedAt        *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
@@ -119,21 +119,17 @@ func (z *Zone) Bind(r *http.Request) error {
 		return errors.New("missing required Zone fields")
 	}
 
+	err := z.ID.Bind(r)
+	if err != nil {
+		return err
+	}
+
 	switch r.Method {
 	case http.MethodPost:
-		if !z.ID.IsZero() {
-			return errors.New("unable to manually set ID")
-		}
-
-		// Set ID when creating a new Zone with POST
-		z.ID = xid.New()
 		now := time.Now()
 		z.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
-		if z.ID.IsZero() {
-			return errors.New("missing required id field")
-		}
 		if z.Position == nil {
 			return errors.New("missing required position field")
 		}
@@ -144,9 +140,6 @@ func (z *Zone) Bind(r *http.Request) error {
 			return errors.New("missing required name field")
 		}
 	case http.MethodPatch:
-		if !z.ID.IsNil() {
-			return errors.New("updating ID is not allowed")
-		}
 		if z.EndDate != nil {
 			return errors.New("to end-date a Zone, please use the DELETE endpoint")
 		}

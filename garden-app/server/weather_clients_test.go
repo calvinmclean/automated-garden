@@ -16,7 +16,7 @@ import (
 
 func createExampleWeatherClientConfig() *weather.Config {
 	return &weather.Config{
-		ID:   id,
+		ID:   babyapi.ID{ID: id},
 		Type: "fake",
 		Options: map[string]interface{}{
 			"rain_mm":              25.4,
@@ -134,7 +134,7 @@ func TestDeleteWeatherClient(t *testing.T) {
 	assert.NoError(t, err)
 
 	weatherClientWithWS := createExampleWeatherClientConfig()
-	weatherClientWithWS.ID = id2
+	weatherClientWithWS.ID = babyapi.ID{ID: id2}
 
 	ws1 := createExampleWaterSchedule()
 	ws1.WeatherControl = &weather.Control{
@@ -148,7 +148,7 @@ func TestDeleteWeatherClient(t *testing.T) {
 
 	// This water schedule creates the situation where a WaterSchedule has WeatherControl, but doesn't match the ID
 	ws2 := createExampleWaterSchedule()
-	ws2.ID = xid.New()
+	ws2.ID = babyapi.NewID()
 	ws2.WeatherControl = &weather.Control{
 		Rain: &weather.ScaleControl{
 			ClientID: xid.New(),
@@ -423,7 +423,7 @@ func TestWeatherClientRequest(t *testing.T) {
 
 	t.Run("Successful", func(t *testing.T) {
 		req := createExampleWeatherClientConfig()
-		req.ID = xid.NilID()
+		req.ID = babyapi.ID{ID: xid.NilID()}
 		r := httptest.NewRequest(http.MethodPost, "/", http.NoBody)
 		err := req.Bind(r)
 		assert.NoError(t, err)
@@ -452,7 +452,7 @@ func TestUpdateWeatherClientRequest(t *testing.T) {
 		{
 			"ManualSpecificationOfIDError",
 			&weather.Config{
-				ID: xid.New(),
+				ID: babyapi.NewID(),
 			},
 			"updating ID is not allowed",
 		},

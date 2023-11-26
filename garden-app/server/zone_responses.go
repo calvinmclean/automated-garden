@@ -91,7 +91,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	}
 
 	zr.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.zr.worker, excludeWeatherData)
-	zr.NextWater.WaterScheduleID = &nextWaterSchedule.ID
+	zr.NextWater.WaterScheduleID = &nextWaterSchedule.ID.ID
 
 	if zr.Zone.SkipCount != nil && *zr.Zone.SkipCount > 0 {
 		zr.NextWater.Message = fmt.Sprintf("skip_count %d affected the time", *zr.Zone.SkipCount)

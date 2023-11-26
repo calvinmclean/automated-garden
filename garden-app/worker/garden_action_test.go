@@ -11,7 +11,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
-	"github.com/rs/xid"
+	"github.com/calvinmclean/babyapi"
 	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -108,7 +108,7 @@ func TestGardenAction(t *testing.T) {
 func TestLightActionExecute(t *testing.T) {
 	now := time.Now()
 	garden := &pkg.Garden{
-		ID:          xid.New(),
+		ID:          babyapi.NewID(),
 		Name:        "garden",
 		TopicPrefix: "garden",
 		LightSchedule: &pkg.LightSchedule{

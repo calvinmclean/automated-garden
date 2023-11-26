@@ -308,7 +308,7 @@ func CreateWeatherClientTest(t *testing.T, opts fake.Config) xid.ID {
 		assert.Equal(t, http.StatusCreated, status)
 	})
 
-	return wcr.ID
+	return wcr.ID.ID
 }
 
 func ZoneTests(t *testing.T) {
@@ -334,7 +334,7 @@ func ZoneTests(t *testing.T) {
 		assert.NoError(t, err)
 		c.AssertWaterActions(t, action.WaterMessage{
 			Duration: 3000,
-			ZoneID:   id,
+			ZoneID:   id.String(),
 			Position: 0,
 		})
 	})
@@ -389,7 +389,7 @@ func ZoneTests(t *testing.T) {
 		c.AssertWaterActions(t,
 			action.WaterMessage{
 				Duration: 1000,
-				ZoneID:   id,
+				ZoneID:   id.String(),
 				Position: 0,
 			},
 		)

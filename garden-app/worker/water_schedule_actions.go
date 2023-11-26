@@ -36,7 +36,7 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 
 	msg, err := json.Marshal(action.WaterMessage{
 		Duration: duration.Milliseconds(),
-		ZoneID:   z.ID,
+		ZoneID:   z.GetID(),
 		Position: *z.Position,
 	})
 	if err != nil {

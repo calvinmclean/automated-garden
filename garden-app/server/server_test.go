@@ -6,6 +6,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -31,7 +32,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 			"InvalidGarden",
 			func(s *storage.Client) error {
 				return s.Gardens.Set(&pkg.Garden{
-					ID: id,
+					ID: babyapi.ID{ID: id},
 				})
 			},
 			"invalid Garden \"c5cvhpcbcv45e8bp16dg\": missing required name field",
@@ -45,7 +46,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 					return err
 				}
 
-				return s.Zones.Set(&pkg.Zone{ID: id, GardenID: g.ID})
+				return s.Zones.Set(&pkg.Zone{ID: babyapi.ID{ID: id}, GardenID: g.ID.ID})
 			},
 			"invalid Zone \"c5cvhpcbcv45e8bp16dg\": missing required position field",
 		},
@@ -60,7 +61,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 			"InvalidWaterSchedule",
 			func(s *storage.Client) error {
 				return s.WaterSchedules.Set(&pkg.WaterSchedule{
-					ID: id,
+					ID: babyapi.ID{ID: id},
 				})
 			},
 			"invalid WaterSchedule \"c5cvhpcbcv45e8bp16dg\": missing required interval field",
@@ -76,7 +77,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 			"InvalidWeatherClient",
 			func(s *storage.Client) error {
 				return s.WeatherClientConfigs.Set(&weather.Config{
-					ID: id,
+					ID: babyapi.ID{ID: id},
 				})
 			},
 			"invalid WeatherClient \"c5cvhpcbcv45e8bp16dg\": missing required type field",

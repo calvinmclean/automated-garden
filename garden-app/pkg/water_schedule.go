@@ -15,7 +15,7 @@ import (
 // and optional MinimumMoisture which acts as the threshold the Zone's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
-	ID             xid.ID           `json:"id" yaml:"id"`
+	ID             babyapi.ID       `json:"id" yaml:"id"`
 	Duration       *Duration        `json:"duration" yaml:"duration"`
 	Interval       *Duration        `json:"interval" yaml:"interval"`
 	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
@@ -208,20 +208,13 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 	if ws == nil {
 		return errors.New("missing required WaterSchedule fields")
 	}
+	err := ws.ID.Bind(r)
+	if err != nil {
+		return err
+	}
 
 	switch r.Method {
-	case http.MethodPost:
-		if !ws.ID.IsZero() {
-			return errors.New("unable to manually set ID")
-		}
-
-		// Set ID when creating a new WaterSchedule
-		ws.ID = xid.New()
-		fallthrough
-	case http.MethodPut:
-		if ws.ID.IsZero() {
-			return errors.New("missing required id field")
-		}
+	case http.MethodPut, http.MethodPost:
 		if ws.Interval == nil {
 			return errors.New("missing required interval field")
 		}
@@ -244,9 +237,6 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 			}
 		}
 	case http.MethodPatch:
-		if ws.ID != xid.NilID() {
-			return errors.New("updating ID is not allowed")
-		}
 		if ws.EndDate != nil {
 			return errors.New("to end-date a WaterSchedule, please use the DELETE endpoint")
 		}

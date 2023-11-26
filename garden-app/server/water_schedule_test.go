@@ -26,7 +26,7 @@ var createdAt, _ = time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:0
 
 func createExampleWaterSchedule() *pkg.WaterSchedule {
 	return &pkg.WaterSchedule{
-		ID:        id,
+		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: &createdAt,
@@ -52,7 +52,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			"SuccessfulWithRainAndTemperatureData",
 			false,
 			&pkg.WaterSchedule{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: &createdAt,
@@ -77,7 +77,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			"SuccessfulWithRainAndTemperatureDataButWeatherDataExcluded",
 			true,
 			&pkg.WaterSchedule{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: &createdAt,
@@ -102,7 +102,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			"ErrorRainWeatherClientDNE",
 			false,
 			&pkg.WaterSchedule{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: &createdAt,
@@ -121,7 +121,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			"ErrorTemperatureWeatherClientDNE",
 			false,
 			&pkg.WaterSchedule{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: &createdAt,
@@ -276,10 +276,10 @@ func TestEndDateWaterSchedule(t *testing.T) {
 	now := time.Now()
 	endDatedWaterSchedule := createExampleWaterSchedule()
 	endDatedWaterSchedule.EndDate = &now
-	endDatedWaterSchedule.ID = id2
+	endDatedWaterSchedule.ID = babyapi.ID{ID: id2}
 
 	zone := createExampleZone()
-	zone.WaterScheduleIDs = append(zone.WaterScheduleIDs, endDatedWaterSchedule.ID)
+	zone.WaterScheduleIDs = append(zone.WaterScheduleIDs, endDatedWaterSchedule.ID.ID)
 
 	tests := []struct {
 		name             string
@@ -346,7 +346,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 func TestGetAllWaterSchedules(t *testing.T) {
 	waterSchedule := createExampleWaterSchedule()
 	endDatedWaterSchedule := createExampleWaterSchedule()
-	endDatedWaterSchedule.ID = xid.New()
+	endDatedWaterSchedule.ID = babyapi.NewID()
 	now := time.Now()
 	endDatedWaterSchedule.EndDate = &now
 
@@ -358,12 +358,12 @@ func TestGetAllWaterSchedules(t *testing.T) {
 		{
 			"SuccessfulEndDatedFalse",
 			"/water_schedules",
-			[]string{waterSchedule.ID.String()},
+			[]string{waterSchedule.GetID()},
 		},
 		{
 			"SuccessfulEndDatedTrue",
 			"/water_schedules?end_dated=true",
-			[]string{waterSchedule.ID.String(), endDatedWaterSchedule.ID.String()},
+			[]string{waterSchedule.GetID(), endDatedWaterSchedule.GetID()},
 		},
 	}
 
@@ -393,7 +393,7 @@ func TestGetAllWaterSchedules(t *testing.T) {
 
 			actualIDs := []string{}
 			for _, ws := range actual.Items {
-				actualIDs = append(actualIDs, ws.ID.String())
+				actualIDs = append(actualIDs, ws.GetID())
 			}
 
 			assert.Equal(t, http.StatusOK, w.Code)
@@ -527,7 +527,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
-			r := httptest.NewRequest(http.MethodPut, "/water_schedules/"+ws.ID.String(), strings.NewReader(tt.body))
+			r := httptest.NewRequest(http.MethodPut, "/water_schedules/"+ws.GetID(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.api, r)
 
@@ -766,7 +766,7 @@ func TestUpdateWaterScheduleRequest(t *testing.T) {
 		{
 			"ManualSpecificationOfIDError",
 			&pkg.WaterSchedule{
-				ID: xid.New(),
+				ID: babyapi.ID{ID: id},
 			},
 			"updating ID is not allowed",
 		},
