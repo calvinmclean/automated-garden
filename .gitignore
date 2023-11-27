@@ -3,3 +3,4 @@ wifi_config.h
 .vscode
 *_notes.md
 .task/
+vendor/
