@@ -8,6 +8,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/rs/xid"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGardenActionRequest(t *testing.T) {
@@ -48,6 +50,16 @@ func TestGardenActionRequest(t *testing.T) {
 		if err != nil {
 			t.Errorf("Unexpected error reading GardenActionRequest JSON: %v", err)
 		}
+	})
+	t.Run("SuccessfulLightActionFlattened", func(t *testing.T) {
+		on := pkg.LightStateOn
+		ar := &GardenActionRequest{
+			LightState: &on,
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		require.NoError(t, err)
+		assert.Equal(t, ar.Light.State, on)
 	})
 	t.Run("SuccessfulStopAction", func(t *testing.T) {
 		ar := &GardenActionRequest{

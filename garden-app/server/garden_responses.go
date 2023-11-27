@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -134,6 +135,18 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 // AllGardensResponse is a simple struct being used to render and return a list of all Gardens
 type AllGardensResponse struct {
 	Gardens []*GardenResponse `json:"gardens"`
+}
+
+// TODO: re-enable this and figure out dev setup to automatically switch between embed and read
+// //go:embed templates/gardens.html
+// var gardensHTML []byte
+
+func (agr *AllGardensResponse) HTML() string {
+	gardensHTML, err := os.ReadFile("server/templates/gardens.html")
+	if err != nil {
+		panic(err)
+	}
+	return string(gardensHTML)
 }
 
 // NewAllGardensResponse will create an AllGardensResponse from a list of Gardens

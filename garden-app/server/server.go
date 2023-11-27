@@ -68,8 +68,24 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	r.Use(middleware.RealIP)
 	r.Use(loggerMiddleware(logger))
 	r.Use(middleware.Recoverer)
-	r.Use(render.SetContentType(render.ContentTypeJSON))
 	r.Use(middleware.Timeout(3 * time.Second))
+	r.Use(render.SetContentType(render.ContentTypeJSON))
+
+	render.Respond = func(w http.ResponseWriter, r *http.Request, v interface{}) {
+		switch render.GetAcceptedContentType(r) {
+		case render.ContentTypeJSON:
+			render.JSON(w, r, v)
+		case render.ContentTypeHTML:
+			htmler, ok := v.(HTMLer)
+			if ok {
+				render.HTML(w, r, renderHTML(htmler, v))
+				return
+			}
+			fallthrough
+		default:
+			render.JSON(w, r, v)
+		}
+	}
 
 	if cfg.EnableCors {
 		r.Use(cors.Handler(cors.Options{
