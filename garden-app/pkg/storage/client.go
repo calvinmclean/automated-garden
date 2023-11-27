@@ -6,7 +6,9 @@ import (
 	"path/filepath"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
+
 	"github.com/madflojo/hord"
 	"github.com/madflojo/hord/drivers/hashmap"
 	"github.com/madflojo/hord/drivers/redis"
@@ -20,18 +22,39 @@ type Config struct {
 	Options map[string]interface{} `mapstructure:"options"`
 }
 
-type BaseClient struct {
+type Client struct {
+	Gardens              babyapi.Storage[*pkg.Garden]
+	Zones                babyapi.Storage[*pkg.Zone]
+	WaterSchedules       babyapi.Storage[*pkg.WaterSchedule]
+	WeatherClientConfigs babyapi.Storage[*weather.Config]
+}
+
+func NewClient(config Config) (*Client, error) {
+	bc, err := newBaseClient(config)
+	if err != nil {
+		return nil, fmt.Errorf("error creating base client: %w", err)
+	}
+
+	return &Client{
+		Gardens:              newGenericClient[*pkg.Garden](bc, "Garden"),
+		Zones:                newGenericClient[*pkg.Zone](bc, "Zone"),
+		WaterSchedules:       newGenericClient[*pkg.WaterSchedule](bc, "WaterSchedule"),
+		WeatherClientConfigs: newGenericClient[*weather.Config](bc, "WeatherClient"),
+	}, nil
+}
+
+type client struct {
 	db        hord.Database
 	options   map[string]interface{}
 	unmarshal func([]byte, interface{}) error
 	marshal   func(interface{}) ([]byte, error)
 }
 
-// NewBaseClient will create a new DB connection for one of the supported hord backends:
+// newBaseClient will create a new DB connection for one of the supported hord backends:
 //   - hashmap
 //   - redis
-func NewBaseClient(config Config) (*BaseClient, error) {
-	client := &BaseClient{
+func newBaseClient(config Config) (*client, error) {
+	client := &client{
 		options: config.Options,
 	}
 	var err error
@@ -50,7 +73,7 @@ func NewBaseClient(config Config) (*BaseClient, error) {
 	return client, nil
 }
 
-func (c *BaseClient) initFileDB(options map[string]interface{}) error {
+func (c *client) initFileDB(options map[string]interface{}) error {
 	var cfg hashmap.Config
 	err := mapstructure.Decode(options, &cfg)
 	if err != nil {
@@ -79,7 +102,7 @@ func (c *BaseClient) initFileDB(options map[string]interface{}) error {
 	return nil
 }
 
-func (c *BaseClient) initRedisDB(options map[string]interface{}) error {
+func (c *client) initRedisDB(options map[string]interface{}) error {
 	var cfg redis.Config
 	err := mapstructure.Decode(options, &cfg)
 	if err != nil {
@@ -100,10 +123,4 @@ func (c *BaseClient) initRedisDB(options map[string]interface{}) error {
 	c.marshal = json.Marshal
 
 	return nil
-}
-
-func FilterEndDated[T pkg.EndDateable](getEndDated bool) babyapi.FilterFunc[T] {
-	return func(item T) bool {
-		return getEndDated || !item.EndDated()
-	}
 }

@@ -16,18 +16,22 @@ func (c *Client) GetZonesUsingWaterSchedule(id string) ([]*pkg.ZoneAndGarden, er
 	results := []*pkg.ZoneAndGarden{}
 	for _, g := range gardens {
 		zones, err := c.Zones.GetAll(func(z *pkg.Zone) bool {
-			return z.GardenID == g.ID.ID && !z.EndDated()
+			if z.GardenID != g.ID.ID || z.EndDated() {
+				return false
+			}
+			for _, wsID := range z.WaterScheduleIDs {
+				if wsID.String() == id {
+					return true
+				}
+			}
+			return false
 		})
 		if err != nil {
 			return nil, fmt.Errorf("unable to get all Zones for Garden %q: %w", g.ID, err)
 		}
 
 		for _, z := range zones {
-			for _, wsID := range z.WaterScheduleIDs {
-				if wsID.String() == id {
-					results = append(results, &pkg.ZoneAndGarden{Zone: z, Garden: g})
-				}
-			}
+			results = append(results, &pkg.ZoneAndGarden{Zone: z, Garden: g})
 		}
 	}
 

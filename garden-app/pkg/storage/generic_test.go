@@ -21,9 +21,9 @@ func marshalError(_ interface{}) ([]byte, error) {
 }
 
 func TestGetOneErrors(t *testing.T) {
-	bc, err := NewBaseClient(Config{Driver: "hashmap"})
+	bc, err := newBaseClient(Config{Driver: "hashmap"})
 	assert.NoError(t, err)
-	c := NewTypedClient[*pkg.Garden](bc, "Garden")
+	c := newGenericClient[*pkg.Garden](bc, "Garden")
 
 	t.Run("ErrorUnmarshal", func(t *testing.T) {
 		c.unmarshal = unmarshalError
@@ -38,9 +38,9 @@ func TestGetOneErrors(t *testing.T) {
 }
 
 func TestGetMultipleErrors(t *testing.T) {
-	bc, err := NewBaseClient(Config{Driver: "hashmap"})
+	bc, err := newBaseClient(Config{Driver: "hashmap"})
 	assert.NoError(t, err)
-	c := NewTypedClient[*pkg.Garden](bc, "Garden")
+	c := newGenericClient[*pkg.Garden](bc, "Garden")
 
 	t.Run("ErrorUnmarshal", func(t *testing.T) {
 		c.unmarshal = unmarshalError
@@ -57,9 +57,9 @@ func TestGetMultipleErrors(t *testing.T) {
 }
 
 func TestSaveErrors(t *testing.T) {
-	bc, err := NewBaseClient(Config{Driver: "hashmap"})
+	bc, err := newBaseClient(Config{Driver: "hashmap"})
 	assert.NoError(t, err)
-	c := NewTypedClient[*pkg.Garden](bc, "Garden")
+	c := newGenericClient[*pkg.Garden](bc, "Garden")
 
 	t.Run("ErrorMarshal", func(t *testing.T) {
 		c.marshal = marshalError

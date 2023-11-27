@@ -63,7 +63,7 @@ func TestUpdateWeatherClient(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
+			err = wcr.storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("PATCH", "/weather_clients/c5cvhpcbcv45e8bp16dg", strings.NewReader(tt.body))
@@ -111,7 +111,7 @@ func TestGetWeatherClient(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
+			err = wcr.storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", "/weather_clients/"+tt.id, http.NoBody)
@@ -229,7 +229,7 @@ func TestGetAllWeatherClients(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
+			err = wcr.storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", "/weather_clients", http.NoBody)
@@ -370,7 +370,7 @@ func TestTestWeatherClient(t *testing.T) {
 			wcr, err := NewWeatherClientsAPI(storageClient)
 			require.NoError(t, err)
 
-			err = wcr.storageClient.Set(createExampleWeatherClientConfig())
+			err = wcr.storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", "/weather_clients/c5cvhpcbcv45e8bp16dg/test", http.NoBody)

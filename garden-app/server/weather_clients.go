@@ -22,17 +22,17 @@ const (
 type WeatherClientsAPI struct {
 	*babyapi.API[*weather.Config]
 
-	storageClient *storage.TypedClient[*weather.Config]
+	storageClient *storage.Client
 }
 
 // NewWeatherClientsAPI creates a new WeatherClientsResource
 func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, error) {
 	api := &WeatherClientsAPI{
-		storageClient: storageClient.WeatherClientConfigs,
+		storageClient: storageClient,
 	}
 
 	api.API = babyapi.NewAPI[*weather.Config]("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
-	api.SetStorage(api.storageClient)
+	api.SetStorage(api.storageClient.WeatherClientConfigs)
 
 	api.ResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc}
@@ -76,7 +76,7 @@ func (api *WeatherClientsAPI) testWeatherClient(w http.ResponseWriter, r *http.R
 
 	wc, err := weather.NewClient(weatherClient, func(weatherClientOptions map[string]interface{}) error {
 		weatherClient.Options = weatherClientOptions
-		return api.storageClient.Set(weatherClient)
+		return api.storageClient.WeatherClientConfigs.Set(weatherClient)
 	})
 	if err != nil {
 		logger.Error("unable to get WeatherClient", "error", err)

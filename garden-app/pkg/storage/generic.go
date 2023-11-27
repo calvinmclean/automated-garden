@@ -7,52 +7,31 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/madflojo/hord"
 )
 
-type Client struct {
-	Gardens              *TypedClient[*pkg.Garden]
-	Zones                *TypedClient[*pkg.Zone]
-	WaterSchedules       *TypedClient[*pkg.WaterSchedule]
-	WeatherClientConfigs *TypedClient[*weather.Config]
-}
-
-func NewClient(config Config) (*Client, error) {
-	bc, err := NewBaseClient(config)
-	if err != nil {
-		return nil, fmt.Errorf("error creating base client: %w", err)
-	}
-
-	return &Client{
-		Gardens:              NewTypedClient[*pkg.Garden](bc, "Garden"),
-		Zones:                NewTypedClient[*pkg.Zone](bc, "Zone"),
-		WaterSchedules:       NewTypedClient[*pkg.WaterSchedule](bc, "WaterSchedule"),
-		WeatherClientConfigs: NewTypedClient[*weather.Config](bc, "WeatherClient"),
-	}, nil
-}
-
-type EndDateableResource interface {
+type endDateableResource interface {
 	pkg.EndDateable
 	babyapi.Resource
 }
 
-// Client is a wrapper around hord.Database to allow for easy interactions with resources
-type TypedClient[T EndDateableResource] struct {
+// genericClient is a wrapper around the base client that includes the expected type
+// that it works with and has the internal key prefix used when storing
+type genericClient[T endDateableResource] struct {
 	prefix string
-	*BaseClient
+	*client
 }
 
-func NewTypedClient[T EndDateableResource](bc *BaseClient, prefix string) *TypedClient[T] {
-	return &TypedClient[T]{prefix, bc}
+func newGenericClient[T endDateableResource](bc *client, prefix string) *genericClient[T] {
+	return &genericClient[T]{prefix, bc}
 }
 
-func (c *TypedClient[T]) key(id string) string {
+func (c *genericClient[T]) key(id string) string {
 	return fmt.Sprintf("%s_%s", c.prefix, id)
 }
 
-func (c *TypedClient[T]) Delete(id string) error {
+func (c *genericClient[T]) Delete(id string) error {
 	key := c.key(id)
 
 	result, err := c.get(key)
@@ -70,11 +49,11 @@ func (c *TypedClient[T]) Delete(id string) error {
 
 // Get will use the provided key to read data from the data source. Then, it will Unmarshal
 // into the generic type
-func (c *TypedClient[T]) Get(id string) (T, error) {
+func (c *genericClient[T]) Get(id string) (T, error) {
 	return c.get(c.key(id))
 }
 
-func (c *TypedClient[T]) get(key string) (T, error) {
+func (c *genericClient[T]) get(key string) (T, error) {
 	if c.db == nil {
 		return *new(T), fmt.Errorf("error missing database connection")
 	}
@@ -99,7 +78,7 @@ func (c *TypedClient[T]) get(key string) (T, error) {
 // GetAll will use the provided prefix to read data from the data source. Then, it will use getOne
 // to read each element into the correct type. These types must support `pkg.EndDateable` to allow
 // excluding end-dated resources
-func (c *TypedClient[T]) GetAll(filter babyapi.FilterFunc[T]) ([]T, error) {
+func (c *genericClient[T]) GetAll(filter babyapi.FilterFunc[T]) ([]T, error) {
 	keys, err := c.db.Keys()
 	if err != nil {
 		return nil, fmt.Errorf("error getting keys: %w", err)
@@ -125,7 +104,7 @@ func (c *TypedClient[T]) GetAll(filter babyapi.FilterFunc[T]) ([]T, error) {
 }
 
 // Set marshals the provided item and writes it to the database
-func (c *TypedClient[T]) Set(item T) error {
+func (c *genericClient[T]) Set(item T) error {
 	asBytes, err := c.marshal(item)
 	if err != nil {
 		return fmt.Errorf("error marshalling data: %w", err)
