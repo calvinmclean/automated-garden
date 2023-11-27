@@ -47,6 +47,7 @@ func createExampleZone() *pkg.Zone {
 		CreatedAt:        &createdAt,
 		Position:         &p,
 		WaterScheduleIDs: []xid.ID{id},
+		GardenID:         id,
 	}
 }
 
@@ -61,12 +62,15 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 }
 
 func TestScheduleWaterActionStorageError(t *testing.T) {
-	storageClient := &storage.Client{}
+	storageClient, err := storage.NewClient(storage.Config{
+		Driver: "hashmap",
+	})
+	assert.NoError(t, err)
 
 	garden := createExampleGarden()
 	zone := createExampleZone()
 
-	err := storageClient.Gardens.Set(garden)
+	err = storageClient.Gardens.Set(garden)
 	assert.NoError(t, err)
 
 	err = storageClient.Zones.Set(zone)

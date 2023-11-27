@@ -19,7 +19,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -64,12 +63,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	logger := baseLogger.WithField("source", "server")
 
 	r := chi.NewRouter()
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(3 * time.Second))
-	r.Use(render.SetContentType(render.ContentTypeJSON))
 
 	render.Respond = func(w http.ResponseWriter, r *http.Request, v interface{}) {
 		switch render.GetAcceptedContentType(r) {
