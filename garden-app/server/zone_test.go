@@ -372,7 +372,7 @@ func TestUpdateZone(t *testing.T) {
 		{
 			"ErrorWaterScheduleNotFound",
 			`{"water_schedule_ids":["chkodpg3lcj13q82mq40"]}`,
-			`{"status":"Invalid request.","error":"unable to update Zone with non-existent WaterSchedule [\"chkodpg3lcj13q82mq40\"]: error getting WaterSchedule with ID \"chkodpg3lcj13q82mq40\": resource not found"}`,
+			`{"status":"Invalid request.","error":"error getting WaterSchedule with ID \"chkodpg3lcj13q82mq40\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 	}
@@ -615,7 +615,7 @@ func TestCreateZone(t *testing.T) {
 			nil,
 			createExampleGarden(),
 			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
-			`{"status":"Invalid request.","error":"unable to create Zone with non-existent WaterSchedule \[\\\"c5cvhpcbcv45e8bp16dg\\\"\]: error getting WaterSchedule with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
+			`{"status":"Invalid request.","error":"error getting WaterSchedule with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 	}
@@ -763,7 +763,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			nil,
 			createExampleGarden(),
 			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
-			`{"status":"Invalid request.","error":"unable to create Zone with non-existent WaterSchedule \[\\\"c5cvhpcbcv45e8bp16dg\\\"\]: error getting WaterSchedule with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
+			`{"status":"Invalid request.","error":"error getting WaterSchedule with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 	}

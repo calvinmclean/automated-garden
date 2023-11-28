@@ -63,21 +63,6 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 		},
 	})
 
-	api.SetBeforePatch(func(r *http.Request, old, request *pkg.Zone) *babyapi.ErrResponse {
-		if len(request.WaterScheduleIDs) != 0 {
-			err := api.waterSchedulesExist(request.WaterScheduleIDs)
-			if err != nil {
-				if errors.Is(err, babyapi.ErrNotFound) {
-					err = fmt.Errorf("unable to update Zone with non-existent WaterSchedule %q: %w", request.WaterScheduleIDs, err)
-					return babyapi.ErrInvalidRequest(err)
-				}
-				return babyapi.InternalServerError(fmt.Errorf("unable to get WaterSchedules %q for updating Zone: %w", request.WaterScheduleIDs, err))
-			}
-		}
-
-		return nil
-	})
-
 	api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
 		gardenID := api.GetParentIDParam(r)
 		gardenIDFilter := filterZoneByGardenID(gardenID)
@@ -191,7 +176,6 @@ func (api *ZonesAPI) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.
 	err = api.waterSchedulesExist(zone.WaterScheduleIDs)
 	if err != nil {
 		if errors.Is(err, babyapi.ErrNotFound) {
-			err = fmt.Errorf("unable to create Zone with non-existent WaterSchedule %q: %w", zone.WaterScheduleIDs, err)
 			logger.Error("invalid request to create Zone", "error", err)
 			return babyapi.ErrInvalidRequest(err)
 		}
