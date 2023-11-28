@@ -1,7 +1,10 @@
 package server
 
 import (
-	"github.com/sirupsen/logrus"
+	"io"
+	"log/slog"
+	"os"
+	"strings"
 )
 
 // LogConfig holds settings for logger
@@ -10,26 +13,34 @@ type LogConfig struct {
 	Format string `mapstructure:"format"`
 }
 
-// GetFormatter returns a logrus formatter based on the input. Valid values are "json", otherwise default text is used
-func (c LogConfig) GetFormatter() logrus.Formatter {
+// GetHandler returns a slog handler based on the input. Valid values are "json", otherwise default text is used
+func (c LogConfig) getHandler(writer io.Writer) slog.Handler {
 	switch c.Format {
 	case "json":
-		return &logrus.JSONFormatter{}
+		return slog.NewJSONHandler(writer, nil)
 	default:
-		return &logrus.TextFormatter{
-			DisableColors: false,
-			ForceColors:   true,
-			FullTimestamp: true,
-		}
+		return slog.NewTextHandler(writer, nil)
 	}
 }
 
-// GetLogLevel returns the logrus Level based on parsed string. Defaults to InfoLevel instead of error
-func (c LogConfig) GetLogLevel() logrus.Level {
-	parsedLevel, err := logrus.ParseLevel(c.Level)
-	if err != nil {
-		logrus.Warnf("unable to parse log level, defaulting to INFO: %v", err)
-		parsedLevel = logrus.InfoLevel
+func (c LogConfig) NewLogger() *slog.Logger {
+	return c.NewLoggerWithWriter(os.Stdout)
+}
+
+func (c LogConfig) NewLoggerWithWriter(writer io.Writer) *slog.Logger {
+	return slog.New(c.getHandler(writer))
+}
+
+// GetLogLevel returns the Level based on parsed string. Defaults to Info instead of error
+func (c LogConfig) GetLogLevel() slog.Level {
+	switch strings.ToLower(c.Level) {
+	case "debug":
+		return slog.LevelDebug
+	case "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
 	}
-	return parsedLevel
 }

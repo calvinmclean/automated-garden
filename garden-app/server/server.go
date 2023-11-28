@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,11 +19,11 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
+
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
@@ -50,17 +51,14 @@ type WebConfig struct {
 type Server struct {
 	*http.Server
 	quit            chan os.Signal
-	logger          *logrus.Entry
+	logger          *slog.Logger
 	gardensResource *GardensAPI
 	worker          *worker.Worker
 }
 
 // NewServer creates and initializes all server resources based on config
 func NewServer(cfg Config, validateData bool) (*Server, error) {
-	baseLogger := logrus.New()
-	baseLogger.SetFormatter(cfg.LogConfig.GetFormatter())
-	baseLogger.SetLevel(cfg.LogConfig.GetLogLevel())
-	logger := baseLogger.WithField("source", "server")
+	logger := cfg.LogConfig.NewLogger().With("source", "server")
 
 	r := chi.NewRouter()
 
@@ -98,7 +96,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	r.Get("/metrics", promhttp.Handler().ServeHTTP)
 
 	// Initialize Storage Client
-	logger.WithField("driver", cfg.StorageConfig.Driver).Info("initializing storage client")
+	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
 	storageClient, err := storage.NewClient(cfg.StorageConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
@@ -112,27 +110,27 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 
 	// Initialize MQTT Client
-	logger.WithFields(logrus.Fields{
-		"client_id": cfg.MQTTConfig.ClientID,
-		"broker":    cfg.MQTTConfig.Broker,
-		"port":      cfg.MQTTConfig.Port,
-	}).Info("initializing MQTT client")
+	logger.With(
+		"client_id", cfg.MQTTConfig.ClientID,
+		"broker", cfg.MQTTConfig.Broker,
+		"port", cfg.MQTTConfig.Port,
+	).Info("initializing MQTT client")
 	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize MQTT client: %v", err)
 	}
 
 	// Initialize InfluxDB Client
-	logger.WithFields(logrus.Fields{
-		"address": cfg.InfluxDBConfig.Address,
-		"org":     cfg.InfluxDBConfig.Org,
-		"bucket":  cfg.InfluxDBConfig.Bucket,
-	}).Info("initializing InfluxDB client")
+	logger.With(
+		"address", cfg.InfluxDBConfig.Address,
+		"org", cfg.InfluxDBConfig.Org,
+		"bucket", cfg.InfluxDBConfig.Bucket,
+	).Info("initializing InfluxDB client")
 	influxdbClient := influxdb.NewClient(cfg.InfluxDBConfig)
 
 	// Initialize Scheduler
 	logger.Info("initializing scheduler")
-	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, baseLogger)
+	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, cfg.LogConfig.NewLogger())
 
 	// Create API routes/handlers
 	gardenAPI, err := NewGardensAPI(cfg, storageClient, influxdbClient, worker)
@@ -181,7 +179,7 @@ func (s *Server) Start() {
 	go func() {
 		shutdownErr := s.ListenAndServe()
 		if shutdownErr != http.ErrServerClosed {
-			s.logger.WithError(shutdownErr).Errorf("server shutdown error")
+			s.logger.Error("server shutdown error", "error", shutdownErr)
 		}
 	}()
 
@@ -197,14 +195,14 @@ func (s *Server) Start() {
 
 		err := s.Shutdown(context.Background())
 		if err != nil {
-			s.logger.WithError(err).Error("unable to shutdown server")
+			s.logger.Error("unable to shutdown server", "error", err)
 		}
 		s.gardensResource.worker.Stop()
 
 		wg.Done()
 	}()
 	wg.Wait()
-	s.logger.WithField("time_elapsed", time.Since(shutdownStart)).Info("server shutdown gracefully")
+	s.logger.Info("server shutdown gracefully", "time_elapsed", time.Since(shutdownStart))
 }
 
 // Stop shuts down the server

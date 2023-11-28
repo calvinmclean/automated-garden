@@ -21,12 +21,12 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 			return fmt.Errorf("unable to save Zone after decrementing SkipCount: %w", err)
 		}
 
-		w.logger.Infof("skipping watering Zone %q because of SkipCount", z.ID)
+		w.logger.Info("skipping watering Zone because of SkipCount", "zone_id", z.GetID())
 		return nil
 	}
 	duration, err := w.exerciseWeatherControl(g, z, ws)
 	if err != nil {
-		w.logger.Errorf("error executing weather controls, continuing to water: %v", err)
+		w.logger.Error("error executing weather controls, continuing to water", "error", err)
 		duration = ws.Duration.Duration
 	}
 	if duration == 0 {
@@ -81,7 +81,7 @@ func (w *Worker) shouldMoistureSkip(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSch
 	if err != nil {
 		return false, fmt.Errorf("error getting Zone's moisture data: %w", err)
 	}
-	w.logger.Infof("soil moisture is %f%%", moisture)
+	w.logger.Info("got soil moisture", "moisture_percent", moisture)
 
 	// if moisture > minimum, skip watering
 	return moisture > float64(*ws.WeatherControl.SoilMoisture.MinimumMoisture), nil
@@ -97,15 +97,19 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 		weatherClient, err := w.storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
 		if err != nil {
 			hadError = true
-			w.logger.WithError(err).Warn("error getting WeatherClient for TemperatureControl")
+			w.logger.Warn("error getting WeatherClient for TemperatureControl", "error", err)
 		} else {
 			avgHighTemp, err := weatherClient.GetAverageHighTemperature(ws.Interval.Duration)
 			if err != nil {
 				hadError = true
-				w.logger.WithError(err).Warn("error getting average high temperatures")
+				w.logger.Warn("error getting average high temperatures", "error", err)
 			} else {
 				scaleFactor = ws.WeatherControl.Temperature.Scale(avgHighTemp)
-				w.logger.Infof("weather client calculated %fC as the average daily high temperature over the last %s, resulting in scale factor of %f", avgHighTemp, ws.Interval.String(), scaleFactor)
+				w.logger.With(
+					"avg_high_temp", avgHighTemp,
+					"time_period", ws.Interval.String(),
+					"scale_factor", scaleFactor,
+				).Info("weather client calculated the average daily high temperature and resulting scale factor")
 			}
 		}
 	}
@@ -114,21 +118,25 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 		weatherClient, err := w.storageClient.GetWeatherClient(ws.WeatherControl.Rain.ClientID)
 		if err != nil {
 			hadError = true
-			w.logger.WithError(err).Warn("error getting WeatherClient for RainControl")
+			w.logger.Warn("error getting WeatherClient for RainControl", "error", err)
 		} else {
 			totalRain, err := weatherClient.GetTotalRain(ws.Interval.Duration)
 			if err != nil {
 				hadError = true
-				w.logger.WithError(err).Warn("error getting rain data")
+				w.logger.Warn("error getting rain data", "error", err)
 			} else {
 				rainScaleFactor := ws.WeatherControl.Rain.InvertedScaleDownOnly(totalRain)
-				w.logger.Infof("weather client recorded %fmm of rain in the last %s, resulting in scale factor of %f", totalRain, ws.Interval.String(), rainScaleFactor)
+				w.logger.With(
+					"total_rain", totalRain,
+					"time_period", ws.Interval.String(),
+					"scale_factor", rainScaleFactor,
+				).Info("weather client detected rain and resulting scale factor")
 				scaleFactor *= rainScaleFactor
 			}
 		}
 	}
 
-	w.logger.Infof("compounded scale factor: %f", scaleFactor)
+	w.logger.Info("compounded scale factor", "compound_scale_factor", scaleFactor)
 
 	return time.Duration(float32(ws.Duration.Duration) * scaleFactor), hadError
 }

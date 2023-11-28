@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"regexp"
@@ -17,7 +18,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -144,7 +144,7 @@ func TestGetWaterSchedule(t *testing.T) {
 		})
 		assert.NoError(t, err)
 
-		wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+		wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 		require.NoError(t, err)
 		wsr.worker.StartAsync()
 
@@ -179,7 +179,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			require.NoError(t, err)
 			wsr.worker.StartAsync()
 
@@ -256,7 +256,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -328,7 +328,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(tt.waterSchedule)
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -378,7 +378,7 @@ func TestGetAllWaterSchedules(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(endDatedWaterSchedule)
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -449,7 +449,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -521,7 +521,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			err = storageClient.WaterSchedules.Set(ws)
 			assert.NoError(t, err)
 
-			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			wsr.worker.StartAsync()

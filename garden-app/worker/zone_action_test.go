@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -11,7 +12,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -70,7 +70,7 @@ func TestZoneAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, logrus.New()).ExecuteZoneAction(garden, zone, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteZoneAction(garden, zone, tt.action)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
@@ -133,7 +133,7 @@ func TestWaterActionExecute(t *testing.T) {
 			wc := new(weather.MockClient)
 			tt.setupMock(mqttClient, influxdbClient, wc)
 
-			err = NewWorker(storageClient, influxdbClient, mqttClient, logrus.New()).ExecuteWaterAction(garden, tt.zone, action)
+			err = NewWorker(storageClient, influxdbClient, mqttClient, slog.Default()).ExecuteWaterAction(garden, tt.zone, action)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())

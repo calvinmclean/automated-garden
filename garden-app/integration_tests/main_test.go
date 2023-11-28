@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/server"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,12 +62,12 @@ func getConfigs(t *testing.T) (server.Config, controller.Config) {
 	var serverConfig server.Config
 	err = viper.Unmarshal(&serverConfig)
 	require.NoError(t, err)
-	serverConfig.LogConfig.Level = logrus.DebugLevel.String()
+	serverConfig.LogConfig.Level = slog.LevelDebug.String()
 
 	var controllerConfig controller.Config
 	err = viper.Unmarshal(&controllerConfig)
 	require.NoError(t, err)
-	controllerConfig.LogConfig.Level = logrus.DebugLevel.String()
+	controllerConfig.LogConfig.Level = slog.LevelDebug.String()
 
 	return serverConfig, controllerConfig
 }

@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -561,7 +561,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient, sc)
 
-			err = NewWorker(sc, influxdbClient, mqttClient, logrus.New()).ExecuteScheduledWaterAction(garden, tt.zone, tt.waterSchedule)
+			err = NewWorker(sc, influxdbClient, mqttClient, slog.Default()).ExecuteScheduledWaterAction(garden, tt.zone, tt.waterSchedule)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())

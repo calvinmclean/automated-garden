@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"log/slog"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -8,7 +9,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/sirupsen/logrus"
 )
 
 var (
@@ -30,7 +30,7 @@ type Worker struct {
 	influxdbClient influxdb.Client
 	mqttClient     mqtt.Client
 	scheduler      *gocron.Scheduler
-	logger         *logrus.Entry
+	logger         *slog.Logger
 }
 
 // NewWorker creates a Worker with specified clients
@@ -38,14 +38,14 @@ func NewWorker(
 	storageClient *storage.Client,
 	influxdbClient influxdb.Client,
 	mqttClient mqtt.Client,
-	logger *logrus.Logger,
+	logger *slog.Logger,
 ) *Worker {
 	return &Worker{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		mqttClient:     mqttClient,
 		scheduler:      gocron.NewScheduler(time.Local),
-		logger:         logger.WithField("source", "worker"),
+		logger:         logger.With("source", "worker"),
 	}
 }
 

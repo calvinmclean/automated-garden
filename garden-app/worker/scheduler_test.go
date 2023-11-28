@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"log/slog"
 	"testing"
 	"time"
 
@@ -12,7 +13,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -82,7 +82,7 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -125,7 +125,7 @@ func TestScheduleWaterAction(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -181,7 +181,7 @@ func TestResetNextWaterTime(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -220,7 +220,7 @@ func TestGetNextWaterTime(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -247,7 +247,7 @@ func TestScheduleLightActions(t *testing.T) {
 	// because it used to work fine, so I need to double-check that this these tests are actually testing what I think they are.
 	// In other words, this test sometimes tests the update job and sometimes doesn't, depending on when it is run
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
-		worker := NewWorker(nil, nil, nil, logrus.New())
+		worker := NewWorker(nil, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -268,7 +268,7 @@ func TestScheduleLightActions(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -397,7 +397,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			assert.NoError(t, err)
 			defer weather.ResetCache()
 
-			worker := NewWorker(storageClient, nil, nil, logrus.New())
+			worker := NewWorker(storageClient, nil, nil, slog.Default())
 			worker.StartAsync()
 			defer worker.Stop()
 
@@ -440,7 +440,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -472,7 +472,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -501,7 +501,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -536,7 +536,7 @@ func TestRemoveJobsByID(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -561,7 +561,7 @@ func TestRemoveJobsByID(t *testing.T) {
 }
 
 func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
-	worker := NewWorker(nil, nil, nil, logrus.New())
+	worker := NewWorker(nil, nil, nil, slog.Default())
 	worker.scheduler.StartAsync()
 
 	now := time.Now()

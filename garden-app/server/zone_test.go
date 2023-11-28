@@ -3,6 +3,7 @@ package server
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -18,7 +19,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -242,7 +242,7 @@ func TestGetZone(t *testing.T) {
 			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
-			zr, err := NewZonesAPI(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 			zr.worker.StartAsync()
 
@@ -318,7 +318,7 @@ func TestZoneAction(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
 			assert.NoError(t, err)
 
 			zr.worker.StartAsync()
@@ -384,7 +384,7 @@ func TestUpdateZone(t *testing.T) {
 			err := storageClient.WaterSchedules.Set(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
@@ -432,7 +432,7 @@ func TestEndDateZone(t *testing.T) {
 			err := storageClient.WaterSchedules.Set(createExampleWaterSchedule())
 			assert.NoError(t, err)
 
-			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
@@ -449,7 +449,7 @@ func TestEndDateZone(t *testing.T) {
 
 func TestGetAllZones(t *testing.T) {
 	storageClient := setupWaterScheduleStorage(t)
-	zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+	zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 	assert.NoError(t, err)
 
 	garden := createExampleGarden()
@@ -629,7 +629,7 @@ func TestCreateZone(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			for _, ws := range tt.waterSchedules {
@@ -781,7 +781,7 @@ func TestUpdateZonePUT(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			for _, ws := range tt.waterSchedules {
@@ -881,7 +881,7 @@ func TestWaterHistory(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			zr, err := NewZonesAPI(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, logrus.New()))
+			zr, err := NewZonesAPI(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
@@ -919,7 +919,7 @@ func TestGetNextWaterTime(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := &ZonesAPI{
-				worker: worker.NewWorker(storageClient, nil, nil, logrus.New()),
+				worker: worker.NewWorker(storageClient, nil, nil, slog.Default()),
 			}
 			ws := createExampleWaterSchedule()
 
