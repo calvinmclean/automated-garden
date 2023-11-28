@@ -50,10 +50,9 @@ type WebConfig struct {
 // Server contains all of the necessary resources for running a server
 type Server struct {
 	*http.Server
-	quit            chan os.Signal
-	logger          *slog.Logger
-	gardensResource *GardensAPI
-	worker          *worker.Worker
+	quit   chan os.Signal
+	logger *slog.Logger
+	worker *worker.Worker
 }
 
 // NewServer creates and initializes all server resources based on config
@@ -168,7 +167,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		&http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: r},
 		make(chan os.Signal, 1),
 		logger,
-		gardenAPI,
 		worker,
 	}, nil
 }
@@ -197,7 +195,7 @@ func (s *Server) Start() {
 		if err != nil {
 			s.logger.Error("unable to shutdown server", "error", err)
 		}
-		s.gardensResource.worker.Stop()
+		s.worker.Stop()
 
 		wg.Done()
 	}()
