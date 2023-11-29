@@ -44,7 +44,7 @@ func (wc *Config) GetID() string {
 	return wc.ID.String()
 }
 
-func (wc *Config) Render(w http.ResponseWriter, r *http.Request) error {
+func (wc *Config) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
@@ -94,20 +94,20 @@ func NewClient(c *Config, storageCallback func(map[string]interface{}) error) (c
 }
 
 // Patch allows modifying an existing Config with fields from a new one
-func (c *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
+func (wc *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
 	if newConfig.Type != "" {
-		c.Type = newConfig.Type
+		wc.Type = newConfig.Type
 	}
 
-	if c.Options == nil && newConfig.Options != nil {
-		c.Options = map[string]interface{}{}
+	if wc.Options == nil && newConfig.Options != nil {
+		wc.Options = map[string]interface{}{}
 	}
 	for k, v := range newConfig.Options {
-		c.Options[k] = v
+		wc.Options[k] = v
 	}
 
 	// make sure a valid WeatherClient can still be created
-	_, err := NewClient(c, func(map[string]interface{}) error { return nil })
+	_, err := NewClient(wc, func(map[string]interface{}) error { return nil })
 	if err != nil {
 		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
 	}
@@ -116,12 +116,11 @@ func (c *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
 }
 
 // EndDated allows this to satisfy an interface even though the resources does not have end-dates
-func (c *Config) EndDated() bool {
+func (*Config) EndDated() bool {
 	return false
 }
 
-func (c *Config) SetEndDate(now time.Time) {
-}
+func (*Config) SetEndDate(_ time.Time) {}
 
 // clientWrapper wraps any other implementation of the interface in order to add basic Prometheus summary metrics
 // and caching

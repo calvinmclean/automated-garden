@@ -378,7 +378,6 @@ func TestEndDateGarden(t *testing.T) {
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
-
 		})
 	}
 }

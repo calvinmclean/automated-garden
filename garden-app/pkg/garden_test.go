@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestHealth(t *testing.T) {
@@ -140,7 +141,10 @@ func TestGardenPatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			g := &Garden{}
-			g.Patch(tt.newGarden)
+
+			err := g.Patch(tt.newGarden)
+			require.NoError(t, err)
+
 			if g.LightSchedule != nil && *g.LightSchedule != *tt.newGarden.LightSchedule {
 				t.Errorf("Unexpected result for LightSchedule: expected=%v, actual=%v", tt.newGarden.LightSchedule, g.LightSchedule)
 			}
@@ -160,7 +164,8 @@ func TestGardenPatch(t *testing.T) {
 				Duration:  &Duration{2 * time.Hour, ""},
 			},
 		}
-		g.Patch(&Garden{LightSchedule: &LightSchedule{}})
+		err := g.Patch(&Garden{LightSchedule: &LightSchedule{}})
+		require.NoError(t, err)
 
 		if g.LightSchedule != nil {
 			t.Errorf("Expected nil LightSchedule, but got: %v", g.LightSchedule)
@@ -171,7 +176,8 @@ func TestGardenPatch(t *testing.T) {
 		now := time.Now()
 		g := &Garden{}
 
-		g.Patch(&Garden{EndDate: &now})
+		err := g.Patch(&Garden{EndDate: &now})
+		require.NoError(t, err)
 
 		if g.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", g.EndDate)
@@ -184,7 +190,8 @@ func TestGardenPatch(t *testing.T) {
 			EndDate: &now,
 		}
 
-		g.Patch(&Garden{})
+		err := g.Patch(&Garden{})
+		require.NoError(t, err)
 
 		if g.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", g.EndDate)

@@ -347,6 +347,7 @@ func TestUpdateWeatherClientPUT(t *testing.T) {
 		})
 	}
 }
+
 func TestTestWeatherClient(t *testing.T) {
 	tests := []struct {
 		name           string

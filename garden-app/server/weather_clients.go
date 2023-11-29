@@ -130,7 +130,7 @@ type WeatherClientResponse struct {
 }
 
 // Render ...
-func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request) error {
+func (resp *WeatherClientResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	if resp != nil {
 		resp.Links = append(resp.Links,
 			Link{

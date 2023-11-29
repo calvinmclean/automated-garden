@@ -284,6 +284,6 @@ func (g *Garden) Bind(r *http.Request) error {
 	return nil
 }
 
-func (g *Garden) Render(w http.ResponseWriter, r *http.Request) error {
+func (g *Garden) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

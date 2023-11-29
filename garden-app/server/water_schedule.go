@@ -88,7 +88,7 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 	return api, err
 }
 
-func (api *WaterSchedulesAPI) onCreateOrUpdate(r *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
+func (api *WaterSchedulesAPI) onCreateOrUpdate(_ *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
 	// Validate the new WaterSchedule.WeatherControl
 	if ws.WeatherControl != nil {
 		err := api.weatherClientsExist(ws)

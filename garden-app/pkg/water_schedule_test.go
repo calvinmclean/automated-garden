@@ -7,6 +7,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestWaterScheduleEndDated(t *testing.T) {
@@ -125,7 +126,8 @@ func TestWaterSchedulePatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			ws := &WaterSchedule{}
-			ws.Patch(tt.newWaterSchedule)
+			err := ws.Patch(tt.newWaterSchedule)
+			require.NoError(t, err)
 			assert.Equal(t, tt.newWaterSchedule, ws)
 		})
 	}
@@ -134,7 +136,8 @@ func TestWaterSchedulePatch(t *testing.T) {
 		now := time.Now()
 		ws := &WaterSchedule{}
 
-		ws.Patch(&WaterSchedule{EndDate: &now})
+		err := ws.Patch(&WaterSchedule{EndDate: &now})
+		require.NoError(t, err)
 
 		if ws.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", ws.EndDate)
@@ -147,7 +150,8 @@ func TestWaterSchedulePatch(t *testing.T) {
 			EndDate: &now,
 		}
 
-		ws.Patch(&WaterSchedule{})
+		err := ws.Patch(&WaterSchedule{})
+		require.NoError(t, err)
 
 		if ws.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", ws.EndDate)

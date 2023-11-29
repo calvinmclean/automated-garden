@@ -200,7 +200,7 @@ type TemperatureData struct {
 	ScaleFactor float32 `json:"scale_factor"`
 }
 
-func (ws *WaterSchedule) Render(_ http.ResponseWriter, r *http.Request) error {
+func (ws *WaterSchedule) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
