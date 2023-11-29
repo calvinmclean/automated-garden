@@ -66,10 +66,6 @@ func (wc *Config) Bind(r *http.Request) error {
 		if wc.Options == nil {
 			return errors.New("missing required options field")
 		}
-		_, err := NewClient(wc, func(map[string]interface{}) error { return nil })
-		if err != nil {
-			return fmt.Errorf("failed to create valid client using config: %w", err)
-		}
 	}
 
 	return nil
@@ -104,12 +100,6 @@ func (wc *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
 	}
 	for k, v := range newConfig.Options {
 		wc.Options[k] = v
-	}
-
-	// make sure a valid WeatherClient can still be created
-	_, err := NewClient(wc, func(map[string]interface{}) error { return nil })
-	if err != nil {
-		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
 	}
 
 	return nil

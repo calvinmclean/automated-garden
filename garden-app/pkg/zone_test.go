@@ -81,7 +81,7 @@ func TestZonePatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			z := &Zone{}
 			err := z.Patch(tt.newZone)
-			require.NoError(t, err)
+			require.Nil(t, err)
 			assert.Equal(t, tt.newZone, z)
 		})
 	}
@@ -91,7 +91,7 @@ func TestZonePatch(t *testing.T) {
 		p := &Zone{}
 
 		err := p.Patch(&Zone{EndDate: &now})
-		require.NoError(t, err)
+		require.Nil(t, err)
 
 		if p.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", p.EndDate)
@@ -105,7 +105,7 @@ func TestZonePatch(t *testing.T) {
 		}
 
 		err := p.Patch(&Zone{})
-		require.NoError(t, err)
+		require.Nil(t, err)
 
 		if p.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", p.EndDate)

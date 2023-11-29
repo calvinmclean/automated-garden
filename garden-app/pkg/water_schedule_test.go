@@ -127,7 +127,7 @@ func TestWaterSchedulePatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ws := &WaterSchedule{}
 			err := ws.Patch(tt.newWaterSchedule)
-			require.NoError(t, err)
+			require.Nil(t, err)
 			assert.Equal(t, tt.newWaterSchedule, ws)
 		})
 	}
@@ -137,7 +137,7 @@ func TestWaterSchedulePatch(t *testing.T) {
 		ws := &WaterSchedule{}
 
 		err := ws.Patch(&WaterSchedule{EndDate: &now})
-		require.NoError(t, err)
+		require.Nil(t, err)
 
 		if ws.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", ws.EndDate)
@@ -151,7 +151,7 @@ func TestWaterSchedulePatch(t *testing.T) {
 		}
 
 		err := ws.Patch(&WaterSchedule{})
-		require.NoError(t, err)
+		require.Nil(t, err)
 
 		if ws.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", ws.EndDate)

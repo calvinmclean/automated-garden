@@ -40,6 +40,12 @@ func TestUpdateWeatherClient(t *testing.T) {
 			http.StatusOK,
 		},
 		{
+			"ErrorInvalid",
+			`{"type": "other_type"}`,
+			`{"status":"Invalid request.","error":"invalid request to update WeatherClient: invalid type 'other_type'"}`,
+			http.StatusBadRequest,
+		},
+		{
 			"BadRequest",
 			"this is not json",
 			`{"status":"Invalid request.","error":"invalid character 'h' in literal true (expecting 'r')"}`,
@@ -256,6 +262,12 @@ func TestCreateWeatherClient(t *testing.T) {
 			http.StatusCreated,
 		},
 		{
+			"ErrorInvalid",
+			`{"type": "fake", "options":{"key": "value"}}`,
+			`{"status":"Invalid request.","error":"invalid request to update WeatherClient: time: invalid duration \\"\\""}`,
+			http.StatusBadRequest,
+		},
+		{
 			"ErrorBadRequestBadJSON",
 			"this is not json",
 			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
@@ -409,16 +421,6 @@ func TestWeatherClientRequest(t *testing.T) {
 				Type: "fake",
 			},
 			"missing required options field",
-		},
-		{
-			"ErrorCreatingClientWithConfigs",
-			&weather.Config{
-				Type: "fake",
-				Options: map[string]interface{}{
-					"key": "value",
-				},
-			},
-			"failed to create valid client using config: time: invalid duration \"\"",
 		},
 	}
 

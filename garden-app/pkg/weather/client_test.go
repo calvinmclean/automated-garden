@@ -29,7 +29,7 @@ func TestConfigPatch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			c := &Config{}
 			err := c.Patch(tt.newConfig)
-			require.NoError(t, err)
+			require.Nil(t, err)
 			assert.Equal(t, tt.newConfig, c)
 		})
 	}
