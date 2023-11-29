@@ -4,6 +4,8 @@ go 1.21.3
 
 replace github.com/calvinmclean/babyapi => /Users/calvinmclean/development/babyapi
 
+replace github.com/calvinmclean/babyapi/storage => /Users/calvinmclean/development/babyapi/storage
+
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/calvinmclean/babyapi v0.0.0-00010101000000-000000000000
@@ -13,7 +15,7 @@ require (
 	github.com/go-chi/render v1.0.3
 	github.com/go-co-op/gocron v1.35.2
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
-	github.com/madflojo/hord v0.2.1-0.20230525172437-4609e296badd
+	github.com/madflojo/hord v0.2.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
 	github.com/prometheus/client_golang v1.17.0
