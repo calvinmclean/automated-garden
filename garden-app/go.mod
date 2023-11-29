@@ -2,13 +2,9 @@ module github.com/calvinmclean/automated-garden/garden-app
 
 go 1.21.3
 
-replace github.com/calvinmclean/babyapi => /Users/calvinmclean/development/babyapi
-
-replace github.com/calvinmclean/babyapi/storage => /Users/calvinmclean/development/babyapi/storage
-
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
-	github.com/calvinmclean/babyapi v0.0.0-00010101000000-000000000000
+	github.com/calvinmclean/babyapi v0.0.0-20231129023344-1f51c4f30db4
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-chi/chi/v5 v5.0.10
 	github.com/go-chi/cors v1.2.1
