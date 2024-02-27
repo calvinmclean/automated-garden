@@ -115,7 +115,7 @@ func NewController(cfg Config) (*Controller, error) {
 	}
 
 	// Create default handler and mqttClient, then connect
-	defaultHandler := paho.MessageHandler(func(c paho.Client, msg paho.Message) {
+	defaultHandler := paho.MessageHandler(func(_ paho.Client, msg paho.Message) {
 		controller.logger.With(
 			"topic", msg.Topic(),
 			"message", string(msg.Payload()),
@@ -371,7 +371,7 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 	case "light":
 		return c.lightHandler(topic)
 	default:
-		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
+		return paho.MessageHandler(func(_ paho.Client, msg paho.Message) {
 			c.subLogger.With(
 				"topic", msg.Topic(),
 				"message", string(msg.Payload()),

@@ -18,6 +18,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -170,7 +171,7 @@ func TestGetZone(t *testing.T) {
 				influxdbClient.On("GetMoisture", mock.Anything, mock.Anything, mock.Anything).Return(float64(2), nil)
 				influxdbClient.On("Close")
 			},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"weather_data":{"rain":{"mm":25.4,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":1.5},"soil_moisture_percent":2},"next_water":{"time":"2023-\d\d-\d\dT11:24:52.891386-07:00","duration":"0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"weather_data":{"rain":{"mm":25.4,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":1.5},"soil_moisture_percent":2},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
 		},
 		{
 			"SuccessfulWithMoistureRainAndTemperatureDataButWeatherDataExcluded",
@@ -198,8 +199,8 @@ func TestGetZone(t *testing.T) {
 					},
 				},
 			}},
-			func(influxdbClient *influxdb.MockClient) {},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"2023-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
+			func(_ *influxdb.MockClient) {},
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52.891386-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
 		},
 		{
 			"ErrorGettingMoisture",
@@ -260,7 +261,7 @@ func TestGetZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s?exclude_weather_data=%t", garden.ID, zone.ID, tt.excludeWeatherData), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -281,7 +282,7 @@ func TestZoneAction(t *testing.T) {
 	}{
 		{
 			"BadRequest",
-			func(mqttClient *mqtt.MockClient) {},
+			func(_ *mqtt.MockClient) {},
 			"bad request",
 			`{"status":"Invalid request.","error":"invalid character 'b' looking for beginning of value"}`,
 			http.StatusBadRequest,
@@ -333,7 +334,7 @@ func TestZoneAction(t *testing.T) {
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -392,7 +393,7 @@ func TestUpdateZone(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -439,7 +440,7 @@ func TestEndDateZone(t *testing.T) {
 			zone := createExampleZone()
 
 			r := httptest.NewRequest("DELETE", fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -490,7 +491,7 @@ func TestGetAllZones(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones%s", garden.ID, tt.targetURL), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			actual := strings.TrimSpace(w.Body.String())
@@ -641,7 +642,7 @@ func TestCreateZone(t *testing.T) {
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones", tt.garden.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -676,7 +677,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			createExampleGarden(),
 			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"SuccessfulWithGardenIDSet",
@@ -684,7 +685,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			createExampleGarden(),
 			`{"id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"ErrorCannotSetGardenIDDifferentFromPath",
@@ -716,7 +717,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			createExampleGarden(),
 			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","skip_count":3,"position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"SuccessfulMultipleWaterSchedules",
@@ -724,7 +725,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			createExampleGarden(),
 			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"]}`,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"ErrorNegativeZonePosition",
@@ -793,7 +794,7 @@ func TestUpdateZonePUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -893,7 +894,7 @@ func TestWaterHistory(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s/history%s", garden.ID, zone.ID, tt.queryParams), http.NoBody)
-			w := babyapi.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))

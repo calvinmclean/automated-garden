@@ -48,7 +48,7 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 
 	api.API = babyapi.NewAPI[*pkg.WaterSchedule]("WaterSchedules", waterScheduleBasePath, func() *pkg.WaterSchedule { return &pkg.WaterSchedule{} })
 	api.SetStorage(api.storageClient.WaterSchedules)
-	api.ResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
+	api.SetResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
 		return api.NewWaterScheduleResponse(ws)
 	})
 

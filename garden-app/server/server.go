@@ -148,19 +148,29 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	r.Handle("/*", http.FileServer(http.FS(static)))
 
 	gardenAPI.AddNestedAPI(zonesResource)
-	gardenAPI.Route(r)
+	err = gardenAPI.Route(r)
+	if err != nil {
+		return nil, fmt.Errorf("error creating routes: %w", err)
+	}
 
 	weatherClientsAPI, err := NewWeatherClientsAPI(storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
-	weatherClientsAPI.Route(r)
+
+	err = weatherClientsAPI.Route(r)
+	if err != nil {
+		return nil, fmt.Errorf("error creating routes: %w", err)
+	}
 
 	waterSchedulesAPI, err := NewWaterSchedulesAPI(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
 	}
-	waterSchedulesAPI.Route(r)
+	err = waterSchedulesAPI.Route(r)
+	if err != nil {
+		return nil, fmt.Errorf("error creating routes: %w", err)
+	}
 
 	return &Server{
 		// nolint:gosec

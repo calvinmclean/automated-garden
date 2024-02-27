@@ -17,6 +17,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -151,7 +152,7 @@ func TestGetWaterSchedule(t *testing.T) {
 		r := httptest.NewRequest("GET", "/water_schedules/"+id2.String(), http.NoBody)
 		r.Header.Add("Content-Type", "application/json")
 
-		w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
+		w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 		// check HTTP response status code
 		if w.Code != http.StatusNotFound {
@@ -184,7 +185,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			wsr.worker.StartAsync()
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/water_schedules/%s?exclude_weather_data=%t", tt.waterSchedule.ID, tt.excludeWeatherData), http.NoBody)
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
+			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			// check HTTP response status code
 			if w.Code != http.StatusOK {
@@ -264,7 +265,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 
 			r := httptest.NewRequest("PATCH", "/water_schedules/"+createExampleWaterSchedule().GetID(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
+			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -335,7 +336,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			defer wsr.worker.Stop()
 
 			r := httptest.NewRequest("DELETE", "/water_schedules/"+tt.waterSchedule.GetID(), http.NoBody)
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
+			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Equal(t, tt.expectedResponse, strings.TrimSpace(w.Body.String()))
@@ -385,7 +386,7 @@ func TestGetAllWaterSchedules(t *testing.T) {
 			defer wsr.worker.Stop()
 
 			r := httptest.NewRequest("GET", tt.targetURL, nil)
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
+			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			var actual babyapi.ResourceList[*pkg.WaterSchedule]
 			err = json.NewDecoder(w.Body).Decode(&actual)
@@ -457,7 +458,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 
 			r := httptest.NewRequest("POST", "/water_schedules", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
+			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, regexp.MustCompile(tt.expectedRegexp), strings.TrimSpace(w.Body.String()))
@@ -476,7 +477,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			"Successful",
 			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"ErrorMissingID",
@@ -529,7 +530,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, "/water_schedules/"+ws.GetID(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.WaterSchedule](t, wsr.API, r)
+			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, regexp.MustCompile(tt.expectedRegexp), strings.TrimSpace(w.Body.String()))

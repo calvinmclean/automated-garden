@@ -16,7 +16,9 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
+
 	"github.com/calvinmclean/babyapi"
+	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -73,7 +75,7 @@ func TestGetGarden(t *testing.T) {
 			gr.worker.StartAsync()
 
 			r := httptest.NewRequest("GET", tt.path, http.NoBody)
-			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -161,7 +163,7 @@ func TestCreateGarden(t *testing.T) {
 
 			r := httptest.NewRequest("POST", "/gardens", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -182,21 +184,21 @@ func TestUpdateGardenPUT(t *testing.T) {
 			`{"id":"c5cvhpcbcv45e8bp16dg","name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
 			false,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"SuccessfulWithTemperatureAndHumidity",
 			`{"id":"c5cvhpcbcv45e8bp16dg","name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
 			false,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"SuccessfulButErrorGettingTemperatureAndHumidity",
 			`{"id":"c5cvhpcbcv45e8bp16dg","name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
 			true,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"ErrorNegativeMaxZones",
@@ -258,7 +260,7 @@ func TestUpdateGardenPUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -308,7 +310,7 @@ func TestGetAllGardens(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", tt.targetURL, http.NoBody)
-			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			actual := strings.TrimSpace(w.Body.String())
@@ -374,7 +376,7 @@ func TestEndDateGarden(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("DELETE", fmt.Sprintf("/gardens/%s", tt.garden.ID), http.NoBody)
-			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -457,7 +459,7 @@ func TestUpdateGarden(t *testing.T) {
 
 			r := httptest.NewRequest("PATCH", "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -475,7 +477,7 @@ func TestGardenAction(t *testing.T) {
 	}{
 		{
 			"BadRequest",
-			func(mqttClient *mqtt.MockClient) {},
+			func(_ *mqtt.MockClient) {},
 			"bad request",
 			`{"status":"Invalid request.","error":"invalid character 'b' looking for beginning of value"}`,
 			http.StatusBadRequest,
@@ -511,7 +513,7 @@ func TestGardenAction(t *testing.T) {
 		},
 		{
 			"ErrorInvalidLightState",
-			func(mqttClient *mqtt.MockClient) {},
+			func(_ *mqtt.MockClient) {},
 			`{"light":{"state":"BAD"}}`,
 			`{"status":"Invalid request.","error":"cannot unmarshal \"BAD\" into Go value of type *pkg.LightState"}`,
 			http.StatusBadRequest,
@@ -537,7 +539,7 @@ func TestGardenAction(t *testing.T) {
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
-			w := babyapi.Test[*pkg.Garden](t, gr.API, r)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))

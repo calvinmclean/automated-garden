@@ -18,7 +18,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 	}{
 		{
 			"EmptySuccess",
-			func(s *storage.Client) error { return nil },
+			func(_ *storage.Client) error { return nil },
 			"",
 		},
 		{

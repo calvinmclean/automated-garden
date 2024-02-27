@@ -9,6 +9,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
+	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -75,7 +76,7 @@ func TestUpdateWeatherClient(t *testing.T) {
 			r := httptest.NewRequest("PATCH", "/weather_clients/c5cvhpcbcv45e8bp16dg", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*weather.Config](t, wcr.API, r)
+			w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -123,7 +124,7 @@ func TestGetWeatherClient(t *testing.T) {
 			r := httptest.NewRequest("GET", "/weather_clients/"+tt.id, http.NoBody)
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*weather.Config](t, wcr.API, r)
+			w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -205,7 +206,7 @@ func TestDeleteWeatherClient(t *testing.T) {
 			r := httptest.NewRequest("DELETE", "/weather_clients/"+tt.id, http.NoBody)
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*weather.Config](t, wcr.API, r)
+			w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 		})
@@ -240,7 +241,7 @@ func TestGetAllWeatherClients(t *testing.T) {
 
 			r := httptest.NewRequest("GET", "/weather_clients", http.NoBody)
 
-			w := babyapi.Test[*weather.Config](t, wcr.API, r)
+			w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
 
 			assert.Equal(t, tt.expectedStatus, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -294,7 +295,7 @@ func TestCreateWeatherClient(t *testing.T) {
 			r := httptest.NewRequest("POST", "/weather_clients", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*weather.Config](t, wcr.API, r)
+			w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -313,7 +314,7 @@ func TestUpdateWeatherClientPUT(t *testing.T) {
 			"Successful",
 			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"ErrorBadRequestBadJSON",
@@ -352,7 +353,7 @@ func TestUpdateWeatherClientPUT(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPut, "/weather_clients/"+wc.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 
-			w := babyapi.Test[*weather.Config](t, wcr.API, r)
+			w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -387,7 +388,7 @@ func TestTestWeatherClient(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", "/weather_clients/c5cvhpcbcv45e8bp16dg/test", http.NoBody)
-			w := babyapi.Test[*weather.Config](t, wcr.API, r)
+			w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
 
 			// check HTTP response status code
 			assert.Equal(t, tt.expectedStatus, w.Code)

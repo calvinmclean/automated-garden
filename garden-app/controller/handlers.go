@@ -8,7 +8,7 @@ import (
 )
 
 func (c *Controller) waterHandler(topic string) paho.MessageHandler {
-	return func(pc paho.Client, msg paho.Message) {
+	return func(_ paho.Client, msg paho.Message) {
 		waterLogger := c.subLogger.With("topic", topic)
 		var waterMsg action.WaterMessage
 		err := json.Unmarshal(msg.Payload(), &waterMsg)
@@ -31,7 +31,7 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 }
 
 func (c *Controller) stopHandler(_ string) paho.MessageHandler {
-	return func(pc paho.Client, msg paho.Message) {
+	return func(_ paho.Client, msg paho.Message) {
 		c.assertionData.Lock()
 		c.assertionData.stopActions++
 		c.assertionData.Unlock()
@@ -41,7 +41,7 @@ func (c *Controller) stopHandler(_ string) paho.MessageHandler {
 }
 
 func (c *Controller) stopAllHandler(_ string) paho.MessageHandler {
-	return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
+	return paho.MessageHandler(func(_ paho.Client, msg paho.Message) {
 		c.assertionData.Lock()
 		c.assertionData.stopAllActions++
 		c.assertionData.Unlock()
@@ -51,7 +51,7 @@ func (c *Controller) stopAllHandler(_ string) paho.MessageHandler {
 }
 
 func (c *Controller) lightHandler(topic string) paho.MessageHandler {
-	return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
+	return paho.MessageHandler(func(_ paho.Client, msg paho.Message) {
 		lightLogger := c.subLogger.With("topic", topic)
 		var action action.LightAction
 		err := json.Unmarshal(msg.Payload(), &action)

@@ -34,7 +34,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 	api.API = babyapi.NewAPI[*weather.Config]("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 	api.SetStorage(api.storageClient.WeatherClientConfigs)
 
-	api.SetOnCreateOrUpdate(func(r *http.Request, wc *weather.Config) *babyapi.ErrResponse {
+	api.SetOnCreateOrUpdate(func(_ *http.Request, wc *weather.Config) *babyapi.ErrResponse {
 		// make sure a valid WeatherClient can still be created
 		_, err := weather.NewClient(wc, func(map[string]interface{}) error { return nil })
 		if err != nil {
@@ -44,7 +44,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		return nil
 	})
 
-	api.ResponseWrapper(func(wc *weather.Config) render.Renderer {
+	api.SetResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc}
 	})
 

@@ -456,6 +456,7 @@ func WaterScheduleTests(t *testing.T) {
 }
 
 func makeRequest(method, path string, body, response interface{}) (int, error) {
+	// TODO: Use babyapi Client
 	var reqBody io.Reader
 	switch v := body.(type) {
 	case nil:
@@ -475,6 +476,8 @@ func makeRequest(method, path string, body, response interface{}) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

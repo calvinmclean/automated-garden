@@ -35,7 +35,7 @@ func init() {
 	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "config.yaml", "path to config file")
 
 	rootCommand.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "level of logging to display")
-	rootCommand.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	rootCommand.RegisterFlagCompletionFunc("log-level", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{
 			"debug", "info", "warn", "error",
 		}, cobra.ShellCompDirectiveDefault

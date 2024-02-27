@@ -43,7 +43,7 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 
 	api.API = babyapi.NewAPI[*pkg.Zone]("Zones", zoneBasePath, func() *pkg.Zone { return &pkg.Zone{} })
 	api.SetStorage(api.storageClient.Zones)
-	api.ResponseWrapper(func(z *pkg.Zone) render.Renderer {
+	api.SetResponseWrapper(func(z *pkg.Zone) render.Renderer {
 		return api.NewZoneResponse(z)
 	})
 
