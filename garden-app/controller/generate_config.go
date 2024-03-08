@@ -4,12 +4,12 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"os"
 	"regexp"
 	"time"
 
 	"github.com/AlecAivazis/survey/v2"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -113,7 +113,7 @@ type ZoneConfig struct {
 // GenerateConfig will create config.h and wifi_config.h based on the provided configurations. It can optionally write to files
 // instead of stdout
 func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, overwrite, interactive bool) {
-	logger := setupLogger(config.LogConfig)
+	logger := config.LogConfig.NewLogger()
 
 	if interactive {
 		err := survey.AskOne(&survey.Confirm{
@@ -121,7 +121,7 @@ func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, over
 			Default: genMainConfig,
 		}, &genMainConfig)
 		if err != nil {
-			logger.WithError(err).Error("survey error")
+			logger.Error("survey error", "error", err)
 			return
 		}
 	}
@@ -130,12 +130,12 @@ func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, over
 		logger.Debug("generating 'config.h'")
 		mainConfig, err := generateMainConfig(config, interactive)
 		if err != nil {
-			logger.WithError(err).Error("error generating 'config.h'")
+			logger.Error("error generating 'config.h'", "error", err)
 			return
 		}
 		err = writeOutput(logger, mainConfig, "config.h", writeFile, overwrite, interactive)
 		if err != nil {
-			logger.WithError(err).Error("error generating 'config.h'")
+			logger.Error("error generating 'config.h'", "error", err)
 			return
 		}
 	}
@@ -146,7 +146,7 @@ func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, over
 			Default: genWifiConfig,
 		}, &genWifiConfig)
 		if err != nil {
-			logger.WithError(err).Error("survey error")
+			logger.Error("survey error", "error", err)
 			return
 		}
 	}
@@ -155,23 +155,23 @@ func GenerateConfig(config Config, writeFile, genWifiConfig, genMainConfig, over
 		logger.Debug("generating 'wifi_config.h'")
 		wifiConfig, err := generateWiFiConfig(config.WifiConfig, interactive)
 		if err != nil {
-			logger.WithError(err).Error("error generating 'wifi_config.h'")
+			logger.Error("error generating 'wifi_config.h'", "error", err)
 			return
 		}
 		err = writeOutput(logger, wifiConfig, "wifi_config.h", writeFile, overwrite, interactive)
 		if err != nil {
-			logger.WithError(err).Error("error generating 'wifi_config.h'")
+			logger.Error("error generating 'wifi_config.h'", "error", err)
 			return
 		}
 	}
 }
 
-func writeOutput(logger *logrus.Logger, content, filename string, writeFile, overwrite, interactive bool) error {
-	logger.WithFields(logrus.Fields{
-		"filename":       filename,
-		"write_file":     writeFile,
-		"overwrite_file": overwrite,
-	}).Debug("writing output to file")
+func writeOutput(logger *slog.Logger, content, filename string, writeFile, overwrite, interactive bool) error {
+	logger.With(
+		"filename", filename,
+		"write_file", writeFile,
+		"overwrite_file", overwrite,
+	).Debug("writing output to file")
 
 	if interactive {
 		err := survey.AskOne(&survey.Confirm{

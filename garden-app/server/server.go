@@ -1,11 +1,11 @@
 package server
 
 import (
-	"context"
 	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -13,16 +13,17 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
+	"github.com/calvinmclean/babyapi"
+
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/sirupsen/logrus"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
@@ -48,28 +49,18 @@ type WebConfig struct {
 
 // Server contains all of the necessary resources for running a server
 type Server struct {
-	*http.Server
-	quit            chan os.Signal
-	logger          *logrus.Entry
-	gardensResource *GardensResource
-	worker          *worker.Worker
+	rootAPI *babyapi.API[*babyapi.NilResource]
+	cfg     Config
+	quit    chan os.Signal
+	logger  *slog.Logger
+	worker  *worker.Worker
 }
 
 // NewServer creates and initializes all server resources based on config
 func NewServer(cfg Config, validateData bool) (*Server, error) {
-	baseLogger := logrus.New()
-	baseLogger.SetFormatter(cfg.LogConfig.GetFormatter())
-	baseLogger.SetLevel(cfg.LogConfig.GetLogLevel())
-	logger := baseLogger.WithField("source", "server")
+	logger := cfg.LogConfig.NewLogger().With("source", "server")
 
-	r := chi.NewRouter()
-
-	r.Use(middleware.RequestID)
-	r.Use(middleware.RealIP)
-	r.Use(loggerMiddleware(logger))
-	r.Use(middleware.Recoverer)
-	r.Use(middleware.Timeout(3 * time.Second))
-	r.Use(render.SetContentType(render.ContentTypeJSON))
+	rootAPI := babyapi.NewRootAPI("root", "/")
 
 	render.Respond = func(w http.ResponseWriter, r *http.Request, v interface{}) {
 		switch render.GetAcceptedContentType(r) {
@@ -88,7 +79,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 
 	if cfg.EnableCors {
-		r.Use(cors.Handler(cors.Options{
+		rootAPI.AddMiddleware(cors.Handler(cors.Options{
 			AllowedOrigins:   []string{"https://*", "http://*"},
 			AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
@@ -99,13 +90,18 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 
 	// Configure HTTP metrics
-	r.Use(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
+	rootAPI.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
 		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
 	})))
-	r.Get("/metrics", promhttp.Handler().ServeHTTP)
+	rootAPI.AddCustomRoute(chi.Route{
+		Pattern: "/metrics",
+		Handlers: map[string]http.Handler{
+			http.MethodGet: promhttp.Handler(),
+		},
+	})
 
 	// Initialize Storage Client
-	logger.WithField("driver", cfg.StorageConfig.Driver).Info("initializing storage client")
+	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
 	storageClient, err := storage.NewClient(cfg.StorageConfig)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
@@ -119,38 +115,34 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 
 	// Initialize MQTT Client
-	logger.WithFields(logrus.Fields{
-		"client_id": cfg.MQTTConfig.ClientID,
-		"broker":    cfg.MQTTConfig.Broker,
-		"port":      cfg.MQTTConfig.Port,
-	}).Info("initializing MQTT client")
+	logger.With(
+		"client_id", cfg.MQTTConfig.ClientID,
+		"broker", cfg.MQTTConfig.Broker,
+		"port", cfg.MQTTConfig.Port,
+	).Info("initializing MQTT client")
 	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize MQTT client: %v", err)
 	}
 
 	// Initialize InfluxDB Client
-	logger.WithFields(logrus.Fields{
-		"address": cfg.InfluxDBConfig.Address,
-		"org":     cfg.InfluxDBConfig.Org,
-		"bucket":  cfg.InfluxDBConfig.Bucket,
-	}).Info("initializing InfluxDB client")
+	logger.With(
+		"address", cfg.InfluxDBConfig.Address,
+		"org", cfg.InfluxDBConfig.Org,
+		"bucket", cfg.InfluxDBConfig.Bucket,
+	).Info("initializing InfluxDB client")
 	influxdbClient := influxdb.NewClient(cfg.InfluxDBConfig)
 
 	// Initialize Scheduler
 	logger.Info("initializing scheduler")
-	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, baseLogger)
+	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, cfg.LogConfig.NewLogger())
 
 	// Create API routes/handlers
-	gardenResource, err := NewGardenResource(cfg, storageClient, influxdbClient, worker)
+	gardenAPI, err := NewGardensAPI(cfg, storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
 	}
-	plantsResource, err := NewPlantsResource(gardenResource)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", plantBasePath, err)
-	}
-	zonesResource, err := NewZonesResource(storageClient, influxdbClient, worker)
+	zonesResource, err := NewZonesAPI(storageClient, influxdbClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
@@ -159,104 +151,33 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up static webapp subtree: %w", err)
 	}
-	r.Handle("/*", http.FileServer(http.FS(static)))
-
-	r.Route(gardenBasePath, func(r chi.Router) {
-		r.Post("/", gardenResource.createGarden)
-		r.Get("/", gardenResource.getAllGardens)
-
-		r.Route(fmt.Sprintf("/{%s}", gardenPathParam), func(r chi.Router) {
-			r.Use(gardenResource.gardenContextMiddleware)
-
-			r.Get("/", get[*GardenResponse](getGardenFromContext))
-			r.Patch("/", gardenResource.updateGarden)
-			r.Delete("/", gardenResource.endDateGarden)
-
-			// Add new middleware to restrict certain paths to non-end-dated Gardens
-			r.Route("/", func(r chi.Router) {
-				r.Use(restrictEndDatedMiddleware("Garden", gardenCtxKey))
-				r.Post("/action", gardenResource.gardenAction)
-
-				r.Route(plantBasePath, func(r chi.Router) {
-					r.Post("/", plantsResource.createPlant)
-					r.Get("/", plantsResource.getAllPlants)
-
-					r.Route(fmt.Sprintf("/{%s}", plantPathParam), func(r chi.Router) {
-						r.Use(plantsResource.plantContextMiddleware)
-
-						r.Get("/", get[*PlantResponse](getPlantFromContext))
-
-						r.Patch("/", plantsResource.updatePlant)
-						r.Delete("/", plantsResource.endDatePlant)
-					})
-				})
-
-				r.Route(zoneBasePath, func(r chi.Router) {
-					r.Post("/", zonesResource.createZone)
-					r.Get("/", zonesResource.getAllZones)
-
-					r.Route(fmt.Sprintf("/{%s}", zonePathParam), func(r chi.Router) {
-						r.Use(zonesResource.zoneContextMiddleware)
-
-						r.Get("/", get[*ZoneResponse](getZoneFromContext))
-						r.Patch("/", zonesResource.updateZone)
-						r.Delete("/", zonesResource.endDateZone)
-
-						// Add new middleware to restrict certain paths to non-end-dated Zones
-						r.Route("/", func(r chi.Router) {
-							r.Use(restrictEndDatedMiddleware("Zone", zoneCtxKey))
-
-							r.Post("/action", zonesResource.zoneAction)
-							r.Get("/history", zonesResource.waterHistory)
-						})
-					})
-				})
-			})
-		})
+	rootAPI.AddCustomRoute(chi.Route{
+		Pattern: "/*",
+		Handlers: map[string]http.Handler{ // TODO: does this work with
+			http.MethodGet: http.FileServer(http.FS(static)),
+		},
 	})
 
-	weatherClientsResource, err := NewWeatherClientsResource(storageClient)
+	rootAPI.AddNestedAPI(gardenAPI)
+	gardenAPI.AddNestedAPI(zonesResource)
+
+	weatherClientsAPI, err := NewWeatherClientsAPI(storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
-	r.Route(weatherClientsBasePath, func(r chi.Router) {
-		r.Post("/", weatherClientsResource.createWeatherClient)
-		r.Get("/", weatherClientsResource.getAllWeatherClients)
+	rootAPI.AddNestedAPI(weatherClientsAPI)
 
-		r.Route(fmt.Sprintf("/{%s}", weatherClientPathParam), func(r chi.Router) {
-			r.Use(weatherClientsResource.weatherClientContextMiddleware)
-
-			r.Get("/", get[*WeatherClientResponse](getWeatherClientFromContext))
-			r.Patch("/", weatherClientsResource.updateWeatherClient)
-			r.Delete("/", weatherClientsResource.deleteWeatherClient)
-
-			r.Get("/test", weatherClientsResource.testWeatherClient)
-		})
-	})
-
-	waterSchedulesResource, err := NewWaterSchedulesResource(storageClient, worker)
+	waterSchedulesAPI, err := NewWaterSchedulesAPI(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
 	}
-	r.Route(waterScheduleBasePath, func(r chi.Router) {
-		r.Post("/", waterSchedulesResource.createWaterSchedule)
-		r.Get("/", waterSchedulesResource.getAllWaterSchedules)
-
-		r.Route(fmt.Sprintf("/{%s}", waterSchedulePathParam), func(r chi.Router) {
-			r.Use(waterSchedulesResource.waterScheduleContextMiddleware)
-
-			r.Get("/", get[*WaterScheduleResponse](getWaterScheduleFromContext))
-			r.Patch("/", waterSchedulesResource.updateWaterSchedule)
-			r.Delete("/", waterSchedulesResource.endDateWaterSchedule)
-		})
-	})
+	rootAPI.AddNestedAPI(waterSchedulesAPI)
 
 	return &Server{
-		// nolint:gosec
-		&http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: r},
+		rootAPI,
+		cfg,
 		make(chan os.Signal, 1),
 		logger,
-		gardenResource,
 		worker,
 	}, nil
 }
@@ -265,9 +186,9 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 func (s *Server) Start() {
 	s.worker.StartAsync()
 	go func() {
-		shutdownErr := s.ListenAndServe()
+		shutdownErr := s.rootAPI.Serve(fmt.Sprintf(":%d", s.cfg.Port))
 		if shutdownErr != http.ErrServerClosed {
-			s.logger.WithError(shutdownErr).Errorf("server shutdown error")
+			s.logger.Error("server shutdown error", "error", shutdownErr)
 		}
 	}()
 
@@ -281,16 +202,13 @@ func (s *Server) Start() {
 		shutdownStart = time.Now()
 		s.logger.Info("gracefully shutting down server")
 
-		err := s.Shutdown(context.Background())
-		if err != nil {
-			s.logger.WithError(err).Error("unable to shutdown server")
-		}
-		s.gardensResource.worker.Stop()
+		s.rootAPI.Stop()
+		s.worker.Stop()
 
 		wg.Done()
 	}()
 	wg.Wait()
-	s.logger.WithField("time_elapsed", time.Since(shutdownStart)).Info("server shutdown gracefully")
+	s.logger.Info("server shutdown gracefully", "time_elapsed", time.Since(shutdownStart))
 }
 
 // Stop shuts down the server
@@ -300,48 +218,37 @@ func (s *Server) Stop() {
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types
 func validateAllStoredResources(storageClient *storage.Client) error {
-	gardens, err := storageClient.GetGardens(true)
+	gardens, err := storageClient.Gardens.GetAll(storage.FilterEndDated[*pkg.Garden](true))
 	if err != nil {
 		return fmt.Errorf("unable to get all Gardens: %w", err)
 	}
 
 	for _, g := range gardens {
-		// Remove Plants and Zones because g.Bind doesn't allow them
-		plants := g.Plants
-		g.Plants = nil
-		zones := g.Zones
-		g.Zones = nil
-
 		if g.ID.IsNil() {
 			return errors.New("invalid Garden: missing required field 'id'")
 		}
-		err = (&GardenRequest{g}).Bind(nil)
+		err = g.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
 		}
+	}
 
-		for _, z := range zones {
-			if z.ID.IsNil() {
-				return errors.New("invalid Zone: missing required field 'id'")
-			}
-			err = (&ZoneRequest{z}).Bind(nil)
-			if err != nil {
-				return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
-			}
+	zones, err := storageClient.Zones.GetAll(nil)
+	if err != nil {
+		return fmt.Errorf("unable to get all Zones: %w", err)
+	}
+
+	for _, z := range zones {
+		if z.ID.IsNil() {
+			return errors.New("invalid Zone: missing required field 'id'")
 		}
-
-		for _, p := range plants {
-			if p.ID.IsNil() {
-				return errors.New("invalid Plant: missing required field 'id'")
-			}
-			err = (&PlantRequest{p}).Bind(nil)
-			if err != nil {
-				return fmt.Errorf("invalid Plant %q: %w", p.ID, err)
-			}
+		err = z.Bind(&http.Request{Method: http.MethodPut})
+		if err != nil {
+			return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
 		}
 	}
 
-	waterSchedules, err := storageClient.GetWaterSchedules(true)
+	waterSchedules, err := storageClient.WaterSchedules.GetAll(nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WaterSchedules: %w", err)
 	}
@@ -350,13 +257,13 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if ws.ID.IsNil() {
 			return errors.New("invalid WaterSchedule: missing required field 'id'")
 		}
-		err = (&WaterScheduleRequest{ws}).Bind(nil)
+		err = ws.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid WaterSchedule %q: %w", ws.ID, err)
 		}
 	}
 
-	weatherClients, err := storageClient.GetWeatherClientConfigs()
+	weatherClients, err := storageClient.WeatherClientConfigs.GetAll(nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WeatherClients: %w", err)
 	}
@@ -365,7 +272,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if wc.ID.IsNil() {
 			return errors.New("invalid WeatherClient: missing required field 'id'")
 		}
-		err = (&WeatherClientRequest{wc}).Bind(nil)
+		err = wc.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid WeatherClient %q: %w", wc.ID, err)
 		}

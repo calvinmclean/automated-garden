@@ -1,14 +1,16 @@
 package weather
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
+	"github.com/calvinmclean/babyapi"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/rs/xid"
 )
 
 var (
@@ -33,9 +35,40 @@ type Client interface {
 
 // Config is used to identify and configure a client type
 type Config struct {
-	ID      xid.ID                 `json:"id" yaml:"id"`
+	ID      babyapi.ID             `json:"id" yaml:"id"`
 	Type    string                 `json:"type" yaml:"type"`
 	Options map[string]interface{} `json:"options" yaml:"options"`
+}
+
+func (wc *Config) GetID() string {
+	return wc.ID.String()
+}
+
+func (wc *Config) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func (wc *Config) Bind(r *http.Request) error {
+	if wc == nil {
+		return errors.New("missing required WeatherClient fields")
+	}
+
+	err := wc.ID.Bind(r)
+	if err != nil {
+		return err
+	}
+
+	switch r.Method {
+	case http.MethodPut, http.MethodPost:
+		if wc.Type == "" {
+			return errors.New("missing required type field")
+		}
+		if wc.Options == nil {
+			return errors.New("missing required options field")
+		}
+	}
+
+	return nil
 }
 
 // NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
@@ -57,23 +90,27 @@ func NewClient(c *Config, storageCallback func(map[string]interface{}) error) (c
 }
 
 // Patch allows modifying an existing Config with fields from a new one
-func (c *Config) Patch(newConfig *Config) {
+func (wc *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
 	if newConfig.Type != "" {
-		c.Type = newConfig.Type
+		wc.Type = newConfig.Type
 	}
 
-	if c.Options == nil && newConfig.Options != nil {
-		c.Options = map[string]interface{}{}
+	if wc.Options == nil && newConfig.Options != nil {
+		wc.Options = map[string]interface{}{}
 	}
 	for k, v := range newConfig.Options {
-		c.Options[k] = v
+		wc.Options[k] = v
 	}
+
+	return nil
 }
 
 // EndDated allows this to satisfy an interface even though the resources does not have end-dates
-func (c *Config) EndDated() bool {
+func (*Config) EndDated() bool {
 	return false
 }
+
+func (*Config) SetEndDate(_ time.Time) {}
 
 // clientWrapper wraps any other implementation of the interface in order to add basic Prometheus summary metrics
 // and caching

@@ -1,9 +1,9 @@
 package cmd
 
 import (
+	"log/slog"
 	"strings"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -35,12 +35,10 @@ func init() {
 	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "config.yaml", "path to config file")
 
 	rootCommand.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "level of logging to display")
-	rootCommand.RegisterFlagCompletionFunc("log-level", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
-		var levels []string
-		for _, l := range log.AllLevels {
-			levels = append(levels, l.String())
-		}
-		return levels, cobra.ShellCompDirectiveDefault
+	rootCommand.RegisterFlagCompletionFunc("log-level", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{
+			"debug", "info", "warn", "error",
+		}, cobra.ShellCompDirectiveDefault
 	})
 	viper.BindPFlag("log.level", rootCommand.PersistentFlags().Lookup("log-level"))
 }
@@ -51,6 +49,6 @@ func initConfig() {
 	}
 
 	if err := viper.ReadInConfig(); err == nil {
-		log.Debugf("Using config file: %s", viper.ConfigFileUsed())
+		slog.Debug("using config file", "config_file", viper.ConfigFileUsed())
 	}
 }

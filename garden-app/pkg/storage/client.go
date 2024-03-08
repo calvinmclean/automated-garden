@@ -1,15 +1,17 @@
 package storage
 
 import (
-	"encoding/json"
 	"fmt"
-	"path/filepath"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+
+	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/storage"
 	"github.com/madflojo/hord"
 	"github.com/madflojo/hord/drivers/hashmap"
 	"github.com/madflojo/hord/drivers/redis"
 	"github.com/mitchellh/mapstructure"
-	"gopkg.in/yaml.v3"
 )
 
 // Config is used to identify and configure a storage client
@@ -18,83 +20,47 @@ type Config struct {
 	Options map[string]interface{} `mapstructure:"options"`
 }
 
-// Client is a wrapper around hord.Database to allow for easy interactions with resources
 type Client struct {
-	db        hord.Database
-	options   map[string]interface{}
-	unmarshal func([]byte, interface{}) error
-	marshal   func(interface{}) ([]byte, error)
+	Gardens              babyapi.Storage[*pkg.Garden]
+	Zones                babyapi.Storage[*pkg.Zone]
+	WaterSchedules       babyapi.Storage[*pkg.WaterSchedule]
+	WeatherClientConfigs babyapi.Storage[*weather.Config]
 }
 
-// NewClient will create a new DB connection for one of the supported hord backends:
-//   - hashmap
-//   - redis
 func NewClient(config Config) (*Client, error) {
-	switch config.Driver {
-	case "hashmap":
-		return newFileClient(config.Options)
-	case "redis":
-		return newRedisClient(config.Options)
-	default:
-		return nil, fmt.Errorf("invalid KV driver: %q", config.Driver)
-	}
-}
-
-func newFileClient(options map[string]interface{}) (*Client, error) {
-	var cfg hashmap.Config
-	err := mapstructure.Decode(options, &cfg)
+	db, err := newHordDB(config)
 	if err != nil {
-		return nil, fmt.Errorf("error decoding config: %w", err)
-	}
-
-	db, err := hashmap.Dial(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating database connection: %w", err)
-	}
-
-	err = db.Setup()
-	if err != nil {
-		return nil, fmt.Errorf("error setting up database: %w", err)
-	}
-
-	client := &Client{
-		db:      db,
-		options: options,
-	}
-
-	switch filepath.Ext(cfg.Filename) {
-	case ".json", "":
-		client.unmarshal = json.Unmarshal
-		client.marshal = json.Marshal
-	case ".yml", ".yaml":
-		client.unmarshal = yaml.Unmarshal
-		client.marshal = yaml.Marshal
-	}
-
-	return client, nil
-}
-
-func newRedisClient(options map[string]interface{}) (*Client, error) {
-	var cfg redis.Config
-	err := mapstructure.Decode(options, &cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding config: %w", err)
-	}
-
-	db, err := redis.Dial(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("error creating database connection: %w", err)
-	}
-
-	err = db.Setup()
-	if err != nil {
-		return nil, fmt.Errorf("error setting up database: %w", err)
+		return nil, fmt.Errorf("error creating base client: %w", err)
 	}
 
 	return &Client{
-		db:        db,
-		options:   options,
-		unmarshal: json.Unmarshal,
-		marshal:   json.Marshal,
+		Gardens:              storage.NewClient[*pkg.Garden](db, "Garden"),
+		Zones:                storage.NewClient[*pkg.Zone](db, "Zone"),
+		WaterSchedules:       storage.NewClient[*pkg.WaterSchedule](db, "WaterSchedule"),
+		WeatherClientConfigs: storage.NewClient[*weather.Config](db, "WeatherClient"),
 	}, nil
+}
+
+// newHordDB will create a new DB connection for one of the supported hord backends:
+//   - hashmap
+//   - redis
+func newHordDB(config Config) (hord.Database, error) {
+	switch config.Driver {
+	case "hashmap":
+		var cfg hashmap.Config
+		err := mapstructure.Decode(config.Options, &cfg)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding config: %w", err)
+		}
+		return storage.NewFileDB(cfg)
+	case "redis":
+		var cfg redis.Config
+		err := mapstructure.Decode(config.Options, &cfg)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding config: %w", err)
+		}
+		return storage.NewRedisDB(cfg)
+	default:
+		return nil, fmt.Errorf("invalid KV driver: %q", config.Driver)
+	}
 }

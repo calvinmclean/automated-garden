@@ -1,26 +1,34 @@
 package pkg
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 	"time"
 
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 )
 
-// Zone represents a "waterable resource" that is owned by a Garden and can be associated with multiple Plants.
+// Zone represents a "waterable resource" that is owned by a Garden..
 // This allows for more complex Garden setups where a large irrigation system will be watering entire groups of
-// Plants rather than watering individually. This contains the important information for managing WaterSchedules
+// Zones rather than watering individually. This contains the important information for managing WaterSchedules
 // and some additional details describing the Zone. The Position is an integer that tells the controller which
 // part of hardware needs to be switched on to start watering
 type Zone struct {
 	Name             string       `json:"name" yaml:"name,omitempty"`
 	Details          *ZoneDetails `json:"details,omitempty" yaml:"details,omitempty"`
-	ID               xid.ID       `json:"id" yaml:"id,omitempty"`
+	ID               babyapi.ID   `json:"id" yaml:"id,omitempty"`
+	GardenID         xid.ID       `json:"garden_id" yaml:"garden_id,omitempty"`
 	Position         *uint        `json:"position" yaml:"position"`
 	CreatedAt        *time.Time   `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate          *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WaterScheduleIDs []xid.ID     `json:"water_schedule_ids" yaml:"water_schedule_ids"`
 	SkipCount        *uint        `json:"skip_count" yaml:"skip_count"`
+}
+
+func (z *Zone) GetID() string {
+	return z.ID.String()
 }
 
 // String...
@@ -33,9 +41,13 @@ func (z *Zone) EndDated() bool {
 	return z.EndDate != nil && z.EndDate.Before(time.Now())
 }
 
+func (z *Zone) SetEndDate(now time.Time) {
+	z.EndDate = &now
+}
+
 // Patch allows for easily updating individual fields of a Zone by passing in a new Zone containing
 // the desired values
-func (z *Zone) Patch(newZone *Zone) {
+func (z *Zone) Patch(newZone *Zone) *babyapi.ErrResponse {
 	if newZone.Name != "" {
 		z.Name = newZone.Name
 	}
@@ -63,6 +75,8 @@ func (z *Zone) Patch(newZone *Zone) {
 		}
 		z.Details.Patch(newZone.Details)
 	}
+
+	return nil
 }
 
 // ZoneDetails is a struct holding some additional details about a Zone that are primarily for user convenience
@@ -98,4 +112,45 @@ type WaterHistory struct {
 type ZoneAndGarden struct {
 	*Zone
 	*Garden
+}
+
+func (z *Zone) Bind(r *http.Request) error {
+	if z == nil {
+		return errors.New("missing required Zone fields")
+	}
+
+	err := z.ID.Bind(r)
+	if err != nil {
+		return err
+	}
+
+	switch r.Method {
+	case http.MethodPost:
+		now := time.Now()
+		z.CreatedAt = &now
+		fallthrough
+	case http.MethodPut:
+		if z.Position == nil {
+			return errors.New("missing required position field")
+		}
+		if len(z.WaterScheduleIDs) == 0 {
+			return errors.New("missing required water_schedule_ids field")
+		}
+		if z.Name == "" {
+			return errors.New("missing required name field")
+		}
+	case http.MethodPatch:
+		if z.EndDate != nil {
+			return errors.New("to end-date a Zone, please use the DELETE endpoint")
+		}
+		if !z.GardenID.IsNil() {
+			return errors.New("unable to change GardenID")
+		}
+	}
+
+	return nil
+}
+
+func (z *Zone) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
 }

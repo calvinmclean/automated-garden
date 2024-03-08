@@ -40,7 +40,7 @@ func init() {
 	viper.BindPFlag("controller.num_zones", controllerCommand.PersistentFlags().Lookup("zones"))
 
 	controllerCommand.PersistentFlags().StringVar(&moistureStrategy, "moisture-strategy", "random", "Strategy for creating moisture data")
-	controllerCommand.RegisterFlagCompletionFunc("moisture-strategy", func(cmd *cobra.Command, args []string, toComplete string) ([]string, cobra.ShellCompDirective) {
+	controllerCommand.RegisterFlagCompletionFunc("moisture-strategy", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{"random", "constant", "increasing", "decreasing"}, cobra.ShellCompDirectiveDefault
 	})
 	viper.BindPFlag("controller.moisture_strategy", controllerCommand.PersistentFlags().Lookup("moisture-strategy"))

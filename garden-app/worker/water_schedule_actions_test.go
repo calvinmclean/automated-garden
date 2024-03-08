@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -10,15 +11,15 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
 
 func TestExecuteScheduledWaterAction(t *testing.T) {
 	garden := &pkg.Garden{
-		ID:          id,
+		ID:          babyapi.ID{ID: id},
 		Name:        "garden",
 		TopicPrefix: "garden",
 	}
@@ -150,8 +151,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_mm":       50,
@@ -176,8 +177,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_mm":       0,
@@ -186,7 +187,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -203,8 +204,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval": "24h",
@@ -213,7 +214,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -230,8 +231,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_mm":       25,
@@ -240,7 +241,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -257,8 +258,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -267,7 +268,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -284,8 +285,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -294,7 +295,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1250,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1250,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -311,8 +312,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -321,7 +322,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -338,8 +339,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -348,7 +349,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -365,8 +366,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -375,7 +376,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":750,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":750,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -392,8 +393,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -402,7 +403,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -419,8 +420,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -429,7 +430,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -446,8 +447,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval": "24h",
@@ -456,7 +457,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -476,8 +477,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -487,7 +488,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":625,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":625,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -508,8 +509,8 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				SkipCount: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveWeatherClientConfig(&weather.Config{
-					ID:   weatherClientID,
+				err := sc.WeatherClientConfigs.Set(&weather.Config{
+					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
 					Options: map[string]interface{}{
 						"rain_interval":        "24h",
@@ -519,7 +520,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				})
 				assert.NoError(t, err)
 				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":375,"id":null,"position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":375,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -533,14 +534,14 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				},
 			},
 			&pkg.Zone{
-				ID:        id,
+				ID:        babyapi.ID{ID: id},
 				Position:  uintPointer(0),
 				SkipCount: uintPointer(1),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				err := sc.SaveGarden(&pkg.Garden{ID: id, Zones: map[xid.ID]*pkg.Zone{id: {ID: id}}})
+				err := sc.Gardens.Set(&pkg.Garden{ID: babyapi.ID{ID: id}})
 				assert.NoError(t, err)
-				err = sc.SaveZone(id, &pkg.Zone{ID: id})
+				err = sc.Zones.Set(&pkg.Zone{ID: babyapi.ID{ID: id}, GardenID: id})
 				assert.NoError(t, err)
 				// no other mock calls are made because watering is skipped
 			},
@@ -560,7 +561,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient, sc)
 
-			err = NewWorker(sc, influxdbClient, mqttClient, logrus.New()).ExecuteScheduledWaterAction(garden, tt.zone, tt.waterSchedule)
+			err = NewWorker(sc, influxdbClient, mqttClient, slog.Default()).ExecuteScheduledWaterAction(garden, tt.zone, tt.waterSchedule)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())

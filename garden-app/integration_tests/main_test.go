@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"testing"
 	"time"
@@ -16,7 +17,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/server"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -62,12 +62,12 @@ func getConfigs(t *testing.T) (server.Config, controller.Config) {
 	var serverConfig server.Config
 	err = viper.Unmarshal(&serverConfig)
 	require.NoError(t, err)
-	serverConfig.LogConfig.Level = logrus.DebugLevel.String()
+	serverConfig.LogConfig.Level = slog.LevelDebug.String()
 
 	var controllerConfig controller.Config
 	err = viper.Unmarshal(&controllerConfig)
 	require.NoError(t, err)
-	controllerConfig.LogConfig.Level = logrus.DebugLevel.String()
+	controllerConfig.LogConfig.Level = slog.LevelDebug.String()
 
 	return serverConfig, controllerConfig
 }
@@ -106,7 +106,6 @@ func GardenTests(t *testing.T) {
 		assert.Equal(t, gardenID, g.ID.String())
 		assert.Equal(t, uint(3), *g.MaxZones)
 		assert.Equal(t, uint(0), g.NumZones)
-		assert.Equal(t, uint(0), g.NumPlants)
 	})
 	t.Run("ExecuteStopAction", func(t *testing.T) {
 		status, err := makeRequest(
@@ -157,15 +156,13 @@ func GardenTests(t *testing.T) {
 		// meaning adhoc action is going to be predictably delayed
 		maxZones := uint(1)
 		startTime := time.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second)
-		newGarden := &server.GardenRequest{
-			Garden: &pkg.Garden{
-				Name:        "TestGarden",
-				TopicPrefix: "test",
-				MaxZones:    &maxZones,
-				LightSchedule: &pkg.LightSchedule{
-					Duration:  &pkg.Duration{Duration: 14 * time.Hour},
-					StartTime: startTime.Format(pkg.LightTimeFormat),
-				},
+		newGarden := &pkg.Garden{
+			Name:        "TestGarden",
+			TopicPrefix: "test",
+			MaxZones:    &maxZones,
+			LightSchedule: &pkg.LightSchedule{
+				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
+				StartTime: startTime.Format(pkg.LightTimeFormat),
 			},
 		}
 
@@ -295,7 +292,7 @@ func CreateWaterScheduleTest(t *testing.T) string {
 }
 
 func CreateWeatherClientTest(t *testing.T, opts fake.Config) xid.ID {
-	var wcr server.WeatherClientResponse
+	var wcr weather.Config
 
 	t.Run("CreateWeatherClient", func(t *testing.T) {
 		status, err := makeRequest(http.MethodPost, "/weather_clients", fmt.Sprintf(`{
@@ -311,7 +308,7 @@ func CreateWeatherClientTest(t *testing.T, opts fake.Config) xid.ID {
 		assert.Equal(t, http.StatusCreated, status)
 	})
 
-	return wcr.ID
+	return wcr.ID.ID
 }
 
 func ZoneTests(t *testing.T) {
@@ -337,7 +334,7 @@ func ZoneTests(t *testing.T) {
 		assert.NoError(t, err)
 		c.AssertWaterActions(t, action.WaterMessage{
 			Duration: 3000,
-			ZoneID:   id,
+			ZoneID:   id.String(),
 			Position: 0,
 		})
 	})
@@ -392,7 +389,7 @@ func ZoneTests(t *testing.T) {
 		c.AssertWaterActions(t,
 			action.WaterMessage{
 				Duration: 1000,
-				ZoneID:   id,
+				ZoneID:   id.String(),
 				Position: 0,
 			},
 		)
@@ -459,6 +456,7 @@ func WaterScheduleTests(t *testing.T) {
 }
 
 func makeRequest(method, path string, body, response interface{}) (int, error) {
+	// TODO: Use babyapi Client
 	var reqBody io.Reader
 	switch v := body.(type) {
 	case nil:
@@ -478,6 +476,8 @@ func makeRequest(method, path string, body, response interface{}) (int, error) {
 	if err != nil {
 		return 0, err
 	}
+
+	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

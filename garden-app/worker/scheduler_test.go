@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"log/slog"
 	"testing"
 	"time"
 
@@ -10,8 +11,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -28,8 +29,7 @@ func createExampleGarden() *pkg.Garden {
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
 		MaxZones:    &two,
-		ID:          id,
-		Zones:       map[xid.ID]*pkg.Zone{},
+		ID:          babyapi.ID{ID: id},
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
@@ -43,17 +43,18 @@ func createExampleZone() *pkg.Zone {
 	p := uint(0)
 	return &pkg.Zone{
 		Name:             "test zone",
-		ID:               id,
+		ID:               babyapi.ID{ID: id},
 		CreatedAt:        &createdAt,
 		Position:         &p,
 		WaterScheduleIDs: []xid.ID{id},
+		GardenID:         id,
 	}
 }
 
 func createExampleWaterSchedule() *pkg.WaterSchedule {
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	return &pkg.WaterSchedule{
-		ID:        id,
+		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: &createdAt,
@@ -61,10 +62,19 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 }
 
 func TestScheduleWaterActionStorageError(t *testing.T) {
-	storageClient := &storage.Client{}
+	storageClient, err := storage.NewClient(storage.Config{
+		Driver: "hashmap",
+	})
+	assert.NoError(t, err)
 
 	garden := createExampleGarden()
-	garden.Zones[id] = createExampleZone()
+	zone := createExampleZone()
+
+	err = storageClient.Gardens.Set(garden)
+	assert.NoError(t, err)
+
+	err = storageClient.Zones.Set(zone)
+	assert.NoError(t, err)
 
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
@@ -72,7 +82,7 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -81,7 +91,7 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	startTime := time.Now().Add(250 * time.Millisecond)
 	ws.StartTime = &startTime
 
-	err := worker.ScheduleWaterAction(ws)
+	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
 	time.Sleep(1000 * time.Millisecond)
@@ -99,9 +109,12 @@ func TestScheduleWaterAction(t *testing.T) {
 	defer weather.ResetCache()
 
 	garden := createExampleGarden()
-	garden.Zones[id] = createExampleZone()
+	zone := createExampleZone()
 
-	err = storageClient.SaveGarden(garden)
+	err = storageClient.Gardens.Set(garden)
+	assert.NoError(t, err)
+
+	err = storageClient.Zones.Set(zone)
 	assert.NoError(t, err)
 
 	influxdbClient := new(influxdb.MockClient)
@@ -112,16 +125,16 @@ func TestScheduleWaterAction(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
 
 	wsNotInStorage := createExampleWaterSchedule()
-	wsNotInStorage.ID = id2
+	wsNotInStorage.ID = babyapi.ID{ID: id2}
 
 	wsNotActive := createExampleWaterSchedule()
-	wsNotActive.ID = xid.New()
+	wsNotActive.ID = babyapi.NewID()
 	currentTime := time.Now()
 	wsNotActive.ActivePeriod = &pkg.ActivePeriod{
 		StartMonth: currentTime.AddDate(0, 1, 0).String(),
@@ -134,10 +147,10 @@ func TestScheduleWaterAction(t *testing.T) {
 	wsNotInStorage.StartTime = &startTime
 	wsNotActive.StartTime = &startTime
 
-	err = storageClient.SaveWaterSchedule(ws)
+	err = storageClient.WaterSchedules.Set(ws)
 	assert.NoError(t, err)
 
-	err = storageClient.SaveWaterSchedule(wsNotActive)
+	err = storageClient.WaterSchedules.Set(wsNotActive)
 	assert.NoError(t, err)
 
 	err = worker.ScheduleWaterAction(ws)
@@ -168,7 +181,7 @@ func TestResetNextWaterTime(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -207,7 +220,7 @@ func TestGetNextWaterTime(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -234,7 +247,7 @@ func TestScheduleLightActions(t *testing.T) {
 	// because it used to work fine, so I need to double-check that this these tests are actually testing what I think they are.
 	// In other words, this test sometimes tests the update job and sometimes doesn't, depending on when it is run
 	t.Run("AdhocOnTimeInFutureOverridesScheduled", func(t *testing.T) {
-		worker := NewWorker(nil, nil, nil, logrus.New())
+		worker := NewWorker(nil, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -255,7 +268,7 @@ func TestScheduleLightActions(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -384,7 +397,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			assert.NoError(t, err)
 			defer weather.ResetCache()
 
-			worker := NewWorker(storageClient, nil, nil, logrus.New())
+			worker := NewWorker(storageClient, nil, nil, slog.Default())
 			worker.StartAsync()
 			defer worker.Stop()
 
@@ -427,7 +440,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -459,7 +472,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -488,7 +501,7 @@ func TestScheduleLightDelay(t *testing.T) {
 		assert.NoError(t, err)
 		defer weather.ResetCache()
 
-		worker := NewWorker(storageClient, nil, nil, logrus.New())
+		worker := NewWorker(storageClient, nil, nil, slog.Default())
 		worker.StartAsync()
 		defer worker.Stop()
 
@@ -523,7 +536,7 @@ func TestRemoveJobsByID(t *testing.T) {
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 	worker.StartAsync()
 
 	ws := createExampleWaterSchedule()
@@ -533,7 +546,7 @@ func TestRemoveJobsByID(t *testing.T) {
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
-	err = worker.RemoveJobsByID(ws.ID)
+	err = worker.RemoveJobsByID(ws.ID.String())
 	assert.NoError(t, err)
 
 	// This also gets coverage for GetNextWaterTime when no Job exists
@@ -548,7 +561,7 @@ func TestRemoveJobsByID(t *testing.T) {
 }
 
 func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
-	worker := NewWorker(nil, nil, nil, logrus.New())
+	worker := NewWorker(nil, nil, nil, slog.Default())
 	worker.scheduler.StartAsync()
 
 	now := time.Now()
@@ -559,42 +572,42 @@ func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
 
 	ws1 := &pkg.WaterSchedule{
 		Name:      "ws1",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(5 * time.Minute),
 	}
 	ws2 := &pkg.WaterSchedule{
 		Name:      "ws2",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(1 * time.Minute),
 	}
 	ws3 := &pkg.WaterSchedule{
 		Name:      "ws3",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(3 * time.Minute),
 	}
 	ws4 := &pkg.WaterSchedule{
 		Name:      "ws4",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(2 * time.Minute),
 	}
 	unscheduled := &pkg.WaterSchedule{
 		Name:      "unscheduled",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(2 * time.Minute),
 	}
 	inactive := &pkg.WaterSchedule{
 		Name:      "inactive",
-		ID:        xid.New(),
+		ID:        babyapi.NewID(),
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
 		StartTime: addTime(2 * time.Minute),

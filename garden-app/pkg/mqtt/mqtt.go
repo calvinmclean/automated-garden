@@ -113,17 +113,17 @@ func (c *client) Publish(topic string, message []byte) error {
 	return nil
 }
 
-// WaterTopic returns the topic string for watering a plant
+// WaterTopic returns the topic string for watering a zone
 func (c *Config) WaterTopic(topicPrefix string) (string, error) {
 	return c.executeTopicTemplate(c.WaterTopicTemplate, topicPrefix)
 }
 
-// StopTopic returns the topic string for stopping watering a single plant
+// StopTopic returns the topic string for stopping watering a single zone
 func (c *Config) StopTopic(topicPrefix string) (string, error) {
 	return c.executeTopicTemplate(c.StopTopicTemplate, topicPrefix)
 }
 
-// StopAllTopic returns the topic string for stopping watering all plants in a garden
+// StopAllTopic returns the topic string for stopping watering all zones in a garden
 func (c *Config) StopAllTopic(topicPrefix string) (string, error) {
 	return c.executeTopicTemplate(c.StopAllTopicTemplate, topicPrefix)
 }

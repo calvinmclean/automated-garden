@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/babyapi"
 )
 
 // GardenResponse is used to represent a Garden in the response body with the additional Moisture data
@@ -16,13 +18,10 @@ type GardenResponse struct {
 	NextLightAction         *NextLightAction         `json:"next_light_action,omitempty"`
 	Health                  *pkg.GardenHealth        `json:"health,omitempty"`
 	TemperatureHumidityData *TemperatureHumidityData `json:"temperature_humidity_data,omitempty"`
-	NumPlants               uint                     `json:"num_plants"`
 	NumZones                uint                     `json:"num_zones"`
-	Plants                  Link                     `json:"plants"`
-	Zones                   Link                     `json:"zones"`
 	Links                   []Link                   `json:"links,omitempty"`
 
-	gr *GardensResource
+	api *GardensAPI
 }
 
 // NextLightAction contains the time and state for the next scheduled LightAction
@@ -38,12 +37,12 @@ type TemperatureHumidityData struct {
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
-func (gr *GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
+func (api *GardensAPI) NewGardenResponse(garden *pkg.Garden, links ...Link) *GardenResponse {
 	return &GardenResponse{
 		Garden: garden,
 		Links:  links,
 
-		gr: gr,
+		api: api,
 	}
 }
 
@@ -52,13 +51,13 @@ func (gr *GardensResource) NewGardenResponse(garden *pkg.Garden, links ...Link) 
 func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
-	plantsPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, plantBasePath)
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, zoneBasePath)
 
-	g.NumPlants = g.Garden.NumPlants()
-	g.NumZones = g.Garden.NumZones()
-	g.Plants = Link{"collection", plantsPath}
-	g.Zones = Link{"collection", zonesPath}
+	var err error
+	g.NumZones, err = g.api.numZones(g.ID.String())
+	if err != nil {
+		return fmt.Errorf("error getting number of Zones for garden: %w", err)
+	}
 	g.Links = append(g.Links,
 		Link{
 			"self",
@@ -72,10 +71,6 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 
 	g.Links = append(g.Links,
 		Link{
-			"plants",
-			plantsPath,
-		},
-		Link{
 			"zones",
 			zonesPath,
 		},
@@ -85,11 +80,11 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	g.Health = g.Garden.Health(ctx, g.gr.influxdbClient)
+	g.Health = g.Garden.Health(ctx, g.api.influxdbClient)
 
 	if g.Garden.LightSchedule != nil {
-		nextOnTime := g.gr.worker.GetNextLightTime(g.Garden, pkg.LightStateOn)
-		nextOffTime := g.gr.worker.GetNextLightTime(g.Garden, pkg.LightStateOff)
+		nextOnTime := g.api.worker.GetNextLightTime(g.Garden, pkg.LightStateOn)
+		nextOffTime := g.api.worker.GetNextLightTime(g.Garden, pkg.LightStateOff)
 		if nextOnTime != nil && nextOffTime != nil {
 			// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
 			if nextOnTime.Before(*nextOffTime) {
@@ -117,10 +112,10 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	}
 
 	if g.Garden.HasTemperatureHumiditySensor() {
-		t, h, err := g.gr.influxdbClient.GetTemperatureAndHumidity(ctx, g.Garden.TopicPrefix)
+		t, h, err := g.api.influxdbClient.GetTemperatureAndHumidity(ctx, g.Garden.TopicPrefix)
 		if err != nil {
-			logger := getLoggerFromContext(ctx).WithField(gardenIDLogField, g.Garden.ID.String())
-			logger.WithError(err).Error("error getting temperature and humidity data: %w", err)
+			logger := babyapi.GetLoggerFromContext(r.Context())
+			logger.Error("error getting temperature and humidity data", "error", err)
 			return nil
 		}
 		g.TemperatureHumidityData = &TemperatureHumidityData{
@@ -149,23 +144,23 @@ func (agr *AllGardensResponse) HTML() string {
 	return string(gardensHTML)
 }
 
-// NewAllGardensResponse will create an AllGardensResponse from a list of Gardens
-func (gr *GardensResource) NewAllGardensResponse(gardens []*pkg.Garden) *AllGardensResponse {
-	gardenResponses := []*GardenResponse{}
-	for _, g := range gardens {
-		gardenResponses = append(gardenResponses, gr.NewGardenResponse(g))
+// NumZones returns the number of non-end-dated Zones that are part of this Garden
+func (api *GardensAPI) numZones(gardenID string) (uint, error) {
+	zones, err := api.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
+		gardenIDFilter := filterZoneByGardenID(gardenID)
+		endDateFilter := storage.FilterEndDated[*pkg.Zone](false)
+
+		return gardenIDFilter(z) && endDateFilter(z)
+	})
+	if err != nil {
+		return 0, fmt.Errorf("error getting Zones for Garden: %w", err)
 	}
-	return &AllGardensResponse{gardenResponses}
+
+	return uint(len(zones)), nil
 }
 
-// Render is used to make this struct compatible with the go-chi webserver for writing
-// the JSON response
-func (agr *AllGardensResponse) Render(_ http.ResponseWriter, r *http.Request) error {
-	for _, g := range agr.Gardens {
-		err := g.Render(nil, r)
-		if err != nil {
-			return fmt.Errorf("error rendering garden: %w", err)
-		}
-	}
+type GardenActionResponse struct{}
+
+func (*GardenActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

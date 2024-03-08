@@ -2,6 +2,7 @@ package worker
 
 import (
 	"errors"
+	"log/slog"
 	"testing"
 	"time"
 
@@ -11,8 +12,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
-	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
+	"github.com/calvinmclean/babyapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -97,7 +97,7 @@ func TestGardenAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, logrus.New()).ExecuteGardenAction(garden, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteGardenAction(garden, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -108,7 +108,7 @@ func TestGardenAction(t *testing.T) {
 func TestLightActionExecute(t *testing.T) {
 	now := time.Now()
 	garden := &pkg.Garden{
-		ID:          xid.New(),
+		ID:          babyapi.NewID(),
 		Name:        "garden",
 		TopicPrefix: "garden",
 		LightSchedule: &pkg.LightSchedule{
@@ -193,7 +193,7 @@ func TestLightActionExecute(t *testing.T) {
 			mqttClient.On("Disconnect", uint(100)).Return()
 			influxdbClient.On("Close").Return()
 
-			worker := NewWorker(storageClient, influxdbClient, mqttClient, logrus.New())
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 			err = worker.ScheduleLightActions(garden)
 			assert.NoError(t, err)
 			worker.StartAsync()
@@ -265,7 +265,7 @@ func TestStopActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, logrus.New()).ExecuteStopAction(garden, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteStopAction(garden, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)

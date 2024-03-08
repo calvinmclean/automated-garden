@@ -6,6 +6,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/babyapi"
 )
 
 // WeatherData is used to represent the data used for WeatherControl to a user
@@ -28,14 +29,14 @@ type TemperatureData struct {
 }
 
 func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) *WeatherData {
-	logger := getLoggerFromContext(ctx).WithField(waterScheduleIDLogField, ws.ID.String())
+	logger := babyapi.GetLoggerFromContext(ctx).With(waterScheduleIDLogField, ws.ID.String())
 	weatherData := &WeatherData{}
 
 	if ws.HasRainControl() {
 		logger.Debug("getting rain data for WaterSchedule")
 		rainMM, err := getRainData(ws, storageClient)
 		if err != nil || rainMM == nil {
-			logger.WithError(err).Warn("unable to get rain data for WaterSchedule")
+			logger.Warn("unable to get rain data for WaterSchedule", "error", err)
 		} else {
 			weatherData.Rain = &RainData{
 				MM:          *rainMM,
@@ -48,7 +49,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 		logger.Debug("getting average high temperature for WaterSchedule")
 		celsius, err := getTemperatureData(ws, storageClient)
 		if err != nil || celsius == nil {
-			logger.WithError(err).Warn("unable to get average high temperature from weather client")
+			logger.Warn("unable to get average high temperature from weather client", "error", err)
 		} else {
 			weatherData.Temperature = &TemperatureData{
 				Celsius:     *celsius,

@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/rs/xid"
 )
 
 // ZoneAction collects all the possible actions for a Zone into a single struct so these can easily be
@@ -28,7 +27,7 @@ type WaterAction struct {
 // WaterMessage is the message being sent over MQTT to the embedded garden controller
 type WaterMessage struct {
 	Duration int64  `json:"duration"`
-	ZoneID   xid.ID `json:"id"`
+	ZoneID   string `json:"id"`
 	Position uint   `json:"position"`
 }
 

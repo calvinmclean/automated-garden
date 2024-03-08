@@ -1,6 +1,8 @@
 package pkg
 
-// EndDateable is a simple interface that requires a method to determine if something is end-dated
+import "time"
+
 type EndDateable interface {
 	EndDated() bool
+	SetEndDate(time.Time)
 }

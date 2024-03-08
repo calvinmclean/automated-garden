@@ -6,6 +6,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -17,89 +18,50 @@ func TestValidateAllStoredResources(t *testing.T) {
 	}{
 		{
 			"EmptySuccess",
-			func(s *storage.Client) error { return nil },
+			func(_ *storage.Client) error { return nil },
 			"",
 		},
 		{
 			"InvalidGardenMissingID",
 			func(s *storage.Client) error {
-				return s.SaveGarden(&pkg.Garden{})
+				return s.Gardens.Set(&pkg.Garden{})
 			},
 			"invalid Garden: missing required field 'id'",
 		},
 		{
 			"InvalidGarden",
 			func(s *storage.Client) error {
-				return s.SaveGarden(&pkg.Garden{
-					ID: id,
+				return s.Gardens.Set(&pkg.Garden{
+					ID: babyapi.ID{ID: id},
 				})
 			},
 			"invalid Garden \"c5cvhpcbcv45e8bp16dg\": missing required name field",
 		},
 		{
-			"InvalidZoneMissingID",
-			func(s *storage.Client) error {
-				g := createExampleGarden()
-				err := s.SaveGarden(g)
-				if err != nil {
-					return err
-				}
-
-				return s.SaveZone(g.ID, &pkg.Zone{})
-			},
-			"invalid Zone: missing required field 'id'",
-		},
-		{
 			"InvalidZone",
 			func(s *storage.Client) error {
 				g := createExampleGarden()
-				err := s.SaveGarden(g)
+				err := s.Gardens.Set(g)
 				if err != nil {
 					return err
 				}
 
-				return s.SaveZone(g.ID, &pkg.Zone{ID: id})
+				return s.Zones.Set(&pkg.Zone{ID: babyapi.ID{ID: id}, GardenID: g.ID.ID})
 			},
 			"invalid Zone \"c5cvhpcbcv45e8bp16dg\": missing required position field",
 		},
 		{
-			"InvalidPlantMissingID",
-			func(s *storage.Client) error {
-				g := createExampleGarden()
-				err := s.SaveGarden(g)
-				if err != nil {
-					return err
-				}
-
-				return s.SavePlant(g.ID, &pkg.Plant{})
-			},
-			"invalid Plant: missing required field 'id'",
-		},
-		{
-			"InvalidPlant",
-			func(s *storage.Client) error {
-				g := createExampleGarden()
-				err := s.SaveGarden(g)
-				if err != nil {
-					return err
-				}
-
-				return s.SavePlant(g.ID, &pkg.Plant{ID: id})
-			},
-			"invalid Plant \"c5cvhpcbcv45e8bp16dg\": missing required name field",
-		},
-		{
 			"InvalidWaterScheduleMissingID",
 			func(s *storage.Client) error {
-				return s.SaveWaterSchedule(&pkg.WaterSchedule{})
+				return s.WaterSchedules.Set(&pkg.WaterSchedule{})
 			},
 			"invalid WaterSchedule: missing required field 'id'",
 		},
 		{
 			"InvalidWaterSchedule",
 			func(s *storage.Client) error {
-				return s.SaveWaterSchedule(&pkg.WaterSchedule{
-					ID: id,
+				return s.WaterSchedules.Set(&pkg.WaterSchedule{
+					ID: babyapi.ID{ID: id},
 				})
 			},
 			"invalid WaterSchedule \"c5cvhpcbcv45e8bp16dg\": missing required interval field",
@@ -107,15 +69,15 @@ func TestValidateAllStoredResources(t *testing.T) {
 		{
 			"InvalidWeatherClientMissingID",
 			func(s *storage.Client) error {
-				return s.SaveWeatherClientConfig(&weather.Config{})
+				return s.WeatherClientConfigs.Set(&weather.Config{})
 			},
 			"invalid WeatherClient: missing required field 'id'",
 		},
 		{
 			"InvalidWeatherClient",
 			func(s *storage.Client) error {
-				return s.SaveWeatherClientConfig(&weather.Config{
-					ID: id,
+				return s.WeatherClientConfigs.Set(&weather.Config{
+					ID: babyapi.ID{ID: id},
 				})
 			},
 			"invalid WeatherClient \"c5cvhpcbcv45e8bp16dg\": missing required type field",

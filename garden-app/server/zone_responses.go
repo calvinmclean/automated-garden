@@ -6,32 +6,8 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/babyapi"
 )
-
-// AllZonesResponse is a simple struct being used to render and return a list of all Zones
-type AllZonesResponse struct {
-	Zones []*ZoneResponse `json:"zones"`
-}
-
-// NewAllZonesResponse will create an AllZonesResponse from a list of Zones
-func (zr *ZonesResource) NewAllZonesResponse(zones []*pkg.Zone, garden *pkg.Garden) *AllZonesResponse {
-	zoneResponses := []*ZoneResponse{}
-	for _, z := range zones {
-		zoneResponses = append(zoneResponses, zr.NewZoneResponse(garden, z))
-	}
-	return &AllZonesResponse{zoneResponses}
-}
-
-// Render ...
-func (zr *AllZonesResponse) Render(_ http.ResponseWriter, r *http.Request) error {
-	for _, z := range zr.Zones {
-		err := z.Render(nil, r)
-		if err != nil {
-			return fmt.Errorf("error rendering zone: %w", err)
-		}
-	}
-	return nil
-}
 
 // ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
 // and hypermedia Links fields
@@ -41,18 +17,16 @@ type ZoneResponse struct {
 	NextWater   NextWaterDetails `json:"next_water,omitempty"`
 	Links       []Link           `json:"links,omitempty"`
 
-	garden *pkg.Garden
-	zr     *ZonesResource
+	api *ZonesAPI
 }
 
 // NewZoneResponse creates a self-referencing ZoneResponse
-func (zr *ZonesResource) NewZoneResponse(garden *pkg.Garden, zone *pkg.Zone, links ...Link) *ZoneResponse {
+func (api *ZonesAPI) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneResponse {
 	return &ZoneResponse{
 		Zone:  zone,
 		Links: links,
 
-		garden: garden,
-		zr:     zr,
+		api: api,
 	}
 }
 
@@ -62,14 +36,25 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	excludeWeatherData := excludeWeatherData(r)
 
-	logger := getLoggerFromContext(ctx).WithField(zoneIDLogField, zr.Zone.ID.String())
+	logger := babyapi.GetLoggerFromContext(r.Context())
 
-	ws, err := zr.zr.storageClient.GetMultipleWaterSchedules(zr.Zone.WaterScheduleIDs)
-	if err != nil {
-		logger.Errorf("unable to get WaterSchedule for ZoneResponse: %v", err)
+	ws := []*pkg.WaterSchedule{}
+	for _, id := range zr.Zone.WaterScheduleIDs {
+		result, err := zr.api.storageClient.WaterSchedules.Get(id.String())
+		if err != nil {
+			return fmt.Errorf("unable to get WaterSchedule for ZoneResponse: %w", err)
+		}
+
+		ws = append(ws, result)
 	}
 
-	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, zr.garden.ID)
+	garden, httpErr := zr.api.getGardenFromRequest(r)
+	if httpErr != nil {
+		logger.Error("unable to get garden for zone", "error", httpErr)
+		return httpErr
+	}
+
+	gardenPath := fmt.Sprintf("%s/%s", gardenBasePath, garden.ID)
 	zr.Links = append(zr.Links,
 		Link{
 			"self",
@@ -96,7 +81,7 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	nextWaterSchedule := zr.zr.worker.GetNextActiveWaterSchedule(ws)
+	nextWaterSchedule := zr.api.worker.GetNextActiveWaterSchedule(ws)
 
 	if nextWaterSchedule == nil {
 		zr.NextWater = NextWaterDetails{
@@ -105,8 +90,8 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	zr.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.zr.worker, excludeWeatherData)
-	zr.NextWater.WaterScheduleID = &nextWaterSchedule.ID
+	zr.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.api.worker, excludeWeatherData)
+	zr.NextWater.WaterScheduleID = &nextWaterSchedule.ID.ID
 
 	if zr.Zone.SkipCount != nil && *zr.Zone.SkipCount > 0 {
 		zr.NextWater.Message = fmt.Sprintf("skip_count %d affected the time", *zr.Zone.SkipCount)
@@ -115,15 +100,15 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	}
 
 	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
-		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.zr.storageClient)
+		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.api.storageClient)
 
-		if nextWaterSchedule.HasSoilMoistureControl() && zr.garden != nil {
+		if nextWaterSchedule.HasSoilMoistureControl() && garden != nil {
 			logger.Debug("getting moisture data for Zone")
-			soilMoisture, err := zr.zr.getMoisture(ctx, zr.garden, zr.Zone)
+			soilMoisture, err := zr.api.getMoisture(ctx, garden, zr.Zone)
 			if err != nil {
-				logger.WithError(err).Warn("unable to get moisture data for Zone")
+				logger.Warn("unable to get moisture data for Zone", "error", err)
 			} else {
-				logger.Debugf("successfully got moisture data for Zone: %f", soilMoisture)
+				logger.Debug("successfully got moisture data for Zone", "moisture", soilMoisture)
 				zr.WeatherData.SoilMoisturePercent = &soilMoisture
 			}
 		}
@@ -163,5 +148,17 @@ func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryRes
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
 func (resp ZoneWaterHistoryResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func filterZoneByGardenID(gardenID string) babyapi.FilterFunc[*pkg.Zone] {
+	return func(z *pkg.Zone) bool {
+		return z.GardenID.String() == gardenID
+	}
+}
+
+type ZoneActionResponse struct{}
+
+func (*ZoneActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

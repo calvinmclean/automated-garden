@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"log/slog"
 	"math/rand"
 	"os"
 	"os/signal"
@@ -16,7 +17,6 @@ import (
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/go-co-op/gocron"
 	"github.com/rivo/tview"
-	"github.com/sirupsen/logrus"
 )
 
 // Config holds all the options and sub-configs for the mock controller
@@ -68,9 +68,9 @@ type Controller struct {
 	mqttClient mqtt.Client
 	app        *tview.Application
 
-	logger    *logrus.Logger
-	pubLogger *logrus.Logger
-	subLogger *logrus.Logger
+	logger    *slog.Logger
+	pubLogger *slog.Logger
+	subLogger *slog.Logger
 
 	quit chan os.Signal
 
@@ -84,30 +84,30 @@ func NewController(cfg Config) (*Controller, error) {
 		quit:   make(chan os.Signal, 1),
 	}
 
-	controller.logger = setupLogger(cfg.LogConfig)
-	controller.subLogger = setupLogger(cfg.LogConfig)
-	controller.pubLogger = setupLogger(cfg.LogConfig)
+	controller.logger = cfg.LogConfig.NewLogger()
+	controller.subLogger = cfg.LogConfig.NewLogger()
+	controller.pubLogger = cfg.LogConfig.NewLogger()
 
 	if controller.EnableUI {
 		controller.app = controller.setupUI()
 	}
 
-	controller.logger.Infof("starting controller '%s'\n", controller.TopicPrefix)
+	controller.logger.Info("starting controller", "topic_prefix", controller.TopicPrefix)
 
 	if cfg.NumZones > 0 {
-		controller.pubLogger.Infof("publishing moisture data for %d Zones", cfg.NumZones)
+		controller.pubLogger.Info("publishing moisture data for Zones", "num_zones", cfg.NumZones)
 	}
 
 	topics, err := controller.topics()
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine topics: %w", err)
 	}
-	controller.logger.Debugf("subscribing to topics: %v", topics)
+	controller.logger.Debug("subscribing to topics", "topics", topics)
 
 	// Build TopicHandlers to handle subscription to each topic
 	var handlers []mqtt.TopicHandler
 	for _, topic := range topics {
-		controller.subLogger.WithField("topic", topic).Info("initializing handler for MQTT messages")
+		controller.subLogger.Info("initializing handler for MQTT messages", "topic", topic)
 		handlers = append(handlers, mqtt.TopicHandler{
 			Topic:   topic,
 			Handler: controller.getHandlerForTopic(topic),
@@ -115,11 +115,11 @@ func NewController(cfg Config) (*Controller, error) {
 	}
 
 	// Create default handler and mqttClient, then connect
-	defaultHandler := paho.MessageHandler(func(c paho.Client, msg paho.Message) {
-		controller.logger.WithFields(logrus.Fields{
-			"topic":   msg.Topic(),
-			"message": string(msg.Payload()),
-		}).Info("default handler called with message")
+	defaultHandler := paho.MessageHandler(func(_ paho.Client, msg paho.Message) {
+		controller.logger.With(
+			"topic", msg.Topic(),
+			"message", string(msg.Payload()),
+		).Info("default handler called with message")
 	})
 	// Override configured ClientID with the TopicPrefix from command flags
 	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.TopicPrefix)
@@ -141,34 +141,30 @@ func (c *Controller) Start() {
 	scheduler := gocron.NewScheduler(time.Local)
 	if c.MoistureInterval != 0 {
 		for p := 0; p < c.NumZones; p++ {
-			c.logger.WithFields(logrus.Fields{
-				"interval": c.MoistureInterval.String(),
-				"strategy": c.MoistureStrategy,
-			}).Debug("create scheduled job to publish moisture data")
+			c.logger.With(
+				"interval", c.MoistureInterval.String(),
+				"strategy", c.MoistureStrategy,
+			).Debug("create scheduled job to publish moisture data")
 			_, err := scheduler.Every(c.MoistureInterval).Do(c.publishMoistureData, p)
 			if err != nil {
-				c.logger.WithError(err).Error("error scheduling moisture publishing")
+				c.logger.Error("error scheduling moisture publishing", "error", err)
 				return
 			}
 		}
 	}
 	if c.PublishHealth {
-		c.logger.WithFields(logrus.Fields{
-			"interval": c.HealthInterval.String(),
-		}).Debug("create scheduled job to publish health data")
+		c.logger.Debug("create scheduled job to publish health data", "interval", c.HealthInterval.String())
 		_, err := scheduler.Every(c.HealthInterval).Do(c.publishHealthData)
 		if err != nil {
-			c.logger.WithError(err).Error("error scheduling health publishing")
+			c.logger.Error("error scheduling health publishing", "error", err)
 			return
 		}
 	}
 	if c.PublishTemperatureHumidity {
-		c.logger.WithFields(logrus.Fields{
-			"interval": c.TemperatureHumidityInterval.String(),
-		}).Debug("create scheduled job to publish temperature and humidity data")
+		c.logger.Debug("create scheduled job to publish temperature and humidity data", "interval", c.TemperatureHumidityInterval.String())
 		_, err := scheduler.Every(c.TemperatureHumidityInterval).Do(c.publishTemperatureHumidityData)
 		if err != nil {
-			c.logger.WithError(err).Error("error scheduling temperature and humidity publishing")
+			c.logger.Error("error scheduling temperature and humidity publishing", "error", err)
 			return
 		}
 	}
@@ -199,20 +195,12 @@ func (c *Controller) Start() {
 	} else {
 		wg.Wait()
 	}
-	c.logger.WithField("time_elapsed", time.Since(shutdownStart)).Info("controller shutdown gracefully")
+	c.logger.Info("controller shutdown gracefully", "time_elapsed", time.Since(shutdownStart))
 }
 
 // Stop shuts down the controller
 func (c *Controller) Stop() {
 	c.quit <- os.Interrupt
-}
-
-// setupLogger creates and configures a logger with colors and specified log level
-func setupLogger(cfg server.LogConfig) *logrus.Logger {
-	l := logrus.New()
-	l.SetFormatter(cfg.GetFormatter())
-	l.SetLevel(cfg.GetLogLevel())
-	return l
 }
 
 // setupUI configures the two-column view for publish and subscribe logs
@@ -230,8 +218,8 @@ func (c *Controller) setupUI() *tview.Application {
 		SetDynamicColors(true).
 		SetChangedFunc(func() { app.Draw() })
 
-	c.subLogger.SetOutput(tview.ANSIWriter(left))
-	c.pubLogger.SetOutput(tview.ANSIWriter(right))
+	c.subLogger = c.Config.LogConfig.NewLoggerWithWriter(tview.ANSIWriter(left))
+	c.pubLogger = c.Config.LogConfig.NewLoggerWithWriter(tview.ANSIWriter(right))
 
 	header := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
@@ -260,28 +248,29 @@ func (c *Controller) setupUI() *tview.Application {
 func (c *Controller) publishMoistureData(zone int) {
 	moisture := c.createMoistureData()
 	topic := fmt.Sprintf("%s/data/moisture", c.TopicPrefix)
-	moistureLogger := c.pubLogger.WithFields(logrus.Fields{
-		"topic":    topic,
-		"moisture": moisture,
-	})
-	moistureLogger.Infof("publishing moisture data for Zone %d on topic %s: %d", zone, topic, moisture)
+	moistureLogger := c.pubLogger.With(
+		"topic", topic,
+		"moisture", moisture,
+		"zone", zone,
+	)
+	moistureLogger.Info("publishing moisture data for Zone")
 	err := c.mqttClient.Publish(
 		topic,
 		[]byte(fmt.Sprintf("moisture,zone=%d value=%d", zone, moisture)),
 	)
 	if err != nil {
-		moistureLogger.WithError(err).Error("unable to publish moisture data")
+		moistureLogger.Error("unable to publish moisture data", "error", err)
 	}
 }
 
 // publishHealthData publishes an InfluxDB line to record that the controller is alive and active
 func (c *Controller) publishHealthData() {
 	topic := fmt.Sprintf("%s/data/health", c.TopicPrefix)
-	healthLogger := c.pubLogger.WithField("topic", topic)
+	healthLogger := c.pubLogger.With("topic", topic)
 	healthLogger.Info("publishing health data")
 	err := c.mqttClient.Publish(topic, []byte(fmt.Sprintf("health garden=\"%s\"", c.TopicPrefix)))
 	if err != nil {
-		healthLogger.WithError(err).Error("unable to publish health data")
+		healthLogger.Error("unable to publish health data", "error", err)
 	}
 }
 
@@ -296,20 +285,20 @@ func (c *Controller) publishTemperatureHumidityData() {
 		humidity = addNoise(humidity, 3)
 	}
 
-	logger := c.pubLogger.WithFields(logrus.Fields{
-		"temperature": temperature,
-		"humidity":    humidity,
-	})
+	logger := c.pubLogger.With(
+		"temperature", temperature,
+		"humidity", humidity,
+	)
 	logger.Info("publishing temperature and humidity data")
 
 	err := c.mqttClient.Publish(temperatureTopic, []byte(fmt.Sprintf("temperature value=%f", temperature)))
 	if err != nil {
-		logger.WithError(err).Error("unable to publish temperature data")
+		logger.Error("unable to publish temperature data", "error", err)
 	}
 
 	err = c.mqttClient.Publish(humidityTopic, []byte(fmt.Sprintf("humidity value=%f", humidity)))
 	if err != nil {
-		logger.WithError(err).Error("unable to publish humidity data")
+		logger.Error("unable to publish humidity data", "error", err)
 	}
 }
 
@@ -354,18 +343,18 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 	}
 	// Incoming topic is "{{.TopicPrefix}}/command/water" but we need to publish on "{{.TopicPrefix}}/data/water"
 	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
-	waterEventLogger := c.pubLogger.WithFields(logrus.Fields{
-		"topic":         dataTopic,
-		"zone_position": waterMsg.Position,
-		"duration":      waterMsg.Duration,
-	})
+	waterEventLogger := c.pubLogger.With(
+		"topic", dataTopic,
+		"zone_position", waterMsg.Position,
+		"duration", waterMsg.Duration,
+	)
 	waterEventLogger.Info("publishing watering event for Zone")
 	err := c.mqttClient.Publish(
 		dataTopic,
 		[]byte(fmt.Sprintf("water,zone=%d millis=%d", waterMsg.Position, waterMsg.Duration)),
 	)
 	if err != nil {
-		waterEventLogger.WithError(err).Error("unable to publish watering event")
+		waterEventLogger.Error("unable to publish watering event", "error", err)
 	}
 }
 
@@ -382,11 +371,11 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 	case "light":
 		return c.lightHandler(topic)
 	default:
-		return paho.MessageHandler(func(pc paho.Client, msg paho.Message) {
-			c.subLogger.WithFields(logrus.Fields{
-				"topic":   msg.Topic(),
-				"message": string(msg.Payload()),
-			}).Info("received message on unexpected topic")
+		return paho.MessageHandler(func(_ paho.Client, msg paho.Message) {
+			c.subLogger.With(
+				"topic", msg.Topic(),
+				"message", string(msg.Payload()),
+			).Info("received message on unexpected topic")
 		})
 	}
 }

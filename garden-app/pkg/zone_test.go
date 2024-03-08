@@ -6,6 +6,7 @@ import (
 
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestZoneEndDated(t *testing.T) {
@@ -79,7 +80,8 @@ func TestZonePatch(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			z := &Zone{}
-			z.Patch(tt.newZone)
+			err := z.Patch(tt.newZone)
+			require.Nil(t, err)
 			assert.Equal(t, tt.newZone, z)
 		})
 	}
@@ -88,7 +90,8 @@ func TestZonePatch(t *testing.T) {
 		now := time.Now()
 		p := &Zone{}
 
-		p.Patch(&Zone{EndDate: &now})
+		err := p.Patch(&Zone{EndDate: &now})
+		require.Nil(t, err)
 
 		if p.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", p.EndDate)
@@ -101,7 +104,8 @@ func TestZonePatch(t *testing.T) {
 			EndDate: &now,
 		}
 
-		p.Patch(&Zone{})
+		err := p.Patch(&Zone{})
+		require.Nil(t, err)
 
 		if p.EndDate != nil {
 			t.Errorf("Expected nil EndDate, but got: %v", p.EndDate)

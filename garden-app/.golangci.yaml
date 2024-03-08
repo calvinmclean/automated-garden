@@ -11,6 +11,10 @@ issues:
     - "Error return value of `viper.BindPFlag` is not checked"
     - "Error return value of `.+Command.RegisterFlagCompletionFunc` is not checked"
     - "Error return value of `.+.Write` is not checked"
+  exclude-rules:
+    - path: ".*_test\\.go"
+      linters:
+        - revive
 
 output:
   # colored-line-number|line-number|json|tab|checkstyle|code-climate, default is "colored-line-number"

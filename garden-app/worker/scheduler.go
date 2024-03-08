@@ -3,14 +3,13 @@ package worker
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"sort"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/go-co-op/gocron"
-	"github.com/rs/xid"
-	"github.com/sirupsen/logrus"
 )
 
 const (
@@ -39,7 +38,7 @@ func (jobs sortableJobs) Swap(i, j int) {
 // easily be removed
 func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, waterSchedule)
-	logger.Infof("creating scheduled Job for WaterSchedule: %+v", *waterSchedule)
+	logger.Info("creating scheduled Job for WaterSchedule")
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
@@ -47,28 +46,28 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 		StartAt(*waterSchedule.StartTime).
 		Tag("water_schedule").
 		Tag(waterSchedule.ID.String()).
-		Do(func(jobLogger *logrus.Entry) {
+		Do(func(jobLogger *slog.Logger) {
 			// Get WaterSchedule from storage in case the ActivePeriod or WeatherControl are changed
-			ws, err := w.storageClient.GetWaterSchedule(waterSchedule.ID)
+			ws, err := w.storageClient.WaterSchedules.Get(waterSchedule.ID.String())
 			if err != nil {
-				jobLogger.Errorf("error getting WaterSchedule %q when executing scheduled Job: %v", waterSchedule.ID, err)
+				jobLogger.Error("error getting WaterSchedule when executing scheduled Job", "error", err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
 				return
 			}
 			if ws == nil {
-				jobLogger.Errorf("WaterSchedule %q not found", waterSchedule.ID)
+				jobLogger.Error("WaterSchedule not found")
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
 				return
 			}
 
 			if !ws.IsActive(time.Now()) {
-				jobLogger.Infof("skipping WaterSchedule %q because current time is outside of ActivePeriod: %+v", ws.ID, *ws.ActivePeriod)
+				jobLogger.Info("skipping WaterSchedule because current time is outside of ActivePeriod", "active_period", *ws.ActivePeriod)
 				return
 			}
 
-			zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID)
+			zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID.String())
 			if err != nil {
-				jobLogger.Errorf("error getting Zones for WaterSchedule when executing scheduled Job: %v", err)
+				jobLogger.Error("error getting Zones for WaterSchedule when executing scheduled Job", "error", err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(ws)...).Inc()
 				return
 			}
@@ -76,20 +75,20 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 			for _, zg := range zonesAndGardens {
 				err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws)
 				if err != nil {
-					jobLogger.WithField("zone_id", zg.Zone.ID.String()).Errorf("error executing scheduled water action: %v", err)
+					jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
 					schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
 				}
 			}
-		}, logger.WithField("source", "scheduled_job"))
+		}, logger.With("source", "scheduled_job"))
 	return err
 }
 
 // ResetWaterSchedule will simply remove the existing Job and create a new one
 func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, ws)
-	logger.Debugf("resetting WaterSchedule")
+	logger.Debug("resetting WaterSchedule")
 
-	if err := w.RemoveJobsByID(ws.ID); err != nil {
+	if err := w.RemoveJobsByID(ws.ID.String()); err != nil {
 		return err
 	}
 	return w.ScheduleWaterAction(ws)
@@ -97,7 +96,7 @@ func (w *Worker) ResetWaterSchedule(ws *pkg.WaterSchedule) error {
 
 // GetNextActiveWaterSchedule determines the WaterSchedule that is going to be used for the next watering time
 func (w *Worker) GetNextActiveWaterSchedule(waterSchedules []*pkg.WaterSchedule) *pkg.WaterSchedule {
-	w.logger.Debugf("getting next water schedule for water_schedules: %+v", waterSchedules)
+	w.logger.Debug("getting next water schedule for water_schedules", "water_schedules", waterSchedules)
 
 	type nextRunData struct {
 		ws      *pkg.WaterSchedule
@@ -142,7 +141,7 @@ func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
 	}
 
 	logger := w.contextLogger(nil, nil, ws)
-	logger.Debugf("getting next water time for water_schedule")
+	logger.Debug("getting next water time for water_schedule")
 
 	for _, job := range w.scheduler.Jobs() {
 		for _, tag := range job.Tags() {
@@ -160,7 +159,7 @@ func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
 // easily be removed
 func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
-	logger.Infof("creating scheduled Jobs for lighting Garden: %+v", *g.LightSchedule)
+	logger.Info("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
 	// Parse Gardens's LightSchedule.Time (has no "date")
 	lightTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
@@ -192,7 +191,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		Tag("garden").
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOn.String()).
-		Do(w.executeLightActionInScheduledJob, g, onAction, logger.WithField("source", "scheduled_job"))
+		Do(w.executeLightActionInScheduledJob, g, onAction, logger.With("source", "scheduled_job"))
 	if err != nil {
 		return err
 	}
@@ -203,19 +202,19 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		Tag("garden").
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOff.String()).
-		Do(w.executeLightActionInScheduledJob, g, offAction, logger.WithField("source", "scheduled_job"))
+		Do(w.executeLightActionInScheduledJob, g, offAction, logger.With("source", "scheduled_job"))
 	if err != nil {
 		return err
 	}
 
 	// If AdhocOnTime is defined (and is in the future), schedule it
 	if g.LightSchedule.AdhocOnTime != nil {
-		logger.Debugf("garden has adhoc ON time at %v", g.LightSchedule.AdhocOnTime)
+		logger.Debug("garden has adhoc ON time", "adhoc_on_time", g.LightSchedule.AdhocOnTime)
 		// If AdhocOnTime is in the past, reset it and return
 		if g.LightSchedule.AdhocOnTime.Before(time.Now()) {
 			logger.Debug("adhoc ON time is in the past and is being removed")
 			g.LightSchedule.AdhocOnTime = nil
-			return w.storageClient.SaveGarden(g)
+			return w.storageClient.Gardens.Set(g)
 		}
 
 		nextOnJob, err := w.getNextLightJob(g, pkg.LightStateOn, false)
@@ -225,7 +224,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 
 		// If nextOnTime is before AdhocOnTime, delay it by 24 hours
 		nextOnTime := nextOnJob.NextRun()
-		logger.Debugf("garden's next ON time is %v", nextOnTime)
+		logger.Debug("garden's next ON time", "next_on_time", nextOnTime)
 		if nextOnTime.Before(*g.LightSchedule.AdhocOnTime) {
 			logger.Debug("next ON time is before the adhoc time, so delaying it by 24 hours")
 			_, err = w.scheduler.Job(nextOnJob).StartAt(nextOnTime.Add(lightInterval)).Update()
@@ -251,7 +250,7 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Debug("resetting LightSchedule")
 
-	if err := w.RemoveJobsByID(g.ID); err != nil {
+	if err := w.RemoveJobsByID(g.ID.String()); err != nil {
 		return err
 	}
 	return w.ScheduleLightActions(g)
@@ -260,7 +259,7 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 // GetNextLightTime returns the next time that the Garden's light will be turned to the specified state
 func (w *Worker) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Time {
 	logger := w.contextLogger(g, nil, nil)
-	logger.Debugf("getting next light time for state %s", state.String())
+	logger.Debug("getting next light time for state", "state", state.String())
 
 	nextJob, err := w.getNextLightJob(g, state, true)
 	if err != nil {
@@ -273,7 +272,7 @@ func (w *Worker) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Tim
 // ScheduleLightDelay handles a LightAction that requests delaying turning a light on
 func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) error {
 	logger := w.contextLogger(g, nil, nil)
-	logger.Infof("scheduling light delay: %+v", *input)
+	logger.Info("scheduling light delay", "input", *input)
 
 	// Only allow when action state is OFF
 	if input.State != pkg.LightStateOff {
@@ -289,20 +288,20 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 	if nextOnTime == nil {
 		return errors.New("unable to get next light-on time")
 	}
-	logger.Debugf("found next ON time %v", *nextOnTime)
+	logger.Debug("found next ON time", "next_on_time", *nextOnTime)
 
 	nextOffTime := w.GetNextLightTime(g, pkg.LightStateOff)
 	if nextOffTime == nil {
 		return errors.New("unable to get next light-off time")
 	}
-	logger.Debugf("found next OFF time %v", *nextOffTime)
+	logger.Debug("found next OFF time", "next_off_time", *nextOffTime)
 
 	var adhocTime time.Time
 
 	// If nextOffTime is before nextOnTime, then the light was probably ON and we need to schedule now + delay to turn back on.
 	// No need to change any schedules
 	if nextOffTime.Before(*nextOnTime) {
-		logger.Debugf("next OFF time is before next ON time; setting schedule to turn light back on in %v", input.ForDuration.Duration)
+		logger.Debug("next OFF time is before next ON time; setting schedule to turn light back on", "duration", input.ForDuration.Duration)
 		now := time.Now()
 
 		// Don't allow a delayDuration that will occur after nextOffTime
@@ -314,7 +313,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 	} else {
 		// If nextOffTime is after nextOnTime, then light was not ON yet and we need to reschedule the regular ON time
 		// and schedule nextOnTime + delay
-		logger.Debugf("next OFF time is after next ON time; delaying next ON time by %v", input.ForDuration.Duration)
+		logger.Debug("next OFF time is after next ON time; delaying next ON time", "duration", input.ForDuration.Duration)
 
 		nextOnJob, err := w.getNextLightJob(g, pkg.LightStateOn, false)
 		if err != nil {
@@ -330,7 +329,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		// Add new ON schedule with action.Light.ForDuration that executes once
 		adhocTime = nextOnTime.Add(input.ForDuration.Duration)
 	}
-	logger.Debugf("saving adhoc on time to Garden: %v", adhocTime)
+	logger.Debug("saving adhoc on time to Garden: %v", "adhoc_on_time", adhocTime)
 
 	// Add new lightSchedule with AdhocTime and Save Garden
 	g.LightSchedule.AdhocOnTime = &adhocTime
@@ -339,12 +338,12 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		return fmt.Errorf("error scheduling ad-hoc light action: %w", err)
 	}
 
-	return w.storageClient.SaveGarden(g)
+	return w.storageClient.Gardens.Set(g)
 }
 
 // RemoveJobsByID will remove Jobs tagged with the specific xid
-func (w *Worker) RemoveJobsByID(id xid.ID) error {
-	jobs, err := w.scheduler.FindJobsByTag(id.String())
+func (w *Worker) RemoveJobsByID(id string) error {
+	jobs, err := w.scheduler.FindJobsByTag(id)
 	if err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
@@ -352,7 +351,7 @@ func (w *Worker) RemoveJobsByID(id xid.ID) error {
 	for _, j := range jobs {
 		scheduleJobsGauge.WithLabelValues(j.Tags()[0:2]...).Dec()
 	}
-	if err := w.scheduler.RemoveByTags(id.String()); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+	if err := w.scheduler.RemoveByTags(id); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
 	return nil
@@ -362,7 +361,7 @@ func (w *Worker) RemoveJobsByID(id xid.ID) error {
 // otherwise return the first non-adhoc Job
 func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc bool) (*gocron.Job, error) {
 	logger := w.contextLogger(g, nil, nil)
-	logger.Debugf("getting next light Job for state %s, allowAdhoc=%t", state, allowAdhoc)
+	logger.Debug("getting next light Job for state", "state", state, "allow_ad_hoc", allowAdhoc)
 
 	jobs, err := w.scheduler.FindJobsByTag(g.ID.String(), state.String())
 	if err != nil {
@@ -371,11 +370,11 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 	sort.Sort(sortableJobs(jobs))
 
 	if allowAdhoc {
-		logger.Debugf("found %d light jobs, returning the first one", len(jobs))
+		logger.Debug("found light jobs, returning the first one", "count", len(jobs))
 		return jobs[0], nil
 	}
 
-	logger.Debugf("found %d light jobs and now checking to remove any adhoc jobs", len(jobs))
+	logger.Debug("found light jobs and now checking to remove any adhoc jobs", "count", len(jobs))
 	for _, j := range jobs {
 		isAdhoc := false
 		for _, tag := range j.Tags() {
@@ -394,7 +393,7 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 // scheduleAdhocLightAction schedules a one-time action to turn a light on based on the LightSchedule.AdhocOnTime
 func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
-	logger.Infof("creating one-time scheduled Job for lighting Garden")
+	logger.Info("creating one-time scheduled Job for lighting Garden")
 
 	if g.LightSchedule.AdhocOnTime == nil {
 		return errors.New("unable to schedule adhoc light schedule without LightSchedule.AdhocOnTime")
@@ -406,24 +405,24 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 	}
 	logger.Debug("removed existing adhoc light Jobs")
 
-	executeLightAction := func(a *action.LightAction, actionLogger *logrus.Entry) {
+	executeLightAction := func(a *action.LightAction, actionLogger *slog.Logger) {
 		scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Dec()
 
-		actionLogger = actionLogger.WithFields(logrus.Fields{
-			"state": a.State.String(),
-			"adhoc": "true",
-		})
-		actionLogger.Infof("executing adhoc LightAction with state %s", a.State)
+		actionLogger = actionLogger.With(
+			"state", a.State.String(),
+			"adhoc", "true",
+		)
+		actionLogger.Info("executing adhoc LightAction with state")
 		err := w.ExecuteLightAction(g, a)
 		if err != nil {
-			actionLogger.Errorf("error executing scheduled adhoc LightAction: %v", err)
+			actionLogger.Error("error executing scheduled adhoc LightAction", "error", err)
 		}
 		actionLogger.Debug("removing AdhocOnTime")
 		// Now set AdhocOnTime to nil and save
 		g.LightSchedule.AdhocOnTime = nil
-		err = w.storageClient.SaveGarden(g)
+		err = w.storageClient.Gardens.Set(g)
 		if err != nil {
-			actionLogger.Errorf("error saving Garden after removing AdhocOnTime: %v", err)
+			actionLogger.Error("error saving Garden after removing AdhocOnTime", "error", err)
 			schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 		}
 	}
@@ -441,23 +440,23 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 		Tag(g.ID.String()).
 		Tag(pkg.LightStateOn.String()).
 		Tag(adhocTag).
-		Do(executeLightAction, onAction, logger.WithField("source", "scheduled_job"))
+		Do(executeLightAction, onAction, logger.With("source", "scheduled_job"))
 
 	return err
 }
 
-func (w *Worker) contextLogger(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) *logrus.Entry {
-	fields := logrus.Fields{}
+func (w *Worker) contextLogger(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) *slog.Logger {
+	logger := w.logger.With()
 	if g != nil {
-		fields["garden_id"] = g.ID.String()
+		logger = logger.With("garden_id", g.ID.String())
 	}
 	if z != nil {
-		fields["zone_id"] = z.ID.String()
+		logger = logger.With("zone_id", z.ID.String())
 	}
 	if ws != nil {
-		fields["water_schedule_id"] = ws.ID.String()
+		logger = logger.With("water_schedule_id", ws.ID.String())
 	}
-	return w.logger.WithFields(fields)
+	return logger
 }
 
 func zoneLabels(z *pkg.Zone) []string {
@@ -472,12 +471,12 @@ func waterScheduleLabels(ws *pkg.WaterSchedule) []string {
 	return []string{"water_schedule", ws.ID.String()}
 }
 
-func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.LightAction, actionLogger *logrus.Entry) {
-	actionLogger = actionLogger.WithField("state", input.State.String())
-	actionLogger.Infof("executing LightAction with state %s", input.State)
+func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.LightAction, actionLogger *slog.Logger) {
+	actionLogger = actionLogger.With("state", input.State.String())
+	actionLogger.Info("executing LightAction")
 	err := w.ExecuteLightAction(g, input)
 	if err != nil {
-		actionLogger.Errorf("error executing scheduled LightAction: %v", err)
+		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 	}
 }

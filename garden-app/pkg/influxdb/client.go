@@ -102,7 +102,7 @@ func NewClient(config Config) Client {
 	}
 }
 
-// GetMoisture returns the plant's average soil moisture in the last 15 minutes
+// GetMoisture returns the Zone's average soil moisture in the last 15 minutes
 func (client *client) GetMoisture(ctx context.Context, zonePosition uint, topicPrefix string) (float64, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetMoisture"))
 	defer timer.ObserveDuration()
@@ -165,7 +165,7 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (t
 	return result, queryResult.Err()
 }
 
-// GetWaterHistory gets recent water events for a specific Plant
+// GetWaterHistory gets recent water events for a specific Zone
 func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, topicPrefix string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetWaterHistory"))
 	defer timer.ObserveDuration()
