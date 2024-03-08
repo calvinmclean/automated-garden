@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -19,6 +18,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
+	"github.com/calvinmclean/babyapi"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
@@ -49,17 +49,18 @@ type WebConfig struct {
 
 // Server contains all of the necessary resources for running a server
 type Server struct {
-	*http.Server
-	quit   chan os.Signal
-	logger *slog.Logger
-	worker *worker.Worker
+	rootAPI *babyapi.API[*babyapi.NilResource]
+	cfg     Config
+	quit    chan os.Signal
+	logger  *slog.Logger
+	worker  *worker.Worker
 }
 
 // NewServer creates and initializes all server resources based on config
 func NewServer(cfg Config, validateData bool) (*Server, error) {
 	logger := cfg.LogConfig.NewLogger().With("source", "server")
 
-	r := chi.NewRouter()
+	rootAPI := babyapi.NewRootAPI("root", "/")
 
 	render.Respond = func(w http.ResponseWriter, r *http.Request, v interface{}) {
 		switch render.GetAcceptedContentType(r) {
@@ -78,7 +79,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 
 	if cfg.EnableCors {
-		r.Use(cors.Handler(cors.Options{
+		rootAPI.AddMiddleware(cors.Handler(cors.Options{
 			AllowedOrigins:   []string{"https://*", "http://*"},
 			AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
 			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
@@ -89,10 +90,15 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 
 	// Configure HTTP metrics
-	r.Use(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
+	rootAPI.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
 		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
 	})))
-	r.Get("/metrics", promhttp.Handler().ServeHTTP)
+	rootAPI.AddCustomRoute(chi.Route{
+		Pattern: "/metrics",
+		Handlers: map[string]http.Handler{
+			http.MethodGet: promhttp.Handler(),
+		},
+	})
 
 	// Initialize Storage Client
 	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
@@ -145,36 +151,31 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up static webapp subtree: %w", err)
 	}
-	r.Handle("/*", http.FileServer(http.FS(static)))
+	rootAPI.AddCustomRoute(chi.Route{
+		Pattern: "/*",
+		Handlers: map[string]http.Handler{ // TODO: does this work with
+			http.MethodGet: http.FileServer(http.FS(static)),
+		},
+	})
 
+	rootAPI.AddNestedAPI(gardenAPI)
 	gardenAPI.AddNestedAPI(zonesResource)
-	err = gardenAPI.Route(r)
-	if err != nil {
-		return nil, fmt.Errorf("error creating routes: %w", err)
-	}
 
 	weatherClientsAPI, err := NewWeatherClientsAPI(storageClient)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
-
-	err = weatherClientsAPI.Route(r)
-	if err != nil {
-		return nil, fmt.Errorf("error creating routes: %w", err)
-	}
+	rootAPI.AddNestedAPI(weatherClientsAPI)
 
 	waterSchedulesAPI, err := NewWaterSchedulesAPI(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
 	}
-	err = waterSchedulesAPI.Route(r)
-	if err != nil {
-		return nil, fmt.Errorf("error creating routes: %w", err)
-	}
+	rootAPI.AddNestedAPI(waterSchedulesAPI)
 
 	return &Server{
-		// nolint:gosec
-		&http.Server{Addr: fmt.Sprintf(":%d", cfg.Port), Handler: r},
+		rootAPI,
+		cfg,
 		make(chan os.Signal, 1),
 		logger,
 		worker,
@@ -185,7 +186,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 func (s *Server) Start() {
 	s.worker.StartAsync()
 	go func() {
-		shutdownErr := s.ListenAndServe()
+		shutdownErr := s.rootAPI.Serve(fmt.Sprintf(":%d", s.cfg.Port))
 		if shutdownErr != http.ErrServerClosed {
 			s.logger.Error("server shutdown error", "error", shutdownErr)
 		}
@@ -201,10 +202,7 @@ func (s *Server) Start() {
 		shutdownStart = time.Now()
 		s.logger.Info("gracefully shutting down server")
 
-		err := s.Shutdown(context.Background())
-		if err != nil {
-			s.logger.Error("unable to shutdown server", "error", err)
-		}
+		s.rootAPI.Stop()
 		s.worker.Stop()
 
 		wg.Done()
