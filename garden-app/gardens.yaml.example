@@ -1,33 +1,72 @@
-Garden_c9i98glvqc7km2vasfig: |
-  name: Demo Garden
-  topic_prefix: garden
-  id: c9i98glvqc7km2vasfig
-  plants:
-    c9i9jl5vqc7l7e3ikkgg:
-      name: Plant
-      details:
-        description: My favorite plant
-        notes: Planted from seed
-        time_to_harvest: 70 days
-        count: 1
-      id: c9i9jl5vqc7l7e3ikkgg
-      zone_id: c9i99otvqc7kmt8hjio0
-      created_at: 2022-04-23T17:29:08.526638-07:00
-  zones:
-    c9i99otvqc7kmt8hjio0:
-      name: Zone 1
-      id: c9i99otvqc7kmt8hjio0
-      position: 0
-      created_at: 2022-04-23T17:08:03.441727-07:00
-      water_schedule_ids:
-        - chokmq1nhf81274ru2n0
-  max_zones: 1
-  created_at: 2022-04-23T17:05:22.245112-07:00
-  light_schedule:
-    duration: 14h
-    start_time: 22:00:00-07:00
+Garden_chokmn1nhf81274ru2mg: |
+  {
+    "name": "Seed Starting",
+    "topic_prefix": "seed-garden",
+    "id": "chokmn1nhf81274ru2mg",
+    "max_zones": 3,
+    "created_at": "2023-05-27T00:14:20.324Z",
+    "light_schedule": {
+        "duration": "16h0m0s",
+        "start_time": "06:00:00-07:00"
+    }
+  }
 WaterSchedule_chokmq1nhf81274ru2n0: |
-  id: chokmq1nhf81274ru2n0
-  duration: 30s
-  interval: 24h
-  start_time: 2022-04-23T08:00:00-07:00
+  {
+    "id": "chokmq1nhf81274ru2n0",
+    "duration": "1s",
+    "interval": "30s",
+    "start_time": "2023-05-23T15:00:00.000Z",
+    "name": "WaterEvery30s"
+  }
+WaterSchedule_cii72s9nhf8f7gdpckug: |
+  {
+    "id": "cii72s9nhf8f7gdpckug",
+    "duration": "1h0m0s",
+    "interval": "480h0m0s",
+    "start_time": "2023-06-17T12:00:00.000Z",
+    "name": "WaterSchedule20Day"
+  }
+WaterSchedule_cjbg22a8tio6of9s8o0g: |
+  {
+    "id": "cjbg22a8tio6of9s8o0g",
+    "duration": "30s",
+    "interval": "72h0m0s",
+    "start_time": "2023-07-25T15:00:00.000Z",
+    "name": "SeedlingWatering"
+  }
+Zone_chokn19nhf81274ru2o0: |
+  {
+    "name": "Zone 1",
+    "id": "chokn19nhf81274ru2o0",
+    "garden_id": "chokmn1nhf81274ru2mg",
+    "position": 0,
+    "created_at": "2023-05-27T00:15:01.683Z",
+    "water_schedule_ids": [
+        "cjbg22a8tio6of9s8o0g"
+    ],
+    "skip_count": 5
+  }
+Zone_cij42vpnhf85d3acsgu0: |
+  {
+    "name": "Zone 2",
+    "id": "cij42vpnhf85d3acsgu0",
+    "garden_id": "chokmn1nhf81274ru2mg",
+    "position": 0,
+    "created_at": "2023-07-06T04:22:23.331Z",
+    "water_schedule_ids": [
+        "chokmq1nhf81274ru2n0"
+    ],
+    "skip_count": null
+  }
+Zone_cij436pnhf85d3acsgug: |
+  {
+    "name": "Zone 1",
+    "id": "cij436pnhf85d3acsgug",
+    "garden_id": "cihpp51nhf84tr94jtfg",
+    "position": 0,
+    "created_at": "2023-07-06T04:22:51.608Z",
+    "water_schedule_ids": [
+        "cii72s9nhf8f7gdpckug"
+    ],
+    "skip_count": null
+  }
