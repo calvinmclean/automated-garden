@@ -38,10 +38,10 @@ type Config struct {
 
 // TokenData contains information returned by Netatmo auth API
 type TokenData struct {
-	AccessToken    string    `json:"access_token,omitempty" yaml:"access_token,omitempty" mapstructure:"access_token,omitempty"`
-	RefreshToken   string    `json:"refresh_token,omitempty" yaml:"refresh_token,omitempty" mapstructure:"refresh_token,omitempty"`
-	ExpiresIn      int       `json:"expires_in,omitempty" yaml:"expires_in,omitempty" mapstructure:"expires_in,omitempty"`
-	ExpirationDate time.Time `json:"expiration_date,omitempty" yaml:"expiration_date,omitempty" mapstructure:"expiration_date,omitempty"`
+	AccessToken    string `json:"access_token,omitempty" yaml:"access_token,omitempty" mapstructure:"access_token,omitempty"`
+	RefreshToken   string `json:"refresh_token,omitempty" yaml:"refresh_token,omitempty" mapstructure:"refresh_token,omitempty"`
+	ExpiresIn      int    `json:"expires_in,omitempty" yaml:"expires_in,omitempty" mapstructure:"expires_in,omitempty"`
+	ExpirationDate string `json:"expiration_date,omitempty" yaml:"expiration_date,omitempty" mapstructure:"expiration_date,omitempty"`
 }
 
 // Client is used to interact with Netatmo API
@@ -190,6 +190,16 @@ func (c *Client) setDeviceIDs() error {
 }
 
 func (c *Client) refreshToken() error {
+	expiry, err := time.Parse(time.RFC3339, c.Config.Authentication.ExpirationDate)
+	if err != nil {
+		return fmt.Errorf("error parsing expiration date: %w", err)
+	}
+
+	// Exit early if token is not expired
+	if time.Now().Before(expiry) {
+		return nil
+	}
+
 	formData := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {c.Authentication.RefreshToken},
@@ -221,7 +231,7 @@ func (c *Client) refreshToken() error {
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal refresh token response body: %w", err)
 	}
-	c.Authentication.ExpirationDate = time.Now().Add(time.Duration(c.Authentication.ExpiresIn) * time.Second)
+	c.Authentication.ExpirationDate = time.Now().Add(time.Duration(c.Authentication.ExpiresIn) * time.Second).String()
 
 	// Use storage callback to save new authentication details
 	err = c.storageCallback(map[string]interface{}{
