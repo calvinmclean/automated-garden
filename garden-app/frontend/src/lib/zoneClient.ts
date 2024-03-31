@@ -15,7 +15,7 @@ export type WaterHistoryResponse = components["schemas"]["WaterHistoryResponse"]
 
 let mockZones = new Map<string, AllZonesResponse>()
 mockZones.set("chokmn1nhf81274ru2mg", { // front-yard
-    zones: [
+    items: [
         {
             name: "Trees",
             details: null,
@@ -55,7 +55,7 @@ mockZones.set("chokmn1nhf81274ru2mg", { // front-yard
     ]
 })
 mockZones.set("cihl5mpnhf833c53rec0", { // seed-garden
-    zones: [
+    items: [
         {
             name: "Tray 1",
             details: null,
@@ -144,7 +144,7 @@ export function getZone(gardenID: string, id: string, exclude_weather_data: bool
     if (demoMode) {
         return new Promise<FetchResponse<AllZonesResponse>>(function (resolve, reject) {
             return resolve({
-                data: mockZones.get(gardenID).zones.find((z) => z.id == id),
+                data: mockZones.get(gardenID).items.find((z) => z.id == id),
                 response: new Response()
             })
         });

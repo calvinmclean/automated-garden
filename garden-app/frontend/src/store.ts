@@ -22,12 +22,12 @@ const createGardenStore = () => {
             const data: AllGardensResponse = response.data;
 
             const gardenStoreData: gardenStore = {
-                gardens: data.gardens,
+                gardens: data.items,
                 zoneStores: {}
             };
 
             // Initialize zoneStores for each garden
-            data.gardens.forEach(garden => {
+            data.items.forEach(garden => {
                 gardenStoreData.zoneStores[garden.id] = createZoneStore(garden.id);
             });
 
@@ -58,11 +58,11 @@ export const createZoneStore = (gardenID) => {
 const initZoneStore = async (gardenID) => {
     let response = await getZones(gardenID, true, true);
     let data: AllZonesResponse = response.data;
-    zoneStores[gardenID].set({ loading: true, zones: data.zones });
+    zoneStores[gardenID].set({ loading: true, zones: data.items });
 
     response = await getZones(gardenID, true, false);
     data = response.data;
-    zoneStores[gardenID].set({ loading: false, zones: data.zones });
+    zoneStores[gardenID].set({ loading: false, zones: data.items });
 };
 
 interface waterscheduleStore {
@@ -81,11 +81,11 @@ const createWaterScheduleStore = () => {
         init: async () => {
             let response = await getWaterSchedules(true, true);
             let data: AllWaterSchedulesResponse = response.data;;
-            set({ waterSchedules: data.water_schedules, loading: true });
+            set({ waterSchedules: data.items, loading: true });
 
             response = await getWaterSchedules(true, false);
             data = response.data;;
-            set({ waterSchedules: data.water_schedules, loading: false });
+            set({ waterSchedules: data.items, loading: false });
         },
         getByID: (self: waterscheduleStore, waterscheduleID: string): WaterScheduleResponse => {
             return self.waterSchedules.find(g => g.id == waterscheduleID);

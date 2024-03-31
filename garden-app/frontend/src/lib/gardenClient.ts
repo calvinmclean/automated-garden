@@ -12,7 +12,7 @@ export type AllGardensResponse = components["schemas"]["AllGardensResponse"];
 export type GetGardenParams = operations["getGarden"]["parameters"]["path"];
 
 let mockGardens: AllGardensResponse = {
-    gardens: [
+    items: [
         {
             name: "Front Yard",
             id: "chokmn1nhf81274ru2mg",
@@ -92,7 +92,7 @@ export function getGarden(id: string) {
     if (demoMode) {
         return new Promise<FetchResponse<GardenResponse>>(function (resolve, reject) {
             return resolve({
-                data: mockGardens.gardens.find((g) => g.id == id),
+                data: mockGardens.items.find((g) => g.id == id),
                 response: new Response()
             })
         });

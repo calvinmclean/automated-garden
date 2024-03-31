@@ -846,7 +846,7 @@ components:
       type: object
       description: List of all Gardens
       properties:
-        gardens:
+        items:
           type: array
           items:
             $ref: "#/components/schemas/GardenResponse"
@@ -940,7 +940,7 @@ components:
       type: object
       description: List of all WaterSchedules
       properties:
-        water_schedules:
+        items:
           type: array
           items:
             $ref: "#/components/schemas/WaterScheduleResponse"
@@ -1102,7 +1102,7 @@ components:
       type: object
       description: List of all Zones
       properties:
-        zones:
+        items:
           type: array
           items:
             $ref: "#/components/schemas/ZoneResponse"

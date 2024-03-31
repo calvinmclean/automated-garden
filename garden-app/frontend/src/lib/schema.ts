@@ -394,7 +394,7 @@ export interface components {
     }, "id" | "created_at" | "plants" | "zones" | "links">;
     /** @description List of all Gardens */
     AllGardensResponse: {
-      gardens?: components["schemas"]["GardenResponse"][];
+      items?: components["schemas"]["GardenResponse"][];
     };
     /** @description A Garden corresponds to a `garden-controller` in the real-world and contains all the necessary information for interacting with it */
     Garden: {
@@ -468,7 +468,7 @@ export interface components {
     UpdateWaterScheduleRequest: components["schemas"]["WaterSchedule"];
     /** @description List of all WaterSchedules */
     AllWaterSchedulesResponse: {
-      water_schedules?: components["schemas"]["WaterScheduleResponse"][];
+      items?: components["schemas"]["WaterScheduleResponse"][];
     };
     /** @description This allows creating a WaterSchedule resource */
     CreateWaterScheduleRequest: WithRequired<components["schemas"]["WaterSchedule"], "duration" | "interval" | "start_time">;
@@ -608,7 +608,7 @@ export interface components {
     };
     /** @description List of all Zones */
     AllZonesResponse: {
-      zones?: components["schemas"]["ZoneResponse"][];
+      items?: components["schemas"]["ZoneResponse"][];
     };
     /** @description This allows creating a Zone resource */
     CreateZoneRequest: WithRequired<components["schemas"]["Zone"], "name" | "position" | "water_schedule_ids">;
@@ -771,6 +771,8 @@ export interface components {
   pathItems: never;
 }
 
+export type $defs = Record<string, never>;
+
 export type external = Record<string, never>;
 
 export interface operations {
@@ -793,7 +795,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -815,7 +819,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -836,7 +842,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -857,7 +865,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -884,7 +894,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -905,9 +917,13 @@ export interface operations {
     };
     responses: {
       /** @description Accepted */
-      202: never;
+      202: {
+        content: never;
+      };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -931,7 +947,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -958,7 +976,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -980,7 +1000,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1002,7 +1024,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1030,7 +1054,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1055,7 +1081,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1085,7 +1113,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1110,7 +1140,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1135,7 +1167,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1166,7 +1200,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1188,9 +1224,13 @@ export interface operations {
     };
     responses: {
       /** @description Accepted */
-      202: never;
+      202: {
+        content: never;
+      };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1218,7 +1258,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1240,7 +1282,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1267,7 +1311,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1291,7 +1337,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1315,7 +1363,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
   /**
@@ -1345,7 +1395,9 @@ export interface operations {
         };
       };
       /** @description Bad Request */
-      400: never;
+      400: {
+        content: never;
+      };
     };
   };
 }
