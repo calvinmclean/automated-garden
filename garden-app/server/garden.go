@@ -10,7 +10,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
@@ -68,12 +67,7 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 
 	gr.SetOnCreateOrUpdate(gr.onCreateOrUpdate)
 
-	gr.AddCustomIDRoute(chi.Route{
-		Pattern: "/action",
-		Handlers: map[string]http.Handler{
-			http.MethodPost: gr.GetRequestedResourceAndDo(gr.gardenAction),
-		},
-	})
+	gr.AddCustomIDRoute(http.MethodPost, "/action", gr.GetRequestedResourceAndDo(gr.gardenAction))
 
 	gr.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
 

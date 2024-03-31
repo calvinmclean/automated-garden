@@ -14,7 +14,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
 )
@@ -49,19 +48,9 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
-	api.AddCustomIDRoute(chi.Route{
-		Pattern: "/action",
-		Handlers: map[string]http.Handler{
-			http.MethodPost: api.GetRequestedResourceAndDo(api.zoneAction),
-		},
-	})
+	api.AddCustomIDRoute(http.MethodPost, "/action", api.GetRequestedResourceAndDo(api.zoneAction))
 
-	api.AddCustomIDRoute(chi.Route{
-		Pattern: "/history",
-		Handlers: map[string]http.Handler{
-			http.MethodGet: api.GetRequestedResourceAndDo(api.waterHistory),
-		},
-	})
+	api.AddCustomIDRoute(http.MethodGet, "/history", api.GetRequestedResourceAndDo(api.waterHistory))
 
 	api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
 		gardenID := api.GetParentIDParam(r)

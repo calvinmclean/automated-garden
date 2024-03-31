@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"embed"
 	"errors"
 	"fmt"
@@ -9,9 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"sync"
 	"syscall"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -20,7 +19,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
@@ -50,7 +48,6 @@ type WebConfig struct {
 type Server struct {
 	rootAPI *babyapi.API[*babyapi.NilResource]
 	cfg     Config
-	quit    chan os.Signal
 	logger  *slog.Logger
 	worker  *worker.Worker
 }
@@ -76,12 +73,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	rootAPI.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
 		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
 	})))
-	rootAPI.AddCustomRoute(chi.Route{
-		Pattern: "/metrics",
-		Handlers: map[string]http.Handler{
-			http.MethodGet: promhttp.Handler(),
-		},
-	})
+	rootAPI.AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler())
 
 	// Initialize Storage Client
 	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
@@ -134,12 +126,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error setting up static webapp subtree: %w", err)
 	}
-	rootAPI.AddCustomRoute(chi.Route{
-		Pattern: "/*",
-		Handlers: map[string]http.Handler{ // TODO: does this work with
-			http.MethodGet: http.FileServer(http.FS(static)),
-		},
-	})
+	rootAPI.AddCustomRoute(http.MethodGet, "/*", http.FileServer(http.FS(static)))
 
 	rootAPI.AddNestedAPI(gardenAPI)
 	gardenAPI.AddNestedAPI(zonesResource)
@@ -159,7 +146,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	return &Server{
 		rootAPI,
 		cfg,
-		make(chan os.Signal, 1),
 		logger,
 		worker,
 	}, nil
@@ -167,36 +153,23 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 
 // Start will run the server until it is stopped (blocking)
 func (s *Server) Start() {
+	// TODO: replace this by integrating with babyapi's RunCLI
+	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+
 	s.worker.StartAsync()
-	go func() {
-		shutdownErr := s.rootAPI.Serve(fmt.Sprintf(":%d", s.cfg.Port))
-		if shutdownErr != http.ErrServerClosed {
-			s.logger.Error("server shutdown error", "error", shutdownErr)
-		}
-	}()
 
-	// Shutdown gracefully on Ctrl+C
-	wg := &sync.WaitGroup{}
-	wg.Add(1)
-	signal.Notify(s.quit, os.Interrupt, syscall.SIGTERM)
-	var shutdownStart time.Time
-	go func() {
-		<-s.quit
-		shutdownStart = time.Now()
-		s.logger.Info("gracefully shutting down server")
+	shutdownErr := s.rootAPI.WithContext(ctx).Serve(fmt.Sprintf(":%d", s.cfg.Port))
+	if shutdownErr != nil && shutdownErr != http.ErrServerClosed {
+		s.logger.Error("server shutdown error", "error", shutdownErr)
+	}
 
-		s.rootAPI.Stop()
-		s.worker.Stop()
-
-		wg.Done()
-	}()
-	wg.Wait()
-	s.logger.Info("server shutdown gracefully", "time_elapsed", time.Since(shutdownStart))
+	s.worker.Stop()
+	s.logger.Info("server shutdown gracefully")
 }
 
 // Stop shuts down the server
 func (s *Server) Stop() {
-	s.quit <- os.Interrupt
+	s.rootAPI.Stop()
 }
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types

@@ -8,7 +8,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
-	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
 )
 
@@ -48,12 +47,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		return &WeatherClientResponse{Config: wc}
 	})
 
-	api.AddCustomIDRoute(chi.Route{
-		Pattern: "/test",
-		Handlers: map[string]http.Handler{
-			http.MethodGet: http.HandlerFunc(api.testWeatherClient),
-		},
-	})
+	api.AddCustomIDRoute(http.MethodGet, "/test", http.HandlerFunc(api.testWeatherClient))
 
 	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
 		id := api.GetIDParam(r)
