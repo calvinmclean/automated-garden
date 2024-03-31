@@ -27,11 +27,7 @@ const autoDarkModeJS = `
 })()
 </script>`
 
-type HTMLer interface {
-	HTML() string
-}
-
-func renderHTML(htmler HTMLer, data any) string {
+func renderTemplate(tmpl string, data any) string {
 	templates := template.New("base").Funcs(map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
 		// by using N as the key and N+1 as a value
@@ -51,7 +47,7 @@ func renderHTML(htmler HTMLer, data any) string {
 	})
 
 	templates = template.Must(templates.New("autoDarkModeJS").Parse(autoDarkModeJS))
-	templates = template.Must(templates.New("innerHTML").Parse(htmler.HTML()))
+	templates = template.Must(templates.New("innerHTML").Parse(tmpl))
 	templates = template.Must(templates.New("GardenApp").Parse(`<!doctype html>
 <html>
 <head>

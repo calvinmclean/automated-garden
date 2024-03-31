@@ -56,6 +56,15 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 	gr.SetResponseWrapper(func(g *pkg.Garden) render.Renderer {
 		return gr.NewGardenResponse(g)
 	})
+	gr.SetGetAllResponseWrapper(func(gardens []*pkg.Garden) render.Renderer {
+		resp := AllGardensResponse{ResourceList: babyapi.ResourceList[*GardenResponse]{}}
+
+		for _, g := range gardens {
+			resp.ResourceList.Items = append(resp.ResourceList.Items, gr.NewGardenResponse(g))
+		}
+
+		return resp
+	})
 
 	gr.SetOnCreateOrUpdate(gr.onCreateOrUpdate)
 

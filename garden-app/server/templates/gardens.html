@@ -1,7 +1,7 @@
 {{ define "innerHTML" }}
 <div class="container">
     <div class="row">
-        {{ range .Gardens }}
+        {{ range .Items }}
         {{ template "GardenCard" . }}
         {{ end }}
     </div>
@@ -24,34 +24,27 @@
                     {{ .Name }}
                     {{ if not .EndDated }}
                     {{ template "healthBadge" . }}
-                    {{ end }} 
+                    {{ end }}
                 </h5>
             </div>
         </a>
         <div class="card-body">
             <p class="card-text">
-                <div class="container">
-                    <div class="row">
-                        <div class="col">
-                            <div class="badge-lg">
-                                <span class="badge text-bg-secondary rounded-pill">
-                                    {{ .NumZones }} Zones <i class="bi-grid"></i>
-                                </span>
-                            </div>
-                        </div>
-                        <div class="col">
-                            <div class="badge-lg">
-                                <span class="badge text-bg-secondary rounded-pill">
-                                    {{ .NumPlants }} Plants<i class="bi-tree"></i>
-                                </span>
-                            </div>
+            <div class="container">
+                <div class="row">
+                    <div class="col">
+                        <div class="badge-lg">
+                            <span class="badge text-bg-secondary rounded-pill">
+                                {{ .NumZones }} Zones <i class="bi-grid"></i>
+                            </span>
                         </div>
                     </div>
-
-                    {{ if .LightSchedule }}
-                    {{ template "lightScheduleDetails" . }}
-                    {{ end }}
                 </div>
+
+                {{ if .LightSchedule }}
+                {{ template "lightScheduleDetails" . }}
+                {{ end }}
+            </div>
             </p>
         </div>
         <div class="card-footer">
@@ -70,11 +63,10 @@
 
 {{ define "lightScheduleDetails" }}
 <div class="row">
-    <a data-bs-toggle="collapse" href="#collapseLightDetails{{ .ID }}" role="button"
-        aria-expanded="false" aria-controls="collapseLightDetails"
-        style="text-decoration: none; color: inherit;">
+    <a data-bs-toggle="collapse" href="#collapseLightDetails{{ .ID }}" role="button" aria-expanded="false"
+        aria-controls="collapseLightDetails" style="text-decoration: none; color: inherit;">
         <div class="card card-body">
-            Light will turn {{ .NextLightAction.State }} at {{ .NextLightAction.Time }} 
+            Light will turn {{ .NextLightAction.State }} at {{ .NextLightAction.Time }}
             {{ if eq .NextLightAction.State.String "ON" }}
             <i class="bi-sunrise" style="color: orange;"></i>
             {{ else }}
@@ -96,8 +88,7 @@
 
 {{ define "actionButton" }}
 <div class="dropdown">
-    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown"
-        aria-expanded="false">
+    <button class="btn btn-primary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
         Actions
     </button>
     <ul class="dropdown-menu">
@@ -119,12 +110,7 @@
 {{ end }}
 
 {{ define "lightActionButton" }}
-<button
-    type="button"
-    class="dropdown-item"
-    hx-post="/gardens/{{ .ID }}/action"
-    hx-ext='json-enc'
-    hx-include="this">
+<button type="button" class="dropdown-item" hx-post="/gardens/{{ .ID }}/action" hx-ext='json-enc' hx-include="this">
 
     <input type="hidden" name="light_state" value="{{ .State }}">
 
@@ -133,12 +119,8 @@
 {{ end }}
 
 {{ define "gardenInfoPopover" }}
-<i class="bi-info-circle"
-    data-bs-trigger="hover focus"
-    data-bs-toggle="popover"
-    data-bs-title="{{ .ID }}"
-    data-bs-content="Topic prefix: {{ .TopicPrefix }}"
-></i>
+<i class="bi-info-circle" data-bs-trigger="hover focus" data-bs-toggle="popover" data-bs-title="{{ .ID }}"
+    data-bs-content="Topic prefix: {{ .TopicPrefix }}"></i>
 {{ end }}
 
 {{ define "healthBadge" }}
@@ -151,7 +133,8 @@
 {{ $badgeColor = "danger" }}
 {{ end }}
 
-<a href="#" data-bs-toggle="popover" data-bs-title="Health Details" data-bs-content="{{ .Health.Details }}" data-bs-trigger="hover focus">
+<a href="#" data-bs-toggle="popover" data-bs-title="Health Details" data-bs-content="{{ .Health.Details }}"
+    data-bs-trigger="hover focus">
     <span id="status-badge-{{ .ID }}" class="badge text-bg-{{ $badgeColor }}">
         <i class="bi-wifi"></i> {{ .Health.Status }}
     </span>

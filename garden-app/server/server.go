@@ -22,7 +22,6 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
-	"github.com/go-chi/render"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
@@ -61,22 +60,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	logger := cfg.LogConfig.NewLogger().With("source", "server")
 
 	rootAPI := babyapi.NewRootAPI("root", "/")
-
-	render.Respond = func(w http.ResponseWriter, r *http.Request, v interface{}) {
-		switch render.GetAcceptedContentType(r) {
-		case render.ContentTypeJSON:
-			render.JSON(w, r, v)
-		case render.ContentTypeHTML:
-			htmler, ok := v.(HTMLer)
-			if ok {
-				render.HTML(w, r, renderHTML(htmler, v))
-				return
-			}
-			fallthrough
-		default:
-			render.JSON(w, r, v)
-		}
-	}
 
 	if cfg.EnableCors {
 		rootAPI.AddMiddleware(cors.Handler(cors.Options{
