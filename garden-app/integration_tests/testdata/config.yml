@@ -1,6 +1,5 @@
 web_server:
   port: 8080
-  enable_cors: true
 mqtt:
   broker: "localhost"
   port: 1883

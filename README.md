@@ -93,15 +93,9 @@ Use Docker Compose to easily run everything and try it out! This will run all se
   - The "Garden App" dashboard contains application metrics for resource usage, HTTP stats, and others
   - The "Garden Dashboard" dashboard contains more interesting data that comes from the `garden-controller` to show uptime and a watering history. You should see the recent 3 second watering event here
 
-6. Access the Svelte UI at http://localhost:8080/#/gardens 
+6. Access the UI at http://localhost:8080/gardens 
 
 And that's it! I encourage you to check out the additional documentation for more detailed API usage and to learn about all of the things that are possible.
 
 ## Frontend
-This project includes a Svelte UI served by the Go application. The static files are copied to the `garden-app/server/` directory during the Docker build process and embedded in the Go binary.
-
-When running locally, the UI will be served by node, so you will have to update the `baseUrl` in `garden-app/frontend/src/lib/gardenClient.ts` and `garden-app/frontend/src/lib/zoneClient.ts` to use `http://localhost:8080` if you are running the Go application locally. Also set `web_server.enable_cors` to `true` in the config file. Then run:
-```shell
-npm run dev -- --open
-```
-
+This project includes an HTMX UI served by the Go application.

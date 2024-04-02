@@ -2,10 +2,8 @@ package server
 
 import (
 	"context"
-	"embed"
 	"errors"
 	"fmt"
-	"io/fs"
 	"log/slog"
 	"net/http"
 	"os"
@@ -19,15 +17,11 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 
-	"github.com/go-chi/cors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
 	"github.com/slok/go-http-metrics/middleware/std"
 )
-
-//go:embed dist/*
-var dist embed.FS
 
 // Config holds all the options and sub-configs for the server
 type Config struct {
@@ -40,8 +34,7 @@ type Config struct {
 
 // WebConfig is used to allow reading the "web_server" section into the main Config struct
 type WebConfig struct {
-	Port       int  `mapstructure:"port"`
-	EnableCors bool `mapstructure:"enable_cors"`
+	Port int `mapstructure:"port"`
 }
 
 // Server contains all of the necessary resources for running a server
@@ -57,17 +50,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	logger := cfg.LogConfig.NewLogger().With("source", "server")
 
 	rootAPI := babyapi.NewRootAPI("root", "/")
-
-	if cfg.EnableCors {
-		rootAPI.AddMiddleware(cors.Handler(cors.Options{
-			AllowedOrigins:   []string{"https://*", "http://*"},
-			AllowedMethods:   []string{"GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"},
-			AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
-			ExposedHeaders:   []string{"Link"},
-			AllowCredentials: false,
-			MaxAge:           300, // Maximum value not ignored by any of major browsers
-		}))
-	}
 
 	// Configure HTTP metrics
 	rootAPI.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
@@ -121,12 +103,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
 	}
-
-	static, err := fs.Sub(dist, "dist")
-	if err != nil {
-		return nil, fmt.Errorf("error setting up static webapp subtree: %w", err)
-	}
-	rootAPI.AddCustomRoute(http.MethodGet, "/*", http.FileServer(http.FS(static)))
 
 	rootAPI.AddNestedAPI(gardenAPI)
 	gardenAPI.AddNestedAPI(zonesResource)

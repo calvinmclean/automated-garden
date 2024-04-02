@@ -67,15 +67,8 @@ tasks:
     cmds:
       - go run main.go controller --config config.yaml --enable-ui=false
 
-  run-webapp:
-    desc: Start Svelte frontend in dev mode
-    aliases: [rw]
-    dir: ./garden-app/frontend
-    cmds:
-      - npm run dev
-
   run-docker:
-    desc: Run backend + frontent in Docker container
+    desc: Run backend in Docker container
     aliases: [rd]
     dir: ./garden-app
     cmds:
@@ -85,12 +78,6 @@ tasks:
         -v ./config.yaml:/config.yaml \
         ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}} \
         server --config /config.yaml
-
-  generate-ts:
-    desc: Use openapi-typescript to generate types from OpenAPI spec
-    dir: ./garden-app
-    cmds:
-      - npx openapi-typescript ./api/openapi.yaml -o ./frontend/src/lib/schema.ts
 
   generate-mocks:
     desc: Use mockery to generate mocks from Go interfaces
@@ -110,13 +97,3 @@ tasks:
     cmds:
       - task: docker-build
       - docker push ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}
-
-  build-gh-pages:
-    aliases: ["gh-pages"]
-    dir: ./garden-app/frontend
-    env:
-      NODE_ENV: demo
-    cmds:
-      - npm run build
-      - cp dist/assets/index-*.js ../../docs/ui-demo/assets/index.js
-      - cp dist/assets/index-*.css ../../docs/ui-demo/assets/index.css
