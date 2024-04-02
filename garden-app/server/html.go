@@ -6,27 +6,6 @@ import (
 	"strings"
 )
 
-const autoDarkModeJS = `
-<script>
-(() => {
-	'use strict'
-
-	const getPreferredTheme = () => {
-		return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
-	}
-
-	const setTheme = theme => {
-		document.documentElement.setAttribute('data-bs-theme', theme)
-	}
-
-	setTheme(getPreferredTheme())
-
-	window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', () => {
-		setTheme(getPreferredTheme())
-	})
-})()
-</script>`
-
 func renderTemplate(tmpl string, data any) string {
 	templates := template.New("base").Funcs(map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
@@ -46,36 +25,34 @@ func renderTemplate(tmpl string, data any) string {
 		"ToLower": strings.ToLower,
 	})
 
-	templates = template.Must(templates.New("autoDarkModeJS").Parse(autoDarkModeJS))
 	templates = template.Must(templates.New("innerHTML").Parse(tmpl))
+	// TODO: use current URL from request to set class="uk-active" in navbar
 	templates = template.Must(templates.New("GardenApp").Parse(`<!doctype html>
 <html>
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Garden App</title>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-	<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.8/dist/umd/popper.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.min.js"></script>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css" />
+	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.8"></script>
 	<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
-	
-	{{ template "autoDarkModeJS" }}
 </head>
 
 <body>
-<nav class="navbar navbar-expand-md bg-success" data-bs-theme="light">
-<div class="container-fluid"><a class="navbar-brand" href="#/gardens">Garden App</a> <button
-		class="navbar-toggler"><span class="navbar-toggler-icon"></span></button>
-	<div class="navbar-collapse collapse show" style="">
-		<ul class="ms-auto navbar-nav">
-			<li class="nav-item"><a href="#/gardens" class="nav-link">Gardens</a></li>
-			<li class="nav-item"><a href="#/water_schedules" class="nav-link">Water Schedules</a></li>
-			<li class="nav-item"><a href="#/weather_clients" class="nav-link">Weather Clients</a></li>
-		</ul>
-	</div>
-</div>
+<nav class="uk-navbar-container">
+    <div class="uk-container">
+        <div uk-navbar>
+            <div class="uk-navbar-left">
+                <ul class="uk-navbar-nav">
+                    <li class="uk-active"><a href="/gardens">Gardens</a></li>
+                    <li><a href="/water_schedules">Water Schedules</a></li>
+					<li><a href="/weather_clients">Weather Schedules</a></li>
+                </ul>
+            </div>
+        </div>
+    </div>
 </nav>
 
 {{template "innerHTML" .}}
