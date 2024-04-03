@@ -1,5 +1,5 @@
 {{ define "innerHTML" }}
-<h1 class="uk-heading-small">{{ .Garden.Name }}</h1>
+<h1 class="uk-heading-small uk-text-center">{{ .Garden.Name }}</h1>
 <div uk-grid>
     {{ range .Items }}
     {{ template "ZoneCard" . }}

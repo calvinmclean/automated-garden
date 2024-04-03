@@ -416,13 +416,13 @@ func TestEndDateZone(t *testing.T) {
 			"Successful",
 			createExampleZone(),
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"SuccessfullyDeleteZone",
 			endDatedZone,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 	}
 
