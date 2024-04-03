@@ -127,6 +127,8 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 
 type AllZonesResponse struct {
 	babyapi.ResourceList[*ZoneResponse]
+
+	api *babyapi.API[*pkg.Zone]
 }
 
 func (azr AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error {
@@ -146,13 +148,9 @@ func (azr AllZonesResponse) HTML(r *http.Request) string {
 		}
 	}
 
-	var garden *pkg.Garden
-	if len(azr.Items) > 0 {
-		var err error
-		garden, err = babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), azr.Items[0].api.ParentContextKey())
-		if err != nil {
-			panic(err)
-		}
+	garden, err := babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), azr.api.ParentContextKey())
+	if err != nil {
+		panic(err)
 	}
 
 	return renderTemplate(string(zonesHTML), map[string]any{

@@ -47,7 +47,7 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 		return api.NewZoneResponse(z)
 	})
 	api.SetGetAllResponseWrapper(func(zones []*pkg.Zone) render.Renderer {
-		resp := AllZonesResponse{ResourceList: babyapi.ResourceList[*ZoneResponse]{}}
+		resp := AllZonesResponse{ResourceList: babyapi.ResourceList[*ZoneResponse]{}, api: api.API}
 
 		for _, z := range zones {
 			resp.ResourceList.Items = append(resp.ResourceList.Items, api.NewZoneResponse(z))
