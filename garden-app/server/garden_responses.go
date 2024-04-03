@@ -11,7 +11,12 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
+
+	_ "embed"
 )
+
+//go:embed templates/gardens.html
+var gardensHTML []byte
 
 // GardenResponse is used to represent a Garden in the response body with the additional Moisture data
 // and hypermedia Links fields
@@ -138,18 +143,17 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 	return agr.ResourceList.Render(w, r)
 }
 
-// TODO: re-enable this and figure out dev setup to automatically switch between embed and read
-// //go:embed templates/gardens.html
-// var gardensHTML []byte
-
 func (agr AllGardensResponse) HTML(*http.Request) string {
 	slices.SortFunc(agr.Items, func(g *GardenResponse, h *GardenResponse) int {
 		return strings.Compare(g.Name, h.Name)
 	})
 
-	gardensHTML, err := os.ReadFile("server/templates/gardens.html")
-	if err != nil {
-		panic(err)
+	if os.Getenv("DEV_TEMPLATE") == "true" {
+		var err error
+		gardensHTML, err = os.ReadFile("server/templates/gardens.html")
+		if err != nil {
+			panic(err)
+		}
 	}
 	return renderTemplate(string(gardensHTML), agr)
 }

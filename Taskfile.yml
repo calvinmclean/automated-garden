@@ -53,6 +53,13 @@ tasks:
     cmds:
       - go run main.go server --config config.yaml
 
+  run-dev:
+    desc: Run backend Go app server and read UI templates from local FS
+    aliases: [dev]
+    dir: ./garden-app
+    cmds:
+      - DEV_TEMPLATE=true go run main.go server --config config.yaml
+
   run-controller:
     desc: Run mock controller
     aliases: [rc]
