@@ -48,7 +48,7 @@ func renderTemplate(tmpl string, data any) string {
                 <ul class="uk-navbar-nav">
                     <li class="uk-active"><a href="/gardens">Gardens</a></li>
                     <li><a href="/water_schedules">Water Schedules</a></li>
-					<li><a href="/weather_clients">Weather Schedules</a></li>
+					<li><a href="/weather_clients">Weather Clients</a></li>
                 </ul>
             </div>
         </div>

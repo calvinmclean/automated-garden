@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -141,6 +143,10 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 // var gardensHTML []byte
 
 func (agr AllGardensResponse) HTML(*http.Request) string {
+	slices.SortFunc(agr.Items, func(g *GardenResponse, h *GardenResponse) int {
+		return strings.Compare(g.Name, h.Name)
+	})
+
 	gardensHTML, err := os.ReadFile("server/templates/gardens.html")
 	if err != nil {
 		panic(err)
