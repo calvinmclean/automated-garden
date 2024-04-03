@@ -158,16 +158,25 @@ func (agr AllGardensResponse) HTML(*http.Request) string {
 	return renderTemplate(string(gardensHTML), agr)
 }
 
-// NumZones returns the number of non-end-dated Zones that are part of this Garden
-func (api *GardensAPI) numZones(gardenID string) (uint, error) {
+func (api *GardensAPI) getAllZones(gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
 	zones, err := api.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
 		gardenIDFilter := filterZoneByGardenID(gardenID)
-		endDateFilter := storage.FilterEndDated[*pkg.Zone](false)
+		endDateFilter := storage.FilterEndDated[*pkg.Zone](getEndDated)
 
 		return gardenIDFilter(z) && endDateFilter(z)
 	})
 	if err != nil {
-		return 0, fmt.Errorf("error getting Zones for Garden: %w", err)
+		return nil, fmt.Errorf("error getting Zones for Garden: %w", err)
+	}
+
+	return zones, nil
+}
+
+// NumZones returns the number of non-end-dated Zones that are part of this Garden
+func (api *GardensAPI) numZones(gardenID string) (uint, error) {
+	zones, err := api.getAllZones(gardenID, false)
+	if err != nil {
+		return 0, err
 	}
 
 	return uint(len(zones)), nil

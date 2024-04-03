@@ -1,0 +1,63 @@
+{{ define "innerHTML" }}
+<h1 class="uk-heading-small">{{ .Garden.Name }}</h1>
+<div uk-grid>
+    {{ range .Items }}
+    {{ template "ZoneCard" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "ZoneCard" }}
+<div class="uk-text-center uk-width-1-2@m" id="zone-card-{{ .ID }}">
+    <div class="uk-card uk-card-default" style="margin: 5%;">
+        <div class="uk-card-header">
+            <h3 class="uk-card-title uk-margin-remove-bottom" href="/gardens/{{ .GardenID }}/zones/{{ .ID }}">
+                <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}">{{ .Name }}</a>
+            </h3>
+        </div>
+        <div class="uk-card-body">
+            <div>
+                <div><span uk-icon="future" uk-tooltip="Duration"></span> {{ .NextWater.Duration }}</div>
+                <div><span uk-icon="clock" uk-tooltip="Start Time"></span> {{ .NextWater.Time }}</div>
+            </div>
+        </div>
+        <div class="uk-card-footer">
+            <div class="uk-child-width-1-2" uk-grid>
+                <div class=" uk-text-left">
+                    {{ template "deleteButton" . }}
+                </div>
+                <div class="uk-text-right">
+                    {{ template "infoPopover" . }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ define "deleteButton" }}
+<div class="uk-inline">
+    <button class="uk-button uk-button-danger" type="button"><span uk-icon="trash"></span></button>
+    <div uk-dropdown>
+        <ul class="uk-nav uk-dropdown-nav">
+            <li>
+                <a hx-delete="/gardens/{{ .GardenID }}/zones/{{ .ID }}" hx-swap="swap:1s"
+                    hx-target="#zone-card-{{ .ID }}">
+                    <span uk-icon="ban"></span> Confirm Delete
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+{{ end }}
+
+{{ define "infoPopover" }}
+<div class="uk-inline">
+    <span class="uk-margin-small-right" uk-icon="info"></span>
+    <div uk-dropdown>
+        <p><b>{{ .ID }}</b></p>
+        <p>Position: {{ .Position }}</p>
+        <p>Water Schedules: {{ .WaterScheduleIDs }}</p>
+    </div>
+</div>
+{{ end }}

@@ -3,11 +3,19 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
+
+	_ "embed"
 )
+
+//go:embed templates/zones.html
+var zonesHTML []byte
 
 // ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
 // and hypermedia Links fields
@@ -115,6 +123,42 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 	}
 
 	return nil
+}
+
+type AllZonesResponse struct {
+	babyapi.ResourceList[*ZoneResponse]
+}
+
+func (azr AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return azr.ResourceList.Render(w, r)
+}
+
+func (azr AllZonesResponse) HTML(r *http.Request) string {
+	slices.SortFunc(azr.Items, func(z *ZoneResponse, zz *ZoneResponse) int {
+		return strings.Compare(z.Name, zz.Name)
+	})
+
+	if os.Getenv("DEV_TEMPLATE") == "true" {
+		var err error
+		zonesHTML, err = os.ReadFile("server/templates/zones.html")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	var garden *pkg.Garden
+	if len(azr.Items) > 0 {
+		var err error
+		garden, err = babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), azr.Items[0].api.ParentContextKey())
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return renderTemplate(string(zonesHTML), map[string]any{
+		"Items":  azr.Items,
+		"Garden": garden,
+	})
 }
 
 // ZoneWaterHistoryResponse wraps a slice of WaterHistory structs plus some aggregate stats for an HTTP response

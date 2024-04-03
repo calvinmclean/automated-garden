@@ -14,6 +14,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/extensions"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
 )
@@ -45,6 +46,15 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 	api.SetResponseWrapper(func(z *pkg.Zone) render.Renderer {
 		return api.NewZoneResponse(z)
 	})
+	api.SetGetAllResponseWrapper(func(zones []*pkg.Zone) render.Renderer {
+		resp := AllZonesResponse{ResourceList: babyapi.ResourceList[*ZoneResponse]{}}
+
+		for _, z := range zones {
+			resp.ResourceList.Items = append(resp.ResourceList.Items, api.NewZoneResponse(z))
+		}
+
+		return resp
+	})
 
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
@@ -61,6 +71,8 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 			return gardenIDFilter(z) && endDateFilter(z)
 		}
 	})
+
+	api.ApplyExtension(extensions.HTMX[*pkg.Zone]{})
 
 	return api, nil
 }

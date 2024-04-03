@@ -40,6 +40,13 @@ func renderTemplate(tmpl string, data any) string {
 	<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 </head>
 
+<style>
+	div.htmx-swapping {
+		opacity: 0;
+		transition: opacity 1s ease-out;
+	}
+</style>
+
 <body>
 <nav class="uk-navbar-container">
     <div class="uk-container">
