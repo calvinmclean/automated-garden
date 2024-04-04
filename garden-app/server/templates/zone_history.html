@@ -1,0 +1,35 @@
+{{ define "innerHTML" }}
+<!-- TODO: breadcrumb to go back to zone -->
+<h1 class="uk-heading-small uk-text-center">ZONE HISTORY!</h1>
+<div uk-grid>
+    {{ template "waterHistoryTable" . }}
+</div>
+{{ end }}
+
+{{ define "waterHistoryTable" }}
+<!-- uk-width-expand -- fix table centering -->
+<div class="uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top">
+    <h2 class="uk-card-title uk-heading-medium uk-text-center">Water History</h2>
+    <table class="uk-table uk-table-divider uk-margin-left uk-margin-right">
+        <colgroup>
+            <col>
+            <col>
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Time</th>
+                <th>Duration</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {{ range .History }}
+            <tr>
+                <td>{{ .Duration }}</td>
+                <td>{{ FormatDateTime .RecordTime }}</td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
+</div>
+{{ end }}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"html/template"
 	"strings"
+	"time"
 )
 
 func renderTemplate(tmpl string, data any) string {
@@ -23,6 +24,16 @@ func renderTemplate(tmpl string, data any) string {
 			return result
 		},
 		"ToLower": strings.ToLower,
+		"FormatUpcomingDate": func(date *time.Time) string {
+			now := time.Now()
+			if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
+				return date.Format("at 3:04PM")
+			}
+			return date.Format("on Monday, 02 Jan at 3:04PM")
+		},
+		"FormatDateTime": func(date *time.Time) string {
+			return date.Local().Format(time.DateTime)
+		},
 	})
 
 	templates = template.Must(templates.New("innerHTML").Parse(tmpl))

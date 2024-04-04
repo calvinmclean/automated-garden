@@ -17,6 +17,9 @@ import (
 //go:embed templates/zones.html
 var zonesHTML []byte
 
+//go:embed templates/zone_history.html
+var zoneHistoryHTML []byte
+
 // ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
 // and hypermedia Links fields
 type ZoneResponse struct {
@@ -185,6 +188,18 @@ func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryRes
 		Average: average.String(),
 		Total:   time.Duration(total).String(),
 	}
+}
+
+func (resp ZoneWaterHistoryResponse) HTML(*http.Request) string {
+	if os.Getenv("DEV_TEMPLATE") == "true" {
+		var err error
+		zoneHistoryHTML, err = os.ReadFile("server/templates/zone_history.html")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return renderTemplate(string(zoneHistoryHTML), resp)
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing

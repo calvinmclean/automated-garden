@@ -8,18 +8,25 @@
 {{ end }}
 
 {{ define "ZoneCard" }}
-<div class="uk-text-center uk-width-1-2@m" id="zone-card-{{ .ID }}">
+<div class="uk-width-1-2@m" id="zone-card-{{ .ID }}">
     <div class="uk-card uk-card-default" style="margin: 5%;">
-        <div class="uk-card-header">
+        <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom" href="/gardens/{{ .GardenID }}/zones/{{ .ID }}">
                 <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}">{{ .Name }}</a>
             </h3>
         </div>
         <div class="uk-card-body">
             <div>
-                <div><span uk-icon="future" uk-tooltip="Duration"></span> {{ .NextWater.Duration }}</div>
-                <div><span uk-icon="clock" uk-tooltip="Start Time"></span> {{ .NextWater.Time }}</div>
+                <span uk-icon="clock" uk-tooltip="Start Time"></span> Watering for
+                <span class="uk-text-primary">{{.NextWater.Duration}}</span>
+                {{FormatUpcomingDate .NextWater.Time}}
             </div>
+
+            {{ if .NextWater.Message }}
+            <div class="uk-alert-danger uk-alert" uk-alert>
+                <p class="uk-text-danger">{{ .NextWater.Message }}</p>
+            </div>
+            {{ end }}
         </div>
         <div class="uk-card-footer">
             <div class="uk-child-width-1-2" uk-grid>
