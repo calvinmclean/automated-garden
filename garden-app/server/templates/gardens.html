@@ -26,6 +26,10 @@
             {{ if .LightSchedule }}
             {{ template "lightScheduleDetails" . }}
             {{ end }}
+
+            {{ if .TemperatureHumidityData }}
+            {{ template "temperatureHumidityDetails" .TemperatureHumidityData }}
+            {{ end }}
         </div>
         <div class="uk-card-footer">
             <div class="uk-child-width-1-2" uk-grid>
@@ -39,6 +43,20 @@
         </div>
     </div>
 </div>
+{{ end }}
+
+{{ define "temperatureHumidityDetails" }}
+<p>
+    <span>
+        Temperature: {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
+        {{ Sprintf "%.2f" $tempF }}°F
+        <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
+    </span>
+    <span>
+        Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%
+        <progress class="uk-progress" value="{{ .HumidityPercentage }}" max="100"></progress>
+    </span>
+</p>
 {{ end }}
 
 {{ define "lightScheduleDetails" }}

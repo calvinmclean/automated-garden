@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"strings"
 	"time"
@@ -33,6 +34,10 @@ func renderTemplate(tmpl string, data any) string {
 		},
 		"FormatDateTime": func(date *time.Time) string {
 			return date.Local().Format(time.DateTime)
+		},
+		"Sprintf": fmt.Sprintf,
+		"CelsiusToFahrenheit": func(c float64) float64 {
+			return c*1.8 + 32
 		},
 	})
 
