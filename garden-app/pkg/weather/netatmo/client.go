@@ -190,10 +190,8 @@ func (c *Client) setDeviceIDs() error {
 }
 
 func (c *Client) refreshToken() error {
-	expiry, err := time.Parse(time.RFC3339, c.Config.Authentication.ExpirationDate)
-	if err != nil {
-		return fmt.Errorf("error parsing expiration date: %w", err)
-	}
+	// It's safe to ignore the time.Parse error because knowing the expiration is an optional early exit
+	expiry, _ := time.Parse(time.RFC3339Nano, c.Config.Authentication.ExpirationDate)
 
 	// Exit early if token is not expired
 	if time.Now().Before(expiry) {
@@ -231,7 +229,7 @@ func (c *Client) refreshToken() error {
 	if err != nil {
 		return fmt.Errorf("unable to unmarshal refresh token response body: %w", err)
 	}
-	c.Authentication.ExpirationDate = time.Now().Add(time.Duration(c.Authentication.ExpiresIn) * time.Second).String()
+	c.Authentication.ExpirationDate = time.Now().Add(time.Duration(c.Authentication.ExpiresIn) * time.Second).Format(time.RFC3339Nano)
 
 	// Use storage callback to save new authentication details
 	err = c.storageCallback(map[string]interface{}{
