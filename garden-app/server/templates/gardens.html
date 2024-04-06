@@ -73,7 +73,7 @@
             {{ end }}
             <li>
                 <a hx-post="/gardens/{{ .ID }}/action" hx-ext='json-enc' hx-include="this" hx-swap="none">
-                    <input type="hidden" name="stop" value="true">
+                    <input type="hidden" name="stop_all" value="true">
                     <span uk-icon="ban"></span> Stop Watering
                 </a>
             </li>

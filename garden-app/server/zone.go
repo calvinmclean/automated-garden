@@ -187,6 +187,33 @@ func (api *ZonesAPI) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.
 	return nil
 }
 
+func rangeQueryParam(r *http.Request) (time.Duration, error) {
+	timeRangeString := r.URL.Query().Get("range")
+	if len(timeRangeString) == 0 {
+		timeRangeString = "72h"
+	}
+
+	timeRange, err := time.ParseDuration(timeRangeString)
+	if err != nil {
+		return 0, err
+	}
+	return timeRange, nil
+}
+
+func limitQueryParam(r *http.Request) (uint64, error) {
+	limitString := r.URL.Query().Get("limit")
+	if len(limitString) == 0 {
+		limitString = "0"
+	}
+
+	limit, err := strconv.ParseUint(limitString, 0, 64)
+	if err != nil {
+		return 0, err
+	}
+
+	return limit, nil
+}
+
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
 func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
@@ -198,30 +225,19 @@ func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Rende
 		return nil, httpErr
 	}
 
-	// Read query parameters and set default values
-	timeRangeString := r.URL.Query().Get("range")
-	if len(timeRangeString) == 0 {
-		timeRangeString = "72h"
-	}
-	logger.Debug("using time range", "time_range", timeRangeString)
-
-	limitString := r.URL.Query().Get("limit")
-	if len(limitString) == 0 {
-		limitString = "0"
-	}
-	logger.Debug("using limit", "limit", limitString)
-
-	// Parse query parameter strings into correct types
-	timeRange, err := time.ParseDuration(timeRangeString)
+	timeRange, err := rangeQueryParam(r)
 	if err != nil {
 		logger.Error("unable to parse time range", "error", err)
 		return nil, babyapi.ErrInvalidRequest(err)
 	}
-	limit, err := strconv.ParseUint(limitString, 0, 64)
+	logger.Debug("using time range", "time_range", timeRange)
+
+	limit, err := limitQueryParam(r)
 	if err != nil {
 		logger.Error("unable to parse limit", "error", err)
 		return nil, babyapi.ErrInvalidRequest(err)
 	}
+	logger.Debug("using limit", "limit", limit)
 
 	logger.Debug("getting water history from InfluxDB")
 	history, err := api.getWaterHistory(r.Context(), zone, garden, timeRange, limit)
@@ -231,7 +247,7 @@ func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Rende
 	}
 	logger.Debug("water history", "history", history)
 
-	return NewZoneWaterHistoryResponse(history), nil
+	return NewZoneWaterHistoryResponse(zone, history), nil
 }
 
 func (api *ZonesAPI) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {

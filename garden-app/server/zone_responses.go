@@ -168,10 +168,13 @@ type ZoneWaterHistoryResponse struct {
 	Count   int                `json:"count"`
 	Average string             `json:"average"`
 	Total   string             `json:"total"`
+
+	// Just used in HTML response, not JSON
+	Zone *pkg.Zone `json:"-"`
 }
 
 // NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
-func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryResponse {
+func NewZoneWaterHistoryResponse(zone *pkg.Zone, history []pkg.WaterHistory) ZoneWaterHistoryResponse {
 	total := time.Duration(0)
 	for _, h := range history {
 		amountDuration, _ := time.ParseDuration(h.Duration)
@@ -187,10 +190,11 @@ func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryRes
 		Count:   count,
 		Average: average.String(),
 		Total:   time.Duration(total).String(),
+		Zone:    zone,
 	}
 }
 
-func (resp ZoneWaterHistoryResponse) HTML(*http.Request) string {
+func (resp ZoneWaterHistoryResponse) HTML(r *http.Request) string {
 	if os.Getenv("DEV_TEMPLATE") == "true" {
 		var err error
 		zoneHistoryHTML, err = os.ReadFile("server/templates/zone_history.html")
@@ -199,7 +203,15 @@ func (resp ZoneWaterHistoryResponse) HTML(*http.Request) string {
 		}
 	}
 
-	return renderTemplate(string(zoneHistoryHTML), resp)
+	// ignoring errors here since this can only be reached for a valid request
+	timeRange, _ := rangeQueryParam(r)
+	limit, _ := limitQueryParam(r)
+
+	return renderTemplate(string(zoneHistoryHTML), map[string]any{
+		"TimeRange":   timeRange,
+		"Limit":       limit,
+		"ZoneHistory": resp,
+	})
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing

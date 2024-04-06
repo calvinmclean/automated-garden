@@ -15,7 +15,7 @@ type GardenActionRequest struct {
 	// These are flattened fields so the API can be compatible with HTMX's hx-post. The Bind method will convert
 	// these flattened values to fit the base GardenAction type
 	LightState *pkg.LightState `json:"light_state"`
-	StopAll    *bool           `json:"stop_all"`
+	StopAll    *string         `json:"stop_all"`
 }
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
@@ -31,7 +31,7 @@ func (gar *GardenActionRequest) Bind(_ *http.Request) error {
 		gar.Light = &action.LightAction{State: *gar.LightState}
 	}
 	if gar.StopAll != nil {
-		gar.Stop = &action.StopAction{All: *gar.StopAll}
+		gar.Stop = &action.StopAction{All: *gar.StopAll == "true"}
 	}
 
 	if gar.Light == nil && gar.Stop == nil {
