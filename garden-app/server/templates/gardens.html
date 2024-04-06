@@ -32,11 +32,11 @@
             {{ end }}
         </div>
         <div class="uk-card-footer">
-            <div class="uk-child-width-1-2" uk-grid>
-                <div class=" uk-text-left">
+            <div class="uk-clearfix">
+                <div class="uk-float-left">
                     {{ template "actionButton" . }}
                 </div>
-                <div class="uk-text-right">
+                <div class="uk-float-right">
                     {{ template "gardenInfoPopover" . }}
                 </div>
             </div>
@@ -72,8 +72,12 @@
     .NextLightAction.Time }}
 </p>
 
-<p><span uk-icon="future" uk-tooltip="Duration"></span> {{ .LightSchedule.Duration }}</p>
-<p><span uk-icon="clock" uk-tooltip="Start Time"></span> {{ .LightSchedule.StartTime }}</p>
+<p>
+    <span>
+        <span uk-icon="future" uk-tooltip="Duration"></span> {{ .LightSchedule.Duration }}
+        <span uk-icon="clock" uk-tooltip="Start Time"></span> {{ .LightSchedule.StartTime }}
+    </span>
+</p>
 {{ end }}
 
 {{ define "actionButton" }}
