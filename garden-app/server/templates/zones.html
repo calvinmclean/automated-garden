@@ -29,11 +29,21 @@
             {{ end }}
         </div>
         <div class="uk-card-footer">
-            <div class="uk-clearfix">
-                <div class="uk-float-left">
+            <div uk-grid>
+                <div class="uk-width-1-4@s">
                     {{ template "deleteButton" . }}
                 </div>
-                <div class="uk-float-right">
+                <div class="uk-width-1-2@s">
+                    <form class="uk-form-horizontal" hx-headers='{"Accept": "text/html"}'
+                        hx-post="/gardens/{{ .GardenID }}/zones/{{ .ID }}/action" hx-on::after-request="this.reset()"
+                        hx-swap="none">
+                        <input class="uk-input uk-form-width-small" type="text" placeholder="Duration"
+                            name="water.duration">
+                        <button class="uk-button uk-button-default uk-margin-left">Water
+                            Zone</button>
+                    </form>
+                </div>
+                <div class="uk-width-1-4@s uk-text-right">
                     {{ template "infoPopover" . }}
                 </div>
             </div>

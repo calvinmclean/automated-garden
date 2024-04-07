@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -22,7 +22,6 @@ import (
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
 )
 
 func createExampleGarden() *pkg.Garden {
@@ -493,16 +492,6 @@ func TestGardenAction(t *testing.T) {
 			http.StatusAccepted,
 		},
 		{
-			"SuccessfulLightActionUsingHTMXFlattenedInput",
-			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
-				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
-			},
-			`{"light_state":"on"}`,
-			"{}",
-			http.StatusAccepted,
-		},
-		{
 			"ExecuteErrorForLightAction",
 			func(mqttClient *mqtt.MockClient) {
 				mqttClient.On("LightTopic", "test-garden").Return("", errors.New("template error"))
@@ -548,78 +537,104 @@ func TestGardenAction(t *testing.T) {
 	}
 }
 
-func TestGardenActionRequest(t *testing.T) {
+func TestGardenActionForm(t *testing.T) {
 	tests := []struct {
-		name string
-		ar   *GardenActionRequest
-		err  string
+		name      string
+		setupMock func(*mqtt.MockClient)
+		body      string
+		expected  string
+		status    int
 	}{
 		{
-			"EmptyRequestError",
-			nil,
-			"missing required action fields",
+			"BadRequest",
+			func(_ *mqtt.MockClient) {},
+			"not_found=x",
+			`{"status":"Invalid request.","error":"not_found doesn't exist in action.GardenAction"}`,
+			http.StatusBadRequest,
 		},
 		{
-			"EmptyActionError",
-			&GardenActionRequest{},
-			"missing required action fields",
-		},
-		{
-			"EmptyGardenActionError",
-			&GardenActionRequest{
-				GardenAction: &action.GardenAction{},
+			"SuccessfulLightAction",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
+				mqttClient.On("Publish", "garden/action/light", []byte(`{"state":"ON","for_duration":null}`)).Return(nil)
 			},
-			"missing required action fields",
+			`light.state=on`,
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"SuccessfulLightActionWithQuote",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
+				mqttClient.On("Publish", "garden/action/light", []byte(`{"state":"ON","for_duration":null}`)).Return(nil)
+			},
+			`light.state="on"`,
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"SuccessfulLightActionOFF",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
+				mqttClient.On("Publish", "garden/action/light", []byte(`{"state":"OFF","for_duration":null}`)).Return(nil)
+			},
+			`light.state=off`,
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"SuccessfulLightActionOFFWithQuote",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("LightTopic", "test-garden").Return("garden/action/light", nil)
+				mqttClient.On("Publish", "garden/action/light", []byte(`{"state":"OFF","for_duration":null}`)).Return(nil)
+			},
+			`light.state="off"`,
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"SuccessfulStopAllWatering",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("StopAllTopic", "test-garden").Return("garden/action/stop", nil)
+				mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
+			},
+			`stop.all=true`,
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"ErrorInvalidLightState",
+			func(_ *mqtt.MockClient) {},
+			`light.state=BAD`,
+			`{"status":"Invalid request.","error":"cannot unmarshal BAD into Go value of type *pkg.LightState"}`,
+			http.StatusBadRequest,
 		},
 	}
 
-	t.Run("SuccessfulLightAction", func(t *testing.T) {
-		ar := &GardenActionRequest{
-			GardenAction: &action.GardenAction{
-				Light: &action.LightAction{
-					State: pkg.LightStateOn,
-				},
-			},
-		}
-		r := httptest.NewRequest("", "/", nil)
-		err := ar.Bind(r)
-		if err != nil {
-			t.Errorf("Unexpected error reading GardenActionRequest JSON: %v", err)
-		}
-	})
-	t.Run("SuccessfulLightActionFlattened", func(t *testing.T) {
-		on := pkg.LightStateOn
-		ar := &GardenActionRequest{
-			LightState: &on,
-		}
-		r := httptest.NewRequest("", "/", nil)
-		err := ar.Bind(r)
-		require.NoError(t, err)
-		assert.Equal(t, ar.Light.State, on)
-	})
-	t.Run("SuccessfulStopAction", func(t *testing.T) {
-		ar := &GardenActionRequest{
-			GardenAction: &action.GardenAction{
-				Stop: &action.StopAction{},
-			},
-		}
-		r := httptest.NewRequest("", "/", nil)
-		err := ar.Bind(r)
-		if err != nil {
-			t.Errorf("Unexpected error reading GardenActionRequest JSON: %v", err)
-		}
-	})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest("", "/", nil)
-			err := tt.ar.Bind(r)
-			if err == nil {
-				t.Error("Expected error reading GardenActionRequest JSON, but none occurred")
-				return
-			}
-			if err.Error() != tt.err {
-				t.Errorf("Unexpected error string: %v", err)
-			}
+			mqttClient := new(mqtt.MockClient)
+			tt.setupMock(mqttClient)
+
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+
+			gr, err := NewGardensAPI(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
+			assert.NoError(t, err)
+
+			garden := createExampleGarden()
+			err = storageClient.Gardens.Set(garden)
+			assert.NoError(t, err)
+
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/action", garden.ID), bytes.NewBufferString(tt.body))
+			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			w := babytest.TestRequest(t, gr.API, r)
+
+			assert.Equal(t, tt.status, w.Code)
+			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
+			mqttClient.AssertExpectations(t)
 		})
 	}
 }

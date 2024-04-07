@@ -94,8 +94,8 @@
             </li>
             {{ end }}
             <li>
-                <a hx-post="/gardens/{{ .ID }}/action" hx-ext='json-enc' hx-include="this" hx-swap="none">
-                    <input type="hidden" name="stop_all" value="true">
+                <a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none">
+                    <input type="hidden" name="stop.all" value="true">
                     <span uk-icon="ban"></span> Stop Watering
                 </a>
             </li>
@@ -106,8 +106,8 @@
 
 {{ define "lightActionButton" }}
 <!-- TODO: use HTMX to have some sort of feedback on button select, like change color -->
-<a hx-post="/gardens/{{ .ID }}/action" hx-ext='json-enc' hx-include="this" hx-swap="none">
-    <input type="hidden" name="light_state" value="{{ .State }}">
+<a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none">
+    <input type="hidden" name="light.state" value="{{ .State }}">
     {{ if eq .State "ON" }}
     <span uk-icon="upload"></span>
     {{ else }}

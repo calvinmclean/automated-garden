@@ -93,14 +93,14 @@ func (api *ZonesAPI) zoneAction(r *http.Request, zone *pkg.Zone) (render.Rendere
 		return nil, httpErr
 	}
 
-	action := &ZoneActionRequest{}
-	if err := render.Bind(r, action); err != nil {
+	zoneAction := &action.ZoneAction{}
+	if err := render.Bind(r, zoneAction); err != nil {
 		logger.Error("invalid request for ZoneAction", "error", err)
 		return nil, babyapi.ErrInvalidRequest(err)
 	}
-	logger.Debug("zone action", "action", action)
+	logger.Info("zone action", "action", zoneAction)
 
-	if err := api.worker.ExecuteZoneAction(garden, zone, action.ZoneAction); err != nil {
+	if err := api.worker.ExecuteZoneAction(garden, zone, zoneAction); err != nil {
 		logger.Error("unable to execute ZoneAction", "error", err)
 		return nil, babyapi.InternalServerError(err)
 	}
@@ -281,20 +281,4 @@ func (api *ZonesAPI) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden
 func excludeWeatherData(r *http.Request) bool {
 	result := r.URL.Query().Get("exclude_weather_data") == "true"
 	return result
-}
-
-// ZoneActionRequest wraps a ZoneAction into a request so we can handle Bind/Render in this package
-type ZoneActionRequest struct {
-	*action.ZoneAction
-}
-
-// Bind is used to make this struct compatible with our REST API implemented with go-chi.
-// It will verify that the request is valid
-func (action *ZoneActionRequest) Bind(_ *http.Request) error {
-	// ZoneAction is nil if no ZoneAction fields are sent in the request. Return an
-	// error to avoid a nil pointer dereference.
-	if action == nil || action.ZoneAction == nil || (action.Water == nil) {
-		return errors.New("missing required action fields")
-	}
-	return nil
 }

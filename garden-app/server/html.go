@@ -53,7 +53,6 @@ func renderTemplate(tmpl string, data any) string {
 	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.8"></script>
-	<script src="https://unpkg.com/htmx.org/dist/ext/json-enc.js"></script>
 </head>
 
 <style>

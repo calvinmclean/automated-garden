@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -11,7 +12,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -335,6 +335,80 @@ func TestZoneAction(t *testing.T) {
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+
+			assert.Equal(t, tt.status, w.Code)
+			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
+
+			zr.worker.Stop()
+			mqttClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestZoneActionForm(t *testing.T) {
+	tests := []struct {
+		name      string
+		setupMock func(*mqtt.MockClient)
+		body      string
+		expected  string
+		status    int
+	}{
+		{
+			"BadRequest",
+			func(_ *mqtt.MockClient) {},
+			"not_found=x",
+			`{"status":"Invalid request.","error":"not_found doesn't exist in action.ZoneAction"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"SuccessfulWaterActionInteger",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("WaterTopic", "test-garden").Return("garden/action/water", nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
+			},
+			`water.duration=1000`,
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"SuccessfulWaterActionString",
+			func(mqttClient *mqtt.MockClient) {
+				mqttClient.On("WaterTopic", "test-garden").Return("garden/action/water", nil)
+				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":2000,"id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
+			},
+			`water.duration=2s`,
+			"{}",
+			http.StatusAccepted,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mqttClient := new(mqtt.MockClient)
+			tt.setupMock(mqttClient)
+			mqttClient.On("Disconnect", uint(100)).Return()
+
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+
+			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
+			assert.NoError(t, err)
+
+			zr.worker.StartAsync()
+
+			garden := createExampleGarden()
+			zone := createExampleZone()
+
+			err = storageClient.Gardens.Set(garden)
+			assert.NoError(t, err)
+			err = storageClient.Zones.Set(zone)
+			assert.NoError(t, err)
+
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), bytes.NewBufferString(tt.body))
+			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -1031,58 +1105,6 @@ func TestUpdateZoneRequest(t *testing.T) {
 			err := tt.z.Bind(r)
 			if err == nil {
 				t.Error("Expected error reading ZoneRequest JSON, but none occurred")
-				return
-			}
-			if err.Error() != tt.err {
-				t.Errorf("Unexpected error string: %v", err)
-			}
-		})
-	}
-}
-
-func TestZoneActionRequest(t *testing.T) {
-	tests := []struct {
-		name string
-		ar   *ZoneActionRequest
-		err  string
-	}{
-		{
-			"EmptyRequestError",
-			nil,
-			"missing required action fields",
-		},
-		{
-			"EmptyActionError",
-			&ZoneActionRequest{},
-			"missing required action fields",
-		},
-		{
-			"EmptyZoneActionError",
-			&ZoneActionRequest{
-				ZoneAction: &action.ZoneAction{},
-			},
-			"missing required action fields",
-		},
-	}
-
-	t.Run("Successful", func(t *testing.T) {
-		ar := &ZoneActionRequest{
-			ZoneAction: &action.ZoneAction{
-				Water: &action.WaterAction{},
-			},
-		}
-		r := httptest.NewRequest("", "/", nil)
-		err := ar.Bind(r)
-		if err != nil {
-			t.Errorf("Unexpected error reading ZoneActionRequest JSON: %v", err)
-		}
-	})
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest("", "/", nil)
-			err := tt.ar.Bind(r)
-			if err == nil {
-				t.Error("Expected error reading ZoneActionRequest JSON, but none occurred")
 				return
 			}
 			if err.Error() != tt.err {
