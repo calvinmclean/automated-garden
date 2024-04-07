@@ -32,8 +32,11 @@ var (
 	stateToString = []string{"OFF", "ON", ""}
 	stringToState = map[string]LightState{
 		`"OFF"`: LightStateOff,
+		`OFF`:   LightStateOff,
 		`"ON"`:  LightStateOn,
+		`ON`:    LightStateOn,
 		`""`:    LightStateToggle,
+		``:      LightStateToggle,
 	}
 )
 
@@ -55,6 +58,14 @@ func (l LightState) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON with convert LightState's JSON string representation, ignoring case, into a LightState
 func (l *LightState) UnmarshalJSON(data []byte) error {
+	return l.unmarshal(data)
+}
+
+func (l *LightState) UnmarshalText(data []byte) error {
+	return l.unmarshal(data)
+}
+
+func (l *LightState) unmarshal(data []byte) error {
 	upper := strings.ToUpper(string(data))
 	var ok bool
 	*l, ok = stringToState[upper]

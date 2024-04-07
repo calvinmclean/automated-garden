@@ -2,7 +2,33 @@
 <!-- TODO: breadcrumb to go back to zone -->
 <h1 class="uk-heading-small uk-text-center">{{ .ZoneHistory.Zone.Name }}</h1>
 <div uk-grid>
+    {{ template "waterZoneForm" .ZoneHistory.Zone }}
     {{ template "waterHistoryTable" .ZoneHistory }}
+</div>
+{{ end }}
+
+{{ define "waterZoneForm" }}
+<div class="uk-card uk-width-1-1">
+    <div class="uk-card-header uk-text-center">
+        <h2>Water Zone</h2>
+    </div>
+    <div class="uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top">
+        <form class="uk-form-horizontal uk-grid-small" uk-grid>
+            <div class="uk-width-1-4@s">
+                <div class="uk-margin">
+                    <div class="uk-form-controls">
+                        <input class="uk-input uk-form-width-small" type="text" placeholder="Input" aria-label="Input">
+                    </div>
+                </div>
+            </div>
+
+            <div class="uk-width-1-4@s">
+                <div class="uk-margin">
+                    <button class="uk-button uk-button-default">Submit</button>
+                </div>
+            </div>
+        </form>
+    </div>
 </div>
 {{ end }}
 

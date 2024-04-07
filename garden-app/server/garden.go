@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
@@ -148,14 +149,14 @@ func (gr *GardensAPI) gardenAction(r *http.Request, garden *pkg.Garden) (render.
 		return nil, babyapi.ErrInvalidRequest(errors.New("unable to execute action on end-dated garden"))
 	}
 
-	action := &GardenActionRequest{}
-	if err := render.Bind(r, action); err != nil {
+	gardenAction := &action.GardenAction{}
+	if err := render.Bind(r, gardenAction); err != nil {
 		logger.Error("invalid request for GardenAction", "error", err)
 		return nil, babyapi.ErrInvalidRequest(err)
 	}
-	logger.Debug("garden action", "action", action)
+	logger.Debug("garden action", "action", gardenAction)
 
-	if err := gr.worker.ExecuteGardenAction(garden, action.GardenAction); err != nil {
+	if err := gr.worker.ExecuteGardenAction(garden, gardenAction); err != nil {
 		logger.Error("unable to execute GardenAction", "error", err)
 		return nil, babyapi.InternalServerError(err)
 	}

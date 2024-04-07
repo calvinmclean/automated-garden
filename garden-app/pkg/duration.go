@@ -60,6 +60,23 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// UnmarshalText is used for HTML form decoding. It doesn't know if it's an integer or string representation
+// so it will try both. It parses integer input as milliseconds
+func (d *Duration) UnmarshalText(data []byte) error {
+	v, err := strconv.Atoi(string(data))
+	if err == nil {
+		d.Duration = time.Duration(v) * time.Millisecond
+		return nil
+	}
+
+	d.Duration, d.Cron, err = parseString(string(data))
+	if err == nil {
+		return nil
+	}
+
+	return fmt.Errorf("invalid input for Duration: %w", err)
+}
+
 // UnmarshalYAML with allow reading a Duration as a string or integer into time.Duration
 func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 	switch value.Tag {
