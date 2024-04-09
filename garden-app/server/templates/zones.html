@@ -12,14 +12,14 @@
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
-                <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}/history?limit=10&range=720h">{{ .Name }}</a>
+                <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}?limit=10&range=720h">{{ .Name }}</a>
             </h3>
         </div>
         <div class="uk-card-body">
             <div>
                 <span uk-icon="clock" uk-tooltip="Start Time"></span> Watering for
-                <span class="uk-text-primary">{{.NextWater.Duration}}</span>
-                {{FormatUpcomingDate .NextWater.Time}}
+                <span class="uk-text-primary">{{ .NextWater.Duration }}</span>
+                {{ FormatUpcomingDate .NextWater.Time }}
             </div>
 
             {{ if .NextWater.Message }}

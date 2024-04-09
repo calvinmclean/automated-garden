@@ -10,6 +10,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
+	"github.com/go-chi/render"
 
 	_ "embed"
 )
@@ -17,8 +18,8 @@ import (
 //go:embed templates/zones.html
 var zonesHTML []byte
 
-//go:embed templates/zone_history.html
-var zoneHistoryHTML []byte
+//go:embed templates/zone_details.html
+var zoneDetailsHTML []byte
 
 // ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
 // and hypermedia Links fields
@@ -27,6 +28,10 @@ type ZoneResponse struct {
 	WeatherData *WeatherData     `json:"weather_data,omitempty"`
 	NextWater   NextWaterDetails `json:"next_water,omitempty"`
 	Links       []Link           `json:"links,omitempty"`
+
+	// History is only used in HTML responses and is excluded from JSON
+	History      ZoneWaterHistoryResponse `json:"-"`
+	HistoryError string                   `json:"-"`
 
 	api *ZonesAPI
 }
@@ -39,6 +44,26 @@ func (api *ZonesAPI) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneRespons
 
 		api: api,
 	}
+}
+
+func (zr *ZoneResponse) HTML(r *http.Request) string {
+	if os.Getenv("DEV_TEMPLATE") == "true" {
+		var err error
+		zoneDetailsHTML, err = os.ReadFile("server/templates/zone_details.html")
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	// ignoring errors here since this can only be reached for a valid request
+	timeRange, _ := rangeQueryParam(r)
+	limit, _ := limitQueryParam(r)
+
+	return renderTemplate(string(zoneDetailsHTML), map[string]any{
+		"TimeRange": timeRange,
+		"Limit":     limit,
+		"Response":  zr,
+	})
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
@@ -125,6 +150,18 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
+		history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
+		// non-fatal error so we can still render the HTML page
+		if apiErr != nil {
+			logger.Error("error getting water history", "error", apiErr)
+			zr.HistoryError = apiErr.ErrorText
+			return nil
+		}
+
+		zr.History = NewZoneWaterHistoryResponse(history)
+	}
+
 	return nil
 }
 
@@ -168,13 +205,10 @@ type ZoneWaterHistoryResponse struct {
 	Count   int                `json:"count"`
 	Average string             `json:"average"`
 	Total   string             `json:"total"`
-
-	// Just used in HTML response, not JSON
-	Zone *ZoneResponse `json:"-"`
 }
 
 // NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
-func (api *ZonesAPI) NewZoneWaterHistoryResponse(zone *pkg.Zone, history []pkg.WaterHistory) ZoneWaterHistoryResponse {
+func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryResponse {
 	total := time.Duration(0)
 	for _, h := range history {
 		amountDuration, _ := time.ParseDuration(h.Duration)
@@ -190,28 +224,7 @@ func (api *ZonesAPI) NewZoneWaterHistoryResponse(zone *pkg.Zone, history []pkg.W
 		Count:   count,
 		Average: average.String(),
 		Total:   time.Duration(total).String(),
-		Zone:    api.NewZoneResponse(zone),
 	}
-}
-
-func (resp ZoneWaterHistoryResponse) HTML(r *http.Request) string {
-	if os.Getenv("DEV_TEMPLATE") == "true" {
-		var err error
-		zoneHistoryHTML, err = os.ReadFile("server/templates/zone_history.html")
-		if err != nil {
-			panic(err)
-		}
-	}
-
-	// ignoring errors here since this can only be reached for a valid request
-	timeRange, _ := rangeQueryParam(r)
-	limit, _ := limitQueryParam(r)
-
-	return renderTemplate(string(zoneHistoryHTML), map[string]any{
-		"TimeRange":   timeRange,
-		"Limit":       limit,
-		"ZoneHistory": resp,
-	})
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing

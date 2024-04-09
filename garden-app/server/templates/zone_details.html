@@ -1,14 +1,14 @@
 {{ define "innerHTML" }}
 <!-- TODO: breadcrumb to go back to zone -->
-<h1 class="uk-heading-small uk-text-center">{{ .ZoneHistory.Zone.Name }}</h1>
+<h1 class="uk-heading-small uk-text-center">{{ .Response.Zone.Name }}</h1>
 <div uk-grid>
-    {{ template "waterZoneForm" .ZoneHistory.Zone }}
-    {{ template "waterHistoryTable" .ZoneHistory }}
+    {{ template "zoneInfo" .Response }}
+    {{ template "waterHistoryTable" .Response }}
 </div>
 {{ end }}
 
-{{ define "waterZoneForm" }}
-<div class="uk-align-center  uk-width-1-1 uk-margin-left uk-margin-right">
+{{ define "zoneInfo" }}
+<div class="uk-align-center uk-width-1-1 uk-margin-left uk-margin-right">
     <div class="uk-child-width-1-3@m uk-grid-small uk-grid-match" uk-grid>
         <div>
             <div class="uk-card uk-card-default uk-card-body  uk-text-center">
@@ -27,8 +27,8 @@
             <div class="uk-card uk-card-default uk-card-body uk-text-center">
                 <h3 class="uk-card-title">Water Schedule</h3>
                 <span uk-icon="clock" uk-tooltip="Start Time"></span> Watering for
-                <span class="uk-text-primary">{{.NextWater.Duration}}</span>
-                {{FormatUpcomingDate .NextWater.Time}}
+                <span class="uk-text-primary">{{ .NextWater.Duration }}</span>
+                {{ FormatUpcomingDate .NextWater.Time }}
             </div>
         </div>
         <div>
@@ -63,7 +63,13 @@
             </thead>
 
             <tbody>
-                {{ range .History }}
+                {{ if .HistoryError }}
+                <tr>
+                    <td>{{ .HistoryError }}</td>
+                    <td></td>
+                </tr>
+                {{ end }}
+                {{ range .History.History }}
                 <tr>
                     <td>{{ .Duration }}</td>
                     <td>{{ FormatDateTime .RecordTime }}</td>

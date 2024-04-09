@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"time"
@@ -219,6 +220,15 @@ func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Rende
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
+	history, apiErr := api.getWaterHistoryFromRequest(r, zone, logger)
+	if apiErr != nil {
+		return nil, apiErr
+	}
+
+	return NewZoneWaterHistoryResponse(history), nil
+}
+
+func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone, logger *slog.Logger) ([]pkg.WaterHistory, *babyapi.ErrResponse) {
 	garden, httpErr := api.getGardenFromRequest(r)
 	if httpErr != nil {
 		logger.Error("unable to get garden for zone", "error", httpErr)
@@ -247,7 +257,7 @@ func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Rende
 	}
 	logger.Debug("water history", "history", history)
 
-	return api.NewZoneWaterHistoryResponse(zone, history), nil
+	return history, nil
 }
 
 func (api *ZonesAPI) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {
