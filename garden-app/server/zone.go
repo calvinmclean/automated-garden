@@ -247,7 +247,7 @@ func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Rende
 	}
 	logger.Debug("water history", "history", history)
 
-	return NewZoneWaterHistoryResponse(zone, history), nil
+	return api.NewZoneWaterHistoryResponse(zone, history), nil
 }
 
 func (api *ZonesAPI) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {

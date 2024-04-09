@@ -170,11 +170,11 @@ type ZoneWaterHistoryResponse struct {
 	Total   string             `json:"total"`
 
 	// Just used in HTML response, not JSON
-	Zone *pkg.Zone `json:"-"`
+	Zone *ZoneResponse `json:"-"`
 }
 
 // NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
-func NewZoneWaterHistoryResponse(zone *pkg.Zone, history []pkg.WaterHistory) ZoneWaterHistoryResponse {
+func (api *ZonesAPI) NewZoneWaterHistoryResponse(zone *pkg.Zone, history []pkg.WaterHistory) ZoneWaterHistoryResponse {
 	total := time.Duration(0)
 	for _, h := range history {
 		amountDuration, _ := time.ParseDuration(h.Duration)
@@ -190,7 +190,7 @@ func NewZoneWaterHistoryResponse(zone *pkg.Zone, history []pkg.WaterHistory) Zon
 		Count:   count,
 		Average: average.String(),
 		Total:   time.Duration(total).String(),
-		Zone:    zone,
+		Zone:    api.NewZoneResponse(zone),
 	}
 }
 
