@@ -12,7 +12,6 @@ This project is a monorepo containing code for an ESP32-based microcontroller pr
 
 **If you have any question at all, please reach out and I would love to chat about the project!**
 
-[![View Demo](https://img.shields.io/badge/View-LiveUIDemo-2ea44f?style=for-the-badge)](https://calvinmclean.github.io/automated-garden/ui-demo/#/gardens)
 [![Additional Docs](https://img.shields.io/badge/View-Documentation-3271a8?style=for-the-badge)](https://calvinmclean.github.io/automated-garden)
 
 This system is designed to be flexible for all types of gardening. Here are a few examples of different possible setups:
