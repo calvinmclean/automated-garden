@@ -3,10 +3,14 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"os"
+	"slices"
+	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
+	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 )
 
@@ -77,4 +81,28 @@ func (ws *WaterScheduleResponse) Render(_ http.ResponseWriter, r *http.Request) 
 	}
 
 	return nil
+}
+
+// AllWaterSchedulesResponse is a simple struct being used to render and return a list of all WaterSchedules
+type AllWaterSchedulesResponse struct {
+	babyapi.ResourceList[*WaterScheduleResponse]
+}
+
+func (agr AllWaterSchedulesResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return agr.ResourceList.Render(w, r)
+}
+
+func (agr AllWaterSchedulesResponse) HTML(r *http.Request) string {
+	slices.SortFunc(agr.Items, func(w *WaterScheduleResponse, x *WaterScheduleResponse) int {
+		return strings.Compare(w.Name, x.Name)
+	})
+
+	if os.Getenv("DEV_TEMPLATE") == "true" {
+		var err error
+		waterSchedulesHTML, err = os.ReadFile("server/templates/water_schedules.html")
+		if err != nil {
+			panic(err)
+		}
+	}
+	return renderTemplate(r, string(waterSchedulesHTML), agr)
 }

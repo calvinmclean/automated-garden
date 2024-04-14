@@ -129,15 +129,12 @@
 
 {{ define "healthBadge" }}
 {{ $labelColor := "warning" }}
-{{ $icon := "close" }}
 {{ if eq .Health.Status "UP" }}
 {{ $labelColor = "success" }}
-{{ $icon = "rss" }}
 {{ else if eq .Health.Status "DOWN" }}
 {{ $labelColor = "danger" }}
 {{ end }}
 <span class="uk-label uk-label-{{ $labelColor }}">
-    <span uk-icon=" {{ $icon }}"></span>
     {{ .Health.Status }}
 </span>
 <div uk-dropdown="pos: right-center">

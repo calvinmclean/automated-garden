@@ -51,6 +51,15 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 	api.SetResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
 		return api.NewWaterScheduleResponse(ws)
 	})
+	api.SetGetAllResponseWrapper(func(waterSchedules []*pkg.WaterSchedule) render.Renderer {
+		resp := AllWaterSchedulesResponse{ResourceList: babyapi.ResourceList[*WaterScheduleResponse]{}}
+
+		for _, w := range waterSchedules {
+			resp.ResourceList.Items = append(resp.ResourceList.Items, api.NewWaterScheduleResponse(w))
+		}
+
+		return resp
+	})
 
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 

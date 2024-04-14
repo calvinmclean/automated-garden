@@ -26,7 +26,8 @@
         <div>
             <div class="uk-card uk-card-default uk-card-body uk-text-center">
                 <h3 class="uk-card-title">Water Schedule</h3>
-                <span uk-icon="clock" uk-tooltip="Start Time"></span> Watering for
+                <!-- TODO: duplicated from zones.html -->
+                </span> Watering for
                 <span class="uk-text-primary">{{ .NextWater.Duration }}</span>
                 {{ FormatUpcomingDate .NextWater.Time }}
             </div>

@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"fmt"
 	"html/template"
+	"net/http"
 	"strings"
 	"time"
+
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 )
 
-func renderTemplate(tmpl string, data any) string {
+func renderTemplate(r *http.Request, tmpl string, data any) string {
 	templates := template.New("base").Funcs(map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
 		// by using N as the key and N+1 as a value
@@ -35,9 +38,35 @@ func renderTemplate(tmpl string, data any) string {
 		"FormatDateTime": func(date *time.Time) string {
 			return date.Local().Format(time.DateTime)
 		},
+		"FormatTimeOnly": func(date *time.Time) string {
+			return date.Local().Format(time.Kitchen)
+		},
 		"Sprintf": fmt.Sprintf,
 		"CelsiusToFahrenheit": func(c float64) float64 {
 			return c*1.8 + 32
+		},
+		"timeNow": func() time.Time {
+			return time.Now()
+		},
+		"URLContains": func(input string) bool {
+			return strings.Contains(r.URL.Path, input)
+		},
+		"DurationWithDays": func(d *pkg.Duration) string {
+			if d.Duration < 24*time.Hour {
+				return d.String()
+			}
+
+			days := d.Duration / (24 * time.Hour)
+			remaining := d.Duration % (24 * time.Hour)
+
+			if remaining == 0 {
+				return fmt.Sprintf("%d days", days)
+			}
+
+			return fmt.Sprintf("%d days and %s", days, remaining.String())
+		},
+		"ShortMonth": func(month string) string {
+			return month[0:3]
 		},
 	})
 
@@ -68,9 +97,9 @@ func renderTemplate(tmpl string, data any) string {
         <div uk-navbar>
             <div class="uk-navbar-left">
                 <ul class="uk-navbar-nav">
-                    <li class="uk-active"><a href="/gardens">Gardens</a></li>
-                    <li><a href="/water_schedules">Water Schedules</a></li>
-					<li><a href="/weather_clients">Weather Clients</a></li>
+                    <li {{ if URLContains "/gardens" }}class="uk-active"{{ end }}><a href="/gardens">Gardens</a></li>
+                    <li {{ if URLContains "/water_schedules" }}class="uk-active"{{ end }}><a href="/water_schedules">Water Schedules</a></li>
+					<li {{ if URLContains "/weather_clients" }}class="uk-active"{{ end }}><a href="/weather_clients">Weather Clients</a></li>
                 </ul>
             </div>
         </div>

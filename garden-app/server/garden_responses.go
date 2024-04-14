@@ -11,12 +11,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
-
-	_ "embed"
 )
-
-//go:embed templates/gardens.html
-var gardensHTML []byte
 
 // GardenResponse is used to represent a Garden in the response body with the additional Moisture data
 // and hypermedia Links fields
@@ -143,7 +138,7 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 	return agr.ResourceList.Render(w, r)
 }
 
-func (agr AllGardensResponse) HTML(*http.Request) string {
+func (agr AllGardensResponse) HTML(r *http.Request) string {
 	slices.SortFunc(agr.Items, func(g *GardenResponse, h *GardenResponse) int {
 		return strings.Compare(g.Name, h.Name)
 	})
@@ -155,7 +150,7 @@ func (agr AllGardensResponse) HTML(*http.Request) string {
 			panic(err)
 		}
 	}
-	return renderTemplate(string(gardensHTML), agr)
+	return renderTemplate(r, string(gardensHTML), agr)
 }
 
 func (api *GardensAPI) getAllZones(gardenID string, getEndDated bool) ([]*pkg.Zone, error) {

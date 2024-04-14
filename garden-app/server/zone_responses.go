@@ -11,15 +11,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
-
-	_ "embed"
 )
-
-//go:embed templates/zones.html
-var zonesHTML []byte
-
-//go:embed templates/zone_details.html
-var zoneDetailsHTML []byte
 
 // ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
 // and hypermedia Links fields
@@ -59,7 +51,7 @@ func (zr *ZoneResponse) HTML(r *http.Request) string {
 	timeRange, _ := rangeQueryParam(r)
 	limit, _ := limitQueryParam(r)
 
-	return renderTemplate(string(zoneDetailsHTML), map[string]any{
+	return renderTemplate(r, string(zoneDetailsHTML), map[string]any{
 		"TimeRange": timeRange,
 		"Limit":     limit,
 		"Response":  zr,
@@ -193,7 +185,7 @@ func (azr AllZonesResponse) HTML(r *http.Request) string {
 		panic(err)
 	}
 
-	return renderTemplate(string(zonesHTML), map[string]any{
+	return renderTemplate(r, string(zonesHTML), map[string]any{
 		"Items":  azr.Items,
 		"Garden": garden,
 	})

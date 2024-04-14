@@ -1,0 +1,69 @@
+{{ define "innerHTML" }}
+<div uk-grid>
+    {{ range .Items }}
+    {{ template "waterScheduleCard" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "waterScheduleCard" }}
+<div class="uk-width-1-2@m">
+    <div class="uk-card uk-card-default" style="margin: 5%;">
+        <div class="uk-card-header uk-text-center">
+            <h3 class="uk-card-title uk-margin-remove-bottom">
+                <!-- TODO: Do a modal instead -->
+                <a href="/water_schedules/{{ .ID }}">{{ .Name }}</a>
+            </h3>
+        </div>
+        <div class="uk-card-body">
+            {{ template "waterScheduleDetails" . }}
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ define "waterScheduleDetails" }}
+
+{{ template "nextWater" .NextWater }}
+
+<div uk-margin>
+    <span class="uk-label uk-label-primary" uk-tooltip="Duration">
+        <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ .Duration }}
+    </span>
+    <span class="uk-label uk-label-primary" uk-tooltip="Start Time">
+        <span uk-icon="clock" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatTimeOnly
+        .StartTime }}
+    </span>
+    <span class="uk-label uk-label-primary" uk-tooltip="Interval">
+        <span uk-icon="refresh" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ DurationWithDays
+        .Interval }}
+    </span>
+    {{ if .ActivePeriod }}
+    {{ $activePeriod := Sprintf "%s - %s" (ShortMonth .ActivePeriod.StartMonth) (ShortMonth .ActivePeriod.EndMonth) }}
+    {{ if .IsActive timeNow }}
+    <span class="uk-label uk-label-primary" uk-tooltip="Active">
+        <span uk-icon="calendar" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ $activePeriod }}
+    </span>
+    {{ else }}
+    <span class="uk-label uk-label-danger" uk-tooltip="Inactive">
+        <span uk-icon="calendar" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ $activePeriod }}
+    </span>
+    {{ end }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "nextWater" }}
+<!-- TODO: this is duplicated from zones.html -->
+<div class="uk-margin-bottom" uk-margin>
+    </span> Watering for
+    <span class="uk-text-primary">{{ .Duration }}</span>
+    {{ FormatUpcomingDate .Time }}
+</div>
+
+{{ if .Message }}
+<div class="uk-alert-danger uk-alert" uk-alert>
+    <p class="uk-text-danger">{{ .Message }}</p>
+</div>
+{{ end }}
+{{ end }}
