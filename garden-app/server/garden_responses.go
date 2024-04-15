@@ -3,13 +3,13 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/server/templates"
 	"github.com/calvinmclean/babyapi"
 )
 
@@ -143,14 +143,7 @@ func (agr AllGardensResponse) HTML(r *http.Request) string {
 		return strings.Compare(g.Name, h.Name)
 	})
 
-	if os.Getenv("DEV_TEMPLATE") == "true" {
-		var err error
-		gardensHTML, err = os.ReadFile("server/templates/gardens.html")
-		if err != nil {
-			panic(err)
-		}
-	}
-	return renderTemplate(r, string(gardensHTML), agr)
+	return templates.Gardens.Render(r, agr)
 }
 
 func (api *GardensAPI) getAllZones(gardenID string, getEndDated bool) ([]*pkg.Zone, error) {

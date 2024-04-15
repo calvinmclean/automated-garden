@@ -1,17 +1,85 @@
-package server
+package templates
 
 import (
 	"bytes"
+	_ "embed"
 	"fmt"
 	"html/template"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/go-chi/render"
 )
 
-func renderTemplate(r *http.Request, tmpl string, data any) string {
+type Template int
+
+const (
+	Gardens Template = iota
+	EditGardenModal
+	Zones
+	ZoneDetails
+	WaterSchedules
+)
+
+var (
+	//go:embed gardens.html
+	gardensHTML []byte
+
+	//go:embed edit_garden_modal.html
+	editGardenModalHTML []byte
+
+	//go:embed zones.html
+	zonesHTML []byte
+
+	//go:embed zone_details.html
+	zoneDetailsHTML []byte
+
+	//go:embed water_schedules.html
+	waterSchedulesHTML []byte
+
+	templateFilenames = map[Template]string{
+		Gardens:         "server/templates/gardens.html",
+		EditGardenModal: "server/templates/edit_garden_modal.html",
+		Zones:           "server/templates/zones.html",
+		ZoneDetails:     "server/templates/zone_details.html",
+		WaterSchedules:  "server/templates/water_schedules.html",
+	}
+
+	templates = map[Template][]byte{
+		Gardens:         gardensHTML,
+		EditGardenModal: editGardenModalHTML,
+		Zones:           zonesHTML,
+		ZoneDetails:     zoneDetailsHTML,
+		WaterSchedules:  waterSchedulesHTML,
+	}
+)
+
+func (t Template) templateString() string {
+	tmpl, ok := templates[t]
+	if !ok {
+		panic("template not found")
+	}
+
+	if os.Getenv("DEV_TEMPLATE") == "true" {
+		templateFilename, ok := templateFilenames[t]
+		if !ok {
+			panic("template not found")
+		}
+
+		var err error
+		tmpl, err = os.ReadFile(templateFilename)
+		if err != nil {
+			panic(err)
+		}
+	}
+
+	return string(tmpl)
+}
+
+func (t Template) Render(r *http.Request, data any) string {
+	tmpl := t.templateString()
 	templates := template.New("base").Funcs(map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
 		// by using N as the key and N+1 as a value
@@ -69,6 +137,7 @@ func renderTemplate(r *http.Request, tmpl string, data any) string {
 	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js"></script>
 	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js"></script>
 	<script src="https://unpkg.com/htmx.org@1.9.8"></script>
+	<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
 </head>
 
 <style>
@@ -107,36 +176,34 @@ func renderTemplate(r *http.Request, tmpl string, data any) string {
 	return renderedOutput.String()
 }
 
-func formatDuration(d *pkg.Duration) string {
-	days := d.Duration / (24 * time.Hour)
-	remaining := d.Duration % (24 * time.Hour)
+func Renderer(t Template, data any) render.Renderer {
+	return htmlRenderer{t: t, data: data}
+}
 
-	remainingString := ""
-	hours := int(remaining.Hours())
-	remaining -= time.Duration(hours) * time.Hour
+type htmlRenderer struct {
+	t    Template
+	data any
+}
 
-	minutes := int(remaining.Minutes()) % 60
-	remaining -= time.Duration(minutes) * time.Minute
+func (h htmlRenderer) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
 
-	seconds := int(remaining.Seconds()) % 3600
+// TODO: merge this with other Render function to allow sharing functions, but I need to render modal without HTML header
+func (h htmlRenderer) HTML(_ *http.Request) string {
+	templates := template.New("base").Funcs(map[string]any{
+		"RFC3339Nano": func(t time.Time) string {
+			return t.Format(time.RFC3339Nano)
+		},
+	})
 
-	if hours > 0 {
-		remainingString += fmt.Sprintf("%dh", hours)
-	}
-	if minutes > 0 {
-		remainingString += fmt.Sprintf("%dm", minutes)
-	}
-	if seconds > 0 {
-		remainingString += fmt.Sprintf("%ds", seconds)
-	}
+	templates = template.Must(templates.New("innerHTML").Parse(h.t.templateString()))
 
-	if days == 0 {
-		return remainingString
-	}
-
-	if remainingString == "" {
-		return fmt.Sprintf("%d days", days)
+	var renderedOutput bytes.Buffer
+	err := templates.Execute(&renderedOutput, h.data)
+	if err != nil {
+		panic(err)
 	}
 
-	return fmt.Sprintf("%d days and %s", days, remainingString)
+	return renderedOutput.String()
 }

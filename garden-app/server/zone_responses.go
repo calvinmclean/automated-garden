@@ -3,12 +3,12 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/server/templates"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
 )
@@ -39,19 +39,11 @@ func (api *ZonesAPI) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneRespons
 }
 
 func (zr *ZoneResponse) HTML(r *http.Request) string {
-	if os.Getenv("DEV_TEMPLATE") == "true" {
-		var err error
-		zoneDetailsHTML, err = os.ReadFile("server/templates/zone_details.html")
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	// ignoring errors here since this can only be reached for a valid request
 	timeRange, _ := rangeQueryParam(r)
 	limit, _ := limitQueryParam(r)
 
-	return renderTemplate(r, string(zoneDetailsHTML), map[string]any{
+	return templates.ZoneDetails.Render(r, map[string]any{
 		"TimeRange": timeRange,
 		"Limit":     limit,
 		"Response":  zr,
@@ -172,20 +164,12 @@ func (azr AllZonesResponse) HTML(r *http.Request) string {
 		return strings.Compare(z.Name, zz.Name)
 	})
 
-	if os.Getenv("DEV_TEMPLATE") == "true" {
-		var err error
-		zonesHTML, err = os.ReadFile("server/templates/zones.html")
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	garden, err := babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), azr.api.ParentContextKey())
 	if err != nil {
 		panic(err)
 	}
 
-	return renderTemplate(r, string(zonesHTML), map[string]any{
+	return templates.Zones.Render(r, map[string]any{
 		"Items":  azr.Items,
 		"Garden": garden,
 	})

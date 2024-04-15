@@ -1,0 +1,35 @@
+{{ define "innerHTML" }}
+<div id="modal" class="uk-modal" style="display:block;">
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">Edit Garden</h3>
+
+        <form _="on submit take .uk-open from #modal" hx-put="/gardens/{{ .ID }}" hx-headers='{"Accept": "text/html"}'>
+            <input type="hidden" value="{{ .ID }}" name="ID">
+            <input type="hidden" value="{{ RFC3339Nano .CreatedAt }}" name="CreatedAt">
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .Name }}" name="Name">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .TopicPrefix }}" name="TopicPrefix">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .MaxZones }}" name="MaxZones">
+            </div>
+
+            <!-- TODO: Allow adding/removing LightSchedule -->
+            <div class="uk-margin">
+                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.Duration }}" {{ else }}
+                    placeholder="Light Schedule Duration" {{ end }} name="LightSchedule.Duration">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.StartTime }}" {{ else }}
+                    placeholder="Light Schedule Start Time" {{ end }} name="LightSchedule.StartTime">
+            </div>
+
+            <button type="submit" class="uk-button uk-button-primary">Save Changes</button>
+            <button id="cancelButton" type="button" class="uk-button uk-button-default"
+                _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
+        </form>
+    </div>
+</div>
+{{ end }}

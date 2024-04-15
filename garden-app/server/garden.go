@@ -9,6 +9,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/server/templates"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
@@ -69,6 +70,9 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 	gr.SetOnCreateOrUpdate(gr.onCreateOrUpdate)
 
 	gr.AddCustomIDRoute(http.MethodPost, "/action", gr.GetRequestedResourceAndDo(gr.gardenAction))
+	gr.AddCustomIDRoute(http.MethodGet, "/modal", gr.GetRequestedResourceAndDo(func(_ *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+		return templates.Renderer(templates.EditGardenModal, g), nil
+	}))
 
 	gr.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
 
