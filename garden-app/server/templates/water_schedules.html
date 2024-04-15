@@ -28,14 +28,14 @@
 
 <div uk-margin>
     <span class="uk-label uk-label-primary" uk-tooltip="Duration">
-        <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ .Duration }}
+        <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration .Duration }}
     </span>
     <span class="uk-label uk-label-primary" uk-tooltip="Start Time">
         <span uk-icon="clock" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatTimeOnly
         .StartTime }}
     </span>
     <span class="uk-label uk-label-primary" uk-tooltip="Interval">
-        <span uk-icon="refresh" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ DurationWithDays
+        <span uk-icon="refresh" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration
         .Interval }}
     </span>
     {{ if .ActivePeriod }}
@@ -57,7 +57,7 @@
 <!-- TODO: this is duplicated from zones.html -->
 <div class="uk-margin-bottom" uk-margin>
     </span> Watering for
-    <span class="uk-text-primary">{{ .Duration }}</span>
+    <span class="uk-text-primary">{{ FormatDuration .Duration }}</span>
     {{ FormatUpcomingDate .Time }}
 </div>
 

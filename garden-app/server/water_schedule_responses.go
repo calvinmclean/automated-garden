@@ -16,17 +16,17 @@ import (
 
 // NextWaterDetails has information about the next time this WaterSchedule will be used
 type NextWaterDetails struct {
-	Time            *time.Time `json:"time,omitempty"`
-	Duration        string     `json:"duration,omitempty"`
-	WaterScheduleID *xid.ID    `json:"water_schedule_id,omitempty"`
-	Message         string     `json:"message,omitempty"`
+	Time            *time.Time    `json:"time,omitempty"`
+	Duration        *pkg.Duration `json:"duration,omitempty"`
+	WaterScheduleID *xid.ID       `json:"water_schedule_id,omitempty"`
+	Message         string        `json:"message,omitempty"`
 }
 
 // GetNextWaterDetails returns the NextWaterDetails for the WaterSchedule
 func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, excludeWeatherData bool) NextWaterDetails {
 	result := NextWaterDetails{
 		Time:     worker.GetNextWaterTime(ws),
-		Duration: ws.Duration.Duration.String(),
+		Duration: ws.Duration,
 	}
 
 	if ws.HasWeatherControl() && !excludeWeatherData {
@@ -35,7 +35,7 @@ func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, excludeWe
 			result.Message = "error impacted duration scaling"
 		}
 
-		result.Duration = time.Duration(wd).String()
+		result.Duration = &pkg.Duration{Duration: time.Duration(wd)}
 	}
 
 	return result

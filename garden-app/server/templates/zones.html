@@ -18,7 +18,7 @@
         <div class="uk-card-body">
             <div>
                 </span> Watering for
-                <span class="uk-text-primary">{{ .NextWater.Duration }}</span>
+                <span class="uk-text-primary">{{ FormatDuration .NextWater.Duration }}</span>
                 {{ FormatUpcomingDate .NextWater.Time }}
             </div>
 
