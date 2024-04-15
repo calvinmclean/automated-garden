@@ -445,7 +445,7 @@ func WaterScheduleTests(t *testing.T) {
 		status, err = makeRequest(http.MethodGet, fmt.Sprintf("/water_schedules/%s", waterScheduleID), http.NoBody, &ws3)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, "0s", ws3.NextWater.Duration)
+		assert.Equal(t, "0s", ws3.NextWater.Duration.String())
 
 		time.Sleep(3 * time.Second)
 
