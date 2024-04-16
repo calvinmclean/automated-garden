@@ -56,6 +56,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
 	})))
 	rootAPI.AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler())
+	rootAPI.AddCustomRoute(http.MethodGet, "/", http.RedirectHandler("/gardens", http.StatusFound))
 
 	// Initialize Storage Client
 	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
