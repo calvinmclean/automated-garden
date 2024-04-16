@@ -7,13 +7,27 @@
 {{ end }}
 
 {{ define "waterScheduleCard" }}
+{{ $name := .Name }}
+{{ if eq $name "" }}
+{{ $name = .ID }}
+{{ end }}
 <div class="uk-width-1-2@m">
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
-                <!-- TODO: Do a modal instead -->
-                <a href="/water_schedules/{{ .ID }}">{{ .Name }}</a>
+                <!-- TODO: display a "non-edit"/detail modal from this link instead of edit -->
+                <a id="showButton" hx-get="/water_schedules/{{ .ID }}/modal" hx-headers='{"Accept": "text/html"}'
+                    hx-target="#modals-here" _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                    {{ $name }}
+                </a>
             </h3>
+            <!-- TODO: Ideally, this would be a more discrete edit icon, but I can't get it positioned correctly -->
+            <a class="uk-card-badge uk-label" id="showButton" hx-get="/water_schedules/{{ .ID }}/modal"
+                hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
+                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                Edit
+            </a>
+            <div id="modals-here"></div>
         </div>
         <div class="uk-card-body">
             {{ template "waterScheduleDetails" . }}
@@ -41,7 +55,7 @@
     {{ if .ActivePeriod }}
     {{ $activePeriod := Sprintf "%s - %s" (ShortMonth .ActivePeriod.StartMonth) (ShortMonth .ActivePeriod.EndMonth) }}
     {{ if .IsActive timeNow }}
-    <span class="uk-label uk-label-primary" uk-tooltip="Active">
+    <span class="uk-label uk-label-success" uk-tooltip="Active">
         <span uk-icon="calendar" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ $activePeriod }}
     </span>
     {{ else }}

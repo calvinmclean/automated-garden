@@ -1,0 +1,50 @@
+{{ define "innerHTML" }}
+{{ $name := .Name }}
+{{ if eq $name "" }}
+{{ $name = .ID }}
+{{ end }}
+<div id="modal" class="uk-modal" style="display:block;">
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">{{ $name }}</h3>
+
+        <form _="on submit take .uk-open from #modal" hx-put="/water_schedules/{{ .ID }}"
+            hx-headers='{"Accept": "text/html"}'>
+            <input type="hidden" value="{{ .ID }}" name="ID">
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .Name }}" placeholder="Name" name="Name">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .Description }}" placeholder="Description" name="Description">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .Duration }}" placeholder="Duration" name="Duration">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .Interval }}" placeholder="Interval" name="Interval">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ RFC3339Nano .StartTime }}" placeholder="StartTime" name="StartTime">
+            </div>
+
+            <div class="uk-margin">
+                <select class="uk-select" name="ActivePeriod.StartMonth">
+                    <option>Start being active in...</option>
+                    <option></option>
+                    {{ MonthRows .ActivePeriod true }}
+                </select>
+            </div>
+            <div class="uk-margin">
+                <select class="uk-select" name="ActivePeriod.EndMonth">
+                    <option>Stop being active after...</option>
+                    <option></option>
+                    {{ MonthRows .ActivePeriod false }}
+                </select>
+            </div>
+
+            <button type="submit" class="uk-button uk-button-primary">Save Changes</button>
+            <button id="cancelButton" type="button" class="uk-button uk-button-default"
+                _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
+        </form>
+    </div>
+</div>
+{{ end }}

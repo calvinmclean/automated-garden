@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/go-chi/render"
 )
 
@@ -21,6 +22,7 @@ const (
 	Zones
 	ZoneDetails
 	WaterSchedules
+	WaterScheduleModal
 )
 
 var (
@@ -39,20 +41,25 @@ var (
 	//go:embed water_schedules.html
 	waterSchedulesHTML []byte
 
+	//go:embed water_schedule_modal.html
+	waterScheduleModal []byte
+
 	templateFilenames = map[Template]string{
-		Gardens:         "server/templates/gardens.html",
-		EditGardenModal: "server/templates/edit_garden_modal.html",
-		Zones:           "server/templates/zones.html",
-		ZoneDetails:     "server/templates/zone_details.html",
-		WaterSchedules:  "server/templates/water_schedules.html",
+		Gardens:            "server/templates/gardens.html",
+		EditGardenModal:    "server/templates/edit_garden_modal.html",
+		Zones:              "server/templates/zones.html",
+		ZoneDetails:        "server/templates/zone_details.html",
+		WaterSchedules:     "server/templates/water_schedules.html",
+		WaterScheduleModal: "server/templates/water_schedule_modal.html",
 	}
 
 	templates = map[Template][]byte{
-		Gardens:         gardensHTML,
-		EditGardenModal: editGardenModalHTML,
-		Zones:           zonesHTML,
-		ZoneDetails:     zoneDetailsHTML,
-		WaterSchedules:  waterSchedulesHTML,
+		Gardens:            gardensHTML,
+		EditGardenModal:    editGardenModalHTML,
+		Zones:              zonesHTML,
+		ZoneDetails:        zoneDetailsHTML,
+		WaterSchedules:     waterSchedulesHTML,
+		WaterScheduleModal: waterScheduleModal,
 	}
 )
 
@@ -192,8 +199,34 @@ func (h htmlRenderer) Render(_ http.ResponseWriter, _ *http.Request) error {
 // TODO: merge this with other Render function to allow sharing functions, but I need to render modal without HTML header
 func (h htmlRenderer) HTML(_ *http.Request) string {
 	templates := template.New("base").Funcs(map[string]any{
-		"RFC3339Nano": func(t time.Time) string {
+		"RFC3339Nano": func(t *time.Time) string {
+			if t == nil {
+				return ""
+			}
 			return t.Format(time.RFC3339Nano)
+		},
+		"MonthRows": func(ap *pkg.ActivePeriod, startMonth bool) template.HTML {
+			var sb strings.Builder
+			for month := time.January; month <= time.December; month++ {
+				format := `<option value="%s">%s</option>`
+
+				if ap != nil {
+					selected := ap.StartMonth == month.String()
+					if !startMonth {
+						selected = ap.EndMonth == month.String()
+					}
+
+					if selected {
+						format = `<option value="%s" selected>%s</option>`
+					}
+				}
+
+				sb.WriteString(fmt.Sprintf(format, month.String(), month.String()))
+				sb.WriteString("\n")
+			}
+
+			//nolint:gosec
+			return template.HTML(sb.String())
 		},
 	})
 
