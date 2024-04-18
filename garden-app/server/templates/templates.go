@@ -207,6 +207,18 @@ func (h htmlRenderer) HTML(_ *http.Request) string {
 		},
 		"MonthRows": func(ap *pkg.ActivePeriod, startMonth bool) template.HTML {
 			var sb strings.Builder
+
+			start := "Start being active in..."
+			selected := ""
+			if !startMonth {
+				start = "Stop being active after..."
+			}
+			if ap == nil {
+				selected = "selected"
+			}
+
+			sb.WriteString(fmt.Sprintf("<option disabled %s>%s</option>\n", selected, start))
+
 			for month := time.January; month <= time.December; month++ {
 				format := `<option value="%s">%s</option>`
 
