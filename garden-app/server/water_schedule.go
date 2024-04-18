@@ -95,8 +95,11 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 
 	api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
 
-	api.AddCustomIDRoute(http.MethodGet, "/modal", api.GetRequestedResourceAndDo(func(_ *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
-		return templates.Renderer(templates.WaterScheduleModal, ws), nil
+	api.AddCustomIDRoute(http.MethodGet, "/modal", api.GetRequestedResourceAndDo(func(r *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
+		if r.URL.Query().Get("edit") == "false" {
+			return templates.Renderer(templates.WaterScheduleModal, ws), nil
+		}
+		return templates.Renderer(templates.WaterScheduleEditModal, ws), nil
 	}))
 
 	return api, err

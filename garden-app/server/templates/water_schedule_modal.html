@@ -7,40 +7,43 @@
     <div class="uk-modal-dialog uk-modal-body">
         <h3 class="uk-modal-title">{{ $name }}</h3>
 
-        <form _="on submit take .uk-open from #modal" hx-put="/water_schedules/{{ .ID }}"
-            hx-headers='{"Accept": "text/html"}'>
-            <input type="hidden" value="{{ .ID }}" name="ID">
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ .Name }}" placeholder="Name" name="Name">
-            </div>
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ .Description }}" placeholder="Description" name="Description">
-            </div>
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ .Duration }}" placeholder="Duration" name="Duration">
-            </div>
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ .Interval }}" placeholder="Interval" name="Interval">
-            </div>
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ RFC3339Nano .StartTime }}" placeholder="StartTime" name="StartTime">
-            </div>
+        {{ if .Description }}
+        <p>{{ .Description }}</p>
+        {{ end }}
 
-            <div class="uk-margin">
-                <select class="uk-select" name="ActivePeriod.StartMonth">
-                    {{ MonthRows .ActivePeriod true }}
-                </select>
-            </div>
-            <div class="uk-margin">
-                <select class="uk-select" name="ActivePeriod.EndMonth">
-                    {{ MonthRows .ActivePeriod false }}
-                </select>
-            </div>
+        {{ template "waterScheduleDetails" . }}
 
-            <button type="submit" class="uk-button uk-button-primary">Save Changes</button>
-            <button id="cancelButton" type="button" class="uk-button uk-button-default"
-                _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
-        </form>
+        <button id="cancelButton" type="button" class="uk-button uk-button-default"
+            _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
     </div>
+</div>
+{{ end }}
+
+{{ define "waterScheduleDetails" }}
+<!-- TODO: Copied from water_schedules.html -->
+<div class="uk-margin-bottom" uk-margin>
+    <span class="uk-label uk-label-primary" uk-tooltip="Duration">
+        <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration .Duration }}
+    </span>
+    <span class="uk-label uk-label-primary" uk-tooltip="Start Time">
+        <span uk-icon="clock" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatTimeOnly
+        .StartTime }}
+    </span>
+    <span class="uk-label uk-label-primary" uk-tooltip="Interval">
+        <span uk-icon="refresh" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration
+        .Interval }}
+    </span>
+    {{ if .ActivePeriod }}
+    {{ $activePeriod := Sprintf "%s - %s" (ShortMonth .ActivePeriod.StartMonth) (ShortMonth .ActivePeriod.EndMonth) }}
+    {{ if .IsActive timeNow }}
+    <span class="uk-label uk-label-success" uk-tooltip="Active">
+        <span uk-icon="calendar" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ $activePeriod }}
+    </span>
+    {{ else }}
+    <span class="uk-label uk-label-danger" uk-tooltip="Inactive">
+        <span uk-icon="calendar" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ $activePeriod }}
+    </span>
+    {{ end }}
+    {{ end }}
 </div>
 {{ end }}

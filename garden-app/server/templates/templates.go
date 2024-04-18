@@ -22,6 +22,7 @@ const (
 	Zones
 	ZoneDetails
 	WaterSchedules
+	WaterScheduleEditModal
 	WaterScheduleModal
 )
 
@@ -83,25 +84,30 @@ var (
 	//go:embed water_schedules.html
 	waterSchedulesHTML []byte
 
+	//go:embed water_schedule_edit_modal.html
+	waterScheduleEditModal []byte
+
 	//go:embed water_schedule_modal.html
 	waterScheduleModal []byte
 
 	templateFilenames = map[Template]string{
-		Gardens:            "server/templates/gardens.html",
-		EditGardenModal:    "server/templates/edit_garden_modal.html",
-		Zones:              "server/templates/zones.html",
-		ZoneDetails:        "server/templates/zone_details.html",
-		WaterSchedules:     "server/templates/water_schedules.html",
-		WaterScheduleModal: "server/templates/water_schedule_modal.html",
+		Gardens:                "server/templates/gardens.html",
+		EditGardenModal:        "server/templates/edit_garden_modal.html",
+		Zones:                  "server/templates/zones.html",
+		ZoneDetails:            "server/templates/zone_details.html",
+		WaterSchedules:         "server/templates/water_schedules.html",
+		WaterScheduleEditModal: "server/templates/water_schedule_edit_modal.html",
+		WaterScheduleModal:     "server/templates/water_schedule_modal.html",
 	}
 
 	templates = map[Template][]byte{
-		Gardens:            gardensHTML,
-		EditGardenModal:    editGardenModalHTML,
-		Zones:              zonesHTML,
-		ZoneDetails:        zoneDetailsHTML,
-		WaterSchedules:     waterSchedulesHTML,
-		WaterScheduleModal: waterScheduleModal,
+		Gardens:                gardensHTML,
+		EditGardenModal:        editGardenModalHTML,
+		Zones:                  zonesHTML,
+		ZoneDetails:            zoneDetailsHTML,
+		WaterSchedules:         waterSchedulesHTML,
+		WaterScheduleEditModal: waterScheduleEditModal,
+		WaterScheduleModal:     waterScheduleModal,
 	}
 )
 
@@ -190,7 +196,7 @@ func (t Template) Render(r *http.Request, data any, fullPage bool) string {
 				selected = "selected"
 			}
 
-			sb.WriteString(fmt.Sprintf("<option disabled %s>%s</option>\n", selected, start))
+			sb.WriteString(fmt.Sprintf("<option value=\"\" disabled %s>%s</option>\n", selected, start))
 
 			for month := time.January; month <= time.December; month++ {
 				format := `<option value="%s">%s</option>`
