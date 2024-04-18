@@ -25,6 +25,48 @@ const (
 	WaterScheduleModal
 )
 
+const (
+	baseTemplate = `<!doctype html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Garden App</title>
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css" />
+	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js"></script>
+	<script src="https://unpkg.com/htmx.org@1.9.8"></script>
+	<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+</head>
+
+<style>
+	div.htmx-swapping {
+		opacity: 0;
+		transition: opacity 1s ease-out;
+	}
+</style>
+
+<body>
+<nav class="uk-navbar-container">
+	<div class="uk-container">
+		<div uk-navbar>
+			<div class="uk-navbar-left">
+				<ul class="uk-navbar-nav">
+					<li {{ if URLContains "/gardens" }}class="uk-active"{{ end }}><a href="/gardens">Gardens</a></li>
+					<li {{ if URLContains "/water_schedules" }}class="uk-active"{{ end }}><a href="/water_schedules">Water Schedules</a></li>
+					<li {{ if URLContains "/weather_clients" }}class="uk-active"{{ end }}><a href="/weather_clients">Weather Clients</a></li>
+				</ul>
+			</div>
+		</div>
+	</div>
+</nav>
+
+{{template "innerHTML" .}}
+
+</body>
+</html>`
+)
+
 var (
 	//go:embed gardens.html
 	gardensHTML []byte
@@ -85,7 +127,7 @@ func (t Template) templateString() string {
 	return string(tmpl)
 }
 
-func (t Template) Render(r *http.Request, data any) string {
+func (t Template) Render(r *http.Request, data any, fullPage bool) string {
 	tmpl := t.templateString()
 	templates := template.New("base").Funcs(map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
@@ -130,75 +172,6 @@ func (t Template) Render(r *http.Request, data any) string {
 		"ShortMonth": func(month string) string {
 			return month[0:3]
 		},
-	})
-
-	templates = template.Must(templates.New("innerHTML").Parse(tmpl))
-	// TODO: use current URL from request to set class="uk-active" in navbar
-	templates = template.Must(templates.New("GardenApp").Parse(`<!doctype html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Garden App</title>
-	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css" />
-	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js"></script>
-	<script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js"></script>
-	<script src="https://unpkg.com/htmx.org@1.9.8"></script>
-	<script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
-</head>
-
-<style>
-	div.htmx-swapping {
-		opacity: 0;
-		transition: opacity 1s ease-out;
-	}
-</style>
-
-<body>
-<nav class="uk-navbar-container">
-    <div class="uk-container">
-        <div uk-navbar>
-            <div class="uk-navbar-left">
-                <ul class="uk-navbar-nav">
-                    <li {{ if URLContains "/gardens" }}class="uk-active"{{ end }}><a href="/gardens">Gardens</a></li>
-                    <li {{ if URLContains "/water_schedules" }}class="uk-active"{{ end }}><a href="/water_schedules">Water Schedules</a></li>
-					<li {{ if URLContains "/weather_clients" }}class="uk-active"{{ end }}><a href="/weather_clients">Weather Clients</a></li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</nav>
-
-{{template "innerHTML" .}}
-
-</body>
-</html>`))
-
-	var renderedOutput bytes.Buffer
-	err := templates.Execute(&renderedOutput, data)
-	if err != nil {
-		panic(err)
-	}
-
-	return renderedOutput.String()
-}
-
-func Renderer(t Template, data any) render.Renderer {
-	return htmlRenderer{t: t, data: data}
-}
-
-type htmlRenderer struct {
-	t    Template
-	data any
-}
-
-func (h htmlRenderer) Render(_ http.ResponseWriter, _ *http.Request) error {
-	return nil
-}
-
-// TODO: merge this with other Render function to allow sharing functions, but I need to render modal without HTML header
-func (h htmlRenderer) HTML(_ *http.Request) string {
-	templates := template.New("base").Funcs(map[string]any{
 		"RFC3339Nano": func(t *time.Time) string {
 			if t == nil {
 				return ""
@@ -242,13 +215,33 @@ func (h htmlRenderer) HTML(_ *http.Request) string {
 		},
 	})
 
-	templates = template.Must(templates.New("innerHTML").Parse(h.t.templateString()))
+	templates = template.Must(templates.New("innerHTML").Parse(tmpl))
+	if fullPage {
+		templates = template.Must(templates.New("GardenApp").Parse(baseTemplate))
+	}
 
 	var renderedOutput bytes.Buffer
-	err := templates.Execute(&renderedOutput, h.data)
+	err := templates.Execute(&renderedOutput, data)
 	if err != nil {
 		panic(err)
 	}
 
 	return renderedOutput.String()
+}
+
+func Renderer(t Template, data any) render.Renderer {
+	return htmlRenderer{t: t, data: data}
+}
+
+type htmlRenderer struct {
+	t    Template
+	data any
+}
+
+func (h htmlRenderer) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func (h htmlRenderer) HTML(r *http.Request) string {
+	return h.t.Render(r, h.data, false)
 }

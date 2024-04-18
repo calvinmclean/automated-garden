@@ -47,7 +47,7 @@ func (zr *ZoneResponse) HTML(r *http.Request) string {
 		"TimeRange": timeRange,
 		"Limit":     limit,
 		"Response":  zr,
-	})
+	}, true)
 }
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
@@ -172,7 +172,7 @@ func (azr AllZonesResponse) HTML(r *http.Request) string {
 	return templates.Zones.Render(r, map[string]any{
 		"Items":  azr.Items,
 		"Garden": garden,
-	})
+	}, true)
 }
 
 // ZoneWaterHistoryResponse wraps a slice of WaterHistory structs plus some aggregate stats for an HTTP response

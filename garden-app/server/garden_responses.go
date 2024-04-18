@@ -143,7 +143,7 @@ func (agr AllGardensResponse) HTML(r *http.Request) string {
 		return strings.Compare(g.Name, h.Name)
 	})
 
-	return templates.Gardens.Render(r, agr)
+	return templates.Gardens.Render(r, agr, true)
 }
 
 func (api *GardensAPI) getAllZones(gardenID string, getEndDated bool) ([]*pkg.Zone, error) {

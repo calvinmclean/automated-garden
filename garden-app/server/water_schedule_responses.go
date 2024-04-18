@@ -97,5 +97,5 @@ func (agr AllWaterSchedulesResponse) HTML(r *http.Request) string {
 		return strings.Compare(w.Name, x.Name)
 	})
 
-	return templates.WaterSchedules.Render(r, agr)
+	return templates.WaterSchedules.Render(r, agr, true)
 }
