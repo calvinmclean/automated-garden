@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/server/templates"
+	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
@@ -97,5 +97,5 @@ func (agr AllWaterSchedulesResponse) HTML(r *http.Request) string {
 		return strings.Compare(w.Name, x.Name)
 	})
 
-	return templates.WaterSchedules.Render(r, agr, true)
+	return html.WaterSchedules.Render(r, agr)
 }

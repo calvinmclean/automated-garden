@@ -1,9 +1,11 @@
-{{ define "innerHTML" }}
+{{ define "Gardens" }}
+{{ template "start" }}
 <div uk-grid>
     {{ range .Items }}
     {{ template "GardenCard" . }}
     {{ end }}
 </div>
+{{ template "end" }}
 {{ end }}
 
 {{ define "GardenCard" }}

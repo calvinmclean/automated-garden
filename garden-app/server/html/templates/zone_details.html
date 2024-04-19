@@ -1,10 +1,12 @@
-{{ define "innerHTML" }}
+{{ define "ZoneDetails" }}
+{{ template "start" }}
 <!-- TODO: breadcrumb to go back to zone -->
 <h1 class="uk-heading-small uk-text-center">{{ .Response.Zone.Name }}</h1>
 <div uk-grid>
     {{ template "zoneInfo" .Response }}
     {{ template "waterHistoryTable" .Response }}
 </div>
+{{ template "start" }}
 {{ end }}
 
 {{ define "zoneInfo" }}
@@ -40,10 +42,7 @@
                     Edit
                 </a>
                 <div id="modals-here"></div>
-                <!-- TODO: duplicated from zones.html -->
-                </span> Watering for
-                <span class="uk-text-primary">{{ .NextWater.Duration }}</span>
-                {{ FormatUpcomingDate .NextWater.Time }}
+                {{ template "nextWaterDetail" .NextWater }}
             </div>
         </div>
         <div>

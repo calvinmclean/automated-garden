@@ -9,7 +9,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
-	"github.com/calvinmclean/automated-garden/garden-app/server/templates"
+	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/babyapi"
 )
 
@@ -143,7 +143,7 @@ func (agr AllGardensResponse) HTML(r *http.Request) string {
 		return strings.Compare(g.Name, h.Name)
 	})
 
-	return templates.Gardens.Render(r, agr, true)
+	return html.Gardens.Render(r, agr)
 }
 
 func (api *GardensAPI) getAllZones(gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
