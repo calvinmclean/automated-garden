@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/server/templates"
+	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
 )
@@ -43,7 +43,7 @@ func (zr *ZoneResponse) HTML(r *http.Request) string {
 	timeRange, _ := rangeQueryParam(r)
 	limit, _ := limitQueryParam(r)
 
-	return templates.ZoneDetails.Render(r, map[string]any{
+	return html.ZoneDetails.Render(r, map[string]any{
 		"TimeRange": timeRange,
 		"Limit":     limit,
 		"Response":  zr,
@@ -169,7 +169,7 @@ func (azr AllZonesResponse) HTML(r *http.Request) string {
 		panic(err)
 	}
 
-	return templates.Zones.Render(r, map[string]any{
+	return html.Zones.Render(r, map[string]any{
 		"Items":  azr.Items,
 		"Garden": garden,
 	})

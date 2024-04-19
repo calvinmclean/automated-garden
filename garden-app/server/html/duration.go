@@ -1,4 +1,4 @@
-package templates
+package html
 
 import (
 	"fmt"

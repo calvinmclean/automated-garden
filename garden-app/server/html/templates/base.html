@@ -1,0 +1,46 @@
+{{ define "start" }}
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garden App</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js"></script>
+    <script src="https://unpkg.com/htmx.org@1.9.8"></script>
+    <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+</head>
+
+<style>
+    div.htmx-swapping {
+        opacity: 0;
+        transition: opacity 1s ease-out;
+    }
+</style>
+
+<body>
+    <nav class="uk-navbar-container">
+        <div class="uk-container">
+            <div uk-navbar>
+                <div class="uk-navbar-left">
+                    <ul class="uk-navbar-nav">
+                        <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a>
+                        </li>
+                        <li {{ if URLContains "/water_schedules" }}class="uk-active" {{ end }}><a
+                                href="/water_schedules">Water Schedules</a></li>
+                        <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
+                                href="/weather_clients">Weather Clients</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+    {{ end }}
+
+    {{ define "end" }}
+</body>
+
+</html>
+{{ end }}

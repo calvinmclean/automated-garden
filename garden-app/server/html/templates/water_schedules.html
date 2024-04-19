@@ -1,9 +1,11 @@
-{{ define "innerHTML" }}
+{{ define "WaterSchedules" }}
+{{ template "start" }}
 <div uk-grid>
     {{ range .Items }}
     {{ template "waterScheduleCard" . }}
     {{ end }}
 </div>
+{{ template "end" }}
 {{ end }}
 
 {{ define "waterScheduleCard" }}
@@ -15,9 +17,9 @@
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
-                <!-- TODO: display a "non-edit"/detail modal from this link instead of edit -->
-                <a id="showButton" hx-get="/water_schedules/{{ .ID }}/modal" hx-headers='{"Accept": "text/html"}'
-                    hx-target="#modals-here" _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                <a id="showButton" hx-get="/water_schedules/{{ .ID }}/modal?edit=false"
+                    hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
+                    _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                     {{ $name }}
                 </a>
             </h3>
@@ -30,6 +32,10 @@
             <div id="modals-here"></div>
         </div>
         <div class="uk-card-body">
+            {{ if .NextWater }}
+            {{ template "nextWaterDetail" .NextWater }}
+            {{ end }}
+
             {{ template "waterScheduleDetails" . }}
         </div>
     </div>
@@ -37,10 +43,7 @@
 {{ end }}
 
 {{ define "waterScheduleDetails" }}
-
-{{ template "nextWater" .NextWater }}
-
-<div uk-margin>
+<div class="uk-margin-top" uk-margin>
     <span class="uk-label uk-label-primary" uk-tooltip="Duration">
         <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration .Duration }}
     </span>
@@ -65,19 +68,4 @@
     {{ end }}
     {{ end }}
 </div>
-{{ end }}
-
-{{ define "nextWater" }}
-<!-- TODO: this is duplicated from zones.html -->
-<div class="uk-margin-bottom" uk-margin>
-    </span> Watering for
-    <span class="uk-text-primary">{{ FormatDuration .Duration }}</span>
-    {{ FormatUpcomingDate .Time }}
-</div>
-
-{{ if .Message }}
-<div class="uk-alert-danger uk-alert" uk-alert>
-    <p class="uk-text-danger">{{ .Message }}</p>
-</div>
-{{ end }}
 {{ end }}

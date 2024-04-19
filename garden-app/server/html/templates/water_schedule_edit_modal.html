@@ -1,4 +1,4 @@
-{{ define "innerHTML" }}
+{{ define "WaterScheduleEditModal" }}
 {{ $name := .Name }}
 {{ if eq $name "" }}
 {{ $name = .ID }}
@@ -28,15 +28,11 @@
 
             <div class="uk-margin">
                 <select class="uk-select" name="ActivePeriod.StartMonth">
-                    <option>Start being active in...</option>
-                    <option></option>
                     {{ MonthRows .ActivePeriod true }}
                 </select>
             </div>
             <div class="uk-margin">
                 <select class="uk-select" name="ActivePeriod.EndMonth">
-                    <option>Stop being active after...</option>
-                    <option></option>
                     {{ MonthRows .ActivePeriod false }}
                 </select>
             </div>

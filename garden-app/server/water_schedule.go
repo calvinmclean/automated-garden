@@ -7,7 +7,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
-	"github.com/calvinmclean/automated-garden/garden-app/server/templates"
+	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
@@ -95,8 +95,11 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 
 	api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
 
-	api.AddCustomIDRoute(http.MethodGet, "/modal", api.GetRequestedResourceAndDo(func(_ *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
-		return templates.Renderer(templates.WaterScheduleModal, ws), nil
+	api.AddCustomIDRoute(http.MethodGet, "/modal", api.GetRequestedResourceAndDo(func(r *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
+		if r.URL.Query().Get("edit") == "false" {
+			return html.Renderer(html.WaterScheduleModal, ws), nil
+		}
+		return html.Renderer(html.WaterScheduleEditModal, ws), nil
 	}))
 
 	return api, err

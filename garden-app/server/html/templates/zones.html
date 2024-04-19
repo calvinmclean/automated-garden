@@ -1,10 +1,12 @@
-{{ define "innerHTML" }}
+{{ define "Zones" }}
+{{ template "start" }}
 <h1 class="uk-heading-small uk-text-center">{{ .Garden.Name }}</h1>
 <div uk-grid>
     {{ range .Items }}
     {{ template "ZoneCard" . }}
     {{ end }}
 </div>
+{{ template "end" }}
 {{ end }}
 
 {{ define "ZoneCard" }}
@@ -16,17 +18,7 @@
             </h3>
         </div>
         <div class="uk-card-body">
-            <div>
-                </span> Watering for
-                <span class="uk-text-primary">{{ FormatDuration .NextWater.Duration }}</span>
-                {{ FormatUpcomingDate .NextWater.Time }}
-            </div>
-
-            {{ if .NextWater.Message }}
-            <div class="uk-alert-danger uk-alert" uk-alert>
-                <p class="uk-text-danger">{{ .NextWater.Message }}</p>
-            </div>
-            {{ end }}
+            {{ template "nextWaterDetail" .NextWater }}
         </div>
         <div class="uk-card-footer">
             <div class="uk-clearfix">
@@ -40,6 +32,21 @@
         </div>
     </div>
 </div>
+{{ end }}
+
+{{ define "nextWaterDetail" }}
+<div>
+    </span> Watering for
+    <span class="uk-text-primary">{{ FormatDuration .Duration }}</span>
+    {{ FormatUpcomingDate .Time }}
+</div>
+
+
+{{ if .Message }}
+<div class="uk-alert-danger uk-alert" uk-alert>
+    <p class="uk-text-danger">{{ .Message }}</p>
+</div>
+{{ end }}
 {{ end }}
 
 {{ define "deleteButton" }}

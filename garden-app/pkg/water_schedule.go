@@ -146,6 +146,10 @@ type ActivePeriod struct {
 
 // Validate parses the Month strings to make sure they are valid
 func (ap *ActivePeriod) Validate() error {
+	if ap == nil {
+		return nil
+	}
+
 	var err error
 	ap.start, err = time.Parse("January", ap.StartMonth)
 	if err != nil {
@@ -231,6 +235,11 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 			}
 		}
 		if ws.ActivePeriod != nil {
+			// Allow removing active period by setting empty for each. This is useful for HTML form
+			if ws.ActivePeriod.StartMonth == "" && ws.ActivePeriod.EndMonth == "" {
+				ws.ActivePeriod = nil
+			}
+
 			err := ws.ActivePeriod.Validate()
 			if err != nil {
 				return fmt.Errorf("error validating active_period: %w", err)
