@@ -26,27 +26,10 @@ const (
 	WaterScheduleModal     Template = "WaterScheduleModal"
 )
 
-var (
-	//go:embed templates/*
-	all embed.FS
-
-	templateNames = map[Template]string{
-		Gardens:                "Gardens",
-		EditGardenModal:        "EditGardenModal",
-		Zones:                  "Zones",
-		ZoneDetails:            "ZoneDetails",
-		WaterSchedules:         "WaterSchedules",
-		WaterScheduleEditModal: "WaterScheduleEditModal",
-		WaterScheduleModal:     "WaterScheduleModal",
-	}
-)
-
-func (t Template) Name() string {
-	return templateNames[t]
-}
+//go:embed templates/*
+var all embed.FS
 
 func (t Template) Render(r *http.Request, data any) string {
-	// tmpl := t.templateString()
 	templates := template.New("base").Funcs(map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
 		// by using N as the key and N+1 as a value
@@ -136,11 +119,11 @@ func (t Template) Render(r *http.Request, data any) string {
 	if dir := os.Getenv("DEV_TEMPLATE"); dir != "" {
 		templates = template.Must(templates.ParseGlob(dir + "/*"))
 	} else {
-		templates = template.Must(templates.ParseFS(all, "./*"))
+		templates = template.Must(templates.ParseFS(all, "templates/*"))
 	}
 
 	var renderedOutput bytes.Buffer
-	err := templates.ExecuteTemplate(&renderedOutput, t.Name(), data)
+	err := templates.ExecuteTemplate(&renderedOutput, string(t), data)
 	if err != nil {
 		panic(err)
 	}
