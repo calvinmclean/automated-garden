@@ -133,9 +133,6 @@ func (z *Zone) Bind(r *http.Request) error {
 		if z.Position == nil {
 			return errors.New("missing required position field")
 		}
-		if len(z.WaterScheduleIDs) == 0 {
-			return errors.New("missing required water_schedule_ids field")
-		}
 		if z.Name == "" {
 			return errors.New("missing required name field")
 		}

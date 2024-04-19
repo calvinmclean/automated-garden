@@ -1029,14 +1029,6 @@ func TestZoneRequest(t *testing.T) {
 			"missing required position field",
 		},
 		{
-			"EmptyWaterScheduleIDError",
-			&pkg.Zone{
-				Name:     "zone",
-				Position: &pos,
-			},
-			"missing required water_schedule_ids field",
-		},
-		{
 			"EmptyNameError",
 			&pkg.Zone{
 				Position:         &pos,
