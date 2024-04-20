@@ -62,7 +62,7 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
-	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(w http.ResponseWriter, r *http.Request) render.Renderer {
+	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
 			waterSchedules, err := storageClient.WaterSchedules.GetAll(nil)

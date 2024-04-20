@@ -18,14 +18,12 @@
             </div>
 
             <div class="uk-margin">
-                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.Duration }}" {{ else }}
-                    placeholder="Light Schedule Duration" {{ end }} placeholder="Light Schedule Duration"
-                    name="LightSchedule.Duration">
+                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.Duration }}" {{ end }}
+                    placeholder="Light Schedule Duration" name="LightSchedule.Duration">
             </div>
             <div class="uk-margin">
-                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.StartTime }}" {{ else }}
-                    placeholder="Light Schedule Start Time (15:04:05-07:00)" {{ end }}
-                    placeholder="Light Schedule StartTime" name="LightSchedule.StartTime">
+                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.StartTime }}" {{ end }}
+                    placeholder="Light Schedule Start Time (15:04:05-07:00)" name="LightSchedule.StartTime">
             </div>
 
             <button type="submit" class="uk-button uk-button-primary">Save Changes</button>

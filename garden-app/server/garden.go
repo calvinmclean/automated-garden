@@ -71,7 +71,7 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 
 	gr.AddCustomIDRoute(http.MethodPost, "/action", gr.GetRequestedResourceAndDo(gr.gardenAction))
 
-	gr.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(w http.ResponseWriter, r *http.Request) render.Renderer {
+	gr.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
 			return html.Renderer(html.EditGardenModal, &pkg.Garden{
