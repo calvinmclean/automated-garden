@@ -15,7 +15,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
-	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/extensions"
@@ -135,7 +134,7 @@ func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Render
 		positions = append(positions, pos{i, selected})
 	}
 
-	return html.Renderer(html.ZoneModal, map[string]any{
+	return zoneModalTemplate.Renderer(map[string]any{
 		"Garden":         g,
 		"WaterSchedules": waterSchedules,
 		"Positions":      positions,

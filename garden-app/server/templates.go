@@ -1,40 +1,36 @@
-package html
+package server
 
 import (
-	"bytes"
 	"embed"
 	"fmt"
 	"html/template"
 	"net/http"
-	"os"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
-	"github.com/go-chi/render"
+	"github.com/calvinmclean/babyapi/html"
 	"github.com/rs/xid"
 )
 
-type Template string
+//go:embed templates/*
+var templates embed.FS
 
 const (
-	Gardens                  Template = "Gardens"
-	GardenModal              Template = "GardenModal"
-	Zones                    Template = "Zones"
-	ZoneDetails              Template = "ZoneDetails"
-	WaterSchedules           Template = "WaterSchedules"
-	WaterScheduleModal       Template = "WaterScheduleModal"
-	WaterScheduleDetailModal Template = "WaterScheduleDetailModal"
-	ZoneModal                Template = "ZoneModal"
+	gardensTemplate                  html.Template = "Gardens"
+	gardenModalTemplate              html.Template = "GardenModal"
+	zonesTemplate                    html.Template = "Zones"
+	zoneDetailsTemplate              html.Template = "ZoneDetails"
+	waterSchedulesTemplate           html.Template = "WaterSchedules"
+	waterScheduleModalTemplate       html.Template = "WaterScheduleModal"
+	waterScheduleDetailModalTemplate html.Template = "WaterScheduleDetailModal"
+	zoneModalTemplate                html.Template = "ZoneModal"
 )
 
-//go:embed templates/*
-var all embed.FS
-
-func (t Template) Render(r *http.Request, data any) string {
-	templates := template.New("base").Funcs(map[string]any{
+func templateFuncs(r *http.Request) map[string]any {
+	return map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
 		// by using N as the key and N+1 as a value
 		"args": func(input ...string) map[string]any {
@@ -126,36 +122,39 @@ func (t Template) Render(r *http.Request, data any) string {
 				return item.String() == target.String()
 			})
 		},
-	})
+	}
+}
 
-	if dir := os.Getenv("DEV_TEMPLATE"); dir != "" {
-		templates = template.Must(templates.ParseGlob(dir + "/*"))
-	} else {
-		templates = template.Must(templates.ParseFS(all, "templates/*"))
+func formatDuration(d *pkg.Duration) string {
+	days := d.Duration / (24 * time.Hour)
+	remaining := d.Duration % (24 * time.Hour)
+
+	remainingString := ""
+	hours := int(remaining.Hours())
+	remaining -= time.Duration(hours) * time.Hour
+
+	minutes := int(remaining.Minutes()) % 60
+	remaining -= time.Duration(minutes) * time.Minute
+
+	seconds := int(remaining.Seconds()) % 3600
+
+	if hours > 0 {
+		remainingString += fmt.Sprintf("%dh", hours)
+	}
+	if minutes > 0 {
+		remainingString += fmt.Sprintf("%dm", minutes)
+	}
+	if seconds > 0 {
+		remainingString += fmt.Sprintf("%ds", seconds)
 	}
 
-	var renderedOutput bytes.Buffer
-	err := templates.ExecuteTemplate(&renderedOutput, string(t), data)
-	if err != nil {
-		panic(err)
+	if days == 0 {
+		return remainingString
 	}
 
-	return renderedOutput.String()
-}
+	if remainingString == "" {
+		return fmt.Sprintf("%d days", days)
+	}
 
-func Renderer(t Template, data any) render.Renderer {
-	return htmlRenderer{t: t, data: data}
-}
-
-type htmlRenderer struct {
-	t    Template
-	data any
-}
-
-func (h htmlRenderer) Render(_ http.ResponseWriter, _ *http.Request) error {
-	return nil
-}
-
-func (h htmlRenderer) HTML(r *http.Request) string {
-	return h.t.Render(r, h.data)
+	return fmt.Sprintf("%d days and %s", days, remainingString)
 }
