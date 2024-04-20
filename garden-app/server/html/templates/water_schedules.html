@@ -17,16 +17,16 @@
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
-                <a id="showButton" hx-get="/water_schedules/{{ .ID }}/modal?edit=false"
+                <a id="showButton" hx-get="/water_schedules/{{ .ID }}/components?type=detail_modal"
                     hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
                     _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                     {{ $name }}
                 </a>
             </h3>
             <!-- TODO: Ideally, this would be a more discrete edit icon, but I can't get it positioned correctly -->
-            <a class="uk-card-badge uk-label" id="showButton" hx-get="/water_schedules/{{ .ID }}/modal"
-                hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
-                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+            <a class="uk-card-badge uk-label" id="showButton"
+                hx-get="/water_schedules/{{ .ID }}/components?type=edit_modal" hx-headers='{"Accept": "text/html"}'
+                hx-target="#modals-here" _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                 Edit
             </a>
             <div id="modals-here"></div>
@@ -44,6 +44,7 @@
 
 {{ define "waterScheduleDetails" }}
 <div class="uk-margin-top" uk-margin>
+    <p>{{ .Description }}</p>
     <span class="uk-label uk-label-primary" uk-tooltip="Duration">
         <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration .Duration }}
     </span>

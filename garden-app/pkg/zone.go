@@ -124,6 +124,16 @@ func (z *Zone) Bind(r *http.Request) error {
 		return err
 	}
 
+	// Remove any zero-valued WaterScheduleIDs. This can happen because HTML form input requires specifying
+	// an index, so any skipped check boxes will result in zero-valued xids
+	wsIDs := []xid.ID{}
+	for _, wsID := range z.WaterScheduleIDs {
+		if !wsID.IsZero() {
+			wsIDs = append(wsIDs, wsID)
+		}
+	}
+	z.WaterScheduleIDs = wsIDs
+
 	switch r.Method {
 	case http.MethodPost:
 		now := time.Now()

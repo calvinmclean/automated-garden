@@ -24,6 +24,7 @@ const (
 	WaterSchedules         Template = "WaterSchedules"
 	WaterScheduleEditModal Template = "WaterScheduleEditModal"
 	WaterScheduleModal     Template = "WaterScheduleModal"
+	CreateZoneModal        Template = "CreateZoneModal"
 )
 
 //go:embed templates/*
