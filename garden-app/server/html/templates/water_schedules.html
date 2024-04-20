@@ -13,7 +13,7 @@
 {{ if eq $name "" }}
 {{ $name = .ID }}
 {{ end }}
-<div class="uk-width-1-2@m">
+<div class="uk-width-1-2@m" id="ws-card-{{ .ID }}">
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
@@ -30,6 +30,14 @@
             {{ end }}
 
             {{ template "waterScheduleDetails" . }}
+        </div>
+        <div class="uk-card-footer">
+            <div class="uk-clearfix">
+                <div class="uk-float-left">
+                    {{ template "deleteButton" (args "HXDelete" (print "/water_schedules/" .ID) "HXTarget"
+                    (print "#ws-card-" .ID)) }}
+                </div>
+            </div>
         </div>
     </div>
 </div>

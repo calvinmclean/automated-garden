@@ -6,3 +6,20 @@
 </a>
 <div id="modals-here"></div>
 {{ end }}
+
+{{ define "deleteButton" }}
+{{ $hxTarget := .HXTarget }}
+{{ $hxDelete := .HXDelete }}
+<div class="uk-inline">
+    <button class="uk-button uk-button-danger" type="button"><span uk-icon="trash"></span></button>
+    <div uk-dropdown>
+        <ul class="uk-nav uk-dropdown-nav">
+            <li>
+                <a hx-delete="{{ $hxDelete }}" hx-swap="swap:1s" hx-target="{{ $hxTarget }}">
+                    <span uk-icon="ban"></span> Confirm Delete
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+{{ end }}

@@ -12,6 +12,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/extensions"
 	"github.com/go-chi/render"
 )
 
@@ -123,6 +124,8 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 		}
 		return nil
 	})
+
+	gr.ApplyExtension(extensions.HTMX[*pkg.Garden]{})
 
 	return gr, nil
 }

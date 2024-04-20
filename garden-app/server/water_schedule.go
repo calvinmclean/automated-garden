@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/extensions"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
 )
@@ -116,6 +117,8 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
 	}))
+
+	api.ApplyExtension(extensions.HTMX[*pkg.WaterSchedule]{})
 
 	return api, err
 }

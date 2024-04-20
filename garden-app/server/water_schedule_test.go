@@ -294,14 +294,14 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			createExampleWaterSchedule(),
 			nil,
 			"",
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"SuccessfullyDeleteWaterSchedule",
 			endDatedWaterSchedule,
 			nil,
 			"",
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"UnableToDeleteUsedByZones",

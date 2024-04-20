@@ -9,7 +9,7 @@
 {{ end }}
 
 {{ define "GardenCard" }}
-<div class="uk-width-1-2@m">
+<div class="uk-width-1-2@m" id="garden-card-{{ .ID }}">
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
@@ -38,6 +38,10 @@
             <div class="uk-clearfix">
                 <div class="uk-float-left">
                     {{ template "actionButton" . }}
+                </div>
+                <div class="uk-float-left">
+                    {{ template "deleteButton" (args "HXDelete" (print "/gardens/" .ID) "HXTarget"
+                    (print "#garden-card-" .ID)) }}
                 </div>
                 <div class="uk-float-right">
                     {{ template "gardenInfoPopover" . }}
