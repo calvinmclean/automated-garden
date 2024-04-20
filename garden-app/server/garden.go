@@ -4,8 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"slices"
-	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
@@ -73,31 +71,21 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 
 	gr.AddCustomIDRoute(http.MethodPost, "/action", gr.GetRequestedResourceAndDo(gr.gardenAction))
 
+	gr.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(w http.ResponseWriter, r *http.Request) render.Renderer {
+		switch r.URL.Query().Get("type") {
+		case "create_modal":
+			return html.Renderer(html.EditGardenModal, &pkg.Garden{
+				ID: babyapi.NewID(),
+			})
+		default:
+			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
+	}))
+
 	gr.AddCustomIDRoute(http.MethodGet, "/components", gr.GetRequestedResourceAndDo(func(r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
 			return html.Renderer(html.EditGardenModal, g), nil
-		case "create_child_modal":
-			waterSchedules, err := storageClient.WaterSchedules.GetAll(nil)
-			if err != nil {
-				return nil, babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
-			}
-
-			slices.SortFunc(waterSchedules, func(ws1 *pkg.WaterSchedule, ws2 *pkg.WaterSchedule) int {
-				return strings.Compare(ws1.Name, ws2.Name)
-			})
-
-			// TODO: remove positions that are already in-use by Zones
-			positions := []int{}
-			for i := 0; i < int(*g.MaxZones); i++ {
-				positions = append(positions, i)
-			}
-
-			return html.Renderer(html.CreateZoneModal, map[string]any{
-				"Garden":         g,
-				"WaterSchedules": waterSchedules,
-				"Positions":      positions,
-			}), nil
 		default:
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}

@@ -35,7 +35,7 @@
                                 href="/weather_clients">Weather Clients</a></li>
 
                         <li>
-                            <a id="showButton" hx-get="components?type=create_child_modal"
+                            <a id="showButton" hx-get="{{ URLPath }}/components?type=create_modal"
                                 hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
                                 _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                                 <span uk-icon="icon: plus-circle; ratio: 1.25"></span>

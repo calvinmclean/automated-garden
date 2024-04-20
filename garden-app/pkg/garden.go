@@ -223,12 +223,15 @@ func (g *Garden) Bind(r *http.Request) error {
 		return err
 	}
 
+	now := time.Now()
 	switch r.Method {
 	case http.MethodPost:
-		now := time.Now()
 		g.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
+		if g.CreatedAt == nil {
+			g.CreatedAt = &now
+		}
 		if g.Name == "" {
 			return errors.New("missing required name field")
 		}
@@ -244,7 +247,12 @@ func (g *Garden) Bind(r *http.Request) error {
 		} else if *g.MaxZones == 0 {
 			return errors.New("max_zones must not be 0")
 		}
+		// consider empty LightSchedule as nil
+		if g.LightSchedule != nil && (g.LightSchedule.Duration == nil || g.LightSchedule.Duration.Duration == 0) && g.LightSchedule.StartTime == "" {
+			g.LightSchedule = nil
+		}
 		if g.LightSchedule != nil {
+			fmt.Println(g.LightSchedule.Duration, g.LightSchedule.StartTime)
 			if g.LightSchedule.Duration == nil {
 				return errors.New("missing required light_schedule.duration field")
 			}

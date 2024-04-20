@@ -38,13 +38,13 @@ func TestDurationUnmarshalJSON(t *testing.T) {
 			"ErrorInvalidDurationString",
 			`{"d": "60000000000"}`,
 			Duration{},
-			`invalid input for Duration: invalid format for time.Duration: time: missing unit in duration "60000000000"`,
+			`invalid json input for Duration: invalid format for time.Duration: time: missing unit in duration "60000000000"`,
 		},
 		{
 			"ErrorInvalidCronString",
 			`{"d": "cron:abc"}`,
 			Duration{},
-			`invalid input for Duration: invalid cron expression: expected exactly 5 fields, found 1: [abc]`,
+			`invalid json input for Duration: invalid cron expression: expected exactly 5 fields, found 1: [abc]`,
 		},
 		{
 			"ErrorDecodingOtherType",
@@ -113,13 +113,13 @@ func TestDurationUnmarshalYAML(t *testing.T) {
 			"ErrorInvalidDurationString",
 			`{"d": "60000000000"}`,
 			Duration{},
-			`invalid input for Duration: invalid format for time.Duration: time: missing unit in duration "60000000000"`,
+			`invalid yaml input for Duration: invalid format for time.Duration: time: missing unit in duration "60000000000"`,
 		},
 		{
 			"ErrorInvalidCronString",
 			`{"d": "cron:abc"}`,
 			Duration{},
-			"invalid input for Duration: invalid cron expression: expected exactly 5 fields, found 1: [abc]",
+			"invalid yaml input for Duration: invalid cron expression: expected exactly 5 fields, found 1: [abc]",
 		},
 		{
 			"ErrorDecodingOtherType",

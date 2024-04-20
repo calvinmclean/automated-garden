@@ -49,7 +49,7 @@ func (d *Duration) UnmarshalJSON(data []byte) error {
 	case string:
 		d.Duration, d.Cron, err = parseString(v)
 		if err != nil {
-			return fmt.Errorf("invalid input for Duration: %w", err)
+			return fmt.Errorf("invalid json input for Duration: %w", err)
 		}
 	case float64:
 		d.Duration = time.Duration(v)
@@ -73,8 +73,12 @@ func (d *Duration) UnmarshalText(data []byte) error {
 	if err == nil {
 		return nil
 	}
+	if d.Duration == 0 && d.Cron == "" {
+		d = nil
+		return nil
+	}
 
-	return fmt.Errorf("invalid input for Duration: %w", err)
+	return fmt.Errorf("invalid text input for Duration: %w", err)
 }
 
 // UnmarshalYAML with allow reading a Duration as a string or integer into time.Duration
@@ -84,7 +88,7 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 		var err error
 		d.Duration, d.Cron, err = parseString(value.Value)
 		if err != nil {
-			return fmt.Errorf("invalid input for Duration: %w", err)
+			return fmt.Errorf("invalid yaml input for Duration: %w", err)
 		}
 	case "!!int":
 		v, err := strconv.Atoi(value.Value)
@@ -108,6 +112,10 @@ func (d *Duration) MarshalYAML() (interface{}, error) {
 }
 
 func parseString(input string) (time.Duration, string, error) {
+	if input == "" || input == `""` {
+		return 0, "", nil
+	}
+
 	if !strings.HasPrefix(input, cronPrefix) {
 		d, err := time.ParseDuration(strings.Trim(input, `"`))
 		if err != nil {
