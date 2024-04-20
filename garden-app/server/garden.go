@@ -9,9 +9,9 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
-	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/extensions"
 	"github.com/go-chi/render"
 )
 
@@ -74,7 +74,7 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 	gr.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
-			return html.Renderer(html.EditGardenModal, &pkg.Garden{
+			return gardenModalTemplate.Renderer(&pkg.Garden{
 				ID: babyapi.NewID(),
 			})
 		default:
@@ -85,7 +85,7 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 	gr.AddCustomIDRoute(http.MethodGet, "/components", gr.GetRequestedResourceAndDo(func(r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
-			return html.Renderer(html.EditGardenModal, g), nil
+			return gardenModalTemplate.Renderer(g), nil
 		default:
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
@@ -123,6 +123,8 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 		}
 		return nil
 	})
+
+	gr.ApplyExtension(extensions.HTMX[*pkg.Garden]{})
 
 	return gr, nil
 }

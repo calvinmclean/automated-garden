@@ -1,0 +1,25 @@
+{{ define "cardEditButton" }}
+<!-- TODO: Ideally, this would be a more discrete edit icon, but I can't get it positioned correctly -->
+<a class="uk-card-badge uk-label" hx-get="{{ . }}" hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
+    _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+    Edit
+</a>
+<div id="modals-here"></div>
+{{ end }}
+
+{{ define "deleteButton" }}
+{{ $hxTarget := .HXTarget }}
+{{ $hxDelete := .HXDelete }}
+<div class="uk-inline">
+    <button class="uk-button uk-button-danger" type="button"><span uk-icon="trash"></span></button>
+    <div uk-dropdown>
+        <ul class="uk-nav uk-dropdown-nav">
+            <li>
+                <a hx-delete="{{ $hxDelete }}" hx-swap="swap:1s" hx-target="{{ $hxTarget }}">
+                    <span uk-icon="ban"></span> Confirm Delete
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+{{ end }}

@@ -338,14 +338,14 @@ func TestEndDateGarden(t *testing.T) {
 			createExampleGarden(),
 			nil,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"SuccessfullyDeleteGarden",
 			endDatedGarden,
 			nil,
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"ErrorEndDatingGardenWithZones",

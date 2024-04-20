@@ -229,7 +229,7 @@ func (g *Garden) Bind(r *http.Request) error {
 		g.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
-		if g.CreatedAt == nil {
+		if g.CreatedAt == nil || g.CreatedAt.IsZero() {
 			g.CreatedAt = &now
 		}
 		if g.Name == "" {

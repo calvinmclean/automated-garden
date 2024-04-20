@@ -134,12 +134,15 @@ func (z *Zone) Bind(r *http.Request) error {
 	}
 	z.WaterScheduleIDs = wsIDs
 
+	now := time.Now()
 	switch r.Method {
 	case http.MethodPost:
-		now := time.Now()
 		z.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
+		if z.CreatedAt == nil || z.CreatedAt.IsZero() {
+			z.CreatedAt = &now
+		}
 		if z.Position == nil {
 			return errors.New("missing required position field")
 		}

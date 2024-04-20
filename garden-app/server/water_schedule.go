@@ -7,9 +7,9 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
-	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/extensions"
 	"github.com/go-chi/render"
 	"github.com/rs/xid"
 )
@@ -98,7 +98,7 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
-			return html.Renderer(html.WaterScheduleEditModal, &pkg.WaterSchedule{
+			return waterScheduleModalTemplate.Renderer(&pkg.WaterSchedule{
 				ID: babyapi.NewID(),
 			})
 		default:
@@ -109,13 +109,15 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
-			return html.Renderer(html.WaterScheduleEditModal, ws), nil
+			return waterScheduleModalTemplate.Renderer(ws), nil
 		case "detail_modal":
-			return html.Renderer(html.WaterScheduleModal, ws), nil
+			return waterScheduleDetailModalTemplate.Renderer(ws), nil
 		default:
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
 	}))
+
+	api.ApplyExtension(extensions.HTMX[*pkg.WaterSchedule]{})
 
 	return api, err
 }

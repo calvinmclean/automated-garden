@@ -16,6 +16,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/html"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
@@ -47,6 +48,9 @@ type Server struct {
 
 // NewServer creates and initializes all server resources based on config
 func NewServer(cfg Config, validateData bool) (*Server, error) {
+	html.SetFS(templates, "templates/*")
+	html.SetFuncs(templateFuncs)
+
 	logger := cfg.LogConfig.NewLogger().With("source", "server")
 
 	rootAPI := babyapi.NewRootAPI("root", "/")

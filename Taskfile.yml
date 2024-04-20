@@ -58,7 +58,7 @@ tasks:
     aliases: [dev]
     dir: ./garden-app
     cmds:
-      - DEV_TEMPLATE=server/html/templates go run main.go server --config config.yaml
+      - DEV_TEMPLATE=server/templates/* go run main.go server --config config.yaml
 
   run-controller:
     desc: Run mock controller

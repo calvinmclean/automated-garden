@@ -13,7 +13,7 @@
 {{ if eq $name "" }}
 {{ $name = .ID }}
 {{ end }}
-<div class="uk-width-1-2@m">
+<div class="uk-width-1-2@m" id="ws-card-{{ .ID }}">
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
@@ -22,13 +22,7 @@
                     {{ $name }}
                 </a>
             </h3>
-            <!-- TODO: Ideally, this would be a more discrete edit icon, but I can't get it positioned correctly -->
-            <a class="uk-card-badge uk-label" hx-get="/water_schedules/{{ .ID }}/components?type=edit_modal"
-                hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
-                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
-                Edit
-            </a>
-            <div id="modals-here"></div>
+            {{ template "cardEditButton" (print "/water_schedules/" .ID "/components?type=edit_modal") }}
         </div>
         <div class="uk-card-body">
             {{ if .NextWater }}
@@ -36,6 +30,14 @@
             {{ end }}
 
             {{ template "waterScheduleDetails" . }}
+        </div>
+        <div class="uk-card-footer">
+            <div class="uk-clearfix">
+                <div class="uk-float-left">
+                    {{ template "deleteButton" (args "HXDelete" (print "/water_schedules/" .ID) "HXTarget"
+                    (print "#ws-card-" .ID)) }}
+                </div>
+            </div>
         </div>
     </div>
 </div>

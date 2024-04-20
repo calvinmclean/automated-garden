@@ -9,18 +9,13 @@
 {{ end }}
 
 {{ define "GardenCard" }}
-<div class="uk-width-1-2@m">
+<div class="uk-width-1-2@m" id="garden-card-{{ .ID }}">
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
                 <a href="/gardens/{{ .ID }}/zones">{{ .Name }}</a>
             </h3>
-            <a class="uk-card-badge uk-label" hx-get="/gardens/{{ .ID }}/components?type=edit_modal"
-                hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
-                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
-                Edit
-            </a>
-            <div id="modals-here"></div>
+            {{ template "cardEditButton" (print "/gardens/" .ID "/components?type=edit_modal") }}
         </div>
         <div class="uk-card-body">
             {{ if not .EndDated }}
@@ -43,6 +38,10 @@
             <div class="uk-clearfix">
                 <div class="uk-float-left">
                     {{ template "actionButton" . }}
+                </div>
+                <div class="uk-float-left">
+                    {{ template "deleteButton" (args "HXDelete" (print "/gardens/" .ID) "HXTarget"
+                    (print "#garden-card-" .ID)) }}
                 </div>
                 <div class="uk-float-right">
                     {{ template "gardenInfoPopover" . }}
