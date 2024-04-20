@@ -15,6 +15,8 @@
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
                 <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}?limit=10&range=720h">{{ .Name }}</a>
+                {{ template "cardEditButton" (print "/gardens/" .GardenID "/zones/" .ID "/components?type=edit_modal")
+                }}
             </h3>
         </div>
         <div class="uk-card-body">
@@ -35,6 +37,10 @@
 {{ end }}
 
 {{ define "nextWaterDetail" }}
+{{ if .WaterScheduleID }}
+{{ template "cardEditButton" (print "/water_schedules/" .WaterScheduleID "/components?type=edit_modal") }}
+{{ end }}
+
 {{ if and .Duration .Time }}
 <div>
     </span> Watering for

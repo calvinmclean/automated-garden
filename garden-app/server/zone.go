@@ -65,33 +65,25 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
-			waterSchedules, err := storageClient.WaterSchedules.GetAll(nil)
-			if err != nil {
-				return babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
-			}
-
-			slices.SortFunc(waterSchedules, func(ws1 *pkg.WaterSchedule, ws2 *pkg.WaterSchedule) int {
-				return strings.Compare(ws1.Name, ws2.Name)
+			modal, apiErr := api.createModal(r, &pkg.Zone{
+				ID: babyapi.NewID(),
 			})
-
-			g, err := storageClient.Gardens.Get(api.GetParentIDParam(r))
-			if err != nil {
-				return babyapi.InternalServerError(fmt.Errorf("error getting garden to create zone modal: %w", err))
+			if apiErr != nil {
+				return apiErr
 			}
 
-			// TODO: remove positions that are already in-use by Zones
-			positions := []int{}
-			for i := 0; i < int(*g.MaxZones); i++ {
-				positions = append(positions, i)
-			}
-
-			return html.Renderer(html.CreateZoneModal, map[string]any{
-				"Garden":         g,
-				"WaterSchedules": waterSchedules,
-				"Positions":      positions,
-			})
+			return modal
 		default:
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
+	}))
+
+	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, z *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
+		switch r.URL.Query().Get("type") {
+		case "edit_modal":
+			return api.createModal(r, z)
+		default:
+			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
 	}))
 
@@ -112,6 +104,43 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 	api.ApplyExtension(extensions.HTMX[*pkg.Zone]{})
 
 	return api, nil
+}
+
+func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
+	waterSchedules, err := api.storageClient.WaterSchedules.GetAll(nil)
+	if err != nil {
+		return nil, babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
+	}
+
+	slices.SortFunc(waterSchedules, func(ws1 *pkg.WaterSchedule, ws2 *pkg.WaterSchedule) int {
+		return strings.Compare(ws1.Name, ws2.Name)
+	})
+
+	g, err := babyapi.GetResourceFromContext[*pkg.Garden](r.Context(), api.ParentContextKey())
+	if err != nil {
+		return nil, babyapi.InternalServerError(fmt.Errorf("error getting garden to create zone modal: %w", err))
+	}
+
+	type pos struct {
+		Num      int
+		Selected string
+	}
+	positions := []pos{}
+	// TODO: remove positions that are already in-use by Zones
+	for i := 0; i < int(*g.MaxZones); i++ {
+		selected := ""
+		if zone.Position != nil && int(*zone.Position) == i {
+			selected = "selected"
+		}
+		positions = append(positions, pos{i, selected})
+	}
+
+	return html.Renderer(html.ZoneModal, map[string]any{
+		"Garden":         g,
+		"WaterSchedules": waterSchedules,
+		"Positions":      positions,
+		"Zone":           zone,
+	}), nil
 }
 
 // zoneAction reads a ZoneAction request and uses it to execute one of the actions

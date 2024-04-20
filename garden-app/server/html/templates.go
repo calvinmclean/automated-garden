@@ -7,24 +7,27 @@ import (
 	"html/template"
 	"net/http"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
+	"github.com/rs/xid"
 )
 
 type Template string
 
 const (
-	Gardens                Template = "Gardens"
-	EditGardenModal        Template = "EditGardenModal"
-	Zones                  Template = "Zones"
-	ZoneDetails            Template = "ZoneDetails"
-	WaterSchedules         Template = "WaterSchedules"
-	WaterScheduleEditModal Template = "WaterScheduleEditModal"
-	WaterScheduleModal     Template = "WaterScheduleModal"
-	CreateZoneModal        Template = "CreateZoneModal"
+	Gardens                  Template = "Gardens"
+	GardenModal              Template = "GardenModal"
+	Zones                    Template = "Zones"
+	ZoneDetails              Template = "ZoneDetails"
+	WaterSchedules           Template = "WaterSchedules"
+	WaterScheduleModal       Template = "WaterScheduleModal"
+	WaterScheduleDetailModal Template = "WaterScheduleDetailModal"
+	ZoneModal                Template = "ZoneModal"
 )
 
 //go:embed templates/*
@@ -117,6 +120,11 @@ func (t Template) Render(r *http.Request, data any) string {
 		},
 		"URLPath": func() string {
 			return r.URL.Path
+		},
+		"ContainsID": func(items []xid.ID, target babyapi.ID) bool {
+			return slices.ContainsFunc(items, func(item xid.ID) bool {
+				return item.String() == target.String()
+			})
 		},
 	})
 

@@ -1,34 +1,40 @@
-{{ define "CreateZoneModal" }}
+{{ define "ZoneModal" }}
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body">
         <h3 class="uk-modal-title uk-text-center">Create Zone</h3>
 
-        <form _="on submit take .uk-open from #modal" hx-post="/gardens/{{ .Garden.ID }}/zones"
+        <form _="on submit take .uk-open from #modal" hx-put="/gardens/{{ .Garden.ID }}/zones/{{ .Zone.ID }}"
             hx-headers='{"Accept": "text/html"}'>
+
+            <input type="hidden" value="{{ .Zone.ID }}" name="ID">
+            <input type="hidden" value="{{ RFC3339Nano .Zone.CreatedAt }}" name="CreatedAt">
 
             <div class="uk-grid-small" uk-grid>
                 <div class="uk-width-2-3@s">
-                    <input class="uk-input" name="Name" placeholder="Name">
+                    <input class="uk-input" name="Name" placeholder="Name" value="{{ .Zone.Name }}">
                 </div>
                 <div class="uk-width-1-3@s">
                     <select class="uk-select" name="Position">
                         {{ range .Positions }}
-                        <option value="{{ . }}">{{ . }}</option>
+                        <option value="{{ .Num }}" {{ .Selected }}>{{ .Num }}</option>
                         {{ end }}
                     </select>
                 </div>
             </div>
 
             <div class="uk-margin">
-                <input class="uk-input" name="Details.Description" placeholder="Description">
+                <input class="uk-input" value="{{ if .Zone.Details }}{{ .Zone.Details.Description }}{{ end }}"
+                    name="Details.Description" placeholder="Description">
             </div>
 
             <div class="uk-margin">
-                <input class="uk-input" name="Details.Notes" placeholder="Notes">
+                <input class="uk-input" value="{{ if .Zone.Details }}{{ .Zone.Details.Notes }}{{ end }}"
+                    name="Details.Notes" placeholder="Notes">
             </div>
 
-            <!-- TODO: fix issue where page doesn't work after closing modal-->
+            <!-- TODO: fix issue where page doesn't work after submitting request from modal-->
             <div class="uk-margin uk-child-width-auto uk-grid">
+                {{ $selectedSchedules := .Zone.WaterScheduleIDs }}
                 {{ range $index, $ws := .WaterSchedules }}
                 {{ $name := .Name }}
                 {{ if eq $name "" }}
@@ -38,7 +44,8 @@
                     <label>
                         <div class="uk-inline">
                             <input class="uk-checkbox" type="checkbox" name="WaterScheduleIDs.{{ $index }}"
-                                value="{{ $ws.ID }}"> {{ $name }}
+                                value="{{ $ws.ID }}" {{ if ContainsID $selectedSchedules $ws.ID }}checked{{ end }}> {{
+                            $name }}
                             <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
                             <div uk-dropdown="pos: right-center">
                                 {{ template "waterScheduleDetails" $ws }}
