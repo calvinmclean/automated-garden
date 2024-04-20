@@ -15,7 +15,7 @@
             <h3 class="uk-card-title uk-margin-remove-bottom">
                 <a href="/gardens/{{ .ID }}/zones">{{ .Name }}</a>
             </h3>
-            <a class="uk-card-badge uk-label" id="showButton" hx-get="/gardens/{{ .ID }}/modal"
+            <a class="uk-card-badge uk-label" hx-get="/gardens/{{ .ID }}/components?type=edit_modal"
                 hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
                 _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                 Edit

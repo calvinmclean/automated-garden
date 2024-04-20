@@ -24,6 +24,7 @@ const (
 	WaterSchedules         Template = "WaterSchedules"
 	WaterScheduleEditModal Template = "WaterScheduleEditModal"
 	WaterScheduleModal     Template = "WaterScheduleModal"
+	CreateZoneModal        Template = "CreateZoneModal"
 )
 
 //go:embed templates/*
@@ -113,6 +114,9 @@ func (t Template) Render(r *http.Request, data any) string {
 
 			//nolint:gosec
 			return template.HTML(sb.String())
+		},
+		"URLPath": func() string {
+			return r.URL.Path
 		},
 	})
 

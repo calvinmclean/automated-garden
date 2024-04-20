@@ -1,29 +1,29 @@
 {{ define "EditGardenModal" }}
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body">
-        <h3 class="uk-modal-title">Edit Garden</h3>
+        <h3 class="uk-modal-title uk-text-center">{{ if .Name }}{{ .Name }}{{ else }}Create Garden{{ end }}</h3>
 
         <form _="on submit take .uk-open from #modal" hx-put="/gardens/{{ .ID }}" hx-headers='{"Accept": "text/html"}'>
             <input type="hidden" value="{{ .ID }}" name="ID">
             <input type="hidden" value="{{ RFC3339Nano .CreatedAt }}" name="CreatedAt">
             <div class="uk-margin">
-                <input class="uk-input" value="{{ .Name }}" name="Name">
+                <input class="uk-input" value="{{ .Name }}" placeholder="Name" name="Name">
             </div>
             <div class="uk-margin">
-                <input class="uk-input" value="{{ .TopicPrefix }}" name="TopicPrefix">
+                <input class="uk-input" value="{{ .TopicPrefix }}" placeholder="Topic Prefix" name="TopicPrefix">
             </div>
             <div class="uk-margin">
-                <input class="uk-input" value="{{ .MaxZones }}" name="MaxZones">
+                <input class="uk-input" value="{{ if .MaxZones }}{{ .MaxZones }}{{ else }}1{{ end }}"
+                    placeholder="MaxZones" name="MaxZones">
             </div>
 
-            <!-- TODO: Allow adding/removing LightSchedule -->
             <div class="uk-margin">
-                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.Duration }}" {{ else }}
-                    placeholder="Light Schedule Duration" {{ end }} name="LightSchedule.Duration">
+                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.Duration }}" {{ end }}
+                    placeholder="Light Schedule Duration" name="LightSchedule.Duration">
             </div>
             <div class="uk-margin">
-                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.StartTime }}" {{ else }}
-                    placeholder="Light Schedule Start Time" {{ end }} name="LightSchedule.StartTime">
+                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.StartTime }}" {{ end }}
+                    placeholder="Light Schedule Start Time (15:04:05-07:00)" name="LightSchedule.StartTime">
             </div>
 
             <button type="submit" class="uk-button uk-button-primary">Save Changes</button>

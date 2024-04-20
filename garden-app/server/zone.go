@@ -6,13 +6,16 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/server/html"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/extensions"
@@ -58,6 +61,39 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 	})
 
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
+
+	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
+		switch r.URL.Query().Get("type") {
+		case "create_modal":
+			waterSchedules, err := storageClient.WaterSchedules.GetAll(nil)
+			if err != nil {
+				return babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
+			}
+
+			slices.SortFunc(waterSchedules, func(ws1 *pkg.WaterSchedule, ws2 *pkg.WaterSchedule) int {
+				return strings.Compare(ws1.Name, ws2.Name)
+			})
+
+			g, err := storageClient.Gardens.Get(api.GetParentIDParam(r))
+			if err != nil {
+				return babyapi.InternalServerError(fmt.Errorf("error getting garden to create zone modal: %w", err))
+			}
+
+			// TODO: remove positions that are already in-use by Zones
+			positions := []int{}
+			for i := 0; i < int(*g.MaxZones); i++ {
+				positions = append(positions, i)
+			}
+
+			return html.Renderer(html.CreateZoneModal, map[string]any{
+				"Garden":         g,
+				"WaterSchedules": waterSchedules,
+				"Positions":      positions,
+			})
+		default:
+			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
+	}))
 
 	api.AddCustomIDRoute(http.MethodPost, "/action", api.GetRequestedResourceAndDo(api.zoneAction))
 

@@ -70,8 +70,25 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 	gr.SetOnCreateOrUpdate(gr.onCreateOrUpdate)
 
 	gr.AddCustomIDRoute(http.MethodPost, "/action", gr.GetRequestedResourceAndDo(gr.gardenAction))
-	gr.AddCustomIDRoute(http.MethodGet, "/modal", gr.GetRequestedResourceAndDo(func(_ *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
-		return html.Renderer(html.EditGardenModal, g), nil
+
+	gr.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
+		switch r.URL.Query().Get("type") {
+		case "create_modal":
+			return html.Renderer(html.EditGardenModal, &pkg.Garden{
+				ID: babyapi.NewID(),
+			})
+		default:
+			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
+	}))
+
+	gr.AddCustomIDRoute(http.MethodGet, "/components", gr.GetRequestedResourceAndDo(func(r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+		switch r.URL.Query().Get("type") {
+		case "edit_modal":
+			return html.Renderer(html.EditGardenModal, g), nil
+		default:
+			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
 	}))
 
 	gr.SetGetAllFilter(EndDatedFilter[*pkg.Garden])

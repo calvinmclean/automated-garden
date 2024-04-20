@@ -21,6 +21,7 @@
 </style>
 
 <body>
+    <div id="modals-here"></div>
     <nav class="uk-navbar-container">
         <div class="uk-container">
             <div uk-navbar>
@@ -32,6 +33,19 @@
                                 href="/water_schedules">Water Schedules</a></li>
                         <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
                                 href="/weather_clients">Weather Clients</a></li>
+
+                        <li>
+                        </li>
+                    </ul>
+                </div>
+                <div class="uk-navbar-right">
+                    <ul class="uk-navbar-nav">
+                        <li>
+                            <a hx-get="{{ URLPath }}/components?type=create_modal" hx-headers='{"Accept": "text/html"}'
+                                hx-target="#modals-here" _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                                <span uk-icon="icon: plus-circle; ratio: 1.25"></span>
+                            </a>
+                        </li>
                     </ul>
                 </div>
             </div>

@@ -95,11 +95,26 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 
 	api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
 
-	api.AddCustomIDRoute(http.MethodGet, "/modal", api.GetRequestedResourceAndDo(func(r *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
-		if r.URL.Query().Get("edit") == "false" {
-			return html.Renderer(html.WaterScheduleModal, ws), nil
+	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
+		switch r.URL.Query().Get("type") {
+		case "create_modal":
+			return html.Renderer(html.WaterScheduleEditModal, &pkg.WaterSchedule{
+				ID: babyapi.NewID(),
+			})
+		default:
+			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
-		return html.Renderer(html.WaterScheduleEditModal, ws), nil
+	}))
+
+	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
+		switch r.URL.Query().Get("type") {
+		case "edit_modal":
+			return html.Renderer(html.WaterScheduleEditModal, ws), nil
+		case "detail_modal":
+			return html.Renderer(html.WaterScheduleModal, ws), nil
+		default:
+			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
 	}))
 
 	return api, err

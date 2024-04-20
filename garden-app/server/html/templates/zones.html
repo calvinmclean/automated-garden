@@ -35,12 +35,13 @@
 {{ end }}
 
 {{ define "nextWaterDetail" }}
+{{ if and .Duration .Time }}
 <div>
     </span> Watering for
     <span class="uk-text-primary">{{ FormatDuration .Duration }}</span>
     {{ FormatUpcomingDate .Time }}
 </div>
-
+{{ end }}
 
 {{ if .Message }}
 <div class="uk-alert-danger uk-alert" uk-alert>
