@@ -28,15 +28,14 @@
         <div>
             <div class="uk-card uk-card-default uk-card-body uk-text-center">
                 <h3 class="uk-card-title">
-                    <a id="showButton"
-                        hx-get="/water_schedules/{{ .NextWater.WaterScheduleID }}/components?type=detail_modal"
+                    <a hx-get="/water_schedules/{{ .NextWater.WaterScheduleID }}/components?type=detail_modal"
                         hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
                         _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                         Water Schedule
                     </a>
                 </h3>
                 <!-- TODO: Ideally, this would be a more discrete edit icon, but I can't get it positioned correctly -->
-                <a class="uk-card-badge uk-label" id="showButton"
+                <a class="uk-card-badge uk-label"
                     hx-get="/water_schedules/{{ .NextWater.WaterScheduleID }}/components?type=edit_modal"
                     hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
                     _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">

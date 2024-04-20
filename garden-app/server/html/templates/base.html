@@ -25,7 +25,7 @@
     <nav class="uk-navbar-container">
         <div class="uk-container">
             <div uk-navbar>
-                <div class="uk-navbar-left uk-clearfix">
+                <div class="uk-navbar-left">
                     <ul class="uk-navbar-nav">
                         <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a>
                         </li>
@@ -35,9 +35,14 @@
                                 href="/weather_clients">Weather Clients</a></li>
 
                         <li>
-                            <a id="showButton" hx-get="{{ URLPath }}/components?type=create_modal"
-                                hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
-                                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                        </li>
+                    </ul>
+                </div>
+                <div class="uk-navbar-right">
+                    <ul class="uk-navbar-nav">
+                        <li>
+                            <a hx-get="{{ URLPath }}/components?type=create_modal" hx-headers='{"Accept": "text/html"}'
+                                hx-target="#modals-here" _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                                 <span uk-icon="icon: plus-circle; ratio: 1.25"></span>
                             </a>
                         </li>
