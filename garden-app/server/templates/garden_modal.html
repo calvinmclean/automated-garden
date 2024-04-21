@@ -27,7 +27,13 @@
                     placeholder="Light Schedule Start Time (15:04:05-07:00)" name="LightSchedule.StartTime">
             </div>
 
-            {{ template "modalButtons" }}
+            {{ template "modalSubmitButton" }}
+            {{ if .Name }}
+            {{ template "deleteButton" (
+            args "HXDelete" (print "/gardens/" .ID) "HXTarget" (print "#garden-card-" .ID)
+            ) }}
+            {{ end }}
+            {{ template "modalCloseButton" }}
         </form>
     </div>
 </div>

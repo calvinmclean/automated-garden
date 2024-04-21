@@ -20,12 +20,7 @@
             <h3 class="uk-card-title uk-margin-remove-bottom">
                 <a href="/gardens/{{ .ID }}/zones">{{ .Name }}</a>
             </h3>
-            {{ template "editOrDelete" (
-            args
-            "HXDelete" (print "/gardens/" .ID)
-            "HXTarget" (print "#garden-card-" .ID)
-            "HXGet" (print "/gardens/" .ID "/components?type=edit_modal")
-            ) }}
+            {{ template "cardEditButton" (print "/gardens/" .ID "/components?type=edit_modal") }}
         </div>
         <div class="uk-card-body">
             {{ if not .EndDated }}

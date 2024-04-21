@@ -1,7 +1,9 @@
 {{ define "ZoneModal" }}
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body">
-        <h3 class="uk-modal-title uk-text-center">Create Zone</h3>
+        <h3 class="uk-modal-title uk-text-center">
+            {{ if .Zone.Name }}Edit {{ .Zone.Name }}{{ else }}Create Zone{{ end }}
+        </h3>
 
         <form _="on submit take .uk-open from #modal" hx-put="/gardens/{{ .Garden.ID }}/zones/{{ .Zone.ID }}"
             hx-headers='{"Accept": "text/html"}' hx-swap="none">
@@ -55,7 +57,15 @@
                 {{ end }}
             </div>
 
-            {{ template "modalButtons" }}
+            {{ template "modalSubmitButton" }}
+            {{ if .Zone.Name }}
+            {{ template "deleteButton" (
+            args
+            "HXDelete" (print "/gardens/" .Zone.GardenID "/zones/" .Zone.ID)
+            "HXTarget" (print "#zone-card-" .Zone.ID)
+            ) }}
+            {{ end }}
+            {{ template "modalCloseButton" }}
         </form>
     </div>
 </div>

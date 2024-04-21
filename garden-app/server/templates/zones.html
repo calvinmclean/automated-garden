@@ -20,10 +20,9 @@
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
                 <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}?limit=10&range=720h">{{ .Name }}</a>
-                {{ template "editOrDelete" (args
-                "HXDelete" (print "/gardens/" .GardenID "/zones/" .ID)
-                "HXTarget" (print "#zone-card-" .ID)
-                "HXGet" (print "/gardens/" .GardenID "/zones/" .ID "/components?type=edit_modal"))
+                {{
+                template "cardEditButton"
+                (print "/gardens/" .GardenID "/zones/" .ID "/components?type=edit_modal")
                 }}
             </h3>
         </div>
@@ -43,7 +42,7 @@
 
 {{ define "nextWaterDetail" }}
 {{ if .WaterScheduleID }}
-{{ template "editOrDelete" (args "HXGet" (print "/water_schedules/" .WaterScheduleID "/components?type=edit_modal")) }}
+{{ template "cardEditButton" (print "/water_schedules/" .WaterScheduleID "/components?type=edit_modal") }}
 {{ end }}
 
 {{ if and .Duration .Time }}

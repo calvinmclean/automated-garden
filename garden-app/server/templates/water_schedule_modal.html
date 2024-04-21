@@ -42,7 +42,13 @@
                 </select>
             </div>
 
-            {{ template "modalButtons" }}
+            {{ template "modalSubmitButton" }}
+            {{ if .Duration }}
+            {{ template "deleteButton" (
+            args "HXDelete" (print "/water_schedules/" .ID) "HXTarget" (print "#ws-card-" .ID)
+            ) }}
+            {{ end }}
+            {{ template "modalCloseButton" }}
         </form>
     </div>
 </div>
