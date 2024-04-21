@@ -57,15 +57,17 @@
                 {{ end }}
             </div>
 
-            {{ template "modalSubmitButton" }}
-            {{ if .Zone.Name }}
-            {{ template "deleteButton" (
-            args
-            "HXDelete" (print "/gardens/" .Zone.GardenID "/zones/" .Zone.ID)
-            "HXTarget" (print "#zone-card-" .Zone.ID)
-            ) }}
-            {{ end }}
-            {{ template "modalCloseButton" }}
+            <div class="uk-text-center">
+                {{ template "modalSubmitButton" }}
+                {{ if .Zone.Name }}
+                {{ template "deleteButton" (
+                args
+                "HXDelete" (print "/gardens/" .Zone.GardenID "/zones/" .Zone.ID)
+                "HXTarget" (print "#zone-card-" .Zone.ID)
+                ) }}
+                {{ end }}
+                {{ template "modalCloseButton" }}
+            </div>
         </form>
     </div>
 </div>

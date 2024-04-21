@@ -6,7 +6,7 @@
     {{ template "zoneInfo" .Response }}
     {{ template "waterHistoryTable" .Response }}
 </div>
-{{ template "start" }}
+{{ template "end" }}
 {{ end }}
 
 {{ define "zoneInfo" }}
@@ -28,7 +28,7 @@
             <div id="detail-modal-here"></div>
             <div class="uk-card uk-card-default uk-card-body uk-text-center">
                 <h3 class="uk-card-title">
-                    {{ if .NextWater }}
+                    {{ if .NextWater.WaterScheduleID }}
                     <a hx-get="/water_schedules/{{ .NextWater.WaterScheduleID }}/components?type=detail_modal"
                         hx-headers='{"Accept": "text/html"}' hx-target="#detail-modal-here"
                         _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">

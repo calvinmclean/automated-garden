@@ -1,7 +1,7 @@
 {{ define "GardenModal" }}
 <div id="modal" class="uk-modal" style="display:block;">
-    <div class="uk-modal-dialog uk-modal-body">
-        <h3 class="uk-modal-title uk-text-center">{{ if .Name }}{{ .Name }}{{ else }}Create Garden{{ end }}</h3>
+    <div class="uk-modal-dialog uk-modal-body uk-text-center">
+        <h3 class="uk-modal-title">{{ if .Name }}{{ .Name }}{{ else }}Create Garden{{ end }}</h3>
 
         <form _="on submit take .uk-open from #modal" hx-put="/gardens/{{ .ID }}" hx-headers='{"Accept": "text/html"}'
             hx-swap="none">
