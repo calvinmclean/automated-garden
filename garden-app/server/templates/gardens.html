@@ -1,11 +1,16 @@
-{{ define "Gardens" }}
+{{ define "GardensPage" }}
 {{ template "start" }}
-<div uk-grid>
+{{ template "Gardens" . }}
+{{ template "end" }}
+{{ end }}
+
+{{ define "Gardens" }}
+<div hx-swap="outerHTML" hx-get="/gardens?refresh=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="newGarden from:body" uk-grid>
     {{ range .Items }}
     {{ template "GardenCard" . }}
     {{ end }}
 </div>
-{{ template "end" }}
 {{ end }}
 
 {{ define "GardenCard" }}

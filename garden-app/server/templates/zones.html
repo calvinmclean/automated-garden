@@ -1,12 +1,17 @@
-{{ define "Zones" }}
+{{ define "ZonesPage" }}
 {{ template "start" }}
 <h1 class="uk-heading-small uk-text-center">{{ .Garden.Name }}</h1>
-<div uk-grid>
+{{ template "Zones" . }}
+{{ template "end" }}
+{{ end }}
+
+{{ define "Zones" }}
+<div hx-swap="outerHTML" hx-get="/gardens/{{ .Garden.ID }}/zones?refresh=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="newZone from:body" uk-grid>
     {{ range .Items }}
     {{ template "ZoneCard" . }}
     {{ end }}
 </div>
-{{ template "end" }}
 {{ end }}
 
 {{ define "ZoneCard" }}

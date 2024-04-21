@@ -19,10 +19,13 @@ import (
 var templates embed.FS
 
 const (
+	gardensPageTemplate              html.Template = "GardensPage"
 	gardensTemplate                  html.Template = "Gardens"
 	gardenModalTemplate              html.Template = "GardenModal"
+	zonesPageTemplate                html.Template = "ZonesPage"
 	zonesTemplate                    html.Template = "Zones"
 	zoneDetailsTemplate              html.Template = "ZoneDetails"
+	waterSchedulesPageTemplate       html.Template = "WaterSchedulesPage"
 	waterSchedulesTemplate           html.Template = "WaterSchedules"
 	waterScheduleModalTemplate       html.Template = "WaterScheduleModal"
 	waterScheduleDetailModalTemplate html.Template = "WaterScheduleDetailModal"
