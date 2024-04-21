@@ -51,7 +51,7 @@ func (zr *ZoneResponse) HTML(r *http.Request) string {
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	excludeWeatherData := excludeWeatherData(r)
 
@@ -99,6 +99,10 @@ func (zr *ZoneResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 			fmt.Sprintf("%s%s/%s/history", gardenPath, zoneBasePath, zr.Zone.ID),
 		},
 	)
+
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
+		w.Header().Add("HX-Trigger", "newZone")
+	}
 
 	nextWaterSchedule := zr.api.worker.GetNextActiveWaterSchedule(ws)
 
@@ -168,10 +172,16 @@ func (azr AllZonesResponse) HTML(r *http.Request) string {
 		panic(err)
 	}
 
-	return zonesTemplate.Render(r, map[string]any{
+	data := map[string]any{
 		"Items":  azr.Items,
 		"Garden": garden,
-	})
+	}
+
+	if r.URL.Query().Get("refresh") == "true" {
+		return zonesTemplate.Render(r, data)
+	}
+
+	return zonesPageTemplate.Render(r, data)
 }
 
 // ZoneWaterHistoryResponse wraps a slice of WaterHistory structs plus some aggregate stats for an HTTP response

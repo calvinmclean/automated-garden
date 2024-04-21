@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
+	"github.com/go-chi/render"
 	"github.com/rs/xid"
 )
 
@@ -63,7 +64,7 @@ func (api *WaterSchedulesAPI) NewWaterScheduleResponse(ws *pkg.WaterSchedule, li
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (ws *WaterScheduleResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+func (ws *WaterScheduleResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	ws.Links = append(ws.Links,
 		Link{
 			"self",
@@ -79,6 +80,10 @@ func (ws *WaterScheduleResponse) Render(_ http.ResponseWriter, r *http.Request) 
 		ws.NextWater = GetNextWaterDetails(ws.WaterSchedule, ws.api.worker, excludeWeatherData(r))
 	}
 
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
+		w.Header().Add("HX-Trigger", "newWaterSchedule")
+	}
+
 	return nil
 }
 
@@ -87,14 +92,18 @@ type AllWaterSchedulesResponse struct {
 	babyapi.ResourceList[*WaterScheduleResponse]
 }
 
-func (agr AllWaterSchedulesResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return agr.ResourceList.Render(w, r)
+func (aws AllWaterSchedulesResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return aws.ResourceList.Render(w, r)
 }
 
-func (agr AllWaterSchedulesResponse) HTML(r *http.Request) string {
-	slices.SortFunc(agr.Items, func(w *WaterScheduleResponse, x *WaterScheduleResponse) int {
+func (aws AllWaterSchedulesResponse) HTML(r *http.Request) string {
+	slices.SortFunc(aws.Items, func(w *WaterScheduleResponse, x *WaterScheduleResponse) int {
 		return strings.Compare(w.Name, x.Name)
 	})
 
-	return waterSchedulesTemplate.Render(r, agr)
+	if r.URL.Query().Get("refresh") == "true" {
+		return waterSchedulesTemplate.Render(r, aws)
+	}
+
+	return waterSchedulesPageTemplate.Render(r, aws)
 }

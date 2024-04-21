@@ -1,11 +1,16 @@
-{{ define "WaterSchedules" }}
+{{ define "WaterSchedulesPage" }}
 {{ template "start" }}
-<div uk-grid>
+{{ template "WaterSchedules" . }}
+{{ template "end" }}
+{{ end }}
+
+{{ define "WaterSchedules" }}
+<div hx-swap="outerHTML" hx-get="/water_schedules?refresh=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="newWaterSchedule from:body" uk-grid>
     {{ range .Items }}
     {{ template "waterScheduleCard" . }}
     {{ end }}
 </div>
-{{ template "end" }}
 {{ end }}
 
 {{ define "waterScheduleCard" }}

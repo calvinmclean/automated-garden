@@ -3,7 +3,8 @@
     <div class="uk-modal-dialog uk-modal-body">
         <h3 class="uk-modal-title uk-text-center">{{ if .Name }}{{ .Name }}{{ else }}Create Garden{{ end }}</h3>
 
-        <form _="on submit take .uk-open from #modal" hx-put="/gardens/{{ .ID }}" hx-headers='{"Accept": "text/html"}'>
+        <form _="on submit take .uk-open from #modal" hx-put="/gardens/{{ .ID }}" hx-headers='{"Accept": "text/html"}'
+            hx-swap="none">
             <input type="hidden" value="{{ .ID }}" name="ID">
             <input type="hidden" value="{{ RFC3339Nano .CreatedAt }}" name="CreatedAt">
             <div class="uk-margin">
@@ -26,9 +27,7 @@
                     placeholder="Light Schedule Start Time (15:04:05-07:00)" name="LightSchedule.StartTime">
             </div>
 
-            <button type="submit" class="uk-button uk-button-primary">Save Changes</button>
-            <button id="cancelButton" type="button" class="uk-button uk-button-default"
-                _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
+            {{ template "modalButtons" }}
         </form>
     </div>
 </div>

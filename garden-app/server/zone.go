@@ -212,8 +212,8 @@ func (api *ZonesAPI) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.
 		return httpErr
 	}
 
-	zonesForGarden, err := api.storageClient.Gardens.GetAll(func(g *pkg.Garden) bool {
-		return g.ID.String() == gardenID
+	zonesForGarden, err := api.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
+		return z.GardenID.String() == gardenID && !z.EndDated()
 	})
 	if err != nil {
 		err = fmt.Errorf("error getting all zones for Garden %q: %w", gardenID, err)

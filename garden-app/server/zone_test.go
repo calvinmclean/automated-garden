@@ -848,6 +848,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			storageClient := setupStorage(t, tt.garden)
 
 			zone := createExampleZone()
+			zone.GardenID = tt.garden.ID.ID
 			err := storageClient.Zones.Set(zone)
 			assert.NoError(t, err)
 

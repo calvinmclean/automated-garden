@@ -10,6 +10,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
+
+	"github.com/go-chi/render"
 )
 
 // GardenResponse is used to represent a Garden in the response body with the additional Moisture data
@@ -49,7 +51,7 @@ func (api *GardensAPI) NewGardenResponse(garden *pkg.Garden, links ...Link) *Gar
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
+func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, zoneBasePath)
@@ -125,6 +127,10 @@ func (g *GardenResponse) Render(_ http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
+		w.Header().Add("HX-Trigger", "newGarden")
+	}
+
 	return nil
 }
 
@@ -142,7 +148,11 @@ func (agr AllGardensResponse) HTML(r *http.Request) string {
 		return strings.Compare(g.Name, h.Name)
 	})
 
-	return gardensTemplate.Render(r, agr)
+	if r.URL.Query().Get("refresh") == "true" {
+		return gardensTemplate.Render(r, agr)
+	}
+
+	return gardensPageTemplate.Render(r, agr)
 }
 
 func (api *GardensAPI) getAllZones(gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
