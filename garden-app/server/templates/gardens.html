@@ -44,7 +44,7 @@
                 <div class="uk-float-left">
                     {{ template "actionButton" . }}
                 </div>
-                <div class="uk-float-left">
+                <div class="uk-float-left uk-margin-left">
                     {{ template "deleteButton" (args "HXDelete" (print "/gardens/" .ID) "HXTarget"
                     (print "#garden-card-" .ID)) }}
                 </div>
@@ -106,7 +106,8 @@
             </li>
             {{ end }}
             <li>
-                <a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none">
+                <a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none" {{
+                    template "actionFeedback" "danger" }}>
                     <input type="hidden" name="stop.all" value="true">
                     <span uk-icon="ban"></span> Stop Watering
                 </a>
@@ -117,8 +118,8 @@
 {{ end }}
 
 {{ define "lightActionButton" }}
-<!-- TODO: use HTMX to have some sort of feedback on button select, like change color -->
-<a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none">
+<a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none" id="light-action-{{ .ID }}-{{ .State }}" {{
+    template "actionFeedback" "warning" }}>
     <input type="hidden" name="light.state" value="{{ .State }}">
     {{ if eq .State "ON" }}
     <span uk-icon="upload"></span>

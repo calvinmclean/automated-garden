@@ -34,3 +34,7 @@
 <button id="cancelButton" type="button" class="uk-button uk-button-default"
     _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
 {{ end }}
+
+{{ define "actionFeedback" }}
+_="on click add .uk-text-{{ . }} wait 500ms then remove .uk-text-{{ . }}"
+{{ end }}
