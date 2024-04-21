@@ -120,6 +120,9 @@ func templateFuncs(r *http.Request) map[string]any {
 		"URLPath": func() string {
 			return r.URL.Path
 		},
+		"QueryParam": func(key string) string {
+			return r.URL.Query().Get(key)
+		},
 		"ContainsID": func(items []xid.ID, target babyapi.ID) bool {
 			return slices.ContainsFunc(items, func(item xid.ID) bool {
 				return item.String() == target.String()

@@ -3,7 +3,8 @@
 {{ if eq $name "" }}
 {{ $name = .ID }}
 {{ end }}
-<div id="modal" class="uk-modal" style="display:block;">
+{{ $open := QueryParam "open" }}
+<div id="modal" class="uk-modal {{ if $open }}uk-open{{ end }}" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body">
         <h3 class="uk-modal-title uk-text-center">{{ if .Duration }}{{ $name }}{{ else }}Create Water Schedule{{ end }}
         </h3>
@@ -62,6 +63,12 @@
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body">
         <h3 class="uk-modal-title">{{ $name }}</h3>
+
+        <div class="uk-position-top-right uk-margin-small-top uk-margin-small-right">
+            <a hx-get="/water_schedules/{{ .ID }}/components?type=edit_modal&open=true"
+                hx-headers='{"Accept": "text/html"}' hx-target="#modal" uk-icon="icon: file-edit" hx-swap="outerHTML">
+            </a>
+        </div>
 
         {{ if .Description }}
         <p>{{ .Description }}</p>
