@@ -26,13 +26,18 @@
             </div>
         </div>
         <div>
+            <div id="detail-modal-here"></div>
             <div class="uk-card uk-card-default uk-card-body uk-text-center">
                 <h3 class="uk-card-title">
+                    {{ if .NextWater }}
                     <a hx-get="/water_schedules/{{ .NextWater.WaterScheduleID }}/components?type=detail_modal"
-                        hx-headers='{"Accept": "text/html"}' hx-target="#modals-here"
+                        hx-headers='{"Accept": "text/html"}' hx-target="#detail-modal-here"
                         _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                         Water Schedule
                     </a>
+                    {{ else }}
+                    Water Schedule
+                    {{ end }}
                 </h3>
                 {{ template "nextWaterDetail" .NextWater }}
             </div>

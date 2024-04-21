@@ -7,7 +7,7 @@
 
 {{ define "Zones" }}
 <div hx-swap="outerHTML" hx-get="/gardens/{{ .Garden.ID }}/zones?refresh=true" hx-headers='{"Accept": "text/html"}'
-    hx-trigger="newZone from:body" uk-grid>
+    hx-trigger="newZone from:body" hx-disinherit="*" uk-grid>
     {{ range .Items }}
     {{ template "ZoneCard" . }}
     {{ end }}
@@ -17,14 +17,14 @@
 {{ define "ZoneCard" }}
 <div class="uk-width-1-2@m" id="zone-card-{{ .ID }}">
     <div class="uk-card uk-card-default" style="margin: 5%;">
-        <div class="uk-card-header uk-text-center">
-            <h3 class="uk-card-title uk-margin-remove-bottom">
+        <div class="uk-card-header">
+            <h3 class="uk-card-title uk-margin-remove-bottom uk-text-center">
                 <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}?limit=10&range=720h">{{ .Name }}</a>
-                {{
-                template "cardEditButton"
-                (print "/gardens/" .GardenID "/zones/" .ID "/components?type=edit_modal")
-                }}
             </h3>
+            {{
+            template "cardEditButton"
+            (print "/gardens/" .GardenID "/zones/" .ID "/components?type=edit_modal")
+            }}
         </div>
         <div class="uk-card-body">
             {{ template "nextWaterDetail" .NextWater }}
@@ -41,10 +41,6 @@
 {{ end }}
 
 {{ define "nextWaterDetail" }}
-{{ if .WaterScheduleID }}
-{{ template "cardEditButton" (print "/water_schedules/" .WaterScheduleID "/components?type=edit_modal") }}
-{{ end }}
-
 {{ if and .Duration .Time }}
 <div>
     </span> Watering for

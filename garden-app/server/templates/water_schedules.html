@@ -22,10 +22,7 @@
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
-                <a hx-get="/water_schedules/{{ .ID }}/components?type=detail_modal" hx-headers='{"Accept": "text/html"}'
-                    hx-target="#modals-here" _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
-                    {{ $name }}
-                </a>
+                {{ $name }}
             </h3>
             {{ template "cardEditButton" (print "/water_schedules/" .ID "/components?type=edit_modal") }}
         </div>
