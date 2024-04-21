@@ -20,7 +20,12 @@
             <h3 class="uk-card-title uk-margin-remove-bottom">
                 <a href="/gardens/{{ .ID }}/zones">{{ .Name }}</a>
             </h3>
-            {{ template "cardEditButton" (print "/gardens/" .ID "/components?type=edit_modal") }}
+            {{ template "editOrDelete" (
+            args
+            "HXDelete" (print "/gardens/" .ID)
+            "HXTarget" (print "#garden-card-" .ID)
+            "HXGet" (print "/gardens/" .ID "/components?type=edit_modal")
+            ) }}
         </div>
         <div class="uk-card-body">
             {{ if not .EndDated }}
@@ -43,10 +48,6 @@
             <div class="uk-clearfix">
                 <div class="uk-float-left">
                     {{ template "actionButton" . }}
-                </div>
-                <div class="uk-float-left uk-margin-left">
-                    {{ template "deleteButton" (args "HXDelete" (print "/gardens/" .ID) "HXTarget"
-                    (print "#garden-card-" .ID)) }}
                 </div>
                 <div class="uk-float-right">
                     {{ template "gardenInfoPopover" . }}

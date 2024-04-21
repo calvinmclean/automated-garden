@@ -27,7 +27,12 @@
                     {{ $name }}
                 </a>
             </h3>
-            {{ template "cardEditButton" (print "/water_schedules/" .ID "/components?type=edit_modal") }}
+            {{ template "editOrDelete" (
+            args
+            "HXDelete" (print "/water_schedules/" .ID)
+            "HXTarget" (print "#ws-card-" .ID)
+            "HXGet" (print "/water_schedules/" .ID "/components?type=edit_modal")
+            ) }}
         </div>
         <div class="uk-card-body">
             {{ if .NextWater }}
@@ -35,14 +40,6 @@
             {{ end }}
 
             {{ template "waterScheduleDetails" . }}
-        </div>
-        <div class="uk-card-footer">
-            <div class="uk-clearfix">
-                <div class="uk-float-left">
-                    {{ template "deleteButton" (args "HXDelete" (print "/water_schedules/" .ID) "HXTarget"
-                    (print "#ws-card-" .ID)) }}
-                </div>
-            </div>
         </div>
     </div>
 </div>

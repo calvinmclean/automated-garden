@@ -20,7 +20,10 @@
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
                 <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}?limit=10&range=720h">{{ .Name }}</a>
-                {{ template "cardEditButton" (print "/gardens/" .GardenID "/zones/" .ID "/components?type=edit_modal")
+                {{ template "editOrDelete" (args
+                "HXDelete" (print "/gardens/" .GardenID "/zones/" .ID)
+                "HXTarget" (print "#zone-card-" .ID)
+                "HXGet" (print "/gardens/" .GardenID "/zones/" .ID "/components?type=edit_modal"))
                 }}
             </h3>
         </div>
@@ -29,10 +32,6 @@
         </div>
         <div class="uk-card-footer">
             <div class="uk-clearfix">
-                <div class="uk-float-left">
-                    {{ template "deleteButton" (args "HXDelete" (print "/gardens/" .GardenID "/zones/" .ID) "HXTarget"
-                    (print "#zone-card-" .ID)) }}
-                </div>
                 <div class="uk-float-right">
                     {{ template "infoPopover" . }}
                 </div>
@@ -44,7 +43,7 @@
 
 {{ define "nextWaterDetail" }}
 {{ if .WaterScheduleID }}
-{{ template "cardEditButton" (print "/water_schedules/" .WaterScheduleID "/components?type=edit_modal") }}
+{{ template "editOrDelete" (args "HXGet" (print "/water_schedules/" .WaterScheduleID "/components?type=edit_modal")) }}
 {{ end }}
 
 {{ if and .Duration .Time }}
