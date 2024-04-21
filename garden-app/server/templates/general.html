@@ -23,3 +23,14 @@
     </div>
 </div>
 {{ end }}
+
+{{ define "modalButtons" }}
+<button type="submit" class="uk-button uk-button-primary"
+    _="on click take .uk-open from #modal wait 200ms then remove #modal">Save Changes</button>
+{{ template "modalCloseButton" }}
+{{ end }}
+
+{{ define "modalCloseButton" }}
+<button id="cancelButton" type="button" class="uk-button uk-button-default"
+    _="on click take .uk-open from #modal wait 200ms then remove #modal">Close</button>
+{{ end }}
