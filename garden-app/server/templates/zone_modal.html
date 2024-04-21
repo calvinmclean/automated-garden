@@ -70,3 +70,22 @@
     </div>
 </div>
 {{ end }}
+
+{{ define "ZoneActionModal" }}
+<div id="modal" class="uk-modal" style="display:block;">
+    <div class="uk-modal-dialog uk-modal-body uk-text-center">
+        <h3 class="uk-modal-title uk-text-center">Actions</h3>
+
+        <form class="uk-form-horizontal" hx-headers='{"Accept": "text/html"}'
+            hx-post="/gardens/{{ .GardenID }}/zones/{{ .ID }}/action" hx-on::after-request="this.reset()"
+            hx-swap="none">
+            <input class="uk-input uk-form-width-small" type="text" placeholder="Duration" name="water.duration">
+            <button class="uk-button uk-button-primary uk-margin-left" {{ template "closeModal" }}>Water Zone</button>
+        </form>
+
+        <div class="uk-margin-top">
+            {{ template "modalCloseButton" }}
+        </div>
+    </div>
+</div>
+{{ end }}

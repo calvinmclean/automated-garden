@@ -31,6 +31,9 @@
         </div>
         <div class="uk-card-footer">
             <div class="uk-clearfix">
+                <div class="uk-float-left">
+                    {{ template "zoneActionButton" . }}
+                </div>
                 <div class="uk-float-right">
                     {{ template "infoPopover" . }}
                 </div>
@@ -63,6 +66,24 @@
         <p><b>{{ .ID }}</b></p>
         <p>Position: {{ .Position }}</p>
         <p>Water Schedules: {{ .WaterScheduleIDs }}</p>
+    </div>
+</div>
+{{ end }}
+
+{{ define "zoneActionButton" }}
+<div id="action-modal-here"></div>
+<div class="uk-inline">
+    <button class="uk-button uk-button-default" type="button">Actions</button>
+    <div uk-dropdown>
+        <ul class="uk-nav uk-dropdown-nav">
+            <li>
+                <a hx-get="/gardens/{{ .GardenID }}/zones/{{ .ID }}/components?type=action_modal"
+                    hx-headers='{"Accept": "text/html"}' hx-target="#action-modal-here"
+                    _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                    <span uk-icon="cloud-download"></span> Water
+                </a>
+            </li>
+        </ul>
     </div>
 </div>
 {{ end }}

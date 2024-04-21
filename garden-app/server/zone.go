@@ -81,6 +81,8 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
 			return api.createModal(r, z)
+		case "action_modal":
+			return zoneActionModalTemplate.Renderer(z), nil
 		default:
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}

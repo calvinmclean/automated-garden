@@ -42,7 +42,7 @@
         <div class="uk-card-footer">
             <div class="uk-clearfix">
                 <div class="uk-float-left">
-                    {{ template "actionButton" . }}
+                    {{ template "gardenActionButton" . }}
                 </div>
                 <div class="uk-float-right">
                     {{ template "gardenInfoPopover" . }}
@@ -88,7 +88,7 @@
 </p>
 {{ end }}
 
-{{ define "actionButton" }}
+{{ define "gardenActionButton" }}
 <div class="uk-inline">
     <button class="uk-button uk-button-default" type="button">Actions</button>
     <div uk-dropdown>

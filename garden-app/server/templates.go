@@ -30,6 +30,7 @@ const (
 	waterScheduleModalTemplate       html.Template = "WaterScheduleModal"
 	waterScheduleDetailModalTemplate html.Template = "WaterScheduleDetailModal"
 	zoneModalTemplate                html.Template = "ZoneModal"
+	zoneActionModalTemplate          html.Template = "ZoneActionModal"
 )
 
 func templateFuncs(r *http.Request) map[string]any {
