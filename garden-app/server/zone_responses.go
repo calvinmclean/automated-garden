@@ -100,8 +100,20 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
-		w.Header().Add("HX-Trigger", "newZone")
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
+		history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
+		// non-fatal error so we can still render the HTML page
+		if apiErr != nil {
+			logger.Error("error getting water history", "error", apiErr)
+			zr.HistoryError = apiErr.ErrorText
+			return nil
+		}
+
+		zr.History = NewZoneWaterHistoryResponse(history)
+
+		if r.Method == http.MethodPut {
+			w.Header().Add("HX-Trigger", "newZone")
+		}
 	}
 
 	nextWaterSchedule := zr.api.worker.GetNextActiveWaterSchedule(ws)
@@ -135,18 +147,6 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 				zr.WeatherData.SoilMoisturePercent = &soilMoisture
 			}
 		}
-	}
-
-	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
-		history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
-		// non-fatal error so we can still render the HTML page
-		if apiErr != nil {
-			logger.Error("error getting water history", "error", apiErr)
-			zr.HistoryError = apiErr.ErrorText
-			return nil
-		}
-
-		zr.History = NewZoneWaterHistoryResponse(history)
 	}
 
 	return nil
