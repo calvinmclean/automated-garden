@@ -52,6 +52,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	html.SetFuncs(templateFuncs)
 
 	logger := cfg.LogConfig.NewLogger().With("source", "server")
+	slog.SetDefault(logger)
 
 	rootAPI := babyapi.NewRootAPI("root", "/")
 

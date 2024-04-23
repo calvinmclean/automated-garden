@@ -252,7 +252,6 @@ func (g *Garden) Bind(r *http.Request) error {
 			g.LightSchedule = nil
 		}
 		if g.LightSchedule != nil {
-			fmt.Println(g.LightSchedule.Duration, g.LightSchedule.StartTime)
 			if g.LightSchedule.Duration == nil {
 				return errors.New("missing required light_schedule.duration field")
 			}

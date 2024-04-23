@@ -98,3 +98,9 @@ And that's it! I encourage you to check out the additional documentation for mor
 
 ## Frontend
 This project includes an HTMX UI served by the Go application.
+
+
+## Compile controller
+```
+pio run -t upload
+```

@@ -15,11 +15,12 @@ type LogConfig struct {
 
 // GetHandler returns a slog handler based on the input. Valid values are "json", otherwise default text is used
 func (c LogConfig) getHandler(writer io.Writer) slog.Handler {
+	opts := &slog.HandlerOptions{Level: c.GetLogLevel()}
 	switch c.Format {
 	case "json":
-		return slog.NewJSONHandler(writer, nil)
+		return slog.NewJSONHandler(writer, opts)
 	default:
-		return slog.NewTextHandler(writer, nil)
+		return slog.NewTextHandler(writer, opts)
 	}
 }
 
