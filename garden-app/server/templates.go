@@ -129,6 +129,27 @@ func templateFuncs(r *http.Request) map[string]any {
 				return item.String() == target.String()
 			})
 		},
+		"ZoneQuickWater": func(z *ZoneResponse) []string {
+			var waterDurations []string
+			if z.NextWater.Duration == nil || z.NextWater.Duration.Duration == 0 {
+				return append(waterDurations, "15m", "30m", "1h")
+			}
+
+			divideDuration := func(d time.Duration, f int) string {
+				divided := time.Duration(int(d.Seconds())/f) * time.Second
+				if divided > time.Minute {
+					divided = (divided + 30*time.Second).Truncate(time.Minute)
+				}
+				return formatDuration(&pkg.Duration{Duration: divided})
+			}
+
+			baseDuration := z.NextWater.Duration.Duration
+			waterDurations = append(waterDurations, divideDuration(baseDuration, 4))
+			waterDurations = append(waterDurations, divideDuration(baseDuration, 2))
+			waterDurations = append(waterDurations, divideDuration(baseDuration, 1))
+
+			return waterDurations
+		},
 	}
 }
 
