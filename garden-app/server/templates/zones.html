@@ -46,7 +46,7 @@
 {{ define "nextWaterDetail" }}
 {{ if and .Duration .Time }}
 <div>
-    </span> Watering for
+    Watering for
     <span class="uk-text-primary">{{ FormatDuration .Duration }}</span>
     {{ FormatUpcomingDate .Time }}
 </div>
@@ -61,7 +61,6 @@
 
 {{ define "infoPopover" }}
 <div class="uk-inline">
-    <span class="uk-margin-small-right" uk-icon="info"></span>
     <div uk-dropdown>
         <p><b>{{ .ID }}</b></p>
         <p>Position: {{ .Position }}</p>
@@ -73,17 +72,31 @@
 {{ define "zoneActionButton" }}
 <div id="action-modal-here"></div>
 <div class="uk-inline">
-    <button class="uk-button uk-button-default" type="button">Actions</button>
+    <button class="uk-button uk-button-default" type="button">Quick Water</button>
     <div uk-dropdown>
         <ul class="uk-nav uk-dropdown-nav">
             <li>
                 <a hx-get="/gardens/{{ .GardenID }}/zones/{{ .ID }}/components?type=action_modal"
                     hx-headers='{"Accept": "text/html"}' hx-target="#action-modal-here"
                     _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
-                    <span uk-icon="cloud-download"></span> Water
+                    Custom
                 </a>
             </li>
+
+            {{ template "quickWaterLinks" . }}
         </ul>
     </div>
 </div>
+{{ end }}
+
+{{ define "quickWaterLinks" }}
+{{ $zone := . }}
+{{ range (ZoneQuickWater .) }}
+<li>
+    <a hx-post="/gardens/{{ $zone.GardenID }}/zones/{{ $zone.ID }}/action" hx-include="this" hx-swap="none" {{
+        template "actionFeedback" "primary" }}>
+        <input type="hidden" name="water.duration" value="{{ . }}"> {{ . }}
+    </a>
+</li>
+{{ end }}
 {{ end }}

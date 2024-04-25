@@ -101,15 +101,15 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	)
 
 	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
-		history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
-		// non-fatal error so we can still render the HTML page
-		if apiErr != nil {
-			logger.Error("error getting water history", "error", apiErr)
-			zr.HistoryError = apiErr.ErrorText
-			return nil
+		// only get history when rendering a ZoneDetail page
+		if zr.api.GetIDParam(r) != "" {
+			history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
+			if apiErr != nil {
+				logger.Error("error getting water history", "error", apiErr)
+				zr.HistoryError = apiErr.ErrorText
+			}
+			zr.History = NewZoneWaterHistoryResponse(history)
 		}
-
-		zr.History = NewZoneWaterHistoryResponse(history)
 
 		if r.Method == http.MethodPut {
 			w.Header().Add("HX-Trigger", "newZone")
