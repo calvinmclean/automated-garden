@@ -150,6 +150,12 @@ func templateFuncs(r *http.Request) map[string]any {
 
 			return waterDurations
 		},
+		"ExcludeWeatherData": func() bool {
+			return excludeWeatherData(r)
+		},
+		"NotRefresh": func() bool {
+			return r.URL.Query().Get("refresh") != "true"
+		},
 	}
 }
 

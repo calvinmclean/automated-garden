@@ -7,7 +7,7 @@
 
 {{ define "Zones" }}
 <div hx-swap="outerHTML" hx-get="/gardens/{{ .Garden.ID }}/zones?refresh=true" hx-headers='{"Accept": "text/html"}'
-    hx-trigger="newZone from:body" hx-disinherit="*" uk-grid>
+    hx-trigger="{{ if NotRefresh }}load, {{ end }}newZone from:body" hx-disinherit="*" uk-grid>
     {{ range .Items }}
     {{ template "ZoneCard" . }}
     {{ end }}
@@ -44,6 +44,11 @@
 {{ end }}
 
 {{ define "nextWaterDetail" }}
+{{ if ExcludeWeatherData }}
+<div class="uk-text-center">
+    <div uk-spinner></div>
+</div>
+{{ else }}
 {{ if and .Duration .Time }}
 <div>
     Watering for
@@ -56,6 +61,7 @@
 <div class="uk-alert-danger uk-alert" uk-alert>
     <p class="uk-text-danger">{{ .Message }}</p>
 </div>
+{{ end }}
 {{ end }}
 {{ end }}
 

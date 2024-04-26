@@ -6,7 +6,7 @@
 
 {{ define "WaterSchedules" }}
 <div hx-swap="outerHTML" hx-get="/water_schedules?refresh=true" hx-headers='{"Accept": "text/html"}'
-    hx-trigger="newWaterSchedule from:body" uk-grid>
+    hx-trigger="{{ if NotRefresh }}load, {{ end }}newWaterSchedule from:body" uk-grid>
     {{ range .Items }}
     {{ template "waterScheduleCard" . }}
     {{ end }}

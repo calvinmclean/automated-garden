@@ -18,7 +18,7 @@
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
-                <a href="/gardens/{{ .ID }}/zones">{{ .Name }}</a>
+                <a href="/gardens/{{ .ID }}/zones?exclude_weather_data=true">{{ .Name }}</a>
             </h3>
             {{ template "cardEditButton" (print "/gardens/" .ID "/components?type=edit_modal") }}
         </div>
