@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"sync"
 
 	mqtt "github.com/eclipse/paho.mqtt.golang"
@@ -140,4 +141,13 @@ func (c *Config) executeTopicTemplate(templateString string, topicPrefix string)
 	data := map[string]string{"Garden": topicPrefix}
 	err := t.Execute(&result, data)
 	return result.String(), err
+}
+
+func DefaultHandler(logger *slog.Logger) mqtt.MessageHandler {
+	return func(_ mqtt.Client, msg mqtt.Message) {
+		logger.With(
+			"topic", msg.Topic(),
+			"message", string(msg.Payload()),
+		).Info("default handler called with message")
+	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/html"
 
+	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
@@ -82,7 +83,10 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		"broker", cfg.MQTTConfig.Broker,
 		"port", cfg.MQTTConfig.Port,
 	).Info("initializing MQTT client")
-	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, nil)
+	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, mqtt.DefaultHandler(logger), mqtt.TopicHandler{
+		Topic:   "+/data/water",
+		Handler: paho.MessageHandler(NewMQTTHandler(storageClient, logger).Handle),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize MQTT client: %v", err)
 	}
@@ -117,6 +121,12 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
 	}
 	rootAPI.AddNestedAPI(weatherClientsAPI)
+
+	notificationClientsAPI, err := NewNotificationClientsAPI(storageClient)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", notificationClientsBasePath, err)
+	}
+	rootAPI.AddNestedAPI(notificationClientsAPI)
 
 	waterSchedulesAPI, err := NewWaterSchedulesAPI(storageClient, worker)
 	if err != nil {

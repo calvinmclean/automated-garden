@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 
 	"github.com/calvinmclean/babyapi"
@@ -21,10 +22,11 @@ type Config struct {
 }
 
 type Client struct {
-	Gardens              babyapi.Storage[*pkg.Garden]
-	Zones                babyapi.Storage[*pkg.Zone]
-	WaterSchedules       babyapi.Storage[*pkg.WaterSchedule]
-	WeatherClientConfigs babyapi.Storage[*weather.Config]
+	Gardens                   babyapi.Storage[*pkg.Garden]
+	Zones                     babyapi.Storage[*pkg.Zone]
+	WaterSchedules            babyapi.Storage[*pkg.WaterSchedule]
+	WeatherClientConfigs      babyapi.Storage[*weather.Config]
+	NotificationClientConfigs babyapi.Storage[*notifications.Client]
 }
 
 func NewClient(config Config) (*Client, error) {
@@ -34,10 +36,11 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	return &Client{
-		Gardens:              kv.NewClient[*pkg.Garden](db, "Garden"),
-		Zones:                kv.NewClient[*pkg.Zone](db, "Zone"),
-		WaterSchedules:       kv.NewClient[*pkg.WaterSchedule](db, "WaterSchedule"),
-		WeatherClientConfigs: kv.NewClient[*weather.Config](db, "WeatherClient"),
+		Gardens:                   kv.NewClient[*pkg.Garden](db, "Garden"),
+		Zones:                     kv.NewClient[*pkg.Zone](db, "Zone"),
+		WaterSchedules:            kv.NewClient[*pkg.WaterSchedule](db, "WaterSchedule"),
+		WeatherClientConfigs:      kv.NewClient[*weather.Config](db, "WeatherClient"),
+		NotificationClientConfigs: kv.NewClient[*notifications.Client](db, "NotificationClient"),
 	}, nil
 }
 
