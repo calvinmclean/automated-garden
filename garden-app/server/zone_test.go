@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -52,7 +53,7 @@ func setupWaterScheduleStorage(t *testing.T) *storage.Client {
 	})
 	assert.NoError(t, err)
 
-	err = storageClient.WaterSchedules.Set(ws)
+	err = storageClient.WaterSchedules.Set(context.Background(), ws)
 	assert.NoError(t, err)
 
 	return storageClient
@@ -69,10 +70,10 @@ func setupStorage(t *testing.T, garden *pkg.Garden) *storage.Client {
 	})
 	assert.NoError(t, err)
 
-	err = storageClient.Gardens.Set(garden)
+	err = storageClient.Gardens.Set(context.Background(), garden)
 	assert.NoError(t, err)
 
-	err = storageClient.Zones.Set(zone)
+	err = storageClient.Zones.Set(context.Background(), zone)
 	assert.NoError(t, err)
 
 	return storageClient
@@ -89,10 +90,10 @@ func setupZoneAndGardenStorage(t *testing.T) *storage.Client {
 	})
 	assert.NoError(t, err)
 
-	err = storageClient.Gardens.Set(garden)
+	err = storageClient.Gardens.Set(context.Background(), garden)
 	assert.NoError(t, err)
 
-	err = storageClient.Zones.Set(zone)
+	err = storageClient.Zones.Set(context.Background(), zone)
 	assert.NoError(t, err)
 
 	return storageClient
@@ -236,11 +237,11 @@ func TestGetZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			for _, ws := range tt.waterSchedules {
-				err = storageClient.WaterSchedules.Set(ws)
+				err = storageClient.WaterSchedules.Set(context.Background(), ws)
 				assert.NoError(t, err)
 			}
 
-			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
+			err = storageClient.WeatherClientConfigs.Set(context.Background(), createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			zr, err := NewZonesAPI(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
@@ -255,9 +256,9 @@ func TestGetZone(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			err = storageClient.Gardens.Set(garden)
+			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
-			err = storageClient.Zones.Set(zone)
+			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s?exclude_weather_data=%t", garden.ID, zone.ID, tt.excludeWeatherData), http.NoBody)
@@ -327,9 +328,9 @@ func TestZoneAction(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			err = storageClient.Gardens.Set(garden)
+			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
-			err = storageClient.Zones.Set(zone)
+			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
@@ -401,9 +402,9 @@ func TestZoneActionForm(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			err = storageClient.Gardens.Set(garden)
+			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
-			err = storageClient.Zones.Set(zone)
+			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), bytes.NewBufferString(tt.body))
@@ -456,7 +457,7 @@ func TestUpdateZone(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient := setupZoneAndGardenStorage(t)
 
-			err := storageClient.WaterSchedules.Set(createExampleWaterSchedule())
+			err := storageClient.WaterSchedules.Set(context.Background(), createExampleWaterSchedule())
 			assert.NoError(t, err)
 
 			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
@@ -504,7 +505,7 @@ func TestEndDateZone(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient := setupZoneAndGardenStorage(t)
 
-			err := storageClient.WaterSchedules.Set(createExampleWaterSchedule())
+			err := storageClient.WaterSchedules.Set(context.Background(), createExampleWaterSchedule())
 			assert.NoError(t, err)
 
 			zr, err := NewZonesAPI(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
@@ -535,11 +536,11 @@ func TestGetAllZones(t *testing.T) {
 	endDate, _ := time.Parse(time.RFC3339Nano, "2023-11-11T22:01:12.733064-07:00")
 	endDatedZone.EndDate = &endDate
 
-	err = storageClient.Gardens.Set(garden)
+	err = storageClient.Gardens.Set(context.Background(), garden)
 	assert.NoError(t, err)
-	err = storageClient.Zones.Set(zone)
+	err = storageClient.Zones.Set(context.Background(), zone)
 	assert.NoError(t, err)
-	err = storageClient.Zones.Set(endDatedZone)
+	err = storageClient.Zones.Set(context.Background(), endDatedZone)
 	assert.NoError(t, err)
 
 	tests := []struct {
@@ -700,7 +701,7 @@ func TestCreateZone(t *testing.T) {
 			storageClient := setupStorage(t, tt.garden)
 
 			for _, ws := range tt.waterSchedules {
-				err := storageClient.WaterSchedules.Set(ws)
+				err := storageClient.WaterSchedules.Set(context.Background(), ws)
 				assert.NoError(t, err)
 			}
 
@@ -849,11 +850,11 @@ func TestUpdateZonePUT(t *testing.T) {
 
 			zone := createExampleZone()
 			zone.GardenID = tt.garden.ID.ID
-			err := storageClient.Zones.Set(zone)
+			err := storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
 			for _, ws := range tt.waterSchedules {
-				err := storageClient.WaterSchedules.Set(ws)
+				err := storageClient.WaterSchedules.Set(context.Background(), ws)
 				assert.NoError(t, err)
 			}
 
@@ -963,9 +964,9 @@ func TestWaterHistory(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			err = storageClient.Gardens.Set(garden)
+			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
-			err = storageClient.Zones.Set(zone)
+			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s/history%s", garden.ID, zone.ID, tt.queryParams), http.NoBody)

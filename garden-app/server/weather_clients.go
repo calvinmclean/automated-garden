@@ -80,7 +80,7 @@ func (api *WeatherClientsAPI) testWeatherClient(w http.ResponseWriter, r *http.R
 
 	wc, err := weather.NewClient(weatherClient, func(weatherClientOptions map[string]interface{}) error {
 		weatherClient.Options = weatherClientOptions
-		return api.storageClient.WeatherClientConfigs.Set(weatherClient)
+		return api.storageClient.WeatherClientConfigs.Set(r.Context(), weatherClient)
 	})
 	if err != nil {
 		logger.Error("unable to get WeatherClient", "error", err)

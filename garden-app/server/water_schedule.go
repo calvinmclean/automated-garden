@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -35,14 +36,16 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 	}
 
 	// Initialize WaterActions for each WaterSchedule from the storage client
-	allWaterSchedules, err := api.storageClient.WaterSchedules.GetAll(func(ws *pkg.WaterSchedule) bool {
-		return !ws.EndDated()
-	})
+	allWaterSchedules, err := api.storageClient.WaterSchedules.GetAll(context.Background(), nil)
 	if err != nil {
 		return api, fmt.Errorf("unable to get WaterSchedules: %v", err)
 	}
 	for _, ws := range allWaterSchedules {
-		if err = api.worker.ScheduleWaterAction(ws); err != nil {
+		if ws.EndDated() {
+			continue
+		}
+		err = api.worker.ScheduleWaterAction(ws)
+		if err != nil {
 			return api, fmt.Errorf("unable to add WaterAction for WaterSchedule %v: %v", ws.ID, err)
 		}
 	}
@@ -122,10 +125,10 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 	return api, err
 }
 
-func (api *WaterSchedulesAPI) onCreateOrUpdate(_ *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
+func (api *WaterSchedulesAPI) onCreateOrUpdate(r *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
 	// Validate the new WaterSchedule.WeatherControl
 	if ws.WeatherControl != nil {
-		err := api.weatherClientsExist(ws)
+		err := api.weatherClientsExist(r.Context(), ws)
 		if err != nil {
 			if errors.Is(err, babyapi.ErrNotFound) {
 				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClients for WaterSchedule: %w", err))
@@ -150,16 +153,16 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(_ *http.Request, ws *pkg.WaterSch
 	return nil
 }
 
-func (api *WaterSchedulesAPI) weatherClientsExist(ws *pkg.WaterSchedule) error {
+func (api *WaterSchedulesAPI) weatherClientsExist(ctx context.Context, ws *pkg.WaterSchedule) error {
 	if ws.HasTemperatureControl() {
-		err := api.weatherClientExists(ws.WeatherControl.Temperature.ClientID)
+		err := api.weatherClientExists(ctx, ws.WeatherControl.Temperature.ClientID)
 		if err != nil {
 			return fmt.Errorf("error getting client for TemperatureControl: %w", err)
 		}
 	}
 
 	if ws.HasRainControl() {
-		err := api.weatherClientExists(ws.WeatherControl.Rain.ClientID)
+		err := api.weatherClientExists(ctx, ws.WeatherControl.Rain.ClientID)
 		if err != nil {
 			return fmt.Errorf("error getting client for RainControl: %w", err)
 		}
@@ -168,8 +171,8 @@ func (api *WaterSchedulesAPI) weatherClientsExist(ws *pkg.WaterSchedule) error {
 	return nil
 }
 
-func (api *WaterSchedulesAPI) weatherClientExists(id xid.ID) error {
-	_, err := api.storageClient.WeatherClientConfigs.Get(id.String())
+func (api *WaterSchedulesAPI) weatherClientExists(ctx context.Context, id xid.ID) error {
+	_, err := api.storageClient.WeatherClientConfigs.Get(ctx, id.String())
 	if err != nil {
 		return fmt.Errorf("error getting WeatherClient with ID %q: %w", id, err)
 	}

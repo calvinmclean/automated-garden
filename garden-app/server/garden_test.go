@@ -2,6 +2,7 @@ package server
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -244,7 +245,7 @@ func TestUpdateGardenPUT(t *testing.T) {
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
-			err = storageClient.Gardens.Set(garden)
+			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
 
 			influxdbClient := new(influxdb.MockClient)
@@ -298,7 +299,7 @@ func TestGetAllGardens(t *testing.T) {
 			assert.NoError(t, err)
 
 			for _, g := range gardens {
-				err = storageClient.Gardens.Set(g)
+				err = storageClient.Gardens.Set(context.Background(), g)
 				assert.NoError(t, err)
 			}
 
@@ -363,11 +364,11 @@ func TestEndDateGarden(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			err = storageClient.Gardens.Set(tt.garden)
+			err = storageClient.Gardens.Set(context.Background(), tt.garden)
 			assert.NoError(t, err)
 
 			if tt.zone != nil {
-				err = storageClient.Zones.Set(tt.zone)
+				err = storageClient.Zones.Set(context.Background(), tt.zone)
 				assert.NoError(t, err)
 			}
 
@@ -449,7 +450,7 @@ func TestUpdateGarden(t *testing.T) {
 			storageClient := setupZoneAndGardenStorage(t)
 
 			for _, z := range tt.zones {
-				err := storageClient.Zones.Set(z)
+				err := storageClient.Zones.Set(context.Background(), z)
 				assert.NoError(t, err)
 			}
 
@@ -523,7 +524,7 @@ func TestGardenAction(t *testing.T) {
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
-			err = storageClient.Gardens.Set(garden)
+			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
@@ -625,7 +626,7 @@ func TestGardenActionForm(t *testing.T) {
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
-			err = storageClient.Gardens.Set(garden)
+			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/action", garden.ID), bytes.NewBufferString(tt.body))

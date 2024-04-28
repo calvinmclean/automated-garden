@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -48,7 +49,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *slog.Logger) {
 			// Get WaterSchedule from storage in case the ActivePeriod or WeatherControl are changed
-			ws, err := w.storageClient.WaterSchedules.Get(waterSchedule.ID.String())
+			ws, err := w.storageClient.WaterSchedules.Get(context.Background(), waterSchedule.ID.String())
 			if err != nil {
 				jobLogger.Error("error getting WaterSchedule when executing scheduled Job", "error", err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
@@ -214,7 +215,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		if g.LightSchedule.AdhocOnTime.Before(time.Now()) {
 			logger.Debug("adhoc ON time is in the past and is being removed")
 			g.LightSchedule.AdhocOnTime = nil
-			return w.storageClient.Gardens.Set(g)
+			return w.storageClient.Gardens.Set(context.Background(), g)
 		}
 
 		nextOnJob, err := w.getNextLightJob(g, pkg.LightStateOn, false)
@@ -230,9 +231,6 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 			_, err = w.scheduler.Job(nextOnJob).StartAt(nextOnTime.Add(lightInterval)).Update()
 			if err != nil {
 				return fmt.Errorf("error rescheduling next on job: %w", err)
-			}
-			if err != nil {
-				return err
 			}
 		}
 
@@ -338,7 +336,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 		return fmt.Errorf("error scheduling ad-hoc light action: %w", err)
 	}
 
-	return w.storageClient.Gardens.Set(g)
+	return w.storageClient.Gardens.Set(context.Background(), g)
 }
 
 // RemoveJobsByID will remove Jobs tagged with the specific xid
@@ -420,7 +418,7 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 		actionLogger.Debug("removing AdhocOnTime")
 		// Now set AdhocOnTime to nil and save
 		g.LightSchedule.AdhocOnTime = nil
-		err = w.storageClient.Gardens.Set(g)
+		err = w.storageClient.Gardens.Set(context.Background(), g)
 		if err != nil {
 			actionLogger.Error("error saving Garden after removing AdhocOnTime", "error", err)
 			schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()

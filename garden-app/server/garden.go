@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -40,15 +41,17 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 	}
 
 	// Initialize light schedules for all Gardens
-	allGardens, err := gr.storageClient.Gardens.GetAll(storage.FilterEndDated[*pkg.Garden](false))
+	allGardens, err := gr.storageClient.Gardens.GetAll(context.Background(), nil)
 	if err != nil {
 		return gr, err
 	}
 	for _, g := range allGardens {
-		if g.LightSchedule != nil {
-			if err = gr.worker.ScheduleLightActions(g); err != nil {
-				return gr, fmt.Errorf("unable to schedule LightAction for Garden %v: %v", g.ID, err)
-			}
+		if g.EndDated() || g.LightSchedule == nil {
+			continue
+		}
+		err = gr.worker.ScheduleLightActions(g)
+		if err != nil {
+			return gr, fmt.Errorf("unable to schedule LightAction for Garden %v: %v", g.ID, err)
 		}
 	}
 
@@ -98,7 +101,7 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 		gardenID := gr.GetIDParam(r)
 
 		// Don't allow end-dating a Garden with active Zones
-		numZones, err := gr.numZones(gardenID)
+		numZones, err := gr.numZones(r.Context(), gardenID)
 		if err != nil {
 			return babyapi.InternalServerError(fmt.Errorf("error getting number of Zones for garden: %w", err))
 		}
@@ -132,7 +135,7 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 func (gr *GardensAPI) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
-	numZones, err := gr.numZones(garden.ID.String())
+	numZones, err := gr.numZones(r.Context(), garden.ID.String())
 	if err != nil {
 		return babyapi.InternalServerError(err)
 	}

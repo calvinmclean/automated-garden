@@ -7,7 +7,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 
 	"github.com/calvinmclean/babyapi"
-	"github.com/calvinmclean/babyapi/storage"
+	"github.com/calvinmclean/babyapi/storage/kv"
 	"github.com/madflojo/hord"
 	"github.com/madflojo/hord/drivers/hashmap"
 	"github.com/madflojo/hord/drivers/redis"
@@ -34,10 +34,10 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	return &Client{
-		Gardens:              storage.NewClient[*pkg.Garden](db, "Garden"),
-		Zones:                storage.NewClient[*pkg.Zone](db, "Zone"),
-		WaterSchedules:       storage.NewClient[*pkg.WaterSchedule](db, "WaterSchedule"),
-		WeatherClientConfigs: storage.NewClient[*weather.Config](db, "WeatherClient"),
+		Gardens:              kv.NewClient[*pkg.Garden](db, "Garden"),
+		Zones:                kv.NewClient[*pkg.Zone](db, "Zone"),
+		WaterSchedules:       kv.NewClient[*pkg.WaterSchedule](db, "WaterSchedule"),
+		WeatherClientConfigs: kv.NewClient[*weather.Config](db, "WeatherClient"),
 	}, nil
 }
 
@@ -52,14 +52,14 @@ func newHordDB(config Config) (hord.Database, error) {
 		if err != nil {
 			return nil, fmt.Errorf("error decoding config: %w", err)
 		}
-		return storage.NewFileDB(cfg)
+		return kv.NewFileDB(cfg)
 	case "redis":
 		var cfg redis.Config
 		err := mapstructure.Decode(config.Options, &cfg)
 		if err != nil {
 			return nil, fmt.Errorf("error decoding config: %w", err)
 		}
-		return storage.NewRedisDB(cfg)
+		return kv.NewRedisDB(cfg)
 	default:
 		return nil, fmt.Errorf("invalid KV driver: %q", config.Driver)
 	}

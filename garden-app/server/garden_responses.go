@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"slices"
@@ -57,7 +58,7 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	zonesPath := fmt.Sprintf("%s/%s%s", gardenBasePath, g.Garden.ID, zoneBasePath)
 
 	var err error
-	g.NumZones, err = g.api.numZones(g.ID.String())
+	g.NumZones, err = g.api.numZones(r.Context(), g.ID.String())
 	if err != nil {
 		return fmt.Errorf("error getting number of Zones for garden: %w", err)
 	}
@@ -155,23 +156,24 @@ func (agr AllGardensResponse) HTML(r *http.Request) string {
 	return gardensPageTemplate.Render(r, agr)
 }
 
-func (api *GardensAPI) getAllZones(gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
-	zones, err := api.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
+func (api *GardensAPI) getAllZones(ctx context.Context, gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
+	zones, err := api.storageClient.Zones.GetAll(ctx, nil)
+	if err != nil {
+		return nil, fmt.Errorf("error getting Zones for Garden: %w", err)
+	}
+	zones = babyapi.FilterFunc[*pkg.Zone](func(z *pkg.Zone) bool {
 		gardenIDFilter := filterZoneByGardenID(gardenID)
 		endDateFilter := storage.FilterEndDated[*pkg.Zone](getEndDated)
 
 		return gardenIDFilter(z) && endDateFilter(z)
-	})
-	if err != nil {
-		return nil, fmt.Errorf("error getting Zones for Garden: %w", err)
-	}
+	}).Filter(zones)
 
 	return zones, nil
 }
 
 // NumZones returns the number of non-end-dated Zones that are part of this Garden
-func (api *GardensAPI) numZones(gardenID string) (uint, error) {
-	zones, err := api.getAllZones(gardenID, false)
+func (api *GardensAPI) numZones(ctx context.Context, gardenID string) (uint, error) {
+	zones, err := api.getAllZones(ctx, gardenID, false)
 	if err != nil {
 		return 0, err
 	}

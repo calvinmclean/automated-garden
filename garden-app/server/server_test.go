@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -24,14 +25,14 @@ func TestValidateAllStoredResources(t *testing.T) {
 		{
 			"InvalidGardenMissingID",
 			func(s *storage.Client) error {
-				return s.Gardens.Set(&pkg.Garden{})
+				return s.Gardens.Set(context.Background(), &pkg.Garden{})
 			},
 			"invalid Garden: missing required field 'id'",
 		},
 		{
 			"InvalidGarden",
 			func(s *storage.Client) error {
-				return s.Gardens.Set(&pkg.Garden{
+				return s.Gardens.Set(context.Background(), &pkg.Garden{
 					ID: babyapi.ID{ID: id},
 				})
 			},
@@ -41,26 +42,26 @@ func TestValidateAllStoredResources(t *testing.T) {
 			"InvalidZone",
 			func(s *storage.Client) error {
 				g := createExampleGarden()
-				err := s.Gardens.Set(g)
+				err := s.Gardens.Set(context.Background(), g)
 				if err != nil {
 					return err
 				}
 
-				return s.Zones.Set(&pkg.Zone{ID: babyapi.ID{ID: id}, GardenID: g.ID.ID})
+				return s.Zones.Set(context.Background(), &pkg.Zone{ID: babyapi.ID{ID: id}, GardenID: g.ID.ID})
 			},
 			"invalid Zone \"c5cvhpcbcv45e8bp16dg\": missing required position field",
 		},
 		{
 			"InvalidWaterScheduleMissingID",
 			func(s *storage.Client) error {
-				return s.WaterSchedules.Set(&pkg.WaterSchedule{})
+				return s.WaterSchedules.Set(context.Background(), &pkg.WaterSchedule{})
 			},
 			"invalid WaterSchedule: missing required field 'id'",
 		},
 		{
 			"InvalidWaterSchedule",
 			func(s *storage.Client) error {
-				return s.WaterSchedules.Set(&pkg.WaterSchedule{
+				return s.WaterSchedules.Set(context.Background(), &pkg.WaterSchedule{
 					ID: babyapi.ID{ID: id},
 				})
 			},
@@ -69,14 +70,14 @@ func TestValidateAllStoredResources(t *testing.T) {
 		{
 			"InvalidWeatherClientMissingID",
 			func(s *storage.Client) error {
-				return s.WeatherClientConfigs.Set(&weather.Config{})
+				return s.WeatherClientConfigs.Set(context.Background(), &weather.Config{})
 			},
 			"invalid WeatherClient: missing required field 'id'",
 		},
 		{
 			"InvalidWeatherClient",
 			func(s *storage.Client) error {
-				return s.WeatherClientConfigs.Set(&weather.Config{
+				return s.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID: babyapi.ID{ID: id},
 				})
 			},

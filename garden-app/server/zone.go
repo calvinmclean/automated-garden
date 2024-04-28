@@ -108,7 +108,7 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 }
 
 func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
-	waterSchedules, err := api.storageClient.WaterSchedules.GetAll(nil)
+	waterSchedules, err := api.storageClient.WaterSchedules.GetAll(r.Context(), nil)
 	if err != nil {
 		return nil, babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
 	}
@@ -176,9 +176,9 @@ func (api *ZonesAPI) zoneAction(r *http.Request, zone *pkg.Zone) (render.Rendere
 	return &ZoneActionResponse{}, nil
 }
 
-func (api *ZonesAPI) waterSchedulesExist(ids []xid.ID) error {
+func (api *ZonesAPI) waterSchedulesExist(ctx context.Context, ids []xid.ID) error {
 	for _, id := range ids {
-		_, err := api.storageClient.WaterSchedules.Get(id.String())
+		_, err := api.storageClient.WaterSchedules.Get(ctx, id.String())
 		if err != nil {
 			return fmt.Errorf("error getting WaterSchedule with ID %q: %w", id, err)
 		}
@@ -214,14 +214,15 @@ func (api *ZonesAPI) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.
 		return httpErr
 	}
 
-	zonesForGarden, err := api.storageClient.Zones.GetAll(func(z *pkg.Zone) bool {
-		return z.GardenID.String() == gardenID && !z.EndDated()
-	})
+	zonesForGarden, err := api.storageClient.Zones.GetAll(r.Context(), nil)
 	if err != nil {
 		err = fmt.Errorf("error getting all zones for Garden %q: %w", gardenID, err)
 		logger.Error("unable to get all zones", "error", err)
 		return babyapi.InternalServerError(err)
 	}
+	zonesForGarden = babyapi.FilterFunc[*pkg.Zone](func(z *pkg.Zone) bool {
+		return z.GardenID.String() == gardenID && !z.EndDated()
+	}).Filter(zonesForGarden)
 
 	zone.GardenID, err = xid.FromString(gardenID)
 	if err != nil {
@@ -241,7 +242,7 @@ func (api *ZonesAPI) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.
 		return babyapi.ErrInvalidRequest(err)
 	}
 	// Validate water schedules exists
-	err = api.waterSchedulesExist(zone.WaterScheduleIDs)
+	err = api.waterSchedulesExist(r.Context(), zone.WaterScheduleIDs)
 	if err != nil {
 		if errors.Is(err, babyapi.ErrNotFound) {
 			logger.Error("invalid request to create Zone", "error", err)
