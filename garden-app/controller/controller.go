@@ -114,16 +114,9 @@ func NewController(cfg Config) (*Controller, error) {
 		})
 	}
 
-	// Create default handler and mqttClient, then connect
-	defaultHandler := paho.MessageHandler(func(_ paho.Client, msg paho.Message) {
-		controller.logger.With(
-			"topic", msg.Topic(),
-			"message", string(msg.Payload()),
-		).Info("default handler called with message")
-	})
 	// Override configured ClientID with the TopicPrefix from command flags
 	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.TopicPrefix)
-	controller.mqttClient, err = mqtt.NewClient(controller.MQTTConfig, defaultHandler, handlers...)
+	controller.mqttClient, err = mqtt.NewClient(controller.MQTTConfig, mqtt.DefaultHandler(controller.logger), handlers...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize MQTT client: %w", err)
 	}
