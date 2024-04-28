@@ -19,7 +19,7 @@ const (
 // NotificationClientsAPI encapsulates the structs and dependencies necessary for the NotificationClients API
 // to function, including storage and configuring
 type NotificationClientsAPI struct {
-	*babyapi.API[*notifications.Config]
+	*babyapi.API[*notifications.Client]
 
 	storageClient *storage.Client
 }
@@ -30,12 +30,12 @@ func NewNotificationClientsAPI(storageClient *storage.Client) (*NotificationClie
 		storageClient: storageClient,
 	}
 
-	api.API = babyapi.NewAPI[*notifications.Config]("NotificationClients", notificationClientsBasePath, func() *notifications.Config { return &notifications.Config{} })
+	api.API = babyapi.NewAPI[*notifications.Client]("NotificationClients", notificationClientsBasePath, func() *notifications.Client { return &notifications.Client{} })
 	api.SetStorage(api.storageClient.NotificationClientConfigs)
 
-	api.SetOnCreateOrUpdate(func(_ *http.Request, nc *notifications.Config) *babyapi.ErrResponse {
+	api.SetOnCreateOrUpdate(func(_ *http.Request, nc *notifications.Client) *babyapi.ErrResponse {
 		// make sure a valid NotificationClient can still be created
-		_, err := notifications.NewClient(nc)
+		err := nc.TestCreate()
 		if err != nil {
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update NotificationClient: %w", err))
 		}
@@ -43,8 +43,8 @@ func NewNotificationClientsAPI(storageClient *storage.Client) (*NotificationClie
 		return nil
 	})
 
-	api.SetResponseWrapper(func(nc *notifications.Config) render.Renderer {
-		return &NotificationClientResponse{Config: nc}
+	api.SetResponseWrapper(func(nc *notifications.Client) render.Renderer {
+		return &NotificationClientResponse{Client: nc}
 	})
 
 	api.AddCustomIDRoute(http.MethodPost, "/test", babyapi.Handler(api.testNotificationClient))
@@ -67,20 +67,14 @@ func (api *NotificationClientsAPI) testNotificationClient(_ http.ResponseWriter,
 		return httpErr
 	}
 
-	nc, err := notifications.NewClient(notificationClient)
-	if err != nil {
-		logger.Error("unable to get NotificationClient", "error", err)
-		return InternalServerError(err)
-	}
-
 	var req TestNotificationClientRequest
-	err = json.NewDecoder(r.Body).Decode(&req)
+	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		logger.Error("unable to parse TestNotificationClientRequest", "error", err)
 		return babyapi.ErrInvalidRequest(err)
 	}
 
-	err = nc.SendMessage(req.Title, req.Message)
+	err = notificationClient.SendMessage(req.Title, req.Message)
 	if err != nil {
 		return babyapi.ErrInvalidRequest(err)
 	}
@@ -99,7 +93,7 @@ func (resp *NotificationClientTestResponse) Render(_ http.ResponseWriter, _ *htt
 }
 
 type NotificationClientResponse struct {
-	*notifications.Config
+	*notifications.Client
 
 	Links []Link `json:"links,omitempty"`
 }

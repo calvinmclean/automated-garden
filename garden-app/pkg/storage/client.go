@@ -26,7 +26,7 @@ type Client struct {
 	Zones                     babyapi.Storage[*pkg.Zone]
 	WaterSchedules            babyapi.Storage[*pkg.WaterSchedule]
 	WeatherClientConfigs      babyapi.Storage[*weather.Config]
-	NotificationClientConfigs babyapi.Storage[*notifications.Config]
+	NotificationClientConfigs babyapi.Storage[*notifications.Client]
 }
 
 func NewClient(config Config) (*Client, error) {
@@ -40,7 +40,7 @@ func NewClient(config Config) (*Client, error) {
 		Zones:                     kv.NewClient[*pkg.Zone](db, "Zone"),
 		WaterSchedules:            kv.NewClient[*pkg.WaterSchedule](db, "WaterSchedule"),
 		WeatherClientConfigs:      kv.NewClient[*weather.Config](db, "WeatherClient"),
-		NotificationClientConfigs: kv.NewClient[*notifications.Config](db, "NotificationClient"),
+		NotificationClientConfigs: kv.NewClient[*notifications.Client](db, "NotificationClient"),
 	}, nil
 }
 

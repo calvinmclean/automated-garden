@@ -10,15 +10,15 @@ import (
 func TestConfigPatch(t *testing.T) {
 	tests := []struct {
 		name      string
-		newConfig *Config
+		newConfig *Client
 	}{
 		{
 			"PatchType",
-			&Config{Type: "other_type"},
+			&Client{Type: "other_type"},
 		},
 		{
 			"PatchOptions",
-			&Config{Options: map[string]interface{}{
+			&Client{Options: map[string]interface{}{
 				"key": "value",
 			}},
 		},
@@ -26,7 +26,7 @@ func TestConfigPatch(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &Config{}
+			c := &Client{}
 			err := c.Patch(tt.newConfig)
 			require.Nil(t, err)
 			assert.Equal(t, tt.newConfig, c)
@@ -35,11 +35,11 @@ func TestConfigPatch(t *testing.T) {
 }
 
 func TestNewClientInvalidType(t *testing.T) {
-	_, err := NewClient(&Config{Type: "DNE"})
+	_, err := newClient(&Client{Type: "DNE"})
 	assert.Error(t, err)
 	assert.Equal(t, "invalid type 'DNE'", err.Error())
 }
 
 func TestEndDated(t *testing.T) {
-	assert.False(t, (&Config{}).EndDated())
+	assert.False(t, (&Client{}).EndDated())
 }

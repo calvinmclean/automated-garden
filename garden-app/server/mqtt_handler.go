@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
@@ -104,14 +103,8 @@ func (h *MQTTHandler) Handle(_ mqtt.Client, msg mqtt.Message) {
 	title := fmt.Sprintf("%s finished watering", zone.Name)
 	message := fmt.Sprintf("watered for %s", waterDuration.String())
 
-	for _, ncConfig := range notificationClients {
-		ncLogger := logger.With(notificationClientIDLogField, ncConfig.GetID())
-
-		nc, err := notifications.NewClient(ncConfig)
-		if err != nil {
-			ncLogger.Error("error initializing notification client", "error", err)
-			continue
-		}
+	for _, nc := range notificationClients {
+		ncLogger := logger.With(notificationClientIDLogField, nc.GetID())
 
 		err = nc.SendMessage(title, message)
 		if err != nil {
