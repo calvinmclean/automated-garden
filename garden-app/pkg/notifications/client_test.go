@@ -17,6 +17,10 @@ func TestConfigPatch(t *testing.T) {
 			&Client{Type: "other_type"},
 		},
 		{
+			"PatchName",
+			&Client{Name: "NewName"},
+		},
+		{
 			"PatchOptions",
 			&Client{Options: map[string]interface{}{
 				"key": "value",

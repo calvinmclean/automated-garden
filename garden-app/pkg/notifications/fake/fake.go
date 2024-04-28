@@ -7,7 +7,8 @@ import (
 )
 
 type Config struct {
-	Error string `mapstructure:"error"`
+	CreateError      string `mapstructure:"create_error"`
+	SendMessageError string `mapstructure:"send_message_error"`
 }
 
 type Client struct {
@@ -22,12 +23,16 @@ func NewClient(options map[string]interface{}) (*Client, error) {
 		return nil, err
 	}
 
+	if client.Config.CreateError != "" {
+		return nil, errors.New(client.CreateError)
+	}
+
 	return client, nil
 }
 
 func (c *Client) SendMessage(string, string) error {
-	if c.Error != "" {
-		return errors.New(c.Error)
+	if c.SendMessageError != "" {
+		return errors.New(c.SendMessageError)
 	}
 	return nil
 }

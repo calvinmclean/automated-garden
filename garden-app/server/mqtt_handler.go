@@ -64,40 +64,42 @@ func (h *MQTTHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, err
 }
 
 func (h *MQTTHandler) Handle(_ mqtt.Client, msg mqtt.Message) {
-	logger := h.logger.With("topic", msg.Topic())
-	logger.Info("received message", "message", string(msg.Payload()))
-
-	zonePosition, waterDuration, err := parseWaterMessage(msg.Payload())
+	err := h.handle(msg.Topic(), msg.Payload())
 	if err != nil {
-		logger.Error("error parsing message", "error", err)
-		return
+		h.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
+	}
+}
+
+func (h *MQTTHandler) handle(topic string, payload []byte) error {
+	logger := h.logger.With("topic", topic)
+	logger.Info("received message", "message", string(payload))
+
+	zonePosition, waterDuration, err := parseWaterMessage(payload)
+	if err != nil {
+		return fmt.Errorf("error parsing message: %w", err)
 	}
 
-	topicPrefix := strings.TrimSuffix(msg.Topic(), "/data/water")
+	topicPrefix := strings.TrimSuffix(topic, "/data/water")
 	if topicPrefix == "" {
-		logger.Error("received message on invalid topic", "error", err)
-		return
+		return fmt.Errorf("received message on invalid topic: %w", err)
 	}
 
 	garden, err := h.getGarden(topicPrefix)
 	if err != nil {
-		logger.Error("error getting garden", "topic_prefix", topicPrefix, "error", err)
-		return
+		return fmt.Errorf("error getting garden with topic-prefix %q: %w", topicPrefix, err)
 	}
 	logger.Info("found garden with topic-prefix", "topic_prefix", topicPrefix, "garden_id", garden.GetID())
 
 	zone, err := h.getZone(garden.GetID(), zonePosition)
 	if err != nil {
-		logger.Error("error getting zone", "zone_position", zonePosition, "error", err)
-		return
+		return fmt.Errorf("error getting zone with position %d: %w", zonePosition, err)
 	}
 	logger.Info("found zone with position", "zone_position", zonePosition, "zone_id", zone.GetID())
 
 	// TODO: this might end up getting client from garden or zone config instead of using all
 	notificationClients, err := h.storageClient.NotificationClientConfigs.GetAll(context.Background(), nil)
 	if err != nil {
-		logger.Error("error getting all notification clients", "error", err)
-		return
+		return fmt.Errorf("error getting all notification clients: %w", err)
 	}
 
 	title := fmt.Sprintf("%s finished watering", zone.Name)
@@ -114,6 +116,8 @@ func (h *MQTTHandler) Handle(_ mqtt.Client, msg mqtt.Message) {
 
 		ncLogger.Info("successfully send notification")
 	}
+
+	return nil
 }
 
 func parseWaterMessage(msg []byte) (int, time.Duration, error) {

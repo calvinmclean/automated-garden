@@ -37,7 +37,7 @@ func NewNotificationClientsAPI(storageClient *storage.Client) (*NotificationClie
 		// make sure a valid NotificationClient can still be created
 		err := nc.TestCreate()
 		if err != nil {
-			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update NotificationClient: %w", err))
+			return babyapi.ErrInvalidRequest(fmt.Errorf("error initializing client: %w", err))
 		}
 
 		return nil
