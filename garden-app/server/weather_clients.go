@@ -139,7 +139,7 @@ func (resp *WeatherClientResponse) Render(_ http.ResponseWriter, _ *http.Request
 		resp.Links = append(resp.Links,
 			Link{
 				"self",
-				fmt.Sprintf("%s/%s", "/weather_clients", resp.ID),
+				fmt.Sprintf("%s/%s", weatherClientsBasePath, resp.ID),
 			},
 		)
 	}

@@ -118,6 +118,12 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 	rootAPI.AddNestedAPI(weatherClientsAPI)
 
+	notificationClientsAPI, err := NewNotificationClientsAPI(storageClient)
+	if err != nil {
+		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", notificationClientsBasePath, err)
+	}
+	rootAPI.AddNestedAPI(notificationClientsAPI)
+
 	waterSchedulesAPI, err := NewWaterSchedulesAPI(storageClient, worker)
 	if err != nil {
 		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)

@@ -8,6 +8,7 @@ require (
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-chi/render v1.0.3
 	github.com/go-co-op/gocron v1.35.2
+	github.com/gregdel/pushover v1.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
 	github.com/madflojo/hord v0.2.2
 	github.com/mitchellh/mapstructure v1.5.0
