@@ -59,7 +59,7 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 
 	ws := []*pkg.WaterSchedule{}
 	for _, id := range zr.Zone.WaterScheduleIDs {
-		result, err := zr.api.storageClient.WaterSchedules.Get(id.String())
+		result, err := zr.api.storageClient.WaterSchedules.Get(ctx, id.String())
 		if err != nil {
 			return fmt.Errorf("unable to get WaterSchedule for ZoneResponse: %w", err)
 		}

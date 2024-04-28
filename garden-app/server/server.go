@@ -10,7 +10,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -156,7 +155,7 @@ func (s *Server) Stop() {
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types
 func validateAllStoredResources(storageClient *storage.Client) error {
-	gardens, err := storageClient.Gardens.GetAll(storage.FilterEndDated[*pkg.Garden](true))
+	gardens, err := storageClient.Gardens.GetAll(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all Gardens: %w", err)
 	}
@@ -171,7 +170,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	zones, err := storageClient.Zones.GetAll(nil)
+	zones, err := storageClient.Zones.GetAll(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all Zones: %w", err)
 	}
@@ -186,7 +185,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	waterSchedules, err := storageClient.WaterSchedules.GetAll(nil)
+	waterSchedules, err := storageClient.WaterSchedules.GetAll(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WaterSchedules: %w", err)
 	}
@@ -201,7 +200,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	weatherClients, err := storageClient.WeatherClientConfigs.GetAll(nil)
+	weatherClients, err := storageClient.WeatherClientConfigs.GetAll(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WeatherClients: %w", err)
 	}

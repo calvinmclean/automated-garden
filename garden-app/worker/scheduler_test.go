@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"log/slog"
 	"testing"
 	"time"
@@ -70,10 +71,10 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	garden := createExampleGarden()
 	zone := createExampleZone()
 
-	err = storageClient.Gardens.Set(garden)
+	err = storageClient.Gardens.Set(context.Background(), garden)
 	assert.NoError(t, err)
 
-	err = storageClient.Zones.Set(zone)
+	err = storageClient.Zones.Set(context.Background(), zone)
 	assert.NoError(t, err)
 
 	influxdbClient := new(influxdb.MockClient)
@@ -111,10 +112,10 @@ func TestScheduleWaterAction(t *testing.T) {
 	garden := createExampleGarden()
 	zone := createExampleZone()
 
-	err = storageClient.Gardens.Set(garden)
+	err = storageClient.Gardens.Set(context.Background(), garden)
 	assert.NoError(t, err)
 
-	err = storageClient.Zones.Set(zone)
+	err = storageClient.Zones.Set(context.Background(), zone)
 	assert.NoError(t, err)
 
 	influxdbClient := new(influxdb.MockClient)
@@ -147,10 +148,10 @@ func TestScheduleWaterAction(t *testing.T) {
 	wsNotInStorage.StartTime = &startTime
 	wsNotActive.StartTime = &startTime
 
-	err = storageClient.WaterSchedules.Set(ws)
+	err = storageClient.WaterSchedules.Set(context.Background(), ws)
 	assert.NoError(t, err)
 
-	err = storageClient.WaterSchedules.Set(wsNotActive)
+	err = storageClient.WaterSchedules.Set(context.Background(), wsNotActive)
 	assert.NoError(t, err)
 
 	err = worker.ScheduleWaterAction(ws)

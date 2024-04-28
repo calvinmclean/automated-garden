@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"log/slog"
@@ -174,10 +175,10 @@ func TestGetWaterSchedule(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			err = storageClient.WaterSchedules.Set(tt.waterSchedule)
+			err = storageClient.WaterSchedules.Set(context.Background(), tt.waterSchedule)
 			assert.NoError(t, err)
 
-			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
+			err = storageClient.WeatherClientConfigs.Set(context.Background(), createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
 			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
@@ -251,10 +252,10 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			err = storageClient.WeatherClientConfigs.Set(createExampleWeatherClientConfig())
+			err = storageClient.WeatherClientConfigs.Set(context.Background(), createExampleWeatherClientConfig())
 			assert.NoError(t, err)
 
-			err = storageClient.WaterSchedules.Set(createExampleWaterSchedule())
+			err = storageClient.WaterSchedules.Set(context.Background(), createExampleWaterSchedule())
 			assert.NoError(t, err)
 
 			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
@@ -320,13 +321,13 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			assert.NoError(t, err)
 
 			if tt.zone != nil {
-				err = storageClient.Gardens.Set(createExampleGarden())
+				err = storageClient.Gardens.Set(context.Background(), createExampleGarden())
 				assert.NoError(t, err)
-				err = storageClient.Zones.Set(zone)
+				err = storageClient.Zones.Set(context.Background(), zone)
 				assert.NoError(t, err)
 			}
 
-			err = storageClient.WaterSchedules.Set(tt.waterSchedule)
+			err = storageClient.WaterSchedules.Set(context.Background(), tt.waterSchedule)
 			assert.NoError(t, err)
 
 			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
@@ -374,9 +375,9 @@ func TestGetAllWaterSchedules(t *testing.T) {
 				Driver: "hashmap",
 			})
 			assert.NoError(t, err)
-			err = storageClient.WaterSchedules.Set(waterSchedule)
+			err = storageClient.WaterSchedules.Set(context.Background(), waterSchedule)
 			assert.NoError(t, err)
-			err = storageClient.WaterSchedules.Set(endDatedWaterSchedule)
+			err = storageClient.WaterSchedules.Set(context.Background(), endDatedWaterSchedule)
 			assert.NoError(t, err)
 
 			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
@@ -519,7 +520,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			assert.NoError(t, err)
 
 			ws := createExampleWaterSchedule()
-			err = storageClient.WaterSchedules.Set(ws)
+			err = storageClient.WaterSchedules.Set(context.Background(), ws)
 			assert.NoError(t, err)
 
 			wsr, err := NewWaterSchedulesAPI(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
