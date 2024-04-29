@@ -1,0 +1,25 @@
+{{ define "WeatherClientModal" }}
+<div id="modal" class="uk-modal" style="display:block;">
+    <div class="uk-modal-dialog uk-modal-body uk-text-center">
+        <h3 class="uk-modal-title">{{ if .Type }}{{ .Type }}{{ else }}Create Weather Client{{ end }}</h3>
+
+        <form _="on submit take .uk-open from #modal" hx-put="/weather_clients/{{ .ID }}"
+            hx-headers='{"Accept": "text/html"}' hx-swap="none">
+            <input type="hidden" value="{{ .ID }}" name="ID">
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ .Type }}" placeholder="Type" name="Type">
+            </div>
+
+            <!-- TODO: use select/dropdown for Type and use selection to render a form with relevant inputs -->
+
+            {{ template "modalSubmitButton" }}
+            {{ if .Type }}
+            {{ template "deleteButton" (
+            args "HXDelete" (print "/weather_clients/" .ID) "HXTarget" (print "#weather-client-card-" .ID)
+            ) }}
+            {{ end }}
+            {{ template "modalCloseButton" }}
+        </form>
+    </div>
+</div>
+{{ end }}

@@ -1,0 +1,30 @@
+{{ define "WeatherClientsPage" }}
+{{ template "start" }}
+{{ template "WeatherClients" . }}
+{{ template "end" }}
+{{ end }}
+
+{{ define "WeatherClients" }}
+<div hx-swap="outerHTML" hx-get="/weather_clients?refresh=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="{{ if NotRefresh }}load, {{ end }}newWeatherClient from:body" uk-grid>
+    {{ range .Items }}
+    {{ template "weatherClientCard" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "weatherClientCard" }}
+<div class="uk-width-1-2@m" id="weather-client-card-{{ .ID }}">
+    <div class="uk-card uk-card-default" style="margin: 5%;">
+        <div class="uk-card-header uk-text-center">
+            <h3 class="uk-card-title uk-margin-remove-bottom">
+                {{ .ID }}
+            </h3>
+            {{ template "cardEditButton" (print "/weather_clients/" .ID "/components?type=edit_modal") }}
+        </div>
+        <div class="uk-card-body">
+            {{ .Type }}
+        </div>
+    </div>
+</div>
+{{ end }}

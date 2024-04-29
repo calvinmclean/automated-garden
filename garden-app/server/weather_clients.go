@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"time"
@@ -46,8 +47,37 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 	api.SetResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc}
 	})
+	api.SetGetAllResponseWrapper(func(wcs []*weather.Config) render.Renderer {
+		resp := AllWeatherClientsResponse{ResourceList: babyapi.ResourceList[*WeatherClientResponse]{}}
 
-	api.AddCustomIDRoute(http.MethodGet, "/test", http.HandlerFunc(api.testWeatherClient))
+		for _, wc := range wcs {
+			resp.ResourceList.Items = append(resp.ResourceList.Items, &WeatherClientResponse{Config: wc})
+		}
+
+		return resp
+	})
+
+	api.AddCustomIDRoute(http.MethodGet, "/test", babyapi.Handler(api.testWeatherClient))
+
+	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
+		switch r.URL.Query().Get("type") {
+		case "create_modal":
+			return weatherClientModalTemplate.Renderer(&weather.Config{
+				ID: babyapi.NewID(),
+			})
+		default:
+			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
+	}))
+
+	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, wc *weather.Config) (render.Renderer, *babyapi.ErrResponse) {
+		switch r.URL.Query().Get("type") {
+		case "edit_modal":
+			return weatherClientModalTemplate.Renderer(wc), nil
+		default:
+			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
+		}
+	}))
 
 	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
 		id := api.GetIDParam(r)
@@ -67,81 +97,50 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 	return api, nil
 }
 
-func (api *WeatherClientsAPI) testWeatherClient(w http.ResponseWriter, r *http.Request) {
+func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.Request) render.Renderer {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to test WeatherClient")
 
 	weatherClient, httpErr := api.GetRequestedResource(r)
 	if httpErr != nil {
 		logger.Error("error getting requested resource", "error", httpErr.Error())
-		render.Render(w, r, httpErr)
-		return
+		return httpErr
 	}
 
+	weatherData, err := api.getWeatherData(r.Context(), weatherClient)
+	if err != nil {
+		logger.Error("unable to get weather data", "error", err)
+		return InternalServerError(err)
+	}
+
+	return &WeatherClientTestResponse{WeatherData: weatherData}
+}
+
+func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient *weather.Config) (WeatherData, error) {
 	wc, err := weather.NewClient(weatherClient, func(weatherClientOptions map[string]interface{}) error {
 		weatherClient.Options = weatherClientOptions
-		return api.storageClient.WeatherClientConfigs.Set(r.Context(), weatherClient)
+		return api.storageClient.WeatherClientConfigs.Set(ctx, weatherClient)
 	})
 	if err != nil {
-		logger.Error("unable to get WeatherClient", "error", err)
-		render.Render(w, r, InternalServerError(err))
-		return
+		return WeatherData{}, fmt.Errorf("error getting weather client: %w", err)
 	}
 
 	rd, err := wc.GetTotalRain(72 * time.Hour)
 	if err != nil {
-		logger.Error("unable to get total rain in the last 72 hours", "error", err)
-		render.Render(w, r, InternalServerError(err))
-		return
+		return WeatherData{}, fmt.Errorf("unable to get total rain in the last 72 hours: %w", err)
 	}
 
 	td, err := wc.GetAverageHighTemperature(72 * time.Hour)
 	if err != nil {
-		logger.Error("unable to get average high temperature in the last 72 hours", "error", err)
-		render.Render(w, r, InternalServerError(err))
-		return
+		return WeatherData{}, fmt.Errorf("unable to get average high temperature in the last 72 hours: %w", err)
 	}
 
-	resp := &WeatherClientTestResponse{WeatherData: WeatherData{
+	return WeatherData{
 		Rain: &RainData{
 			MM: rd,
 		},
 		Temperature: &TemperatureData{
 			Celsius: td,
 		},
-	}}
-
-	if err := render.Render(w, r, resp); err != nil {
-		logger.Error("unable to render WeatherClientResponse", "error", err)
-		render.Render(w, r, ErrRender(err))
-	}
-}
-
-// WeatherClientTestResponse is used to return WeatherData from testing that the client works
-type WeatherClientTestResponse struct {
-	WeatherData
-}
-
-// Render ...
-func (resp *WeatherClientTestResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
-	return nil
-}
-
-type WeatherClientResponse struct {
-	*weather.Config
-
-	Links []Link `json:"links,omitempty"`
-}
-
-// Render ...
-func (resp *WeatherClientResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
-	if resp != nil {
-		resp.Links = append(resp.Links,
-			Link{
-				"self",
-				fmt.Sprintf("%s/%s", weatherClientsBasePath, resp.ID),
-			},
-		)
-	}
-	return nil
+	}, nil
 }
