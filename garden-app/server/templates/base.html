@@ -33,11 +33,11 @@
                                 href="/water_schedules?exclude_weather_data=true">Water Schedules</a></li>
                         <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
                                 href="/weather_clients">Weather Clients</a></li>
-
                         <li>
                         </li>
                     </ul>
                 </div>
+                {{ if IncludePlusButton }}
                 <div class="uk-navbar-right">
                     <ul class="uk-navbar-nav">
                         <li>
@@ -49,6 +49,7 @@
                         </li>
                     </ul>
                 </div>
+                {{ end }}
             </div>
         </div>
     </nav>

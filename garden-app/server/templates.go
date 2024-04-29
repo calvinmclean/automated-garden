@@ -156,6 +156,14 @@ func templateFuncs(r *http.Request) map[string]any {
 		"NotRefresh": func() bool {
 			return r.URL.Query().Get("refresh") != "true"
 		},
+		"IncludePlusButton": func() bool {
+			parts := strings.Split(r.URL.Path, "/")
+			if len(parts) == 0 {
+				return false
+			}
+			_, err := xid.FromString(parts[len(parts)-1])
+			return err != nil
+		},
 	}
 }
 
