@@ -36,11 +36,11 @@ func NewClient(config Config) (*Client, error) {
 	}
 
 	return &Client{
-		Gardens:                   kv.NewClient[*pkg.Garden](db, "Garden"),
-		Zones:                     kv.NewClient[*pkg.Zone](db, "Zone"),
-		WaterSchedules:            kv.NewClient[*pkg.WaterSchedule](db, "WaterSchedule"),
-		WeatherClientConfigs:      kv.NewClient[*weather.Config](db, "WeatherClient"),
-		NotificationClientConfigs: kv.NewClient[*notifications.Client](db, "NotificationClient"),
+		Gardens:                   babyapi.NewKVStorage[*pkg.Garden](db, "Garden"),
+		Zones:                     babyapi.NewKVStorage[*pkg.Zone](db, "Zone"),
+		WaterSchedules:            babyapi.NewKVStorage[*pkg.WaterSchedule](db, "WaterSchedule"),
+		WeatherClientConfigs:      babyapi.NewKVStorage[*weather.Config](db, "WeatherClient"),
+		NotificationClientConfigs: babyapi.NewKVStorage[*notifications.Client](db, "NotificationClient"),
 	}, nil
 }
 

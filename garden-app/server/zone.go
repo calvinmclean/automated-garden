@@ -94,12 +94,7 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 
 	api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
 		gardenID := api.GetParentIDParam(r)
-		gardenIDFilter := filterZoneByGardenID(gardenID)
-
-		endDateFilter := EndDatedFilter[*pkg.Zone](r)
-		return func(z *pkg.Zone) bool {
-			return gardenIDFilter(z) && endDateFilter(z)
-		}
+		return filterZoneByGardenID(gardenID)
 	})
 
 	api.ApplyExtension(extensions.HTMX[*pkg.Zone]{})

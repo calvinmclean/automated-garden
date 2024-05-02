@@ -94,8 +94,6 @@ func NewGardensAPI(config Config, storageClient *storage.Client, influxdbClient 
 		}
 	}))
 
-	gr.SetGetAllFilter(EndDatedFilter[*pkg.Garden])
-
 	gr.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := gr.GetIDParam(r)

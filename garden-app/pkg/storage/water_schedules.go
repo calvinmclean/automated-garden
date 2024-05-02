@@ -10,11 +10,10 @@ import (
 
 // GetZonesUsingWaterSchedule will find all Zones that use this WaterSchedule and return the Zones along with the Gardens they belong to
 func (c *Client) GetZonesUsingWaterSchedule(id string) ([]*pkg.ZoneAndGarden, error) {
-	gardens, err := c.Gardens.GetAll(context.Background(), nil)
+	gardens, err := c.Gardens.GetAll(context.Background(), babyapi.EndDatedQueryParam(false))
 	if err != nil {
 		return nil, fmt.Errorf("unable to get all Gardens: %w", err)
 	}
-	gardens = FilterEndDated[*pkg.Garden](false).Filter(gardens)
 
 	results := []*pkg.ZoneAndGarden{}
 	for _, g := range gardens {

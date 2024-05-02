@@ -96,8 +96,6 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 		return nil
 	})
 
-	api.SetGetAllFilter(EndDatedFilter[*pkg.WaterSchedule])
-
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
