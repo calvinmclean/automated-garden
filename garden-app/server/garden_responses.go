@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
 
 	"github.com/go-chi/render"
@@ -157,16 +156,11 @@ func (agr AllGardensResponse) HTML(r *http.Request) string {
 }
 
 func (api *GardensAPI) getAllZones(ctx context.Context, gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
-	zones, err := api.storageClient.Zones.GetAll(ctx, nil)
+	zones, err := api.storageClient.Zones.GetAll(ctx, babyapi.EndDatedQueryParam(getEndDated))
 	if err != nil {
 		return nil, fmt.Errorf("error getting Zones for Garden: %w", err)
 	}
-	zones = babyapi.FilterFunc[*pkg.Zone](func(z *pkg.Zone) bool {
-		gardenIDFilter := filterZoneByGardenID(gardenID)
-		endDateFilter := storage.FilterEndDated[*pkg.Zone](getEndDated)
-
-		return gardenIDFilter(z) && endDateFilter(z)
-	}).Filter(zones)
+	zones = babyapi.FilterFunc[*pkg.Zone](filterZoneByGardenID(gardenID)).Filter(zones)
 
 	return zones, nil
 }
