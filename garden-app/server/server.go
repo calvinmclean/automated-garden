@@ -35,7 +35,8 @@ type Config struct {
 
 // WebConfig is used to allow reading the "web_server" section into the main Config struct
 type WebConfig struct {
-	Port int `mapstructure:"port"`
+	Port     int  `mapstructure:"port"`
+	ReadOnly bool `mapstructure:"readonly"`
 }
 
 // Server contains all of the necessary resources for running a server
@@ -53,15 +54,6 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 
 	logger := cfg.LogConfig.NewLogger().With("source", "server")
 	slog.SetDefault(logger)
-
-	rootAPI := babyapi.NewRootAPI("root", "/")
-
-	// Configure HTTP metrics
-	rootAPI.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
-		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
-	})))
-	rootAPI.AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler())
-	rootAPI.AddCustomRoute(http.MethodGet, "/", http.RedirectHandler("/gardens", http.StatusFound))
 
 	// Initialize Storage Client
 	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
@@ -103,6 +95,33 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	logger.Info("initializing scheduler")
 	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, cfg.LogConfig.NewLogger())
 
+	rootAPI, err := createAPI(cfg, storageClient, influxdbClient, worker)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Server{
+		rootAPI,
+		cfg,
+		logger,
+		worker,
+	}, nil
+}
+
+func createAPI(cfg Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (*babyapi.API[*babyapi.NilResource], error) {
+	rootAPI := babyapi.NewRootAPI("root", "/")
+
+	if cfg.ReadOnly {
+		rootAPI.AddMiddleware(readOnlyMiddleware)
+	}
+
+	// Configure HTTP metrics
+	rootAPI.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
+		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
+	})))
+	rootAPI.AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler())
+	rootAPI.AddCustomRoute(http.MethodGet, "/", http.RedirectHandler("/gardens", http.StatusFound))
+
 	// Create API routes/handlers
 	gardenAPI, err := NewGardensAPI(cfg, storageClient, influxdbClient, worker)
 	if err != nil {
@@ -134,12 +153,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	}
 	rootAPI.AddNestedAPI(waterSchedulesAPI)
 
-	return &Server{
-		rootAPI,
-		cfg,
-		logger,
-		worker,
-	}, nil
+	return rootAPI, nil
 }
 
 // Start will run the server until it is stopped (blocking)
