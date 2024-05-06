@@ -89,11 +89,31 @@ tasks:
     desc: Build docker container
     dir: ./garden-app
     cmds:
-      - docker build . -t ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}
+      - docker build --target {{.TARGET}} -t ghcr.io/calvinmclean/garden-app:{{.TAG}} .
+    vars:
+      TAG: '{{default "latest" .TAG}}'
+      TARGET: '{{default "production" .TARGET}}'
+
+  docker-build-demo:
+    cmds:
+      - task: docker-build
+        vars:
+          TAG: "demo"
+          TARGET: "demo"
+
+  docker-push-demo:
+    cmds:
+      - task: docker-push
+        vars:
+          TAG: "demo"
+          TARGET: "demo"
 
   docker-push:
     desc: Build and push docker container
     dir: ./garden-app
     cmds:
       - task: docker-build
-      - docker push ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}}
+      - docker push ghcr.io/calvinmclean/garden-app:{{.TAG}}
+    vars:
+      TAG: '{{default "latest" .TAG}}'
+      TARGET: '{{default "production" .TARGET}}'
