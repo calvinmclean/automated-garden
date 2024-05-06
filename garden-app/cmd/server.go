@@ -18,6 +18,9 @@ func init() {
 	serverCommand.Flags().Int("port", 80, "port to run Application server on")
 	viper.BindPFlag("web_server.port", serverCommand.Flags().Lookup("port"))
 
+	serverCommand.Flags().Bool("readonly", false, "run in read-only mode so server will only allow GET requests")
+	viper.BindPFlag("web_server.readonly", serverCommand.Flags().Lookup("readonly"))
+
 	rootCommand.AddCommand(serverCommand)
 }
 
