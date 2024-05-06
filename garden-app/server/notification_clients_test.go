@@ -22,8 +22,8 @@ func TestNotificationClientAPI(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	api, err := NewNotificationClientsAPI(storageClient)
-	require.NoError(t, err)
+	api := NewNotificationClientsAPI()
+	api.setup(storageClient)
 
 	babytest.RunTableTest(t, api.API, []babytest.TestCase[*babyapi.AnyResource]{
 		{

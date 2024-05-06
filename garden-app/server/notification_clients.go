@@ -25,13 +25,10 @@ type NotificationClientsAPI struct {
 }
 
 // NewNotificationClientsAPI creates a new NotificationClientsResource
-func NewNotificationClientsAPI(storageClient *storage.Client) (*NotificationClientsAPI, error) {
-	api := &NotificationClientsAPI{
-		storageClient: storageClient,
-	}
+func NewNotificationClientsAPI() *NotificationClientsAPI {
+	api := &NotificationClientsAPI{}
 
 	api.API = babyapi.NewAPI[*notifications.Client]("NotificationClients", notificationClientsBasePath, func() *notifications.Client { return &notifications.Client{} })
-	api.SetStorage(api.storageClient.NotificationClientConfigs)
 
 	api.SetOnCreateOrUpdate(func(_ *http.Request, nc *notifications.Client) *babyapi.ErrResponse {
 		// make sure a valid NotificationClient can still be created
@@ -49,7 +46,13 @@ func NewNotificationClientsAPI(storageClient *storage.Client) (*NotificationClie
 
 	api.AddCustomIDRoute(http.MethodPost, "/test", babyapi.Handler(api.testNotificationClient))
 
-	return api, nil
+	return api
+}
+
+func (api *NotificationClientsAPI) setup(storageClient *storage.Client) {
+	api.storageClient = storageClient
+
+	api.SetStorage(api.storageClient.NotificationClientConfigs)
 }
 
 type TestNotificationClientRequest struct {

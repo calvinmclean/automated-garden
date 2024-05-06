@@ -25,14 +25,10 @@ type WeatherClientsAPI struct {
 	storageClient *storage.Client
 }
 
-// NewWeatherClientsAPI creates a new WeatherClientsResource
-func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, error) {
-	api := &WeatherClientsAPI{
-		storageClient: storageClient,
-	}
+func NewWeatherClientsAPI() *WeatherClientsAPI {
+	api := &WeatherClientsAPI{}
 
-	api.API = babyapi.NewAPI[*weather.Config]("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
-	api.SetStorage(api.storageClient.WeatherClientConfigs)
+	api.API = babyapi.NewAPI("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 
 	api.SetOnCreateOrUpdate(func(_ *http.Request, wc *weather.Config) *babyapi.ErrResponse {
 		// make sure a valid WeatherClient can still be created
@@ -82,7 +78,7 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
 		id := api.GetIDParam(r)
 
-		waterSchedules, err := storageClient.GetWaterSchedulesUsingWeatherClient(id)
+		waterSchedules, err := api.storageClient.GetWaterSchedulesUsingWeatherClient(id)
 		if err != nil {
 			return babyapi.InternalServerError(fmt.Errorf("unable to get WaterSchedules using WeatherClient %q: %w", id, err))
 		}
@@ -94,7 +90,13 @@ func NewWeatherClientsAPI(storageClient *storage.Client) (*WeatherClientsAPI, er
 		return nil
 	})
 
-	return api, nil
+	return api
+}
+
+func (api *WeatherClientsAPI) setup(storageClient *storage.Client) {
+	api.storageClient = storageClient
+
+	api.SetStorage(api.storageClient.WeatherClientConfigs)
 }
 
 func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.Request) render.Renderer {

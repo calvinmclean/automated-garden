@@ -21,7 +21,7 @@ This is a Go application with a CLI and web backend for working with the garden 
     ```
 1. Run the server:
     ```shell
-    go run main.go server --config config.yaml
+    go run main.go serve --config config.yaml
     ```
 
 To run this in a more long-term setup, I recommend using [K3s](https://k3s.io) and deploying the manifests from `/deploy/k8s`.

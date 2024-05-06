@@ -28,30 +28,11 @@ type WaterSchedulesAPI struct {
 	worker        *worker.Worker
 }
 
-// NewWaterSchedulesAPI creates a new WaterSchedulesResource
-func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) (WaterSchedulesAPI, error) {
-	api := WaterSchedulesAPI{
-		storageClient: storageClient,
-		worker:        worker,
-	}
-
-	// Initialize WaterActions for each WaterSchedule from the storage client
-	allWaterSchedules, err := api.storageClient.WaterSchedules.GetAll(context.Background(), nil)
-	if err != nil {
-		return api, fmt.Errorf("unable to get WaterSchedules: %v", err)
-	}
-	for _, ws := range allWaterSchedules {
-		if ws.EndDated() {
-			continue
-		}
-		err = api.worker.ScheduleWaterAction(ws)
-		if err != nil {
-			return api, fmt.Errorf("unable to add WaterAction for WaterSchedule %v: %v", ws.ID, err)
-		}
-	}
+func NewWaterSchedulesAPI() *WaterSchedulesAPI {
+	api := &WaterSchedulesAPI{}
 
 	api.API = babyapi.NewAPI[*pkg.WaterSchedule]("WaterSchedules", waterScheduleBasePath, func() *pkg.WaterSchedule { return &pkg.WaterSchedule{} })
-	api.SetStorage(api.storageClient.WaterSchedules)
+
 	api.SetResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
 		return api.NewWaterScheduleResponse(ws)
 	})
@@ -120,7 +101,31 @@ func NewWaterSchedulesAPI(storageClient *storage.Client, worker *worker.Worker) 
 
 	api.ApplyExtension(extensions.HTMX[*pkg.WaterSchedule]{})
 
-	return api, err
+	return api
+}
+
+func (api *WaterSchedulesAPI) setup(storageClient *storage.Client, worker *worker.Worker) error {
+	api.storageClient = storageClient
+	api.worker = worker
+
+	api.SetStorage(api.storageClient.WaterSchedules)
+
+	// Initialize WaterActions for each WaterSchedule from the storage client
+	allWaterSchedules, err := api.storageClient.WaterSchedules.GetAll(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("unable to get WaterSchedules: %v", err)
+	}
+	for _, ws := range allWaterSchedules {
+		if ws.EndDated() {
+			continue
+		}
+		err = api.worker.ScheduleWaterAction(ws)
+		if err != nil {
+			return fmt.Errorf("unable to add WaterAction for WaterSchedule %v: %v", ws.ID, err)
+		}
+	}
+
+	return nil
 }
 
 func (api *WaterSchedulesAPI) onCreateOrUpdate(r *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {

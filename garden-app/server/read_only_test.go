@@ -18,7 +18,8 @@ func TestReadOnlyMiddleware(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	api, err := createAPI(Config{
+	api := NewAPI()
+	err = api.setup(Config{
 		WebConfig: WebConfig{
 			ReadOnly: true,
 		},
@@ -29,7 +30,7 @@ func TestReadOnlyMiddleware(t *testing.T) {
 		r, err := http.NewRequest(http.MethodPost, "/gardens", bytes.NewBufferString(`{}`))
 		require.NoError(t, err)
 
-		w := babytest.TestRequest(t, api, r)
+		w := babytest.TestRequest(t, api.API, r)
 		require.Equal(t, http.StatusOK, w.Code)
 		require.Empty(t, w.Body.String())
 	})
@@ -38,7 +39,7 @@ func TestReadOnlyMiddleware(t *testing.T) {
 		r, err := http.NewRequest(http.MethodGet, "/gardens", bytes.NewBufferString(`{}`))
 		require.NoError(t, err)
 
-		w := babytest.TestRequest(t, api, r)
+		w := babytest.TestRequest(t, api.API, r)
 		require.Equal(t, http.StatusOK, w.Code)
 		require.Equal(t, `{"items":null}`, strings.TrimSpace(w.Body.String()))
 	})

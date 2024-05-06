@@ -13,7 +13,6 @@ import (
 	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 )
 
 func createExampleWeatherClientConfig() *weather.Config {
@@ -68,8 +67,8 @@ func TestUpdateWeatherClient(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			wcr, err := NewWeatherClientsAPI(storageClient)
-			require.NoError(t, err)
+			wcr := NewWeatherClientsAPI()
+			wcr.setup(storageClient)
 
 			err = wcr.storageClient.WeatherClientConfigs.Set(context.Background(), createExampleWeatherClientConfig())
 			assert.NoError(t, err)
@@ -116,8 +115,8 @@ func TestGetWeatherClient(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			wcr, err := NewWeatherClientsAPI(storageClient)
-			require.NoError(t, err)
+			wcr := NewWeatherClientsAPI()
+			wcr.setup(storageClient)
 
 			err = wcr.storageClient.WeatherClientConfigs.Set(context.Background(), createExampleWeatherClientConfig())
 			assert.NoError(t, err)
@@ -201,8 +200,8 @@ func TestDeleteWeatherClient(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wcr, err := NewWeatherClientsAPI(storageClient)
-			require.NoError(t, err)
+			wcr := NewWeatherClientsAPI()
+			wcr.setup(storageClient)
 
 			r := httptest.NewRequest("DELETE", "/weather_clients/"+tt.id, http.NoBody)
 			r.Header.Add("Content-Type", "application/json")
@@ -234,8 +233,8 @@ func TestGetAllWeatherClients(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			wcr, err := NewWeatherClientsAPI(storageClient)
-			require.NoError(t, err)
+			wcr := NewWeatherClientsAPI()
+			wcr.setup(storageClient)
 
 			err = wcr.storageClient.WeatherClientConfigs.Set(context.Background(), createExampleWeatherClientConfig())
 			assert.NoError(t, err)
@@ -290,8 +289,8 @@ func TestCreateWeatherClient(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			wcr, err := NewWeatherClientsAPI(storageClient)
-			require.NoError(t, err)
+			wcr := NewWeatherClientsAPI()
+			wcr.setup(storageClient)
 
 			r := httptest.NewRequest("POST", "/weather_clients", strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
@@ -348,8 +347,8 @@ func TestUpdateWeatherClientPUT(t *testing.T) {
 			err = storageClient.WeatherClientConfigs.Set(context.Background(), wc)
 			assert.NoError(t, err)
 
-			wcr, err := NewWeatherClientsAPI(storageClient)
-			require.NoError(t, err)
+			wcr := NewWeatherClientsAPI()
+			wcr.setup(storageClient)
 
 			r := httptest.NewRequest(http.MethodPut, "/weather_clients/"+wc.ID.String(), strings.NewReader(tt.body))
 			r.Header.Add("Content-Type", "application/json")
@@ -382,8 +381,8 @@ func TestTestWeatherClient(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			wcr, err := NewWeatherClientsAPI(storageClient)
-			require.NoError(t, err)
+			wcr := NewWeatherClientsAPI()
+			wcr.setup(storageClient)
 
 			err = wcr.storageClient.WeatherClientConfigs.Set(context.Background(), createExampleWeatherClientConfig())
 			assert.NoError(t, err)
