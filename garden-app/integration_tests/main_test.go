@@ -35,17 +35,23 @@ func TestIntegration(t *testing.T) {
 
 	serverConfig, controllerConfig := getConfigs(t)
 
-	s, err := server.NewServer(serverConfig, true)
+	api := server.NewAPI()
+	err := api.Setup(serverConfig, true)
 	require.NoError(t, err)
 
 	c, err = controller.NewController(controllerConfig)
 	require.NoError(t, err)
 
 	go c.Start()
-	go s.Start()
+	go func() {
+		serveErr := api.Serve(":8080")
+		if serveErr != nil {
+			panic(serveErr.Error())
+		}
+	}()
 
 	defer c.Stop()
-	defer s.Stop()
+	defer api.Stop()
 
 	time.Sleep(500 * time.Millisecond)
 

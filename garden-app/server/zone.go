@@ -36,16 +36,11 @@ type ZonesAPI struct {
 	worker         *worker.Worker
 }
 
-// NewZonesAPI creates a new ZonesResource
-func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (ZonesAPI, error) {
-	api := ZonesAPI{
-		storageClient:  storageClient,
-		influxdbClient: influxdbClient,
-		worker:         worker,
-	}
+func NewZonesAPI() *ZonesAPI {
+	api := &ZonesAPI{}
 
-	api.API = babyapi.NewAPI[*pkg.Zone]("Zones", zoneBasePath, func() *pkg.Zone { return &pkg.Zone{} })
-	api.SetStorage(api.storageClient.Zones)
+	api.API = babyapi.NewAPI("Zones", zoneBasePath, func() *pkg.Zone { return &pkg.Zone{} })
+
 	api.SetResponseWrapper(func(z *pkg.Zone) render.Renderer {
 		return api.NewZoneResponse(z)
 	})
@@ -99,7 +94,15 @@ func NewZonesAPI(storageClient *storage.Client, influxdbClient influxdb.Client, 
 
 	api.ApplyExtension(extensions.HTMX[*pkg.Zone]{})
 
-	return api, nil
+	return api
+}
+
+func (api *ZonesAPI) setup(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) {
+	api.storageClient = storageClient
+	api.influxdbClient = influxdbClient
+	api.worker = worker
+
+	api.SetStorage(api.storageClient.Zones)
 }
 
 func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {

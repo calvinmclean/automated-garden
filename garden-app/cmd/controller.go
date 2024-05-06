@@ -28,7 +28,7 @@ var (
 		Aliases: []string{"controller run"},
 		Short:   "Run a mock garden-controller",
 		Long:    `Subscribes on a MQTT topic to act as a mock garden-controller for testing purposes`,
-		Run:     Controller,
+		Run:     runController,
 	}
 )
 
@@ -40,9 +40,13 @@ func init() {
 	viper.BindPFlag("controller.num_zones", controllerCommand.PersistentFlags().Lookup("zones"))
 
 	controllerCommand.PersistentFlags().StringVar(&moistureStrategy, "moisture-strategy", "random", "Strategy for creating moisture data")
-	controllerCommand.RegisterFlagCompletionFunc("moisture-strategy", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+	err := controllerCommand.RegisterFlagCompletionFunc("moisture-strategy", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
 		return []string{"random", "constant", "increasing", "decreasing"}, cobra.ShellCompDirectiveDefault
 	})
+	if err != nil {
+		panic(err)
+	}
+
 	viper.BindPFlag("controller.moisture_strategy", controllerCommand.PersistentFlags().Lookup("moisture-strategy"))
 
 	controllerCommand.PersistentFlags().IntVar(&moistureValue, "moisture-value", 100, "The value, or starting value, to use for moisture data publishing")
@@ -74,12 +78,10 @@ func init() {
 
 	controllerCommand.PersistentFlags().Float64Var(&humidityValue, "humidity-value", 100, "The value to use for humidity data publishing")
 	viper.BindPFlag("controller.humidity_value", controllerCommand.PersistentFlags().Lookup("humidity-value"))
-
-	rootCommand.AddCommand(controllerCommand)
 }
 
-// Controller will start up the mock garden-controller
-func Controller(cmd *cobra.Command, _ []string) {
+// runController will start up the mock garden-controller
+func runController(cmd *cobra.Command, _ []string) {
 	var config controller.Config
 	if err := viper.Unmarshal(&config); err != nil {
 		cmd.PrintErrln("unable to read config from file:", err)

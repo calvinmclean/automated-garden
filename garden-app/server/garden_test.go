@@ -69,7 +69,8 @@ func TestGetGarden(t *testing.T) {
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			storageClient := setupZoneAndGardenStorage(t)
 
-			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			gr := NewGardenAPI()
+			err := gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			gr.worker.StartAsync()
@@ -158,7 +159,9 @@ func TestCreateGarden(t *testing.T) {
 			} else {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
 			}
-			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("POST", "/gardens", strings.NewReader(tt.body))
@@ -255,7 +258,9 @@ func TestUpdateGardenPUT(t *testing.T) {
 			} else {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(50.0, 50.0, nil)
 			}
-			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
@@ -306,7 +311,8 @@ func TestGetAllGardens(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 
-			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", tt.targetURL, http.NoBody)
@@ -372,7 +378,8 @@ func TestEndDateGarden(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			gr, err := NewGardensAPI(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("DELETE", fmt.Sprintf("/gardens/%s", tt.garden.ID), http.NoBody)
@@ -454,7 +461,8 @@ func TestUpdateGarden(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
-			gr, err := NewGardensAPI(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+			gr := NewGardenAPI()
+			err := gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("PATCH", "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
@@ -520,7 +528,8 @@ func TestGardenAction(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			gr, err := NewGardensAPI(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()
@@ -622,7 +631,8 @@ func TestGardenActionForm(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			gr, err := NewGardensAPI(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
 			assert.NoError(t, err)
 
 			garden := createExampleGarden()

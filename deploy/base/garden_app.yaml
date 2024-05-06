@@ -25,7 +25,7 @@ spec:
             - name: config
               mountPath: /config
           args:
-            - server
+            - serve
             - --config=/config/config.yaml
       volumes:
         - name: config

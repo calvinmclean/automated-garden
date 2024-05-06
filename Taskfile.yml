@@ -51,14 +51,14 @@ tasks:
     aliases: [rs]
     dir: ./garden-app
     cmds:
-      - go run main.go server --config config.yaml
+      - go run main.go serve --config config.yaml
 
   run-dev:
     desc: Run backend Go app server and read UI templates from local FS
     aliases: [dev]
     dir: ./garden-app
     cmds:
-      - DEV_TEMPLATE=server/templates/* go run main.go server --config config.yaml
+      - DEV_TEMPLATE=server/templates/* go run main.go serve --config config.yaml
 
   run-controller:
     desc: Run mock controller
@@ -77,7 +77,7 @@ tasks:
         -v ./gardens.yaml:/gardens.yaml \
         -v ./config.yaml:/config.yaml \
         ghcr.io/calvinmclean/garden-app:{{.CLI_ARGS | default "latest"}} \
-        server --config /config.yaml
+        serve --config /config.yaml
 
   generate-mocks:
     desc: Use mockery to generate mocks from Go interfaces

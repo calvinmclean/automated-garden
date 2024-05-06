@@ -1,5 +1,5 @@
 # REST API
-The `garden-app server` provides a robust REST API for interacting with the application.
+The `garden-app serve` provides a robust REST API for interacting with the application.
 
 The OpenAPI specification can be found [here](https://github.com/calvinmclean/automated-garden/blob/main/garden-app/api/openapi.yaml).
 Use [this link](https://petstore.swagger.io/?url=https://raw.githubusercontent.com/calvinmclean/automated-garden/main/garden-app/api/openapi.yaml) to open in Swagger UI.

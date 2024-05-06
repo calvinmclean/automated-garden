@@ -1,28 +1,81 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 	"strings"
 
+	"github.com/calvinmclean/automated-garden/garden-app/server"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var (
-	// Used for flags.
 	configFilename string
 	logLevel       string
-
-	rootCommand = &cobra.Command{
-		Use:   "garden-app",
-		Short: "A command line application for the automated home garden",
-		Long:  `This CLI is used to run and interact with this webserver application for your automated home garden`,
-	}
 )
 
-// Execute executes the root command.
-func Execute() error {
-	return rootCommand.Execute()
+func Execute() {
+	api := server.NewAPI()
+	command := api.Command()
+
+	command.AddCommand(controllerCommand)
+
+	viper.SetEnvPrefix("GARDEN_APP")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	cobra.OnInitialize(initConfig)
+
+	command.PersistentFlags().StringVar(&configFilename, "config", "config.yaml", "path to config file")
+
+	command.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "level of logging to display")
+	err := command.RegisterFlagCompletionFunc("log-level", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
+		return []string{
+			"debug", "info", "warn", "error",
+		}, cobra.ShellCompDirectiveDefault
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	viper.BindPFlag("log.level", command.PersistentFlags().Lookup("log-level"))
+
+	command.PersistentPreRunE = func(c *cobra.Command, _ []string) error {
+		if c.Name() != "serve" {
+			return nil
+		}
+
+		var config server.Config
+		err := viper.Unmarshal(&config)
+		if err != nil {
+			return fmt.Errorf("unable to read config from file: %w", err)
+		}
+
+		err = api.Setup(config, true)
+		if err != nil {
+			return fmt.Errorf("error setting up API: %w", err)
+		}
+
+		return nil
+	}
+
+	for _, c := range command.Commands() {
+		if c.Name() != "serve" {
+			continue
+		}
+
+		c.Flags().Int("port", 80, "port to run Application server on")
+		viper.BindPFlag("web_server.port", c.Flags().Lookup("port"))
+
+		c.Flags().Bool("readonly", false, "run in read-only mode so server will only allow GET requests")
+		viper.BindPFlag("web_server.readonly", c.Flags().Lookup("readonly"))
+	}
+
+	err = command.Execute()
+	if err != nil {
+		fmt.Printf("error: %v\n", err)
+	}
 }
 
 func init() {
@@ -31,16 +84,6 @@ func init() {
 	viper.AutomaticEnv()
 
 	cobra.OnInitialize(initConfig)
-
-	rootCommand.PersistentFlags().StringVar(&configFilename, "config", "config.yaml", "path to config file")
-
-	rootCommand.PersistentFlags().StringVarP(&logLevel, "log-level", "l", "info", "level of logging to display")
-	rootCommand.RegisterFlagCompletionFunc("log-level", func(_ *cobra.Command, _ []string, _ string) ([]string, cobra.ShellCompDirective) {
-		return []string{
-			"debug", "info", "warn", "error",
-		}, cobra.ShellCompDirectiveDefault
-	})
-	viper.BindPFlag("log.level", rootCommand.PersistentFlags().Lookup("log-level"))
 }
 
 func initConfig() {

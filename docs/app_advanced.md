@@ -19,7 +19,7 @@ This section goes into additional details of the main functionality of the `gard
 
 ### Usage
 ```shell
-garden-app server --help
+garden-app --help
 ```
 
 ### Configuration
@@ -128,7 +128,7 @@ storage:
 ```
 
 ## Controller
-The `controller` command behaves as a mock `garden-controller` that makes it easier to develop, test, and debug the `garden-app server` without using a standalone microcontroller. This has extensive options using flags to control different behaviors. In most cases, the defaults will work perfectly fine.
+The `controller` command behaves as a mock `garden-controller` that makes it easier to develop, test, and debug the `garden-app serve` without using a standalone microcontroller. This has extensive options using flags to control different behaviors. In most cases, the defaults will work perfectly fine.
 
 ### Usage
 ```shell

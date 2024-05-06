@@ -6,9 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
@@ -16,7 +13,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/html"
-
 	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
@@ -24,31 +20,44 @@ import (
 	"github.com/slok/go-http-metrics/middleware/std"
 )
 
-// Config holds all the options and sub-configs for the server
-type Config struct {
-	WebConfig      `mapstructure:"web_server"`
-	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
-	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
-	StorageConfig  storage.Config  `mapstructure:"storage"`
-	LogConfig      LogConfig       `mapstructure:"log"`
+// API contains all HTTP API handling and logic
+type API struct {
+	*babyapi.API[*babyapi.NilResource]
+	gardens             *GardensAPI
+	zones               *ZonesAPI
+	weatherClients      *WeatherClientsAPI
+	notificationClients *NotificationClientsAPI
+	waterSchedules      *WaterSchedulesAPI
 }
 
-// WebConfig is used to allow reading the "web_server" section into the main Config struct
-type WebConfig struct {
-	Port     int  `mapstructure:"port"`
-	ReadOnly bool `mapstructure:"readonly"`
+// NewAPI intializes an API without any integrations or clients. Use api.Setup(...) before running
+func NewAPI() *API {
+	api := &API{
+		API:                 babyapi.NewRootAPI("garden-app", "/"),
+		gardens:             NewGardenAPI(),
+		zones:               NewZonesAPI(),
+		weatherClients:      NewWeatherClientsAPI(),
+		notificationClients: NewNotificationClientsAPI(),
+		waterSchedules:      NewWaterSchedulesAPI(),
+	}
+	api.gardens.AddNestedAPI(api.zones)
+
+	api.API.
+		AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
+			Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
+		}))).
+		AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler()).
+		AddCustomRoute(http.MethodGet, "/", http.RedirectHandler("/gardens", http.StatusFound)).
+		AddNestedAPI(api.gardens).
+		AddNestedAPI(api.weatherClients).
+		AddNestedAPI(api.notificationClients).
+		AddNestedAPI(api.waterSchedules)
+
+	return api
 }
 
-// Server contains all of the necessary resources for running a server
-type Server struct {
-	rootAPI *babyapi.API[*babyapi.NilResource]
-	cfg     Config
-	logger  *slog.Logger
-	worker  *worker.Worker
-}
-
-// NewServer creates and initializes all server resources based on config
-func NewServer(cfg Config, validateData bool) (*Server, error) {
+// Setup will prepare to run by setting up clients and doing any final configurations for the API
+func (api *API) Setup(cfg Config, validateData bool) error {
 	html.SetFS(templates, "templates/*")
 	html.SetFuncs(templateFuncs)
 
@@ -59,13 +68,13 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
 	storageClient, err := storage.NewClient(cfg.StorageConfig)
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize storage client: %v", err)
+		return fmt.Errorf("unable to initialize storage client: %v", err)
 	}
 
 	if validateData {
 		err = validateAllStoredResources(storageClient)
 		if err != nil {
-			return nil, fmt.Errorf("error validating all existing stored data: %w", err)
+			return fmt.Errorf("error validating all existing stored data: %w", err)
 		}
 	}
 
@@ -80,7 +89,7 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 		Handler: paho.MessageHandler(NewMQTTHandler(storageClient, logger).Handle),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("unable to initialize MQTT client: %v", err)
+		return fmt.Errorf("unable to initialize MQTT client: %v", err)
 	}
 
 	// Initialize InfluxDB Client
@@ -95,86 +104,41 @@ func NewServer(cfg Config, validateData bool) (*Server, error) {
 	logger.Info("initializing scheduler")
 	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, cfg.LogConfig.NewLogger())
 
-	rootAPI, err := createAPI(cfg, storageClient, influxdbClient, worker)
+	err = api.setup(cfg, storageClient, influxdbClient, worker)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return &Server{
-		rootAPI,
-		cfg,
-		logger,
-		worker,
-	}, nil
+	worker.StartAsync()
+
+	go func() {
+		<-api.Done()
+		worker.Stop()
+	}()
+
+	return nil
 }
 
-func createAPI(cfg Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) (*babyapi.API[*babyapi.NilResource], error) {
-	rootAPI := babyapi.NewRootAPI("root", "/")
-
+func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) error {
 	if cfg.ReadOnly {
-		rootAPI.AddMiddleware(readOnlyMiddleware)
+		api.API.AddMiddleware(readOnlyMiddleware)
 	}
 
-	// Configure HTTP metrics
-	rootAPI.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
-		Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
-	})))
-	rootAPI.AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler())
-	rootAPI.AddCustomRoute(http.MethodGet, "/", http.RedirectHandler("/gardens", http.StatusFound))
-
-	// Create API routes/handlers
-	gardenAPI, err := NewGardensAPI(cfg, storageClient, influxdbClient, worker)
+	err := api.gardens.setup(cfg, storageClient, influxdbClient, worker)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", gardenBasePath, err)
+		return fmt.Errorf("error setting up Gardens API: %w", err)
 	}
-	zonesResource, err := NewZonesAPI(storageClient, influxdbClient, worker)
+
+	err = api.waterSchedules.setup(storageClient, worker)
 	if err != nil {
-		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", zoneBasePath, err)
+		return fmt.Errorf("error setting up WaterSchedules API: %w", err)
 	}
 
-	rootAPI.AddNestedAPI(gardenAPI)
-	gardenAPI.AddNestedAPI(zonesResource)
+	api.zones.setup(storageClient, influxdbClient, worker)
+	api.weatherClients.setup(storageClient)
+	api.notificationClients.setup(storageClient)
 
-	weatherClientsAPI, err := NewWeatherClientsAPI(storageClient)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", weatherClientsBasePath, err)
-	}
-	rootAPI.AddNestedAPI(weatherClientsAPI)
-
-	notificationClientsAPI, err := NewNotificationClientsAPI(storageClient)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", notificationClientsBasePath, err)
-	}
-	rootAPI.AddNestedAPI(notificationClientsAPI)
-
-	waterSchedulesAPI, err := NewWaterSchedulesAPI(storageClient, worker)
-	if err != nil {
-		return nil, fmt.Errorf("error initializing '%s' endpoint: %w", waterScheduleBasePath, err)
-	}
-	rootAPI.AddNestedAPI(waterSchedulesAPI)
-
-	return rootAPI, nil
-}
-
-// Start will run the server until it is stopped (blocking)
-func (s *Server) Start() {
-	// TODO: replace this by integrating with babyapi's RunCLI
-	ctx, _ := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-
-	s.worker.StartAsync()
-
-	shutdownErr := s.rootAPI.WithContext(ctx).Serve(fmt.Sprintf(":%d", s.cfg.Port))
-	if shutdownErr != nil && shutdownErr != http.ErrServerClosed {
-		s.logger.Error("server shutdown error", "error", shutdownErr)
-	}
-
-	s.worker.Stop()
-	s.logger.Info("server shutdown gracefully")
-}
-
-// Stop shuts down the server
-func (s *Server) Stop() {
-	s.rootAPI.Stop()
+	return nil
 }
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types

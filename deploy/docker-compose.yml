@@ -84,7 +84,7 @@ services:
     volumes:
       - "./configs/garden-app:/app/configs"
     command:
-      - "server"
+      - "serve"
       - "--config=/app/configs/config.yaml"
     profiles:
       - demo
