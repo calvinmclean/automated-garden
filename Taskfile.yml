@@ -117,3 +117,8 @@ tasks:
     vars:
       TAG: '{{default "latest" .TAG}}'
       TARGET: '{{default "production" .TARGET}}'
+
+  fly:
+    dir: ./garden-app
+    cmds:
+      - flyctl deploy
