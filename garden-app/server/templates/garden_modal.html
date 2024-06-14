@@ -8,18 +8,24 @@
             <input type="hidden" value="{{ .ID }}" name="ID">
             <input type="hidden" value="{{ RFC3339Nano .CreatedAt }}" name="CreatedAt">
             <div class="uk-margin">
-                <input class="uk-input" value="{{ .Name }}" placeholder="Name" name="Name">
+                <label class="uk-form-label" for="garden-name">Name</label>
+                <input id="garden-name" class="uk-input" value="{{ .Name }}" placeholder="Name" name="Name">
             </div>
             <div class="uk-margin">
-                <input class="uk-input" value="{{ .TopicPrefix }}" placeholder="Topic Prefix" name="TopicPrefix">
+                <label class="uk-form-label" for="garden-topic-prefix">Topic Prefix</label>
+                <input id="garden-topic-prefix" class="uk-input" value="{{ .TopicPrefix }}" placeholder="Topic Prefix"
+                    name="TopicPrefix">
             </div>
             <div class="uk-margin">
-                <input class="uk-input" value="{{ if .MaxZones }}{{ .MaxZones }}{{ else }}1{{ end }}"
-                    placeholder="MaxZones" name="MaxZones">
+                <label class="uk-form-label" for="garden-max-zones">Max Zones</label>
+                <input id="garden-max-zones" class="uk-input"
+                    value="{{ if .MaxZones }}{{ .MaxZones }}{{ else }}1{{ end }}" placeholder="MaxZones"
+                    name="MaxZones">
             </div>
 
             <div class="uk-margin">
-                <select class="uk-select" name="LightSchedule.Duration">
+                <label class="uk-form-label" for="garden-light-schedule-duration">Light Schedule Duration</label>
+                <select id="garden-light-schedule-duration" class="uk-select" name="LightSchedule.Duration">
                     <option disabled {{ if eq .LightSchedule nil }}selected{{ end }}>Light Schedule Duration</option>
                     {{ range $i, $selected := LightScheduleRange .LightSchedule }}
                     <option value="{{ $i }}h" {{ $selected }}>{{ $i }} hours</option>
@@ -27,7 +33,9 @@
                 </select>
             </div>
             <div class="uk-margin">
-                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.StartTime }}" {{ end }}
+                <label class="uk-form-label" for="garden-light-schedule-start-time">Light Schedule Start Time</label>
+                <input for="garden-light-schedule-start-time" class="uk-input" {{ if .LightSchedule }}
+                    value="{{ .LightSchedule.StartTime }}" {{ end }}
                     placeholder="Light Schedule Start Time (15:04:05-07:00)" name="LightSchedule.StartTime">
             </div>
 
