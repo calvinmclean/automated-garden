@@ -19,8 +19,12 @@
             </div>
 
             <div class="uk-margin">
-                <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.Duration }}" {{ end }}
-                    placeholder="Light Schedule Duration" name="LightSchedule.Duration">
+                <select class="uk-select" name="LightSchedule.Duration">
+                    <option disabled {{ if eq .LightSchedule nil }}selected{{ end }}>Light Schedule Duration</option>
+                    {{ range $i, $selected := LightScheduleRange .LightSchedule }}
+                    <option value="{{ $i }}h" {{ $selected }}>{{ $i }} hours</option>
+                    {{ end }}
+                </select>
             </div>
             <div class="uk-margin">
                 <input class="uk-input" {{ if .LightSchedule }} value="{{ .LightSchedule.StartTime }}" {{ end }}

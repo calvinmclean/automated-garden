@@ -167,6 +167,17 @@ func templateFuncs(r *http.Request) map[string]any {
 			_, err := xid.FromString(parts[len(parts)-1])
 			return err != nil
 		},
+		"LightScheduleRange": func(ls *pkg.LightSchedule) map[int]string {
+			result := map[int]string{}
+			for i := 0; i < 24; i++ {
+				selected := ""
+				if ls != nil && ls.Duration.Hours() == float64(i) {
+					selected = "selected"
+				}
+				result[i] = selected
+			}
+			return result
+		},
 	}
 }
 
