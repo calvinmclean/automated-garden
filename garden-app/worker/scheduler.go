@@ -162,8 +162,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Info("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
-	// Parse Gardens's LightSchedule.Time (has no "date")
-	lightTime, err := time.Parse(pkg.LightTimeFormat, g.LightSchedule.StartTime)
+	lightTime, err := g.LightSchedule.ParseStartTime()
 	if err != nil {
 		return err
 	}
