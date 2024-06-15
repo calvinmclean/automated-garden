@@ -771,7 +771,8 @@ func TestGardenRequest(t *testing.T) {
 				TopicPrefix: "garden",
 				MaxZones:    &one,
 				LightSchedule: &pkg.LightSchedule{
-					Duration: &pkg.Duration{Duration: 25 * time.Hour},
+					StartTime: "22:00:01-07:00",
+					Duration:  &pkg.Duration{Duration: 25 * time.Hour},
 				},
 			},
 			"invalid light_schedule.duration >= 24 hours: 25h0m0s",

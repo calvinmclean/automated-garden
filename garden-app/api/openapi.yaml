@@ -914,8 +914,9 @@ components:
           example: 72h
         start_time:
           type: string
-          format: date-time
+          format: time
           description: time that the watering interval should be started at
+          example: 23:00:00-07:00
         weather_control:
           $ref: "#/components/schemas/WeatherControl"
           description: control watering based on weather data. Requires a configured weather client

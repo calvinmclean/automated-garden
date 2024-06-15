@@ -168,7 +168,7 @@ func GardenTests(t *testing.T) {
 			MaxZones:    &maxZones,
 			LightSchedule: &pkg.LightSchedule{
 				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
-				StartTime: startTime.Format(pkg.LightTimeFormat),
+				StartTime: startTime.Format(pkg.StartTimeFormat),
 			},
 		}
 
@@ -213,13 +213,13 @@ func GardenTests(t *testing.T) {
 		var g server.GardenResponse
 		status, err := makeRequest(http.MethodPatch, "/gardens/"+gardenID, pkg.Garden{
 			LightSchedule: &pkg.LightSchedule{
-				StartTime: newStartTime.Format(pkg.LightTimeFormat),
+				StartTime: newStartTime.Format(pkg.StartTimeFormat),
 				Duration:  &pkg.Duration{Duration: time.Second},
 			},
 		}, &g)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime.Format(pkg.LightTimeFormat), g.LightSchedule.StartTime)
+		assert.Equal(t, newStartTime.Format(pkg.StartTimeFormat), g.LightSchedule.StartTime)
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -287,7 +287,7 @@ func CreateWaterScheduleTest(t *testing.T) string {
 		status, err := makeRequest(http.MethodPost, "/water_schedules", `{
 			"duration": "10s",
 			"interval": "24h",
-			"start_time": "2022-04-23T08:00:00-07:00"
+			"start_time": "08:00:00-07:00"
 		}`, &ws)
 		assert.NoError(t, err)
 
@@ -371,12 +371,12 @@ func ZoneTests(t *testing.T) {
 		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
-			StartTime: &newStartTime,
+			StartTime: newStartTime.Format(pkg.StartTimeFormat),
 			Duration:  &pkg.Duration{Duration: time.Second},
 		}, &ws)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime, ws.WaterSchedule.StartTime.Local())
+		assert.Equal(t, newStartTime.Format(pkg.StartTimeFormat), ws.WaterSchedule.StartTime)
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -422,12 +422,12 @@ func WaterScheduleTests(t *testing.T) {
 		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
-			StartTime: &newStartTime,
+			StartTime: newStartTime.Format(pkg.StartTimeFormat),
 			Duration:  &pkg.Duration{Duration: time.Second},
 		}, &ws)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime, ws.WaterSchedule.StartTime.Local())
+		assert.Equal(t, newStartTime.Format(pkg.StartTimeFormat), ws.WaterSchedule.StartTime)
 
 		time.Sleep(100 * time.Millisecond)
 

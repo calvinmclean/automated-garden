@@ -31,7 +31,7 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
-		StartTime: &createdAt,
+		StartTime: createdAt.Format(pkg.StartTimeFormat),
 	}
 }
 
@@ -48,7 +48,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			"Successful",
 			false,
 			createExampleWaterSchedule(),
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386\-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386\-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52\-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52\-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureData",
@@ -57,7 +57,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &createdAt,
+				StartTime: createdAt.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(0),
@@ -73,7 +73,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":25.4,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":1.5}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":25.4,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":1.5}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureDataButWeatherDataExcluded",
@@ -82,7 +82,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &createdAt,
+				StartTime: createdAt.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(0),
@@ -98,7 +98,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorRainWeatherClientDNE",
@@ -107,7 +107,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &createdAt,
+				StartTime: createdAt.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(0),
@@ -117,7 +117,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
@@ -126,7 +126,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &createdAt,
+				StartTime: createdAt.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(30),
@@ -136,7 +136,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","weather_control":{"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 	}
 
@@ -218,7 +218,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 		{
 			"Successful",
 			`{"duration":"1h"}`,
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -419,19 +419,19 @@ func TestCreateWaterSchedule(t *testing.T) {
 	}{
 		{
 			"Successful",
-			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
-			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52.891386-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
+			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00"}`,
+			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"ErrorRainWeatherClientDNE",
-			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for RainControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
-			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for TemperatureControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
@@ -443,7 +443,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 		},
 		{
 			"ErrorCannotSetID",
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00"}`,
 			`{"status":"Invalid request.","error":"unable to manually set ID"}`,
 			http.StatusBadRequest,
 		},
@@ -482,31 +482,31 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 	}{
 		{
 			"Successful",
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00"}`,
 			``,
 			http.StatusOK,
 		},
 		{
 			"ErrorMissingID",
-			`{"duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
+			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00"}`,
 			`{"status":"Invalid request.","error":"missing required id field"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorWrongID",
-			`{"id":"chkodpg3lcj13q82mq40","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00"}`,
+			`{"id":"chkodpg3lcj13q82mq40","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00"}`,
 			`{"status":"Invalid request.","error":"id must match URL path"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorRainWeatherClientDNE",
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for RainControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"2021-10-03T11:24:52.891386-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for TemperatureControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
@@ -585,7 +585,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						Factor: float32Pointer(0.5),
@@ -600,7 +600,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -615,7 +615,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -630,7 +630,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -646,7 +646,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -662,7 +662,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -678,7 +678,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -694,7 +694,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -710,7 +710,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				WeatherControl: &weather.Control{
 					SoilMoisture: &weather.SoilMoistureControl{},
 				},
@@ -722,7 +722,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &now,
+				StartTime: now.Format(pkg.StartTimeFormat),
 				ActivePeriod: &pkg.ActivePeriod{
 					StartMonth: "not a month",
 				},
@@ -735,7 +735,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 		pr := &pkg.WaterSchedule{
 			Duration:  &pkg.Duration{Duration: time.Second},
 			Interval:  &pkg.Duration{Duration: time.Hour * 24},
-			StartTime: &now,
+			StartTime: now.Format(pkg.StartTimeFormat),
 			WeatherControl: &weather.Control{
 				Temperature: &weather.ScaleControl{
 					BaselineValue: float32Pointer(27),
@@ -761,7 +761,6 @@ func TestWaterScheduleRequest(t *testing.T) {
 
 func TestUpdateWaterScheduleRequest(t *testing.T) {
 	now := time.Now()
-	past := now.Add(-1 * time.Hour)
 	tests := []struct {
 		name string
 		pr   *pkg.WaterSchedule
@@ -778,13 +777,6 @@ func TestUpdateWaterScheduleRequest(t *testing.T) {
 				ID: babyapi.ID{ID: id},
 			},
 			"updating ID is not allowed",
-		},
-		{
-			"StartTimeInPastError",
-			&pkg.WaterSchedule{
-				StartTime: &past,
-			},
-			"unable to set start_time to time in the past",
 		},
 		{
 			"EndDateError",

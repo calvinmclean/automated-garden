@@ -167,18 +167,8 @@ func (g *Garden) Bind(r *http.Request) error {
 				return errors.New("missing required light_schedule.duration field")
 			}
 
-			// Check that Duration is valid Duration
-			if g.LightSchedule.Duration.Duration >= 24*time.Hour {
-				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
-			}
-
 			if g.LightSchedule.StartTime == "" {
 				return errors.New("missing required light_schedule.start_time field")
-			}
-			// Check that LightSchedule.StartTime is valid
-			_, err := g.LightSchedule.ParseStartTime()
-			if err != nil {
-				return err
 			}
 		}
 	case http.MethodPatch:
@@ -192,20 +182,21 @@ func (g *Garden) Bind(r *http.Request) error {
 		if g.MaxZones != nil && *g.MaxZones == 0 {
 			return errors.New("max_zones must not be 0")
 		}
+	}
 
-		if g.LightSchedule != nil {
-			// Check that Duration is valid Duration
-			if g.LightSchedule.Duration != nil {
-				if g.LightSchedule.Duration.Duration >= 24*time.Hour {
-					return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
-				}
+	if g.LightSchedule != nil {
+		// Check that Duration is valid Duration
+		if g.LightSchedule.Duration != nil {
+			if g.LightSchedule.Duration.Duration >= 24*time.Hour {
+				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
 			}
-			// Check that LightSchedule.StartTime is valid
-			if g.LightSchedule.StartTime != "" {
-				_, err := g.LightSchedule.ParseStartTime()
-				if err != nil {
-					return err
-				}
+		}
+
+		// Check that LightSchedule.StartTime is valid
+		if g.LightSchedule.StartTime != "" {
+			_, err := g.LightSchedule.ParseStartTime()
+			if err != nil {
+				return err
 			}
 		}
 	}

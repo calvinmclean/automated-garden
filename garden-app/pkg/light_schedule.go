@@ -8,11 +8,6 @@ import (
 )
 
 const (
-	// LightTimeFormat is used to control format of time fields
-	LightTimeFormat = "15:04:05-07:00"
-)
-
-const (
 	// LightStateOff is the value used to turn off a light
 	LightStateOff LightState = iota
 	// LightStateOn is the value used to turn on a light
@@ -95,7 +90,7 @@ func (ls *LightSchedule) Patch(new *LightSchedule) {
 }
 
 func (ls *LightSchedule) ParseStartTime() (time.Time, error) {
-	startTime, err := time.Parse(LightTimeFormat, ls.StartTime)
+	startTime, err := time.Parse(StartTimeFormat, ls.StartTime)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("invalid time format for light_schedule.start_time: %s", ls.StartTime)
 	}

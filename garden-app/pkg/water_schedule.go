@@ -11,6 +11,11 @@ import (
 	"github.com/rs/xid"
 )
 
+const (
+	// StartTimeFormat is used to control format of time fields
+	StartTimeFormat = "15:04:05Z07:00"
+)
+
 // WaterSchedule allows the user to have more control over how the Zone is watered using an Interval
 // and optional MinimumMoisture which acts as the threshold the Zone's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
@@ -18,7 +23,7 @@ type WaterSchedule struct {
 	ID             babyapi.ID       `json:"id" yaml:"id"`
 	Duration       *Duration        `json:"duration" yaml:"duration"`
 	Interval       *Duration        `json:"interval" yaml:"interval"`
-	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
+	StartTime      string           `json:"start_time" yaml:"start_time"`
 	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
 	Name           string           `json:"name,omitempty" yaml:"name,omitempty"`
@@ -59,7 +64,7 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) *babyapi.ErrResponse {
 	if new.Interval != nil {
 		ws.Interval = new.Interval
 	}
-	if new.StartTime != nil {
+	if new.StartTime != "" {
 		ws.StartTime = new.StartTime
 	}
 	if ws.EndDate != nil && new.EndDate == nil {
@@ -225,7 +230,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		if ws.Duration == nil {
 			return errors.New("missing required duration field")
 		}
-		if ws.StartTime == nil {
+		if ws.StartTime == "" {
 			return errors.New("missing required start_time field")
 		}
 		if ws.WeatherControl != nil {
@@ -239,31 +244,38 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 			if ws.ActivePeriod.StartMonth == "" && ws.ActivePeriod.EndMonth == "" {
 				ws.ActivePeriod = nil
 			}
-
-			err := ws.ActivePeriod.Validate()
-			if err != nil {
-				return fmt.Errorf("error validating active_period: %w", err)
-			}
 		}
 	case http.MethodPatch:
 		if ws.EndDate != nil {
 			return errors.New("to end-date a WaterSchedule, please use the DELETE endpoint")
 		}
+	}
 
-		// Check that StartTime is in the future
-		if ws.StartTime != nil && time.Since(*ws.StartTime) > 0 {
-			return fmt.Errorf("unable to set start_time to time in the past")
+	if ws.ActivePeriod != nil {
+		err := ws.ActivePeriod.Validate()
+		if err != nil {
+			return fmt.Errorf("error validating active_period: %w", err)
 		}
+	}
 
-		if ws.ActivePeriod != nil {
-			err := ws.ActivePeriod.Validate()
-			if err != nil {
-				return fmt.Errorf("error validating active_period: %w", err)
-			}
+	// Check that StartTime is valid
+	if ws.StartTime != "" {
+		_, err := ws.ParseStartTime()
+		if err != nil {
+			return err
 		}
 	}
 
 	return nil
+}
+
+func (ws *WaterSchedule) ParseStartTime() (time.Time, error) {
+	startTime, err := time.Parse(StartTimeFormat, ws.StartTime)
+	if err != nil {
+		return time.Time{}, fmt.Errorf("invalid time format for start_time: %s", ws.StartTime)
+	}
+
+	return startTime, nil
 }
 
 // ValidateWeatherControl validates input for the WeatherControl of a WaterSchedule

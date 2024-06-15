@@ -41,10 +41,15 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, waterSchedule)
 	logger.Info("creating scheduled Job for WaterSchedule")
 
+	startTime, err := waterSchedule.ParseStartTime()
+	if err != nil {
+		return err
+	}
+
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
-	_, err := waterSchedule.Interval.SchedulerFunc(w.scheduler).
-		StartAt(*waterSchedule.StartTime).
+	_, err = waterSchedule.Interval.SchedulerFunc(w.scheduler).
+		StartAt(todayAtTime(startTime)).
 		Tag("water_schedule").
 		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *slog.Logger) {
@@ -167,18 +172,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		return err
 	}
 
-	now := time.Now().In(lightTime.Location())
-	// Create onStartDate using the CreatedAt date with the WaterSchedule's timestamp
-	onStartDate := time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		lightTime.Hour(),
-		lightTime.Minute(),
-		lightTime.Second(),
-		0,
-		lightTime.Location(),
-	)
+	onStartDate := todayAtTime(lightTime)
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
 
 	// Schedule the LightAction execution for ON and OFF
@@ -476,4 +470,18 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 	}
+}
+
+func todayAtTime(startTime time.Time) time.Time {
+	now := time.Now().In(startTime.Location())
+	return time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		startTime.Hour(),
+		startTime.Minute(),
+		startTime.Second(),
+		0,
+		startTime.Location(),
+	)
 }
