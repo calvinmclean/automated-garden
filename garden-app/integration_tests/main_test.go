@@ -161,14 +161,14 @@ func GardenTests(t *testing.T) {
 		// Create new Garden with LightOnTime in the near future, so LightDelay will assume the light is currently off,
 		// meaning adhoc action is going to be predictably delayed
 		maxZones := uint(1)
-		startTime := time.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second)
+		startTime := &pkg.StartTime{time.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second)}
 		newGarden := &pkg.Garden{
 			Name:        "TestGarden",
 			TopicPrefix: "test",
 			MaxZones:    &maxZones,
 			LightSchedule: &pkg.LightSchedule{
 				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
-				StartTime: startTime.Format(pkg.StartTimeFormat),
+				StartTime: startTime,
 			},
 		}
 
@@ -209,17 +209,17 @@ func GardenTests(t *testing.T) {
 	})
 	t.Run("ChangeLightScheduleStartTimeResetsLightSchedule", func(t *testing.T) {
 		// Reschedule Light to turn in in 1 second, for 1 second
-		newStartTime := time.Now().Add(1 * time.Second).Truncate(time.Second)
+		newStartTime := &pkg.StartTime{time.Now().Add(1 * time.Second).Truncate(time.Second)}
 		var g server.GardenResponse
 		status, err := makeRequest(http.MethodPatch, "/gardens/"+gardenID, pkg.Garden{
 			LightSchedule: &pkg.LightSchedule{
-				StartTime: newStartTime.Format(pkg.StartTimeFormat),
+				StartTime: newStartTime,
 				Duration:  &pkg.Duration{Duration: time.Second},
 			},
 		}, &g)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime.Format(pkg.StartTimeFormat), g.LightSchedule.StartTime)
+		assert.Equal(t, newStartTime.String(), g.LightSchedule.StartTime.String())
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -228,7 +228,7 @@ func GardenTests(t *testing.T) {
 		status, err = makeRequest(http.MethodGet, "/gardens/"+gardenID, nil, &g2)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime, g2.NextLightAction.Time.Truncate(time.Second).Local())
+		assert.Equal(t, newStartTime.String(), (&pkg.StartTime{g2.NextLightAction.Time.Local()}).String())
 		assert.Equal(t, pkg.LightStateOn, g2.NextLightAction.State)
 
 		time.Sleep(2 * time.Second)
@@ -371,12 +371,12 @@ func ZoneTests(t *testing.T) {
 		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
-			StartTime: newStartTime.Format(pkg.StartTimeFormat),
+			StartTime: &pkg.StartTime{newStartTime},
 			Duration:  &pkg.Duration{Duration: time.Second},
 		}, &ws)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime.Format(pkg.StartTimeFormat), ws.WaterSchedule.StartTime)
+		assert.Equal(t, (&pkg.StartTime{newStartTime}).String(), ws.WaterSchedule.StartTime.String())
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -422,12 +422,12 @@ func WaterScheduleTests(t *testing.T) {
 		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
-			StartTime: newStartTime.Format(pkg.StartTimeFormat),
+			StartTime: &pkg.StartTime{newStartTime},
 			Duration:  &pkg.Duration{Duration: time.Second},
 		}, &ws)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime.Format(pkg.StartTimeFormat), ws.WaterSchedule.StartTime)
+		assert.Equal(t, (&pkg.StartTime{newStartTime}).String(), ws.WaterSchedule.StartTime.String())
 
 		time.Sleep(100 * time.Millisecond)
 

@@ -26,6 +26,7 @@ var (
 func createExampleGarden() *pkg.Garden {
 	two := uint(2)
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	startTime, _ := pkg.StartTimeFromString("22:00:01-07:00")
 	return &pkg.Garden{
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
@@ -34,7 +35,7 @@ func createExampleGarden() *pkg.Garden {
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
-			StartTime: "22:00:01-07:00",
+			StartTime: startTime,
 		},
 	}
 }
@@ -58,7 +59,7 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
-		StartTime: createdAt.Format(pkg.StartTimeFormat),
+		StartTime: &pkg.StartTime{createdAt},
 	}
 }
 
@@ -89,7 +90,7 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	ws := createExampleWaterSchedule()
 
 	// Set StartTime to the near future
-	startTime := time.Now().Add(250 * time.Millisecond).Format(pkg.StartTimeFormat)
+	startTime := &pkg.StartTime{time.Now().Add(250 * time.Millisecond)}
 	ws.StartTime = startTime
 
 	err = worker.ScheduleWaterAction(ws)
@@ -143,7 +144,7 @@ func TestScheduleWaterAction(t *testing.T) {
 	}
 
 	// Set StartTime to the near future
-	startTime := time.Now().Add(1 * time.Second).Format(pkg.StartTimeFormat)
+	startTime := &pkg.StartTime{time.Now().Add(1 * time.Second)}
 	ws.StartTime = startTime
 	wsNotInStorage.StartTime = startTime
 	wsNotActive.StartTime = startTime
@@ -187,14 +188,14 @@ func TestResetNextWaterTime(t *testing.T) {
 
 	ws := createExampleWaterSchedule()
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
-	startTime := time.Now().Add(-1 * time.Hour)
-	ws.StartTime = startTime.Format(pkg.StartTimeFormat)
+	startTime := &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
+	ws.StartTime = startTime
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
 	// Change WaterSchedule and restart
-	newTime := startTime.Add(-30 * time.Minute)
-	ws.StartTime = newTime.Format(pkg.StartTimeFormat)
+	newTime := &pkg.StartTime{startTime.Add(-30 * time.Minute)}
+	ws.StartTime = newTime
 	err = worker.ResetWaterSchedule(ws)
 	assert.NoError(t, err)
 
@@ -224,8 +225,8 @@ func TestGetNextWaterTime(t *testing.T) {
 
 	ws := createExampleWaterSchedule()
 	// Set WaterSchedule.StartTime to a time that won't cause it to run
-	startTime := time.Now().Add(-1 * time.Hour)
-	ws.StartTime = startTime.Format(pkg.StartTimeFormat)
+	startTime := &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
+	ws.StartTime = startTime
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
@@ -279,14 +280,13 @@ func TestScheduleLightActions(t *testing.T) {
 			t.Errorf("Expected nil AdhocOnTime but got: %v", g.LightSchedule.AdhocOnTime)
 		}
 
-		lightTime, _ := time.Parse(pkg.StartTimeFormat, g.LightSchedule.StartTime)
 		expected := time.Date(
 			now.Year(),
 			now.Month(),
 			now.Day(),
-			lightTime.UTC().Hour(),
-			lightTime.UTC().Minute(),
-			lightTime.UTC().Second(),
+			g.LightSchedule.StartTime.UTC().Hour(),
+			g.LightSchedule.StartTime.UTC().Minute(),
+			g.LightSchedule.StartTime.UTC().Second(),
 			0,
 			time.UTC,
 		)
@@ -313,7 +313,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to a bit ago so the light is considered to be ON
-				g.LightSchedule.StartTime = time.Now().Add(-1 * time.Minute).Format(pkg.StartTimeFormat)
+				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(-1 * time.Minute)}
 				return g
 			}(),
 			[]*action.LightAction{
@@ -330,7 +330,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to a bit ago so the light is considered to be ON
-				g.LightSchedule.StartTime = time.Now().Add(-1 * time.Minute).Format(pkg.StartTimeFormat)
+				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(-1 * time.Minute)}
 				return g
 			}(),
 			[]*action.LightAction{
@@ -351,7 +351,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to the future so the light is considered to be OFF
-				g.LightSchedule.StartTime = time.Now().Add(5 * time.Minute).Format(pkg.StartTimeFormat)
+				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(5 * time.Minute)}
 				return g
 			}(),
 			[]*action.LightAction{
@@ -368,7 +368,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to the future so the light is considered to be OFF
-				g.LightSchedule.StartTime = time.Now().Add(5 * time.Minute).Format(pkg.StartTimeFormat)
+				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(5 * time.Minute)}
 				return g
 			}(),
 			[]*action.LightAction{
@@ -412,14 +412,13 @@ func TestScheduleLightDelay(t *testing.T) {
 			if tt.on {
 				expected = now.Add(tt.expectedDelay).Truncate(time.Second)
 			} else {
-				lightTime, _ := time.Parse(pkg.StartTimeFormat, tt.garden.LightSchedule.StartTime)
 				expected = time.Date(
 					now.Year(),
 					now.Month(),
 					now.Day(),
-					lightTime.Hour(),
-					lightTime.Minute(),
-					lightTime.Second(),
+					tt.garden.LightSchedule.StartTime.Hour(),
+					tt.garden.LightSchedule.StartTime.Minute(),
+					tt.garden.LightSchedule.StartTime.Second(),
 					0,
 					time.Local,
 				).Add(tt.expectedDelay).Truncate(time.Second)
@@ -443,7 +442,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		g := createExampleGarden()
 		// Set StartTime and Duration so NextOffTime is soon
-		g.LightSchedule.StartTime = time.Now().Add(-1 * time.Hour).Format(pkg.StartTimeFormat)
+		g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
 		g.LightSchedule.Duration = &pkg.Duration{Duration: 1*time.Hour + 5*time.Minute}
 
 		err = worker.ScheduleLightActions(g)
@@ -538,8 +537,8 @@ func TestRemoveJobsByID(t *testing.T) {
 
 	ws := createExampleWaterSchedule()
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
-	startTime := time.Now().Add(-1 * time.Hour)
-	ws.StartTime = startTime.Format(pkg.StartTimeFormat)
+	startTime := &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
+	ws.StartTime = startTime
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
@@ -562,8 +561,8 @@ func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
 	worker.scheduler.StartAsync()
 
 	now := time.Now()
-	addTime := func(add time.Duration) string {
-		return now.Add(add).Format(pkg.StartTimeFormat)
+	addTime := func(add time.Duration) *pkg.StartTime {
+		return &pkg.StartTime{now.Add(add)}
 	}
 
 	ws1 := &pkg.WaterSchedule{

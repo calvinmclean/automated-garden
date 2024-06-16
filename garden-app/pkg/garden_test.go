@@ -118,7 +118,7 @@ func TestGardenPatch(t *testing.T) {
 		{
 			"PatchLightSchedule.StartTime",
 			&Garden{LightSchedule: &LightSchedule{
-				StartTime: "start time",
+				StartTime: &StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", 0))},
 			}},
 		},
 		{
@@ -159,7 +159,7 @@ func TestGardenPatch(t *testing.T) {
 	t.Run("RemoveLightSchedule", func(t *testing.T) {
 		g := &Garden{
 			LightSchedule: &LightSchedule{
-				StartTime: "START TIME",
+				StartTime: &StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", 0))},
 				Duration:  &Duration{2 * time.Hour, ""},
 			},
 		}

@@ -67,7 +67,7 @@ func (l *LightState) unmarshal(data []byte) error {
 // "Time" should be in the format of LightTimeFormat constant ("15:04:05-07:00")
 type LightSchedule struct {
 	Duration    *Duration  `json:"duration" yaml:"duration"`
-	StartTime   string     `json:"start_time" yaml:"start_time"`
+	StartTime   *StartTime `json:"start_time" yaml:"start_time"`
 	AdhocOnTime *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
 }
 
@@ -81,14 +81,10 @@ func (ls *LightSchedule) Patch(new *LightSchedule) {
 	if new.Duration != nil {
 		ls.Duration = new.Duration
 	}
-	if new.StartTime != "" {
+	if new.StartTime != nil {
 		ls.StartTime = new.StartTime
 	}
 	if new.AdhocOnTime == nil {
 		ls.AdhocOnTime = nil
 	}
-}
-
-func (ls *LightSchedule) ParseStartTime() (time.Time, error) {
-	return ParseStartTime(ls.StartTime)
 }

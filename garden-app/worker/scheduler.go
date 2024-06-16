@@ -41,15 +41,11 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, waterSchedule)
 	logger.Info("creating scheduled Job for WaterSchedule")
 
-	startTime, err := waterSchedule.ParseStartTime()
-	if err != nil {
-		return err
-	}
-	startTime = startTime.UTC()
+	startTime := waterSchedule.StartTime.UTC()
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
-	_, err = waterSchedule.Interval.SchedulerFunc(w.scheduler).
+	_, err := waterSchedule.Interval.SchedulerFunc(w.scheduler).
 		StartAt(todayAtTime(startTime)).
 		Tag("water_schedule").
 		Tag(waterSchedule.ID.String()).
@@ -168,11 +164,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Info("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
-	lightTime, err := g.LightSchedule.ParseStartTime()
-	if err != nil {
-		return err
-	}
-	lightTime = lightTime.UTC()
+	lightTime := g.LightSchedule.StartTime.UTC()
 
 	onStartDate := todayAtTime(lightTime)
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
@@ -181,7 +173,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Add(2)
 	onAction := &action.LightAction{State: pkg.LightStateOn}
 	offAction := &action.LightAction{State: pkg.LightStateOff}
-	_, err = w.scheduler.
+	_, err := w.scheduler.
 		Every(lightInterval).
 		StartAt(onStartDate).
 		Tag("garden").

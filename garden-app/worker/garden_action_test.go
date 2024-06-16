@@ -107,13 +107,14 @@ func TestGardenAction(t *testing.T) {
 
 func TestLightActionExecute(t *testing.T) {
 	now := time.Now()
+	startTime, _ := pkg.StartTimeFromString("23:00:00-07:00")
 	garden := &pkg.Garden{
 		ID:          babyapi.NewID(),
 		Name:        "garden",
 		TopicPrefix: "garden",
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
-			StartTime: "23:00:00-07:00",
+			StartTime: startTime,
 		},
 		CreatedAt: &now,
 	}

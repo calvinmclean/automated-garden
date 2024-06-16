@@ -29,6 +29,7 @@ func createExampleGarden() *pkg.Garden {
 	two := uint(2)
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
+	startTime, _ := pkg.StartTimeFromString("22:00:01-07:00")
 	return &pkg.Garden{
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
@@ -37,7 +38,7 @@ func createExampleGarden() *pkg.Garden {
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
-			StartTime: "22:00:01-07:00",
+			StartTime: startTime,
 		},
 	}
 }
@@ -127,6 +128,13 @@ func TestCreateGarden(t *testing.T) {
 			"{}",
 			false,
 			`{"status":"Invalid request.","error":"missing required name field"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorInvalidStartTime",
+			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "invalid"}}`,
+			false,
+			`{"status":"Invalid request.","error":"error parsing start time: parsing time \\"invalid\\" as \\"15:04:05Z07:00\\": cannot parse \\"invalid\\" as \\"15\\""}`,
 			http.StatusBadRequest,
 		},
 		{
@@ -654,6 +662,7 @@ func TestGardenActionForm(t *testing.T) {
 }
 
 func TestGardenRequest(t *testing.T) {
+	startTime, _ := pkg.StartTimeFromString("22:00:01-07:00")
 	zero := uint(0)
 	one := uint(1)
 	tests := []struct {
@@ -750,7 +759,7 @@ func TestGardenRequest(t *testing.T) {
 				TopicPrefix: "garden",
 				MaxZones:    &one,
 				LightSchedule: &pkg.LightSchedule{
-					StartTime: "22:00:01-07:00",
+					StartTime: startTime,
 				},
 			},
 			"missing required light_schedule.duration field",
@@ -774,24 +783,11 @@ func TestGardenRequest(t *testing.T) {
 				TopicPrefix: "garden",
 				MaxZones:    &one,
 				LightSchedule: &pkg.LightSchedule{
-					StartTime: "22:00:01-07:00",
+					StartTime: startTime,
 					Duration:  &pkg.Duration{Duration: 25 * time.Hour},
 				},
 			},
 			"invalid light_schedule.duration >= 24 hours: 25h0m0s",
-		},
-		{
-			"BadStartTimeError",
-			&pkg.Garden{
-				Name:        "garden",
-				TopicPrefix: "garden",
-				MaxZones:    &one,
-				LightSchedule: &pkg.LightSchedule{
-					Duration:  &pkg.Duration{Duration: time.Minute},
-					StartTime: "NOT A TIME",
-				},
-			},
-			"error parsing start time: parsing time \"NOT A TIME\" as \"15:04:05Z07:00\": cannot parse \"NOT A TIME\" as \"15\"",
 		},
 	}
 
@@ -877,15 +873,6 @@ func TestUpdateGardenRequest(t *testing.T) {
 				},
 			},
 			"invalid light_schedule.duration >= 24 hours: 25h0m0s",
-		},
-		{
-			"InvalidLightScheduleStartTimeError",
-			&pkg.Garden{
-				LightSchedule: &pkg.LightSchedule{
-					StartTime: "NOT A TIME",
-				},
-			},
-			"error parsing start time: parsing time \"NOT A TIME\" as \"15:04:05Z07:00\": cannot parse \"NOT A TIME\" as \"15\"",
 		},
 		{
 			"EndDateError",

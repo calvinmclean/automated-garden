@@ -63,13 +63,8 @@ func templateFuncs(r *http.Request) map[string]any {
 		"FormatDateTime": func(date *time.Time) string {
 			return date.Local().Format(time.DateTime)
 		},
-		"FormatStartTime": func(startTime string) string {
-			date, err := pkg.ParseStartTime(startTime)
-			if err != nil {
-				return "N/A"
-			}
-
-			return date.Format(time.Kitchen)
+		"FormatStartTime": func(startTime *pkg.StartTime) string {
+			return startTime.Format(time.Kitchen)
 		},
 		"Sprintf": fmt.Sprintf,
 		"CelsiusToFahrenheit": func(c float64) float64 {

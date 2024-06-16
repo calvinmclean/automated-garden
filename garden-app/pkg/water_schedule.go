@@ -18,7 +18,7 @@ type WaterSchedule struct {
 	ID             babyapi.ID       `json:"id" yaml:"id"`
 	Duration       *Duration        `json:"duration" yaml:"duration"`
 	Interval       *Duration        `json:"interval" yaml:"interval"`
-	StartTime      string           `json:"start_time" yaml:"start_time"`
+	StartTime      *StartTime       `json:"start_time" yaml:"start_time"`
 	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
 	Name           string           `json:"name,omitempty" yaml:"name,omitempty"`
@@ -59,7 +59,7 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) *babyapi.ErrResponse {
 	if new.Interval != nil {
 		ws.Interval = new.Interval
 	}
-	if new.StartTime != "" {
+	if new.StartTime != nil {
 		ws.StartTime = new.StartTime
 	}
 	if ws.EndDate != nil && new.EndDate == nil {
@@ -225,7 +225,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		if ws.Duration == nil {
 			return errors.New("missing required duration field")
 		}
-		if ws.StartTime == "" {
+		if ws.StartTime == nil {
 			return errors.New("missing required start_time field")
 		}
 		if ws.WeatherControl != nil {
@@ -253,19 +253,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		}
 	}
 
-	// Check that StartTime is valid
-	if ws.StartTime != "" {
-		_, err := ws.ParseStartTime()
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
-}
-
-func (ws *WaterSchedule) ParseStartTime() (time.Time, error) {
-	return ParseStartTime(ws.StartTime)
 }
 
 // ValidateWeatherControl validates input for the WeatherControl of a WaterSchedule

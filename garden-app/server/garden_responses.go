@@ -122,8 +122,7 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 			}
 		}
 		if loc == nil {
-			startTime, _ := g.LightSchedule.ParseStartTime()
-			loc = startTime.Location()
+			loc = g.LightSchedule.StartTime.Location()
 		}
 
 		offsetTime := g.NextLightAction.Time.In(loc)
