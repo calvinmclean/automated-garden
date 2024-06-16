@@ -90,10 +90,5 @@ func (ls *LightSchedule) Patch(new *LightSchedule) {
 }
 
 func (ls *LightSchedule) ParseStartTime() (time.Time, error) {
-	startTime, err := time.Parse(StartTimeFormat, ls.StartTime)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid time format for light_schedule.start_time: %s", ls.StartTime)
-	}
-
-	return startTime, nil
+	return parseStartTime(ls.StartTime)
 }

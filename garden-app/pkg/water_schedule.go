@@ -11,11 +11,6 @@ import (
 	"github.com/rs/xid"
 )
 
-const (
-	// StartTimeFormat is used to control format of time fields
-	StartTimeFormat = "15:04:05Z07:00"
-)
-
 // WaterSchedule allows the user to have more control over how the Zone is watered using an Interval
 // and optional MinimumMoisture which acts as the threshold the Zone's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
@@ -270,12 +265,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 }
 
 func (ws *WaterSchedule) ParseStartTime() (time.Time, error) {
-	startTime, err := time.Parse(StartTimeFormat, ws.StartTime)
-	if err != nil {
-		return time.Time{}, fmt.Errorf("invalid time format for start_time: %s", ws.StartTime)
-	}
-
-	return startTime, nil
+	return parseStartTime(ws.StartTime)
 }
 
 // ValidateWeatherControl validates input for the WeatherControl of a WaterSchedule

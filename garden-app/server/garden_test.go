@@ -133,7 +133,7 @@ func TestCreateGarden(t *testing.T) {
 			"ErrorBadRequestInvalidStartTime",
 			`{"name":"test-garden", "topic_prefix":"test-garden", "max_zones": 1,"light_schedule": {"duration":"1h","start_time":"NOT A TIME"}}`,
 			false,
-			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
+			`{"status":"Invalid request.","error":"error parsing start time: parsing time \\"NOT A TIME\\" as \\"15:04:05Z07:00\\": cannot parse \\"NOT A TIME\\" as \\"15\\""}`,
 			http.StatusBadRequest,
 		},
 		{
@@ -235,7 +235,7 @@ func TestUpdateGardenPUT(t *testing.T) {
 			"ErrorBadRequestInvalidStartTime",
 			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-garden", "topic_prefix":"test-garden", "max_zones": 1,"light_schedule": {"duration":"1h","start_time":"NOT A TIME"}}`,
 			false,
-			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
+			`{"status":"Invalid request.","error":"error parsing start time: parsing time \\"NOT A TIME\\" as \\"15:04:05Z07:00\\": cannot parse \\"NOT A TIME\\" as \\"15\\""}`,
 			http.StatusBadRequest,
 		},
 	}
@@ -788,7 +788,7 @@ func TestGardenRequest(t *testing.T) {
 					StartTime: "NOT A TIME",
 				},
 			},
-			"invalid time format for light_schedule.start_time: NOT A TIME",
+			"error parsing start time: parsing time \"NOT A TIME\" as \"15:04:05Z07:00\": cannot parse \"NOT A TIME\" as \"15\"",
 		},
 	}
 
@@ -882,7 +882,7 @@ func TestUpdateGardenRequest(t *testing.T) {
 					StartTime: "NOT A TIME",
 				},
 			},
-			"invalid time format for light_schedule.start_time: NOT A TIME",
+			"error parsing start time: parsing time \"NOT A TIME\" as \"15:04:05Z07:00\": cannot parse \"NOT A TIME\" as \"15\"",
 		},
 		{
 			"EndDateError",
