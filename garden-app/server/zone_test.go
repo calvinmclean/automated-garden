@@ -261,7 +261,8 @@ func TestGetZone(t *testing.T) {
 			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s?exclude_weather_data=%t", garden.ID, zone.ID, tt.excludeWeatherData), http.NoBody)
+			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s?exclude_weather_data=%t", garden.ID, zone.ID, tt.excludeWeatherData), http.NoBody)
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
@@ -333,8 +334,9 @@ func TestZoneAction(t *testing.T) {
 			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -408,7 +410,8 @@ func TestZoneActionForm(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), bytes.NewBufferString(tt.body))
-			r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -467,7 +470,8 @@ func TestUpdateZone(t *testing.T) {
 			zone := createExampleZone()
 
 			r := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -514,7 +518,7 @@ func TestEndDateZone(t *testing.T) {
 			garden := createExampleGarden()
 			zone := createExampleZone()
 
-			r := httptest.NewRequest("DELETE", fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), http.NoBody)
+			r := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), http.NoBody)
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -566,7 +570,8 @@ func TestGetAllZones(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones%s", garden.ID, tt.targetURL), http.NoBody)
+			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones%s", garden.ID, tt.targetURL), http.NoBody)
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
@@ -716,8 +721,9 @@ func TestCreateZone(t *testing.T) {
 			zr.worker.StartAsync()
 			defer zr.worker.Stop()
 
-			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/zones", tt.garden.ID), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones", tt.garden.ID), strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -870,7 +876,8 @@ func TestUpdateZonePUT(t *testing.T) {
 			defer zr.worker.Stop()
 
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, zone.ID), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -970,7 +977,8 @@ func TestWaterHistory(t *testing.T) {
 			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("GET", fmt.Sprintf("/gardens/%s/zones/%s/history%s", garden.ID, zone.ID, tt.queryParams), http.NoBody)
+			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s/history%s", garden.ID, zone.ID, tt.queryParams), http.NoBody)
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)

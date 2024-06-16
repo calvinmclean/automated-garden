@@ -125,7 +125,7 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		return nil
 	}
 
-	zr.NextWater = GetNextWaterDetails(nextWaterSchedule, zr.api.worker, excludeWeatherData)
+	zr.NextWater = GetNextWaterDetails(r, nextWaterSchedule, zr.api.worker, excludeWeatherData)
 	zr.NextWater.WaterScheduleID = &nextWaterSchedule.ID.ID
 
 	if zr.Zone.SkipCount != nil && *zr.Zone.SkipCount > 0 {

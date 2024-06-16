@@ -151,7 +151,7 @@ func TestGetWaterSchedule(t *testing.T) {
 		require.NoError(t, err)
 		wsr.worker.StartAsync()
 
-		r := httptest.NewRequest("GET", "/water_schedules/"+id2.String(), http.NoBody)
+		r := httptest.NewRequest(http.MethodGet, "/water_schedules/"+id2.String(), http.NoBody)
 		r.Header.Add("Content-Type", "application/json")
 
 		w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
@@ -187,7 +187,8 @@ func TestGetWaterSchedule(t *testing.T) {
 			require.NoError(t, err)
 			wsr.worker.StartAsync()
 
-			r := httptest.NewRequest("GET", fmt.Sprintf("/water_schedules/%s?exclude_weather_data=%t", tt.waterSchedule.ID, tt.excludeWeatherData), http.NoBody)
+			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/water_schedules/%s?exclude_weather_data=%t", tt.waterSchedule.ID, tt.excludeWeatherData), http.NoBody)
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			// check HTTP response status code
@@ -267,8 +268,9 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
-			r := httptest.NewRequest("PATCH", "/water_schedules/"+createExampleWaterSchedule().GetID(), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPatch, "/water_schedules/"+createExampleWaterSchedule().GetID(), strings.NewReader(tt.body))
+			r.Header.Set("X-TZ-Offset", "420")
+			r.Header.Set("Content-Type", "application/json")
 			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -340,7 +342,8 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
-			r := httptest.NewRequest("DELETE", "/water_schedules/"+tt.waterSchedule.GetID(), http.NoBody)
+			r := httptest.NewRequest(http.MethodDelete, "/water_schedules/"+tt.waterSchedule.GetID(), http.NoBody)
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -391,7 +394,8 @@ func TestGetAllWaterSchedules(t *testing.T) {
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
-			r := httptest.NewRequest("GET", tt.targetURL, nil)
+			r := httptest.NewRequest(http.MethodGet, tt.targetURL, nil)
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			var actual babyapi.ResourceList[*pkg.WaterSchedule]
@@ -463,8 +467,9 @@ func TestCreateWaterSchedule(t *testing.T) {
 			wsr.worker.StartAsync()
 			defer wsr.worker.Stop()
 
-			r := httptest.NewRequest("POST", "/water_schedules", strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPost, "/water_schedules", strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -537,7 +542,8 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			defer wsr.worker.Stop()
 
 			r := httptest.NewRequest(http.MethodPut, "/water_schedules/"+ws.GetID(), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)

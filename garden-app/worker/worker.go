@@ -44,7 +44,7 @@ func NewWorker(
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		mqttClient:     mqttClient,
-		scheduler:      gocron.NewScheduler(time.Local),
+		scheduler:      gocron.NewScheduler(time.UTC),
 		logger:         logger.With("source", "worker"),
 	}
 }

@@ -205,7 +205,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	if g.LightSchedule.AdhocOnTime != nil {
 		logger.Debug("garden has adhoc ON time", "adhoc_on_time", g.LightSchedule.AdhocOnTime)
 		// If AdhocOnTime is in the past, reset it and return
-		if g.LightSchedule.AdhocOnTime.Before(time.Now()) {
+		if g.LightSchedule.AdhocOnTime.Before(time.Now().UTC()) {
 			logger.Debug("adhoc ON time is in the past and is being removed")
 			g.LightSchedule.AdhocOnTime = nil
 			return w.storageClient.Gardens.Set(context.Background(), g)
@@ -293,7 +293,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 	// No need to change any schedules
 	if nextOffTime.Before(*nextOnTime) {
 		logger.Debug("next OFF time is before next ON time; setting schedule to turn light back on", "duration", input.ForDuration.Duration)
-		now := time.Now()
+		now := time.Now().UTC()
 
 		// Don't allow a delayDuration that will occur after nextOffTime
 		if nextOffTime.Before(now.Add(input.ForDuration.Duration)) {
@@ -389,6 +389,9 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 	if g.LightSchedule.AdhocOnTime == nil {
 		return errors.New("unable to schedule adhoc light schedule without LightSchedule.AdhocOnTime")
 	}
+
+	// utc := g.LightSchedule.AdhocOnTime.UTC()
+	// g.LightSchedule.AdhocOnTime = &utc
 
 	// Remove existing adhoc Jobs for this Garden
 	if err := w.scheduler.RemoveByTags(g.ID.String(), adhocTag); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {

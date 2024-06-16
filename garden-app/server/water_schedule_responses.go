@@ -23,7 +23,7 @@ type NextWaterDetails struct {
 }
 
 // GetNextWaterDetails returns the NextWaterDetails for the WaterSchedule
-func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, excludeWeatherData bool) NextWaterDetails {
+func GetNextWaterDetails(r *http.Request, ws *pkg.WaterSchedule, worker *worker.Worker, excludeWeatherData bool) NextWaterDetails {
 	result := NextWaterDetails{
 		Time:     worker.GetNextWaterTime(ws),
 		Duration: ws.Duration,
@@ -36,6 +36,17 @@ func GetNextWaterDetails(ws *pkg.WaterSchedule, worker *worker.Worker, excludeWe
 		}
 
 		result.Duration = &pkg.Duration{Duration: time.Duration(wd)}
+	}
+
+	tzHeader := r.Header.Get("X-TZ-Offset")
+	if tzHeader != "" {
+		loc, err := pkg.TimeLocationFromOffset(tzHeader)
+		if err != nil {
+			result.Message = fmt.Sprintf("error parsing timezone from header: %v", err)
+		} else {
+			offsetTime := result.Time.In(loc)
+			result.Time = &offsetTime
+		}
 	}
 
 	return result
@@ -77,7 +88,7 @@ func (ws *WaterScheduleResponse) Render(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if !ws.EndDated() {
-		ws.NextWater = GetNextWaterDetails(ws.WaterSchedule, ws.api.worker, excludeWeatherData(r))
+		ws.NextWater = GetNextWaterDetails(r, ws.WaterSchedule, ws.api.worker, excludeWeatherData(r))
 	}
 
 	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {

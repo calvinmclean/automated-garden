@@ -248,7 +248,7 @@ func TestScheduleLightActions(t *testing.T) {
 		worker.StartAsync()
 		defer worker.Stop()
 
-		now := time.Now()
+		now := time.Now().UTC()
 		later := now.Add(1 * time.Hour).Truncate(time.Second)
 		g := createExampleGarden()
 		g.LightSchedule.AdhocOnTime = &later
@@ -269,7 +269,7 @@ func TestScheduleLightActions(t *testing.T) {
 		worker.StartAsync()
 		defer worker.Stop()
 
-		now := time.Now()
+		now := time.Now().UTC()
 		past := now.Add(-1 * time.Hour)
 		g := createExampleGarden()
 		g.LightSchedule.AdhocOnTime = &past
@@ -281,14 +281,14 @@ func TestScheduleLightActions(t *testing.T) {
 
 		lightTime, _ := time.Parse(pkg.StartTimeFormat, g.LightSchedule.StartTime)
 		expected := time.Date(
-			now.In(lightTime.Location()).Year(),
-			now.In(lightTime.Location()).Month(),
-			now.In(lightTime.Location()).Day(),
-			lightTime.Hour(),
-			lightTime.Minute(),
-			lightTime.Second(),
+			now.Year(),
+			now.Month(),
+			now.Day(),
+			lightTime.UTC().Hour(),
+			lightTime.UTC().Minute(),
+			lightTime.UTC().Second(),
 			0,
-			lightTime.Location(),
+			time.UTC,
 		)
 		// If expected time is before now, it will be tomorrow
 		if expected.Before(now) {
@@ -426,7 +426,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			}
 
 			nextOnTime := worker.GetNextLightTime(tt.garden, pkg.LightStateOn).Truncate(time.Second)
-			assert.Equal(t, expected, nextOnTime)
+			assert.Equal(t, expected.UTC(), nextOnTime)
 		})
 	}
 
