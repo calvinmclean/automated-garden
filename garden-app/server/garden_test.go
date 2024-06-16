@@ -98,7 +98,7 @@ func TestCreateGarden(t *testing.T) {
 			"Successful",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -164,8 +164,9 @@ func TestCreateGarden(t *testing.T) {
 			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("POST", "/gardens", strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -264,7 +265,8 @@ func TestUpdateGardenPUT(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -413,7 +415,7 @@ func TestUpdateGarden(t *testing.T) {
 			createExampleGarden(),
 			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -429,7 +431,7 @@ func TestUpdateGarden(t *testing.T) {
 			gardenWithoutLight,
 			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -465,8 +467,9 @@ func TestUpdateGarden(t *testing.T) {
 			err := gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("PATCH", "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPatch, "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -536,8 +539,8 @@ func TestGardenAction(t *testing.T) {
 			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)

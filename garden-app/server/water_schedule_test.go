@@ -542,7 +542,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			defer wsr.worker.Stop()
 
 			r := httptest.NewRequest(http.MethodPut, "/water_schedules/"+ws.GetID(), strings.NewReader(tt.body))
-			r.Header.Set("Content-Type", "application/json")
+			r.Header.Add("Content-Type", "application/json")
 			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.WaterSchedule](t, wsr.API, r)
 

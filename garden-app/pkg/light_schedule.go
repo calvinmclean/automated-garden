@@ -90,5 +90,5 @@ func (ls *LightSchedule) Patch(new *LightSchedule) {
 }
 
 func (ls *LightSchedule) ParseStartTime() (time.Time, error) {
-	return parseStartTime(ls.StartTime)
+	return ParseStartTime(ls.StartTime)
 }

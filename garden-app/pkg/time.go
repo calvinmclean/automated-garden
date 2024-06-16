@@ -11,13 +11,13 @@ const (
 	StartTimeFormat = "15:04:05Z07:00"
 )
 
-func parseStartTime(startTime string) (time.Time, error) {
+func ParseStartTime(startTime string) (time.Time, error) {
 	result, err := time.Parse(StartTimeFormat, startTime)
 	if err != nil {
 		return time.Time{}, fmt.Errorf("error parsing start time: %w", err)
 	}
 
-	return result.UTC(), nil
+	return result, nil
 }
 
 // TimeLocationFromOffset uses an offset minutes from JS `new Date().getTimezoneOffset()` and parses it into

@@ -113,16 +113,21 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 			}
 		}
 
+		var loc *time.Location
 		tzHeader := r.Header.Get("X-TZ-Offset")
 		if tzHeader != "" {
-			loc, err := pkg.TimeLocationFromOffset(tzHeader)
+			loc, err = pkg.TimeLocationFromOffset(tzHeader)
 			if err != nil {
 				return fmt.Errorf("error parsing timezone from header: %w", err)
 			}
-
-			offsetTime := g.NextLightAction.Time.In(loc)
-			g.NextLightAction.Time = &offsetTime
 		}
+		if loc == nil {
+			startTime, _ := g.LightSchedule.ParseStartTime()
+			loc = startTime.Location()
+		}
+
+		offsetTime := g.NextLightAction.Time.In(loc)
+		g.NextLightAction.Time = &offsetTime
 	}
 
 	if g.Garden.HasTemperatureHumiditySensor() {

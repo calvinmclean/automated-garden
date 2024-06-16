@@ -45,6 +45,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	if err != nil {
 		return err
 	}
+	startTime = startTime.UTC()
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
@@ -171,6 +172,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	if err != nil {
 		return err
 	}
+	lightTime = lightTime.UTC()
 
 	onStartDate := todayAtTime(lightTime)
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
@@ -389,9 +391,6 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 	if g.LightSchedule.AdhocOnTime == nil {
 		return errors.New("unable to schedule adhoc light schedule without LightSchedule.AdhocOnTime")
 	}
-
-	// utc := g.LightSchedule.AdhocOnTime.UTC()
-	// g.LightSchedule.AdhocOnTime = &utc
 
 	// Remove existing adhoc Jobs for this Garden
 	if err := w.scheduler.RemoveByTags(g.ID.String(), adhocTag); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {

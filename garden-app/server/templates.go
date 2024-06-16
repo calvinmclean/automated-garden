@@ -63,8 +63,13 @@ func templateFuncs(r *http.Request) map[string]any {
 		"FormatDateTime": func(date *time.Time) string {
 			return date.Local().Format(time.DateTime)
 		},
-		"FormatTimeOnly": func(date *time.Time) string {
-			return date.Local().Format(time.Kitchen)
+		"FormatStartTime": func(startTime string) string {
+			date, err := pkg.ParseStartTime(startTime)
+			if err != nil {
+				return "N/A"
+			}
+
+			return date.Format(time.Kitchen)
 		},
 		"Sprintf": fmt.Sprintf,
 		"CelsiusToFahrenheit": func(c float64) float64 {
@@ -169,7 +174,7 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"LightScheduleRange": func(ls *pkg.LightSchedule) map[int]string {
 			result := map[int]string{}
-			for i := 0; i < 24; i++ {
+			for i := 1; i < 24; i++ {
 				selected := ""
 				if ls != nil && ls.Duration.Hours() == float64(i) {
 					selected = "selected"

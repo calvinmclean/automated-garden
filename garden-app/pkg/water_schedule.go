@@ -265,7 +265,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 }
 
 func (ws *WaterSchedule) ParseStartTime() (time.Time, error) {
-	return parseStartTime(ws.StartTime)
+	return ParseStartTime(ws.StartTime)
 }
 
 // ValidateWeatherControl validates input for the WeatherControl of a WaterSchedule
