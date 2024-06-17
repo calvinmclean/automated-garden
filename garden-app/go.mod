@@ -4,6 +4,7 @@ go 1.21.3
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
+	github.com/ajg/form v1.5.1
 	github.com/calvinmclean/babyapi v0.14.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-chi/render v1.0.3
@@ -31,7 +32,6 @@ require (
 	github.com/FZambia/sentinel v1.1.1 // indirect
 	github.com/Joker/jade v1.1.3 // indirect
 	github.com/Shopify/goreferrer v0.0.0-20220729165902-8cddb4f5de06 // indirect
-	github.com/ajg/form v1.5.1 // indirect
 	github.com/andybalholm/brotli v1.0.6 // indirect
 	github.com/apapsch/go-jsonmerge/v2 v2.0.0 // indirect
 	github.com/aymerick/douceur v0.2.0 // indirect

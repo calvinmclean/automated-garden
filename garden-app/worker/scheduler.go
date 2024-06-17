@@ -41,10 +41,12 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, waterSchedule)
 	logger.Info("creating scheduled Job for WaterSchedule")
 
+	startTime := waterSchedule.StartTime.Time.UTC()
+
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
 	_, err := waterSchedule.Interval.SchedulerFunc(w.scheduler).
-		StartAt(*waterSchedule.StartTime).
+		StartAt(todayAtTime(startTime)).
 		Tag("water_schedule").
 		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *slog.Logger) {
@@ -162,30 +164,16 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Info("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
-	lightTime, err := g.LightSchedule.ParseStartTime()
-	if err != nil {
-		return err
-	}
+	lightTime := g.LightSchedule.StartTime.Time.UTC()
 
-	now := time.Now().In(lightTime.Location())
-	// Create onStartDate using the CreatedAt date with the WaterSchedule's timestamp
-	onStartDate := time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
-		lightTime.Hour(),
-		lightTime.Minute(),
-		lightTime.Second(),
-		0,
-		lightTime.Location(),
-	)
+	onStartDate := todayAtTime(lightTime)
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
 
 	// Schedule the LightAction execution for ON and OFF
 	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Add(2)
 	onAction := &action.LightAction{State: pkg.LightStateOn}
 	offAction := &action.LightAction{State: pkg.LightStateOff}
-	_, err = w.scheduler.
+	_, err := w.scheduler.
 		Every(lightInterval).
 		StartAt(onStartDate).
 		Tag("garden").
@@ -211,7 +199,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	if g.LightSchedule.AdhocOnTime != nil {
 		logger.Debug("garden has adhoc ON time", "adhoc_on_time", g.LightSchedule.AdhocOnTime)
 		// If AdhocOnTime is in the past, reset it and return
-		if g.LightSchedule.AdhocOnTime.Before(time.Now()) {
+		if g.LightSchedule.AdhocOnTime.Before(time.Now().UTC()) {
 			logger.Debug("adhoc ON time is in the past and is being removed")
 			g.LightSchedule.AdhocOnTime = nil
 			return w.storageClient.Gardens.Set(context.Background(), g)
@@ -299,7 +287,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 	// No need to change any schedules
 	if nextOffTime.Before(*nextOnTime) {
 		logger.Debug("next OFF time is before next ON time; setting schedule to turn light back on", "duration", input.ForDuration.Duration)
-		now := time.Now()
+		now := time.Now().UTC()
 
 		// Don't allow a delayDuration that will occur after nextOffTime
 		if nextOffTime.Before(now.Add(input.ForDuration.Duration)) {
@@ -476,4 +464,18 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 	}
+}
+
+func todayAtTime(startTime time.Time) time.Time {
+	now := time.Now().In(startTime.Location())
+	return time.Date(
+		now.Year(),
+		now.Month(),
+		now.Day(),
+		startTime.Hour(),
+		startTime.Minute(),
+		startTime.Second(),
+		0,
+		startTime.Location(),
+	)
 }

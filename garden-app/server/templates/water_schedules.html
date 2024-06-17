@@ -19,6 +19,7 @@
 {{ $name = .ID }}
 {{ end }}
 <div class="uk-width-1-2@m" id="ws-card-{{ .ID }}">
+    <div id="edit-modal-here"></div>
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
@@ -44,8 +45,8 @@
         <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration .Duration }}
     </span>
     <span class="uk-label uk-label-primary" uk-tooltip="Start Time">
-        <span uk-icon="clock" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatTimeOnly
-        .StartTime }}
+        <span uk-icon="clock" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatStartTime .StartTime
+        }}
     </span>
     <span class="uk-label uk-label-primary" uk-tooltip="Interval">
         <span uk-icon="refresh" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration

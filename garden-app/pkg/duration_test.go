@@ -2,9 +2,11 @@ package pkg
 
 import (
 	"encoding/json"
+	"net/url"
 	"testing"
 	"time"
 
+	"github.com/ajg/form"
 	"github.com/stretchr/testify/assert"
 	"gopkg.in/yaml.v3"
 )
@@ -157,4 +159,38 @@ func TestDurationYAMLMarshal(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, "cron:*/5 * * * 1\n", string(result))
 	})
+}
+
+func TestDurationUnmarshalText(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    url.Values
+		expected Duration
+	}{
+		{
+			"DurationString",
+			url.Values{
+				"Duration": []string{"1m0s"},
+			},
+			Duration{Duration: 1 * time.Minute},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var result struct {
+				Duration Duration
+			}
+			err := form.DecodeString(&result, tt.input.Encode())
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, result.Duration)
+
+			var formResult struct {
+				Duration Duration
+			}
+			err = form.DecodeValues(&formResult, tt.input)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expected, formResult.Duration)
+		})
+	}
 }

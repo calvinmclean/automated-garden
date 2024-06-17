@@ -43,3 +43,26 @@ _="on click add .uk-text-{{ . }} wait 500ms then remove .uk-text-{{ . }}"
     </div>
 </div>
 {{ end }}
+
+{{ define "startTimeInput" }}
+<div class="uk-grid-small" uk-grid>
+    <div class="uk-width-1-3@s">
+        <label class="uk-form-label" for="start-time-hour">Hour</label>
+        <input id="start-time-hour" class="uk-input" type="number" min="0" max="23" {{ if .StartTime }}
+            value="{{ FormatInt00 .StartTime.Time.Hour }}" {{ end }} name="{{ .Name }}.Hour">
+    </div>
+    <div class="uk-width-1-3@s">
+        <label class="uk-form-label" for="start-time-minute">Minute</label>
+        <input id="start-time-minute" class="uk-input" type="number" min="0" max="59" {{ if .StartTime }}
+            value="{{ FormatInt00 .StartTime.Time.Minute }}" {{ end }} name="{{ .Name }}.Minute">
+    </div>
+    <div class="uk-width-1-3@s">
+        <label class="uk-form-label" for="start-time-tz">Timezone Offset</label>
+        <select id="zone-position" class="uk-select" name="{{ .Name }}.TZ">
+            {{ range TZOffsetOptions .StartTime }}
+            <option value="{{ .Value }}" {{ .Selected }}>{{ .Name }}</option>
+            {{ end }}
+        </select>
+    </div>
+</div>
+{{ end }}

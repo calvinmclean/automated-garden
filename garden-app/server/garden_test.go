@@ -29,6 +29,7 @@ func createExampleGarden() *pkg.Garden {
 	two := uint(2)
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 	id, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
+	startTime, _ := pkg.StartTimeFromString("22:00:01-07:00")
 	return &pkg.Garden{
 		Name:        "test-garden",
 		TopicPrefix: "test-garden",
@@ -37,7 +38,7 @@ func createExampleGarden() *pkg.Garden {
 		CreatedAt:   &createdAt,
 		LightSchedule: &pkg.LightSchedule{
 			Duration:  &pkg.Duration{Duration: 15 * time.Hour},
-			StartTime: "22:00:01-07:00",
+			StartTime: startTime,
 		},
 	}
 }
@@ -98,7 +99,7 @@ func TestCreateGarden(t *testing.T) {
 			"Successful",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -130,10 +131,17 @@ func TestCreateGarden(t *testing.T) {
 			http.StatusBadRequest,
 		},
 		{
+			"ErrorInvalidStartTime",
+			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "invalid"}}`,
+			false,
+			`{"status":"Invalid request.","error":"error parsing start time: parsing time \\"invalid\\" as \\"15:04:05Z07:00\\": cannot parse \\"invalid\\" as \\"15\\""}`,
+			http.StatusBadRequest,
+		},
+		{
 			"ErrorBadRequestInvalidStartTime",
 			`{"name":"test-garden", "topic_prefix":"test-garden", "max_zones": 1,"light_schedule": {"duration":"1h","start_time":"NOT A TIME"}}`,
 			false,
-			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
+			`{"status":"Invalid request.","error":"error parsing start time: parsing time \\"NOT A TIME\\" as \\"15:04:05Z07:00\\": cannot parse \\"NOT A TIME\\" as \\"15\\""}`,
 			http.StatusBadRequest,
 		},
 		{
@@ -164,8 +172,9 @@ func TestCreateGarden(t *testing.T) {
 			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("POST", "/gardens", strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -235,7 +244,7 @@ func TestUpdateGardenPUT(t *testing.T) {
 			"ErrorBadRequestInvalidStartTime",
 			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-garden", "topic_prefix":"test-garden", "max_zones": 1,"light_schedule": {"duration":"1h","start_time":"NOT A TIME"}}`,
 			false,
-			`{"status":"Invalid request.","error":"invalid time format for light_schedule.start_time: NOT A TIME"}`,
+			`{"status":"Invalid request.","error":"error parsing start time: parsing time \\"NOT A TIME\\" as \\"15:04:05Z07:00\\": cannot parse \\"NOT A TIME\\" as \\"15\\""}`,
 			http.StatusBadRequest,
 		},
 	}
@@ -264,7 +273,8 @@ func TestUpdateGardenPUT(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -413,7 +423,7 @@ func TestUpdateGarden(t *testing.T) {
 			createExampleGarden(),
 			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -429,7 +439,7 @@ func TestUpdateGarden(t *testing.T) {
 			gardenWithoutLight,
 			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0001-01-01T00:00:00Z","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -465,8 +475,9 @@ func TestUpdateGarden(t *testing.T) {
 			err := gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("PATCH", "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPatch, "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -536,8 +547,8 @@ func TestGardenAction(t *testing.T) {
 			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
 
-			r := httptest.NewRequest("POST", fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
-			r.Header.Add("Content-Type", "application/json")
+			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/action", garden.ID), strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -651,6 +662,7 @@ func TestGardenActionForm(t *testing.T) {
 }
 
 func TestGardenRequest(t *testing.T) {
+	startTime, _ := pkg.StartTimeFromString("22:00:01-07:00")
 	zero := uint(0)
 	one := uint(1)
 	tests := []struct {
@@ -747,7 +759,7 @@ func TestGardenRequest(t *testing.T) {
 				TopicPrefix: "garden",
 				MaxZones:    &one,
 				LightSchedule: &pkg.LightSchedule{
-					StartTime: "22:00:01-07:00",
+					StartTime: startTime,
 				},
 			},
 			"missing required light_schedule.duration field",
@@ -771,23 +783,11 @@ func TestGardenRequest(t *testing.T) {
 				TopicPrefix: "garden",
 				MaxZones:    &one,
 				LightSchedule: &pkg.LightSchedule{
-					Duration: &pkg.Duration{Duration: 25 * time.Hour},
+					StartTime: startTime,
+					Duration:  &pkg.Duration{Duration: 25 * time.Hour},
 				},
 			},
 			"invalid light_schedule.duration >= 24 hours: 25h0m0s",
-		},
-		{
-			"BadStartTimeError",
-			&pkg.Garden{
-				Name:        "garden",
-				TopicPrefix: "garden",
-				MaxZones:    &one,
-				LightSchedule: &pkg.LightSchedule{
-					Duration:  &pkg.Duration{Duration: time.Minute},
-					StartTime: "NOT A TIME",
-				},
-			},
-			"invalid time format for light_schedule.start_time: NOT A TIME",
 		},
 	}
 
@@ -873,15 +873,6 @@ func TestUpdateGardenRequest(t *testing.T) {
 				},
 			},
 			"invalid light_schedule.duration >= 24 hours: 25h0m0s",
-		},
-		{
-			"InvalidLightScheduleStartTimeError",
-			&pkg.Garden{
-				LightSchedule: &pkg.LightSchedule{
-					StartTime: "NOT A TIME",
-				},
-			},
-			"invalid time format for light_schedule.start_time: NOT A TIME",
 		},
 		{
 			"EndDateError",

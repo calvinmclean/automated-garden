@@ -15,6 +15,7 @@
 
 {{ define "GardenCard" }}
 <div class="uk-width-1-2@m" id="garden-card-{{ .ID }}">
+    <div id="edit-modal-here"></div>
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
@@ -83,7 +84,7 @@
 <p>
     <span>
         <span uk-icon="future" uk-tooltip="Duration"></span> {{ FormatDuration .LightSchedule.Duration }}
-        <span uk-icon="clock" uk-tooltip="Start Time"></span> {{ .LightSchedule.StartTime }}
+        <span uk-icon="clock" uk-tooltip="Start Time"></span> {{ FormatStartTime .LightSchedule.StartTime }}
     </span>
 </p>
 {{ end }}

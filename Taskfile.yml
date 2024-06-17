@@ -2,6 +2,7 @@ version: "3"
 
 tasks:
   integration-test:
+    aliases: ["it"]
     desc: Startup docker resources and run integration tests. Cleanup when done.
     dir: ./garden-app
     cmds:
@@ -12,6 +13,7 @@ tasks:
       - go test -race -covermode=atomic -coverprofile=integration_coverage.out -coverpkg=./... ./integration_tests
 
   unit-test:
+    aliases: ["ut"]
     desc: Run unit tests for Go app
     dir: ./garden-app
     cmds:

@@ -27,9 +27,16 @@
                     name="Interval">
             </div>
             <div class="uk-margin">
-                <input class="uk-input"
-                    value="{{ if .StartTime }}{{ RFC3339Nano .StartTime }}{{ else }}2006-01-02T15:04:05Z{{ end }}"
+                <input class="uk-input" value="{{ if .StartTime }}{{ .StartTime }}{{ else }}15:04:05Z{{ end }}"
                     placeholder="Start Time" name="StartTime">
+
+                <div class="uk-margin">
+                    {{ if .StartTime }}
+                    {{ template "startTimeInput" (args "Name" "StartTime" "StartTime" .StartTime) }}
+                    {{ else }}
+                    {{ template "startTimeInput" (args "Name" "StartTime") }}
+                    {{ end }}
+                </div>
             </div>
 
             <div class="uk-margin">

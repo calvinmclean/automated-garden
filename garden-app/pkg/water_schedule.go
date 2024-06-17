@@ -18,7 +18,7 @@ type WaterSchedule struct {
 	ID             babyapi.ID       `json:"id" yaml:"id"`
 	Duration       *Duration        `json:"duration" yaml:"duration"`
 	Interval       *Duration        `json:"interval" yaml:"interval"`
-	StartTime      *time.Time       `json:"start_time" yaml:"start_time"`
+	StartTime      *StartTime       `json:"start_time" yaml:"start_time"`
 	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
 	Name           string           `json:"name,omitempty" yaml:"name,omitempty"`
@@ -239,27 +239,24 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 			if ws.ActivePeriod.StartMonth == "" && ws.ActivePeriod.EndMonth == "" {
 				ws.ActivePeriod = nil
 			}
-
-			err := ws.ActivePeriod.Validate()
-			if err != nil {
-				return fmt.Errorf("error validating active_period: %w", err)
-			}
 		}
 	case http.MethodPatch:
 		if ws.EndDate != nil {
 			return errors.New("to end-date a WaterSchedule, please use the DELETE endpoint")
 		}
+	}
 
-		// Check that StartTime is in the future
-		if ws.StartTime != nil && time.Since(*ws.StartTime) > 0 {
-			return fmt.Errorf("unable to set start_time to time in the past")
+	if ws.ActivePeriod != nil {
+		err := ws.ActivePeriod.Validate()
+		if err != nil {
+			return fmt.Errorf("error validating active_period: %w", err)
 		}
+	}
 
-		if ws.ActivePeriod != nil {
-			err := ws.ActivePeriod.Validate()
-			if err != nil {
-				return fmt.Errorf("error validating active_period: %w", err)
-			}
+	if ws.StartTime != nil {
+		err = ws.StartTime.Validate()
+		if err != nil {
+			return err
 		}
 	}
 

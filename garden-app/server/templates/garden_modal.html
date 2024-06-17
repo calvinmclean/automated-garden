@@ -18,7 +18,7 @@
             </div>
             <div class="uk-margin">
                 <label class="uk-form-label" for="garden-max-zones">Max Zones</label>
-                <input id="garden-max-zones" class="uk-input"
+                <input id="garden-max-zones" class="uk-input" type="number"
                     value="{{ if .MaxZones }}{{ .MaxZones }}{{ else }}1{{ end }}" placeholder="MaxZones"
                     name="MaxZones">
             </div>
@@ -33,10 +33,12 @@
                 </select>
             </div>
             <div class="uk-margin">
-                <label class="uk-form-label" for="garden-light-schedule-start-time">Light Schedule Start Time</label>
-                <input for="garden-light-schedule-start-time" class="uk-input" {{ if .LightSchedule }}
-                    value="{{ .LightSchedule.StartTime }}" {{ end }}
-                    placeholder="Light Schedule Start Time (15:04:05-07:00)" name="LightSchedule.StartTime">
+                {{ if .LightSchedule }}
+                {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime" "StartTime"
+                .LightSchedule.StartTime) }}
+                {{ else }}
+                {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime") }}
+                {{ end }}
             </div>
 
             {{ template "modalSubmitButton" }}
