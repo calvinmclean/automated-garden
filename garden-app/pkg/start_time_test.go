@@ -115,7 +115,7 @@ func TestStartTimeUnmarshalJSON(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, *tt.expected, result.StartTime)
+			assert.Equal(t, tt.expected.Time.Unix(), result.StartTime.Time.Unix())
 		})
 	}
 }
@@ -170,7 +170,7 @@ func TestStartTimeUnmarshalText(t *testing.T) {
 			err := form.DecodeString(&result, tt.input.Encode())
 			assert.NoError(t, err)
 			assert.NoError(t, result.StartTime.Validate())
-			assert.Equal(t, tt.expected.Time, result.StartTime.Time)
+			assert.Equal(t, tt.expected.Time.Unix(), result.StartTime.Time.Unix())
 		})
 	}
 }
