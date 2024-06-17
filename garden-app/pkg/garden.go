@@ -158,9 +158,12 @@ func (g *Garden) Bind(r *http.Request) error {
 		} else if *g.MaxZones == 0 {
 			return errors.New("max_zones must not be 0")
 		}
-		// consider empty LightSchedule as nil
-		if g.LightSchedule != nil && (g.LightSchedule.Duration == nil || g.LightSchedule.Duration.Duration == 0) && g.LightSchedule.StartTime == nil {
-			g.LightSchedule = nil
+		// consider empty LightSchedule as nil for removing from HTML form
+		if g.LightSchedule != nil && (g.LightSchedule.Duration == nil || g.LightSchedule.Duration.Duration == 0) {
+			startTimeEmpty := g.LightSchedule.StartTime == nil || g.LightSchedule.StartTime.Time.IsZero()
+			if startTimeEmpty {
+				g.LightSchedule = nil
+			}
 		}
 		if g.LightSchedule != nil {
 			if g.LightSchedule.Duration == nil {
@@ -185,6 +188,12 @@ func (g *Garden) Bind(r *http.Request) error {
 	}
 
 	if g.LightSchedule != nil {
+		if g.LightSchedule.StartTime != nil {
+			err = g.LightSchedule.StartTime.Validate()
+			if err != nil {
+				return err
+			}
+		}
 		// Check that Duration is valid Duration
 		if g.LightSchedule.Duration != nil {
 			if g.LightSchedule.Duration.Duration >= 24*time.Hour {

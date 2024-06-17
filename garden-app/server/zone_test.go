@@ -129,7 +129,7 @@ func TestGetZone(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				Interval:  &pkg.Duration{Duration: 24 * time.Hour},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					SoilMoisture: &weather.SoilMoistureControl{
 						MinimumMoisture: &one,
@@ -149,7 +149,7 @@ func TestGetZone(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Hour},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					SoilMoisture: &weather.SoilMoistureControl{
 						MinimumMoisture: &one,
@@ -181,7 +181,7 @@ func TestGetZone(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Hour},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					SoilMoisture: &weather.SoilMoistureControl{
 						MinimumMoisture: &one,
@@ -210,7 +210,7 @@ func TestGetZone(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					SoilMoisture: &weather.SoilMoistureControl{
 						MinimumMoisture: &one,
@@ -589,7 +589,7 @@ func TestCreateZone(t *testing.T) {
 		ID:        babyapi.ID{ID: id2},
 		Duration:  &pkg.Duration{Duration: time.Second * 10},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
-		StartTime: &pkg.StartTime{otherCreatedAt},
+		StartTime: pkg.NewStartTime(otherCreatedAt),
 	}
 	gardenWithZone := createExampleGarden()
 	gardenWithZone.ID = babyapi.ID{ID: id2}
@@ -738,7 +738,7 @@ func TestUpdateZonePUT(t *testing.T) {
 		ID:        babyapi.ID{ID: id2},
 		Duration:  &pkg.Duration{Duration: time.Second * 10},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
-		StartTime: &pkg.StartTime{otherCreatedAt},
+		StartTime: pkg.NewStartTime(otherCreatedAt),
 	}
 	gardenWithZone := createExampleGarden()
 	gardenWithZone.ID = babyapi.ID{ID: id2}

@@ -41,7 +41,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, waterSchedule)
 	logger.Info("creating scheduled Job for WaterSchedule")
 
-	startTime := waterSchedule.StartTime.UTC()
+	startTime := waterSchedule.StartTime.Time.UTC()
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
@@ -164,7 +164,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Info("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
-	lightTime := g.LightSchedule.StartTime.UTC()
+	lightTime := g.LightSchedule.StartTime.Time.UTC()
 
 	onStartDate := todayAtTime(lightTime)
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)

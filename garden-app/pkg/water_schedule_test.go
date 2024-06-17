@@ -78,7 +78,7 @@ func TestWaterSchedulePatch(t *testing.T) {
 		{
 			"PatchStartTime",
 			&WaterSchedule{
-				StartTime: &StartTime{now},
+				StartTime: NewStartTime(now),
 			},
 		},
 		{

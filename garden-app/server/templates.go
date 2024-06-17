@@ -40,14 +40,14 @@ func templateFuncs(r *http.Request) map[string]any {
 	return map[string]any{
 		// args is used to create input maps when including sub-templates. It converts a slice to a map
 		// by using N as the key and N+1 as a value
-		"args": func(input ...string) map[string]any {
+		"args": func(input ...any) map[string]any {
 			result := map[string]any{}
 			if len(input) < 2 {
 				return result
 			}
 
 			for i := 0; i+1 < len(input); i++ {
-				result[input[i]] = input[i+1]
+				result[input[i].(string)] = input[i+1]
 			}
 
 			return result
@@ -64,7 +64,13 @@ func templateFuncs(r *http.Request) map[string]any {
 			return date.Local().Format(time.DateTime)
 		},
 		"FormatStartTime": func(startTime *pkg.StartTime) string {
-			return startTime.Format(time.Kitchen)
+			return startTime.Time.Format(time.Kitchen)
+		},
+		"FormatTZOffset": func(startTime *pkg.StartTime) string {
+			return startTime.Time.Format("Z07:00")
+		},
+		"FormatInt00": func(i int) string {
+			return fmt.Sprintf("%02d", i)
 		},
 		"Sprintf": fmt.Sprintf,
 		"CelsiusToFahrenheit": func(c float64) float64 {
@@ -121,6 +127,24 @@ func templateFuncs(r *http.Request) map[string]any {
 			//nolint:gosec
 			return template.HTML(sb.String())
 		},
+		"TZOffsetOptions": func(startTime *pkg.StartTime) []map[string]string {
+			options := []map[string]string{
+				{"Name": "UTC", "Value": "Z", "Selected": ""},
+				{"Name": "UTC-07:00", "Value": "-07:00", "Selected": ""},
+			}
+
+			if startTime == nil {
+				return options
+			}
+
+			for _, opt := range options {
+				if opt["Value"] == startTime.Time.Format("Z07:00") {
+					opt["Selected"] = "selected"
+				}
+			}
+
+			return options
+		},
 		"URLPath": func() string {
 			return r.URL.Path
 		},
@@ -169,7 +193,7 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"LightScheduleRange": func(ls *pkg.LightSchedule) map[int]string {
 			result := map[int]string{}
-			for i := 1; i < 24; i++ {
+			for i := 0; i < 24; i++ {
 				selected := ""
 				if ls != nil && ls.Duration.Hours() == float64(i) {
 					selected = "selected"

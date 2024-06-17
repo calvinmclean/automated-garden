@@ -161,7 +161,7 @@ func GardenTests(t *testing.T) {
 		// Create new Garden with LightOnTime in the near future, so LightDelay will assume the light is currently off,
 		// meaning adhoc action is going to be predictably delayed
 		maxZones := uint(1)
-		startTime := &pkg.StartTime{time.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second)}
+		startTime := pkg.NewStartTime(time.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second))
 		newGarden := &pkg.Garden{
 			Name:        "TestGarden",
 			TopicPrefix: "test",
@@ -197,7 +197,7 @@ func GardenTests(t *testing.T) {
 		status, err = makeRequest(http.MethodGet, fmt.Sprintf("/gardens/%s", g.ID.String()), http.NoBody, &getG)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, startTime.Add(1*time.Second), getG.NextLightAction.Time.Local())
+		assert.Equal(t, startTime.Time.Add(1*time.Second), getG.NextLightAction.Time.Local())
 
 		time.Sleep(3 * time.Second)
 
@@ -209,7 +209,7 @@ func GardenTests(t *testing.T) {
 	})
 	t.Run("ChangeLightScheduleStartTimeResetsLightSchedule", func(t *testing.T) {
 		// Reschedule Light to turn in in 1 second, for 1 second
-		newStartTime := &pkg.StartTime{time.Now().Add(1 * time.Second).Truncate(time.Second)}
+		newStartTime := pkg.NewStartTime(time.Now().Add(1 * time.Second).Truncate(time.Second))
 		var g server.GardenResponse
 		status, err := makeRequest(http.MethodPatch, "/gardens/"+gardenID, pkg.Garden{
 			LightSchedule: &pkg.LightSchedule{
@@ -228,7 +228,7 @@ func GardenTests(t *testing.T) {
 		status, err = makeRequest(http.MethodGet, "/gardens/"+gardenID, nil, &g2)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime.String(), (&pkg.StartTime{g2.NextLightAction.Time.Local()}).String())
+		assert.Equal(t, newStartTime.String(), pkg.NewStartTime(g2.NextLightAction.Time.Local()).String())
 		assert.Equal(t, pkg.LightStateOn, g2.NextLightAction.State)
 
 		time.Sleep(2 * time.Second)
@@ -371,12 +371,12 @@ func ZoneTests(t *testing.T) {
 		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
-			StartTime: &pkg.StartTime{newStartTime},
+			StartTime: pkg.NewStartTime(newStartTime),
 			Duration:  &pkg.Duration{Duration: time.Second},
 		}, &ws)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, (&pkg.StartTime{newStartTime}).String(), ws.WaterSchedule.StartTime.String())
+		assert.Equal(t, pkg.NewStartTime(newStartTime).String(), ws.WaterSchedule.StartTime.String())
 
 		time.Sleep(100 * time.Millisecond)
 
@@ -422,12 +422,12 @@ func WaterScheduleTests(t *testing.T) {
 		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
-			StartTime: &pkg.StartTime{newStartTime},
+			StartTime: pkg.NewStartTime(newStartTime),
 			Duration:  &pkg.Duration{Duration: time.Second},
 		}, &ws)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, (&pkg.StartTime{newStartTime}).String(), ws.WaterSchedule.StartTime.String())
+		assert.Equal(t, pkg.NewStartTime(newStartTime).String(), ws.WaterSchedule.StartTime.String())
 
 		time.Sleep(100 * time.Millisecond)
 

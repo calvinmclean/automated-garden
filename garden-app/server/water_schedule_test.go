@@ -31,7 +31,7 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
-		StartTime: &pkg.StartTime{createdAt},
+		StartTime: pkg.NewStartTime(createdAt),
 	}
 }
 
@@ -57,7 +57,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(0),
@@ -82,7 +82,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(0),
@@ -107,7 +107,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(0),
@@ -126,7 +126,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				ID:        babyapi.ID{ID: id},
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				StartTime: &pkg.StartTime{createdAt},
+				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(30),
@@ -597,7 +597,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						Factor: float32Pointer(0.5),
@@ -612,7 +612,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -627,7 +627,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -642,7 +642,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -658,7 +658,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -674,7 +674,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -690,7 +690,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -706,7 +706,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					Rain: &weather.ScaleControl{
 						BaselineValue: float32Pointer(27),
@@ -722,7 +722,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
 					SoilMoisture: &weather.SoilMoistureControl{},
 				},
@@ -734,7 +734,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: &pkg.StartTime{now},
+				StartTime: pkg.NewStartTime(now),
 				ActivePeriod: &pkg.ActivePeriod{
 					StartMonth: "not a month",
 				},
@@ -747,7 +747,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 		pr := &pkg.WaterSchedule{
 			Duration:  &pkg.Duration{Duration: time.Second},
 			Interval:  &pkg.Duration{Duration: time.Hour * 24},
-			StartTime: &pkg.StartTime{now},
+			StartTime: pkg.NewStartTime(now),
 			WeatherControl: &weather.Control{
 				Temperature: &weather.ScaleControl{
 					BaselineValue: float32Pointer(27),

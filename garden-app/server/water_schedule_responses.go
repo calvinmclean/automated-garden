@@ -48,7 +48,7 @@ func GetNextWaterDetails(r *http.Request, ws *pkg.WaterSchedule, worker *worker.
 		}
 	}
 	if loc == nil {
-		loc = ws.StartTime.Location()
+		loc = ws.StartTime.Time.Location()
 	}
 
 	offsetTime := result.Time.In(loc)

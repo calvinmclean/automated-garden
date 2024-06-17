@@ -59,7 +59,7 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
-		StartTime: &pkg.StartTime{createdAt},
+		StartTime: pkg.NewStartTime(createdAt),
 	}
 }
 
@@ -90,7 +90,7 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	ws := createExampleWaterSchedule()
 
 	// Set StartTime to the near future
-	startTime := &pkg.StartTime{time.Now().Add(250 * time.Millisecond)}
+	startTime := pkg.NewStartTime(time.Now().Add(250 * time.Millisecond))
 	ws.StartTime = startTime
 
 	err = worker.ScheduleWaterAction(ws)
@@ -144,7 +144,7 @@ func TestScheduleWaterAction(t *testing.T) {
 	}
 
 	// Set StartTime to the near future
-	startTime := &pkg.StartTime{time.Now().Add(1 * time.Second)}
+	startTime := pkg.NewStartTime(time.Now().Add(1 * time.Second))
 	ws.StartTime = startTime
 	wsNotInStorage.StartTime = startTime
 	wsNotActive.StartTime = startTime
@@ -188,19 +188,19 @@ func TestResetNextWaterTime(t *testing.T) {
 
 	ws := createExampleWaterSchedule()
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
-	startTime := &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
+	startTime := pkg.NewStartTime(time.Now().Add(-1 * time.Hour))
 	ws.StartTime = startTime
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
 	// Change WaterSchedule and restart
-	newTime := &pkg.StartTime{startTime.Add(-30 * time.Minute)}
+	newTime := pkg.NewStartTime(startTime.Time.Add(-30 * time.Minute))
 	ws.StartTime = newTime
 	err = worker.ResetWaterSchedule(ws)
 	assert.NoError(t, err)
 
-	nextWaterTime := worker.GetNextWaterTime(ws).In(startTime.Location())
-	expected := startTime.Add(-30 * time.Minute).Add(24 * time.Hour).Truncate(time.Second)
+	nextWaterTime := worker.GetNextWaterTime(ws).In(startTime.Time.Location())
+	expected := startTime.Time.Add(-30 * time.Minute).Add(24 * time.Hour).Truncate(time.Second)
 	assert.Equal(t, expected, nextWaterTime)
 
 	worker.Stop()
@@ -225,13 +225,13 @@ func TestGetNextWaterTime(t *testing.T) {
 
 	ws := createExampleWaterSchedule()
 	// Set WaterSchedule.StartTime to a time that won't cause it to run
-	startTime := &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
+	startTime := pkg.NewStartTime(time.Now().Add(-1 * time.Hour))
 	ws.StartTime = startTime
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
 
-	nextWaterTime := worker.GetNextWaterTime(ws).In(startTime.Location())
-	expected := startTime.Add(24 * time.Hour).Truncate(time.Second)
+	nextWaterTime := worker.GetNextWaterTime(ws).In(startTime.Time.Location())
+	expected := startTime.Time.Add(24 * time.Hour).Truncate(time.Second)
 	assert.Equal(t, expected, nextWaterTime)
 
 	worker.Stop()
@@ -284,9 +284,9 @@ func TestScheduleLightActions(t *testing.T) {
 			now.Year(),
 			now.Month(),
 			now.Day(),
-			g.LightSchedule.StartTime.UTC().Hour(),
-			g.LightSchedule.StartTime.UTC().Minute(),
-			g.LightSchedule.StartTime.UTC().Second(),
+			g.LightSchedule.StartTime.Time.UTC().Hour(),
+			g.LightSchedule.StartTime.Time.UTC().Minute(),
+			g.LightSchedule.StartTime.Time.UTC().Second(),
 			0,
 			time.UTC,
 		)
@@ -313,7 +313,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to a bit ago so the light is considered to be ON
-				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(-1 * time.Minute)}
+				g.LightSchedule.StartTime = pkg.NewStartTime(time.Now().Add(-1 * time.Minute))
 				return g
 			}(),
 			[]*action.LightAction{
@@ -330,7 +330,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to a bit ago so the light is considered to be ON
-				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(-1 * time.Minute)}
+				g.LightSchedule.StartTime = pkg.NewStartTime(time.Now().Add(-1 * time.Minute))
 				return g
 			}(),
 			[]*action.LightAction{
@@ -351,7 +351,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to the future so the light is considered to be OFF
-				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(5 * time.Minute)}
+				g.LightSchedule.StartTime = pkg.NewStartTime(time.Now().Add(5 * time.Minute))
 				return g
 			}(),
 			[]*action.LightAction{
@@ -368,7 +368,7 @@ func TestScheduleLightDelay(t *testing.T) {
 			func() *pkg.Garden {
 				g := createExampleGarden()
 				// Set start time to the future so the light is considered to be OFF
-				g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(5 * time.Minute)}
+				g.LightSchedule.StartTime = pkg.NewStartTime(time.Now().Add(5 * time.Minute))
 				return g
 			}(),
 			[]*action.LightAction{
@@ -416,9 +416,9 @@ func TestScheduleLightDelay(t *testing.T) {
 					now.Year(),
 					now.Month(),
 					now.Day(),
-					tt.garden.LightSchedule.StartTime.Hour(),
-					tt.garden.LightSchedule.StartTime.Minute(),
-					tt.garden.LightSchedule.StartTime.Second(),
+					tt.garden.LightSchedule.StartTime.Time.Hour(),
+					tt.garden.LightSchedule.StartTime.Time.Minute(),
+					tt.garden.LightSchedule.StartTime.Time.Second(),
 					0,
 					time.Local,
 				).Add(tt.expectedDelay).Truncate(time.Second)
@@ -442,7 +442,7 @@ func TestScheduleLightDelay(t *testing.T) {
 
 		g := createExampleGarden()
 		// Set StartTime and Duration so NextOffTime is soon
-		g.LightSchedule.StartTime = &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
+		g.LightSchedule.StartTime = pkg.NewStartTime(time.Now().Add(-1 * time.Hour))
 		g.LightSchedule.Duration = &pkg.Duration{Duration: 1*time.Hour + 5*time.Minute}
 
 		err = worker.ScheduleLightActions(g)
@@ -537,7 +537,7 @@ func TestRemoveJobsByID(t *testing.T) {
 
 	ws := createExampleWaterSchedule()
 	// Set Zone's WaterSchedule.StartTime to a time that won't cause it to run
-	startTime := &pkg.StartTime{time.Now().Add(-1 * time.Hour)}
+	startTime := pkg.NewStartTime(time.Now().Add(-1 * time.Hour))
 	ws.StartTime = startTime
 	err = worker.ScheduleWaterAction(ws)
 	assert.NoError(t, err)
@@ -562,7 +562,7 @@ func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
 
 	now := time.Now()
 	addTime := func(add time.Duration) *pkg.StartTime {
-		return &pkg.StartTime{now.Add(add)}
+		return pkg.NewStartTime(now.Add(add))
 	}
 
 	ws1 := &pkg.WaterSchedule{

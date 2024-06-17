@@ -253,6 +253,13 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		}
 	}
 
+	if ws.StartTime != nil {
+		err = ws.StartTime.Validate()
+		if err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 

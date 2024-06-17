@@ -1,13 +1,10 @@
 package pkg
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"strconv"
 	"time"
-
-	"github.com/ajg/form"
 )
 
 const (
@@ -18,17 +15,11 @@ const (
 // StartTime allows for special handling of Time without the date and also allows several
 // formats for decoding so it is more easily compatible with HTML forms
 type StartTime struct {
-	time.Time
-}
+	Time time.Time `form:"-"`
 
-type startTimeSplit struct {
 	Hour   int
 	Minute int
 	TZ     string
-}
-
-func (st *startTimeSplit) String() string {
-	return fmt.Sprintf("%02d:%02d:00%s", st.Hour, st.Minute, st.TZ)
 }
 
 func StartTimeFromString(startTime string) (*StartTime, error) {
@@ -37,11 +28,30 @@ func StartTimeFromString(startTime string) (*StartTime, error) {
 		return nil, fmt.Errorf("error parsing start time: %w", err)
 	}
 
-	return &StartTime{result}, nil
+	return &StartTime{Time: result}, nil
+}
+
+func NewStartTime(t time.Time) *StartTime {
+	return &StartTime{Time: t}
 }
 
 func (st *StartTime) String() string {
-	return st.Format(startTimeFormat)
+	return st.Time.Format(startTimeFormat)
+}
+
+// Validate is used after parsing from HTML form so the time can be parsed
+func (st *StartTime) Validate() error {
+	if !st.Time.IsZero() {
+		return nil
+	}
+
+	result, err := time.Parse(startTimeFormat, fmt.Sprintf("%02d:%02d:00%s", st.Hour, st.Minute, st.TZ))
+	if err != nil {
+		return err
+	}
+	st.Time = result
+
+	return nil
 }
 
 func (st *StartTime) MarshalJSON() ([]byte, error) {
@@ -60,35 +70,19 @@ func (st *StartTime) UnmarshalJSON(data []byte) error {
 	case string:
 		timeString = v
 	case map[string]any:
-		var splitTime startTimeSplit
+		var splitTime struct {
+			Hour   int
+			Minute int
+			TZ     string
+		}
 		err := json.Unmarshal(data, &splitTime)
 		if err != nil {
 			return err
 		}
 
-		timeString = splitTime.String()
+		timeString = fmt.Sprintf("%02d:%02d:00%s", splitTime.Hour, splitTime.Minute, splitTime.TZ)
 	default:
 		return fmt.Errorf("unexpected type %T, must be string or object", v)
-	}
-
-	startTime, err := StartTimeFromString(timeString)
-	if err != nil {
-		return err
-	}
-	st.Time = startTime.Time
-
-	return nil
-}
-
-func (st *StartTime) UnmarshalText(data []byte) error {
-	var timeString string
-
-	var splitTime startTimeSplit
-	err := form.NewDecoder(bytes.NewBuffer(data)).Decode(&splitTime)
-	if err != nil {
-		timeString = string(data)
-	} else {
-		timeString = splitTime.String()
 	}
 
 	startTime, err := StartTimeFromString(timeString)

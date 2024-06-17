@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/ajg/form"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -55,49 +56,49 @@ func TestStartTimeUnmarshalJSON(t *testing.T) {
 	tests := []struct {
 		name        string
 		input       string
-		expected    StartTime
+		expected    *StartTime
 		expectedErr string
 	}{
 		{
 			"SuccessfulDecodeString",
 			`{"start_time": "15:04:05-07:00"}`,
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 5, 0, time.FixedZone("", -7*3600))},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 5, 0, time.FixedZone("", -7*3600))),
 			"",
 		},
 		{
 			"SuccessfulDecodeStringUTC",
 			`{"start_time": "15:04:05Z"}`,
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 5, 0, time.UTC)},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 5, 0, time.UTC)),
 			"",
 		},
 		{
 			"SuccessfulDecodeStringZeroOffset",
 			`{"start_time": "15:04:05-00:00"}`,
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 5, 0, time.FixedZone("", 0))},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 5, 0, time.FixedZone("", 0))),
 			"",
 		},
 		{
 			"SuccessfulDecodeSplit",
 			`{"start_time": {"hour": 15, "minute": 4, "TZ": "-07:00"}}`,
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", -7*3600))},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", -7*3600))),
 			"",
 		},
 		{
 			"SuccessfulDecodeSplitUTC",
 			`{"start_time": {"hour": 15, "minute": 4, "TZ": "Z"}}`,
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.UTC)},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 0, 0, time.UTC)),
 			"",
 		},
 		{
 			"SuccessfulDecodeSplitZeroOffset",
 			`{"start_time": {"hour": 15, "minute": 4, "TZ": "+00:00"}}`,
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", 0))},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", 0))),
 			"",
 		},
 		{
 			"ErrorDecodingOtherType",
 			`{"start_time": true}`,
-			StartTime{},
+			&StartTime{},
 			"unexpected type bool, must be string or object",
 		},
 	}
@@ -114,13 +115,13 @@ func TestStartTimeUnmarshalJSON(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.Equal(t, tt.expected, result.StartTime)
+			assert.Equal(t, *tt.expected, result.StartTime)
 		})
 	}
 }
 
 func TestStartTimeJSONMarshal(t *testing.T) {
-	st := StartTime{Time: time.Date(0, 1, 1, 15, 4, 5, 0, time.FixedZone("", -7*3600))}
+	st := NewStartTime(time.Date(0, 1, 1, 15, 4, 5, 0, time.FixedZone("", -7*3600)))
 	result, err := json.Marshal(&st)
 	assert.NoError(t, err)
 	assert.Equal(t, `"15:04:05-07:00"`, string(result))
@@ -130,44 +131,46 @@ func TestStartTimeUnmarshalText(t *testing.T) {
 	tests := []struct {
 		name     string
 		input    url.Values
-		expected StartTime
+		expected *StartTime
 	}{
 		{
 			"-07:00",
 			url.Values{
-				"Hour":   []string{"15"},
-				"Minute": []string{"4"},
-				"TZ":     []string{"-07:00"},
+				"StartTime.Hour":   []string{"15"},
+				"StartTime.Minute": []string{"4"},
+				"StartTime.TZ":     []string{"-07:00"},
 			},
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", -7*3600))},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", -7*3600))),
 		},
 		{
 			"UTC",
 			url.Values{
-				"Hour":   []string{"15"},
-				"Minute": []string{"4"},
-				"TZ":     []string{"Z"},
+				"StartTime.Hour":   []string{"15"},
+				"StartTime.Minute": []string{"4"},
+				"StartTime.TZ":     []string{"Z"},
 			},
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.UTC)},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 0, 0, time.UTC)),
 		},
 		{
 			"NoOffset",
 			url.Values{
-				"Hour":   []string{"15"},
-				"Minute": []string{"4"},
-				"TZ":     []string{"+00:00"},
+				"StartTime.Hour":   []string{"15"},
+				"StartTime.Minute": []string{"4"},
+				"StartTime.TZ":     []string{"+00:00"},
 			},
-			StartTime{Time: time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", 0))},
+			NewStartTime(time.Date(0, 1, 1, 15, 4, 0, 0, time.FixedZone("", 0))),
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			result := StartTime{}
-			err := result.UnmarshalText([]byte(tt.input.Encode()))
+			var result struct {
+				StartTime *StartTime
+			}
+			err := form.DecodeString(&result, tt.input.Encode())
 			assert.NoError(t, err)
-			assert.Equal(t, tt.expected, result)
+			assert.NoError(t, result.StartTime.Validate())
+			assert.Equal(t, tt.expected.Time, result.StartTime.Time)
 		})
 	}
-
 }
