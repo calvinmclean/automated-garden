@@ -60,6 +60,7 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: pkg.NewStartTime(createdAt),
+		StartDate: &createdAt,
 	}
 }
 
@@ -209,34 +210,138 @@ func TestResetNextWaterTime(t *testing.T) {
 }
 
 func TestGetNextWaterTime(t *testing.T) {
-	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
-	})
-	assert.NoError(t, err)
-	defer weather.ResetCache()
+	now := time.Now()
 
-	influxdbClient := new(influxdb.MockClient)
-	mqttClient := new(mqtt.MockClient)
-	mqttClient.On("Disconnect", uint(100)).Return()
-	influxdbClient.On("Close").Return()
+	tests := []struct {
+		name      string
+		startTime time.Time
+		interval  time.Duration
+		expected  time.Time
+	}{
+		{
+			"RunTomorrow",
+			// Set start time to before now so it runs at next interval
+			now.Add(-1 * time.Hour),
+			24 * time.Hour,
+			now.Add(23 * time.Hour).Truncate(time.Second),
+		},
+		{
+			"RunIn5Days",
+			// Set start time to before now so it runs at next interval
+			now.Add(-1 * time.Hour),
+			5 * 24 * time.Hour,
+			now.Add(5*24*time.Hour - 1*time.Hour).Truncate(time.Second),
+		},
+	}
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
-	worker.StartAsync()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+			defer weather.ResetCache()
 
-	ws := createExampleWaterSchedule()
-	// Set WaterSchedule.StartTime to a time that won't cause it to run
-	startTime := pkg.NewStartTime(time.Now().Add(-1 * time.Hour))
-	ws.StartTime = startTime
-	err = worker.ScheduleWaterAction(ws)
-	assert.NoError(t, err)
+			influxdbClient := new(influxdb.MockClient)
+			mqttClient := new(mqtt.MockClient)
+			mqttClient.On("Disconnect", uint(100)).Return()
+			influxdbClient.On("Close").Return()
 
-	nextWaterTime := worker.GetNextWaterTime(ws).In(startTime.Time.Location())
-	expected := startTime.Time.Add(24 * time.Hour).Truncate(time.Second)
-	assert.Equal(t, expected, nextWaterTime)
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+			worker.StartAsync()
 
-	worker.Stop()
-	influxdbClient.AssertExpectations(t)
-	mqttClient.AssertExpectations(t)
+			ws := createExampleWaterSchedule()
+			ws.StartTime = pkg.NewStartTime(tt.startTime)
+			ws.Interval = &pkg.Duration{Duration: tt.interval}
+
+			err = worker.ScheduleWaterAction(ws)
+			assert.NoError(t, err)
+
+			nextWaterTime := worker.GetNextWaterTime(ws).In(tt.startTime.Location())
+			assert.Equal(t, tt.expected, nextWaterTime)
+
+			worker.Stop()
+			influxdbClient.AssertExpectations(t)
+			mqttClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGetNextWaterTimeWithInterval(t *testing.T) {
+	tests := []struct {
+		name            string
+		startDateOffset time.Duration
+		interval        time.Duration
+		expectedOffset  time.Duration
+	}{
+		{
+			"RunTomorrow",
+			0,
+			24 * time.Hour,
+			24 * time.Hour,
+		},
+		{
+			"RunIn5Days",
+			0,
+			5 * 24 * time.Hour,
+			5 * 24 * time.Hour,
+		},
+		{
+			// This tests the scenario where the server is restarted in-between an interval and
+			// relies on persistent state to reschedule
+			"Every5DaysButStartedAFewDaysAgo",
+			-3 * 24 * time.Hour,
+			5 * 24 * time.Hour,
+			2 * 24 * time.Hour,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+			defer weather.ResetCache()
+
+			influxdbClient := new(influxdb.MockClient)
+			mqttClient := new(mqtt.MockClient)
+			mqttClient.On("Disconnect", uint(100)).Return()
+			influxdbClient.On("Close").Return()
+
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+			worker.StartAsync()
+
+			// Set time to near future so it can execute and we can see the next interval
+			delay := 100 * time.Millisecond
+			now := time.Now()
+			startTime := now.Add(delay)
+
+			ws := createExampleWaterSchedule()
+			ws.StartTime = pkg.NewStartTime(startTime)
+			startDate := now.Add(tt.startDateOffset)
+			ws.StartDate = &startDate
+			ws.Interval = &pkg.Duration{Duration: tt.interval}
+
+			err = storageClient.WaterSchedules.Set(context.Background(), ws)
+			assert.NoError(t, err)
+
+			err = worker.ScheduleWaterAction(ws)
+			assert.NoError(t, err)
+
+			// Wait for first execution so we can be sure the interval works
+			time.Sleep(delay + 100*time.Millisecond)
+
+			expected := startTime.Add(tt.expectedOffset).Truncate(time.Second)
+
+			nextWaterTime := worker.GetNextWaterTime(ws).In(startTime.Location())
+			assert.Equal(t, expected, nextWaterTime)
+
+			worker.Stop()
+			influxdbClient.AssertExpectations(t)
+			mqttClient.AssertExpectations(t)
+		})
+	}
 }
 
 func TestScheduleLightActions(t *testing.T) {
