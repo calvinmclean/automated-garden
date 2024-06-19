@@ -18,6 +18,7 @@ type WaterSchedule struct {
 	ID             babyapi.ID       `json:"id" yaml:"id"`
 	Duration       *Duration        `json:"duration" yaml:"duration"`
 	Interval       *Duration        `json:"interval" yaml:"interval"`
+	StartDate      *time.Time       `json:"start_date" yaml:"start_date"`
 	StartTime      *StartTime       `json:"start_time" yaml:"start_time"`
 	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WeatherControl *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
@@ -58,6 +59,9 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) *babyapi.ErrResponse {
 	}
 	if new.Interval != nil {
 		ws.Interval = new.Interval
+	}
+	if new.StartDate != nil {
+		ws.StartDate = new.StartDate
 	}
 	if new.StartTime != nil {
 		ws.StartTime = new.StartTime
@@ -227,6 +231,11 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		}
 		if ws.StartTime == nil {
 			return errors.New("missing required start_time field")
+		}
+		// If StartDate is not included, default to today
+		if ws.StartDate == nil {
+			now := time.Now()
+			ws.StartDate = &now
 		}
 		if ws.WeatherControl != nil {
 			err := ValidateWeatherControl(ws.WeatherControl)

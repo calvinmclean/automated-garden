@@ -60,6 +60,7 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: pkg.NewStartTime(createdAt),
+		StartDate: &createdAt,
 	}
 }
 
@@ -269,7 +270,7 @@ func TestGetNextWaterTime(t *testing.T) {
 func TestGetNextWaterTimeWithInterval(t *testing.T) {
 	tests := []struct {
 		name            string
-		startTimeOffset time.Duration
+		startDateOffset time.Duration
 		interval        time.Duration
 		expectedOffset  time.Duration
 	}{
@@ -313,10 +314,13 @@ func TestGetNextWaterTimeWithInterval(t *testing.T) {
 
 			// Set time to near future so it can execute and we can see the next interval
 			delay := 100 * time.Millisecond
-			startTime := time.Now().Add(delay).Add(tt.startTimeOffset)
+			now := time.Now()
+			startTime := now.Add(delay)
 
 			ws := createExampleWaterSchedule()
 			ws.StartTime = pkg.NewStartTime(startTime)
+			startDate := now.Add(tt.startDateOffset)
+			ws.StartDate = &startDate
 			ws.Interval = &pkg.Duration{Duration: tt.interval}
 
 			err = storageClient.WaterSchedules.Set(context.Background(), ws)

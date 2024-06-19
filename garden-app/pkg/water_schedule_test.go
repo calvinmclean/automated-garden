@@ -82,6 +82,12 @@ func TestWaterSchedulePatch(t *testing.T) {
 			},
 		},
 		{
+			"PatchStartDate",
+			&WaterSchedule{
+				StartDate: &now,
+			},
+		},
+		{
 			"PatchWeatherControl.Temperature",
 			&WaterSchedule{
 				WeatherControl: &weather.Control{

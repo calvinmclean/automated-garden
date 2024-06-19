@@ -46,7 +46,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
 	_, err := waterSchedule.Interval.SchedulerFunc(w.scheduler).
-		StartAt(todayAtTime(startTime)).
+		StartAt(timeAtDate(waterSchedule.StartDate, startTime)).
 		Tag("water_schedule").
 		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *slog.Logger) {
@@ -166,7 +166,8 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 
 	lightTime := g.LightSchedule.StartTime.Time.UTC()
 
-	onStartDate := todayAtTime(lightTime)
+	now := time.Now()
+	onStartDate := timeAtDate(&now, lightTime)
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
 
 	// Schedule the LightAction execution for ON and OFF
@@ -466,12 +467,16 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 	}
 }
 
-func todayAtTime(startTime time.Time) time.Time {
-	now := time.Now().In(startTime.Location())
+func timeAtDate(date *time.Time, startTime time.Time) time.Time {
+	actualDate := time.Now()
+	if date != nil {
+		actualDate = *date
+	}
+	actualDate = actualDate.In(startTime.Location())
 	return time.Date(
-		now.Year(),
-		now.Month(),
-		now.Day(),
+		actualDate.Year(),
+		actualDate.Month(),
+		actualDate.Day(),
 		startTime.Hour(),
 		startTime.Minute(),
 		startTime.Second(),
