@@ -403,6 +403,9 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 		if err != nil {
 			actionLogger.Error("error executing scheduled adhoc LightAction", "error", err)
 		}
+
+		w.sendNotifications(g, a.State, actionLogger)
+
 		actionLogger.Debug("removing AdhocOnTime")
 		// Now set AdhocOnTime to nil and save
 		g.LightSchedule.AdhocOnTime = nil
@@ -465,6 +468,8 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 	}
+
+	w.sendNotifications(g, input.State, actionLogger)
 }
 
 func timeAtDate(date *time.Time, startTime time.Time) time.Time {
@@ -483,4 +488,27 @@ func timeAtDate(date *time.Time, startTime time.Time) time.Time {
 		0,
 		startTime.Location(),
 	)
+}
+
+func (w *Worker) sendNotifications(g *pkg.Garden, state pkg.LightState, logger *slog.Logger) {
+	// TODO: this might end up getting client from garden or zone config instead of using all
+	notificationClients, err := w.storageClient.NotificationClientConfigs.GetAll(context.Background(), nil)
+	if err != nil {
+		logger.Error("error getting all notification clients", "error", err)
+		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
+	}
+
+	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
+
+	for _, nc := range notificationClients {
+		ncLogger := logger.With("notification_client_id", nc.GetID())
+
+		err = nc.SendMessage(title, "")
+		if err != nil {
+			ncLogger.Error("error sending message", "error", err)
+			continue
+		}
+
+		ncLogger.Info("successfully send notification")
+	}
 }

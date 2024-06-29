@@ -10,6 +10,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
@@ -252,6 +254,7 @@ func TestGetNextWaterTime(t *testing.T) {
 
 			ws := createExampleWaterSchedule()
 			ws.StartTime = pkg.NewStartTime(tt.startTime)
+			ws.StartDate = &now
 			ws.Interval = &pkg.Duration{Duration: tt.interval}
 
 			err = worker.ScheduleWaterAction(ws)
@@ -364,6 +367,7 @@ func TestScheduleLightActions(t *testing.T) {
 		nextOnTime := worker.GetNextLightTime(g, pkg.LightStateOn)
 		assert.Equal(t, later, *nextOnTime)
 	})
+
 	t.Run("AdhocOnTimeInPastIsNotUsed", func(t *testing.T) {
 		storageClient, err := storage.NewClient(storage.Config{
 			Driver: "hashmap",
@@ -402,6 +406,83 @@ func TestScheduleLightActions(t *testing.T) {
 
 		nextOnTime := worker.GetNextLightTime(g, pkg.LightStateOn)
 		assert.Equal(t, expected, *nextOnTime)
+	})
+
+	t.Run("ScheduledLightActionCreatesNotification", func(t *testing.T) {
+		tests := []struct {
+			name               string
+			opts               map[string]any
+			off                bool
+			expectedOnMessage  string
+			expectedOffMessage string
+		}{
+			{
+				"SuccessfulOnAndOff",
+				map[string]any{},
+				true,
+				"test-garden: Light ON",
+				"test-garden: Light OFF",
+			},
+			{
+				"ErrorCreatingClient",
+				map[string]any{"create_error": "error"},
+				false,
+				"",
+				"",
+			},
+			{
+				"ErrorSendingMessage",
+				map[string]any{"send_message_error": "error"},
+				false,
+				"",
+				"",
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				fake.ResetLastMessage()
+
+				storageClient, err := storage.NewClient(storage.Config{
+					Driver: "hashmap",
+				})
+				assert.NoError(t, err)
+
+				mqttClient := new(mqtt.MockClient)
+				mqttClient.On("LightTopic", mock.Anything).Return("test-garden/action/light", nil)
+				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Disconnect", uint(100)).Return()
+
+				err = storageClient.NotificationClientConfigs.Set(context.Background(), &notifications.Client{
+					ID:      babyapi.NewID(),
+					Name:    "TestClient",
+					Type:    "fake",
+					Options: tt.opts,
+				})
+				assert.NoError(t, err)
+
+				worker := NewWorker(storageClient, nil, mqttClient, slog.Default())
+				worker.StartAsync()
+				defer worker.Stop()
+
+				// Create new LightSchedule that turns on in 1 second for only 1 second
+				now := time.Now().UTC()
+				later := now.Add(1 * time.Second).Truncate(time.Second)
+				g := createExampleGarden()
+				g.LightSchedule.StartTime = pkg.NewStartTime(later)
+				g.LightSchedule.Duration = &pkg.Duration{Duration: time.Second}
+				err = worker.ScheduleLightActions(g)
+				assert.NoError(t, err)
+
+				time.Sleep(1 * time.Second)
+				assert.Equal(t, tt.expectedOnMessage, fake.LastMessage().Title)
+
+				if tt.off {
+					time.Sleep(1 * time.Second)
+					assert.Equal(t, tt.expectedOffMessage, fake.LastMessage().Title)
+				}
+			})
+		}
 	})
 }
 
