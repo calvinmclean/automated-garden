@@ -50,37 +50,40 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 		Tag("water_schedule").
 		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *slog.Logger) {
-			// Get WaterSchedule from storage in case the ActivePeriod or WeatherControl are changed
-			ws, err := w.storageClient.WaterSchedules.Get(context.Background(), waterSchedule.ID.String())
-			if err != nil {
-				jobLogger.Error("error getting WaterSchedule when executing scheduled Job", "error", err)
-				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
-				return
-			}
-			if ws == nil {
-				jobLogger.Error("WaterSchedule not found")
-				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
-				return
-			}
-
-			if !ws.IsActive(time.Now()) {
-				jobLogger.Info("skipping WaterSchedule because current time is outside of ActivePeriod", "active_period", *ws.ActivePeriod)
-				return
-			}
-
-			zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID.String())
-			if err != nil {
-				jobLogger.Error("error getting Zones for WaterSchedule when executing scheduled Job", "error", err)
-				schedulerErrors.WithLabelValues(waterScheduleLabels(ws)...).Inc()
-				return
-			}
-
-			for _, zg := range zonesAndGardens {
-				err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws)
+			err := func() error {
+				// Get WaterSchedule from storage in case the ActivePeriod or WeatherControl are changed
+				ws, err := w.storageClient.WaterSchedules.Get(context.Background(), waterSchedule.ID.String())
 				if err != nil {
-					jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
-					schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
+					return fmt.Errorf("error getting WaterSchedule when executing scheduled Job: %w", err)
 				}
+				if ws == nil {
+					return errors.New("WaterSchedule not found")
+				}
+
+				if !ws.IsActive(time.Now()) {
+					jobLogger.Info("skipping WaterSchedule because current time is outside of ActivePeriod", "active_period", *ws.ActivePeriod)
+					return nil
+				}
+
+				zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID.String())
+				if err != nil {
+					return fmt.Errorf("error getting Zones for WaterSchedule when executing scheduled Job: %w", err)
+				}
+
+				for _, zg := range zonesAndGardens {
+					err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws)
+					if err != nil {
+						jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
+						schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
+						go w.sendNotification(fmt.Sprintf("%s: Water Action Error", waterSchedule.Name), err.Error(), jobLogger)
+					}
+				}
+				return nil
+			}()
+			if err != nil {
+				jobLogger.Error("error executing schedule WaterAction", "error", err)
+				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
+				w.sendNotification(fmt.Sprintf("%s: Water Action Error", waterSchedule.Name), err.Error(), jobLogger)
 			}
 		}, logger.With("source", "scheduled_job"))
 	return err
@@ -404,7 +407,7 @@ func (w *Worker) scheduleAdhocLightAction(g *pkg.Garden) error {
 			actionLogger.Error("error executing scheduled adhoc LightAction", "error", err)
 		}
 
-		w.sendNotifications(g, a.State, actionLogger)
+		w.sendLightActionNotification(g, a.State, actionLogger)
 
 		actionLogger.Debug("removing AdhocOnTime")
 		// Now set AdhocOnTime to nil and save
@@ -467,9 +470,12 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 	if err != nil {
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
+
+		w.sendNotification(fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
+		return
 	}
 
-	w.sendNotifications(g, input.State, actionLogger)
+	w.sendLightActionNotification(g, input.State, actionLogger)
 }
 
 func timeAtDate(date *time.Time, startTime time.Time) time.Time {
@@ -488,27 +494,4 @@ func timeAtDate(date *time.Time, startTime time.Time) time.Time {
 		0,
 		startTime.Location(),
 	)
-}
-
-func (w *Worker) sendNotifications(g *pkg.Garden, state pkg.LightState, logger *slog.Logger) {
-	// TODO: this might end up getting client from garden or zone config instead of using all
-	notificationClients, err := w.storageClient.NotificationClientConfigs.GetAll(context.Background(), nil)
-	if err != nil {
-		logger.Error("error getting all notification clients", "error", err)
-		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
-	}
-
-	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
-
-	for _, nc := range notificationClients {
-		ncLogger := logger.With("notification_client_id", nc.GetID())
-
-		err = nc.SendMessage(title, "")
-		if err != nil {
-			ncLogger.Error("error sending message", "error", err)
-			continue
-		}
-
-		ncLogger.Info("successfully send notification")
-	}
 }
