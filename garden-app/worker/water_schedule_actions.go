@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
@@ -11,8 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 )
 
-// ExecuteScheduledWaterAction will get all of the Zones that use the schedule and execute WaterActions on them after
-// scaling durations based on the Zone's configuration
+// ExecuteScheduledWaterAction will run ExecuteWaterAction after checking SkipCount and scaling based on weather data
 func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) error {
 	if z.SkipCount != nil && *z.SkipCount > 0 {
 		*z.SkipCount--
@@ -34,21 +32,9 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 		return nil
 	}
 
-	msg, err := json.Marshal(action.WaterMessage{
-		Duration: duration.Milliseconds(),
-		ZoneID:   z.GetID(),
-		Position: *z.Position,
+	return w.ExecuteWaterAction(g, z, &action.WaterAction{
+		Duration: &pkg.Duration{Duration: duration},
 	})
-	if err != nil {
-		return fmt.Errorf("unable to marshal WaterMessage to JSON: %w", err)
-	}
-
-	topic, err := w.mqttClient.WaterTopic(g.TopicPrefix)
-	if err != nil {
-		return fmt.Errorf("unable to fill MQTT topic template: %w", err)
-	}
-
-	return w.mqttClient.Publish(topic, msg)
 }
 
 func (w *Worker) exerciseWeatherControl(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) (time.Duration, error) {

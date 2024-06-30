@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 	"time"
@@ -172,6 +173,63 @@ func TestScheduleWaterAction(t *testing.T) {
 	worker.Stop()
 	influxdbClient.AssertExpectations(t)
 	mqttClient.AssertExpectations(t)
+}
+
+func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
+	fake.ResetLastMessage()
+
+	storageClient, err := storage.NewClient(storage.Config{
+		Driver: "hashmap",
+	})
+	assert.NoError(t, err)
+	defer weather.ResetCache()
+
+	garden := createExampleGarden()
+	zone := createExampleZone()
+
+	err = storageClient.NotificationClientConfigs.Set(context.Background(), &notifications.Client{
+		ID:      babyapi.NewID(),
+		Name:    "TestClient",
+		Type:    "fake",
+		Options: map[string]any{},
+	})
+	assert.NoError(t, err)
+
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	assert.NoError(t, err)
+
+	err = storageClient.Zones.Set(context.Background(), zone)
+	assert.NoError(t, err)
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+
+	mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
+	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(errors.New("publish error"))
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	ws := createExampleWaterSchedule()
+	ws.Name = "MyWaterSchedule"
+	// Set StartTime to the near future
+	ws.StartTime = pkg.NewStartTime(time.Now().Add(1 * time.Second))
+
+	err = storageClient.WaterSchedules.Set(context.Background(), ws)
+	assert.NoError(t, err)
+
+	err = worker.ScheduleWaterAction(ws)
+	assert.NoError(t, err)
+
+	time.Sleep(1000 * time.Millisecond)
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+
+	assert.Equal(t, "MyWaterSchedule: Water Action Error", fake.LastMessage().Title)
 }
 
 func TestResetNextWaterTime(t *testing.T) {
@@ -413,6 +471,7 @@ func TestScheduleLightActions(t *testing.T) {
 			name               string
 			opts               map[string]any
 			off                bool
+			mqttPublishError   error
 			expectedOnMessage  string
 			expectedOffMessage string
 		}{
@@ -420,6 +479,7 @@ func TestScheduleLightActions(t *testing.T) {
 				"SuccessfulOnAndOff",
 				map[string]any{},
 				true,
+				nil,
 				"test-garden: Light ON",
 				"test-garden: Light OFF",
 			},
@@ -427,6 +487,7 @@ func TestScheduleLightActions(t *testing.T) {
 				"ErrorCreatingClient",
 				map[string]any{"create_error": "error"},
 				false,
+				nil,
 				"",
 				"",
 			},
@@ -434,7 +495,16 @@ func TestScheduleLightActions(t *testing.T) {
 				"ErrorSendingMessage",
 				map[string]any{"send_message_error": "error"},
 				false,
+				nil,
 				"",
+				"",
+			},
+			{
+				"ErrorNotification",
+				map[string]any{},
+				false,
+				errors.New("publish error"),
+				"test-garden: Light Action Error",
 				"",
 			},
 		}
@@ -450,7 +520,7 @@ func TestScheduleLightActions(t *testing.T) {
 
 				mqttClient := new(mqtt.MockClient)
 				mqttClient.On("LightTopic", mock.Anything).Return("test-garden/action/light", nil)
-				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(tt.mqttPublishError)
 				mqttClient.On("Disconnect", uint(100)).Return()
 
 				err = storageClient.NotificationClientConfigs.Set(context.Background(), &notifications.Client{
