@@ -10,7 +10,7 @@ import (
 
 func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState, logger *slog.Logger) {
 	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
-	w.sendNotification(title, "", logger)
+	w.sendNotification(title, "Successfully executed LightAction", logger)
 }
 
 func (w *Worker) sendNotification(title, msg string, logger *slog.Logger) {
