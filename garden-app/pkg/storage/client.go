@@ -9,9 +9,9 @@ import (
 
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/storage/kv"
-	"github.com/madflojo/hord"
-	"github.com/madflojo/hord/drivers/hashmap"
-	"github.com/madflojo/hord/drivers/redis"
+	"github.com/tarmac-project/hord"
+	"github.com/tarmac-project/hord/drivers/hashmap"
+	"github.com/tarmac-project/hord/drivers/redis"
 	"github.com/mitchellh/mapstructure"
 )
 
