@@ -66,14 +66,23 @@ func (l *LightState) unmarshal(data []byte) error {
 // LightSchedule allows the user to control when the Garden light is turned on and off
 // "Time" should be in the format of LightTimeFormat constant ("15:04:05-07:00")
 type LightSchedule struct {
-	Duration    *Duration  `json:"duration" yaml:"duration"`
-	StartTime   *StartTime `json:"start_time" yaml:"start_time"`
-	AdhocOnTime *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
+	Duration             *Duration  `json:"duration" yaml:"duration"`
+	StartTime            *StartTime `json:"start_time" yaml:"start_time"`
+	AdhocOnTime          *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
+	NotificationClientID *string    `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
 }
 
 // String...
 func (ls *LightSchedule) String() string {
 	return fmt.Sprintf("%+v", *ls)
+}
+
+func (ls *LightSchedule) GetNotificationClientID() string {
+	if ls.NotificationClientID == nil {
+		return ""
+	}
+
+	return *ls.NotificationClientID
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
@@ -86,5 +95,8 @@ func (ls *LightSchedule) Patch(new *LightSchedule) {
 	}
 	if new.AdhocOnTime == nil {
 		ls.AdhocOnTime = nil
+	}
+	if new.NotificationClientID != nil {
+		ls.NotificationClientID = new.NotificationClientID
 	}
 }

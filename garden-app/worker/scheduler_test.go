@@ -471,6 +471,7 @@ func TestScheduleLightActions(t *testing.T) {
 			name               string
 			opts               map[string]any
 			off                bool
+			enableNotification bool
 			mqttPublishError   error
 			expectedOnMessage  string
 			expectedOffMessage string
@@ -479,14 +480,25 @@ func TestScheduleLightActions(t *testing.T) {
 				"SuccessfulOnAndOff",
 				map[string]any{},
 				true,
+				true,
 				nil,
 				"test-garden: Light ON",
 				"test-garden: Light OFF",
 			},
 			{
+				"NoNotificationWhenDisabledSuccessfulOnAndOff",
+				map[string]any{},
+				true,
+				false,
+				nil,
+				"",
+				"",
+			},
+			{
 				"ErrorCreatingClient",
 				map[string]any{"create_error": "error"},
 				false,
+				true,
 				nil,
 				"",
 				"",
@@ -495,6 +507,7 @@ func TestScheduleLightActions(t *testing.T) {
 				"ErrorSendingMessage",
 				map[string]any{"send_message_error": "error"},
 				false,
+				true,
 				nil,
 				"",
 				"",
@@ -503,6 +516,7 @@ func TestScheduleLightActions(t *testing.T) {
 				"ErrorNotification",
 				map[string]any{},
 				false,
+				true,
 				errors.New("publish error"),
 				"test-garden: Light Action Error",
 				"",
@@ -523,12 +537,13 @@ func TestScheduleLightActions(t *testing.T) {
 				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(tt.mqttPublishError)
 				mqttClient.On("Disconnect", uint(100)).Return()
 
-				err = storageClient.NotificationClientConfigs.Set(context.Background(), &notifications.Client{
+				notificationClient := &notifications.Client{
 					ID:      babyapi.NewID(),
 					Name:    "TestClient",
 					Type:    "fake",
 					Options: tt.opts,
-				})
+				}
+				err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
 				assert.NoError(t, err)
 
 				worker := NewWorker(storageClient, nil, mqttClient, slog.Default())
@@ -541,6 +556,11 @@ func TestScheduleLightActions(t *testing.T) {
 				g := createExampleGarden()
 				g.LightSchedule.StartTime = pkg.NewStartTime(later)
 				g.LightSchedule.Duration = &pkg.Duration{Duration: time.Second}
+				if tt.enableNotification {
+					ncID := notificationClient.GetID()
+					g.LightSchedule.NotificationClientID = &ncID
+				}
+
 				err = worker.ScheduleLightActions(g)
 				assert.NoError(t, err)
 

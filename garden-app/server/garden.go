@@ -154,8 +154,16 @@ func (api *GardensAPI) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *ba
 		}
 	}
 
-	// Update the light schedule for the Garden (if it exists)
 	if garden.LightSchedule != nil {
+		// Validate NotificationClient exists
+		if garden.LightSchedule.NotificationClientID != nil {
+			apiErr := checkNotificationClientExists(r.Context(), api.storageClient, *garden.LightSchedule.NotificationClientID)
+			if apiErr != nil {
+				return apiErr
+			}
+		}
+
+		// Update the light schedule for the Garden (if it exists)
 		logger.Info("updating/resetting LightSchedule for Garden")
 		if err := api.worker.ResetLightSchedule(garden); err != nil {
 			logger.Error("unable to update/reset LightSchedule", "light_schedule", garden.LightSchedule, "error", err)
@@ -191,4 +199,18 @@ func (api *GardensAPI) gardenAction(r *http.Request, garden *pkg.Garden) (render
 
 	render.Status(r, http.StatusAccepted)
 	return &GardenActionResponse{}, nil
+}
+
+func checkNotificationClientExists(ctx context.Context, storageClient *storage.Client, id string) *babyapi.ErrResponse {
+	_, err := storageClient.NotificationClientConfigs.Get(ctx, id)
+	if err != nil {
+		err = fmt.Errorf("error getting NotificationClient with ID %q: %w", id, err)
+
+		if errors.Is(err, babyapi.ErrNotFound) {
+			return babyapi.ErrInvalidRequest(err)
+		}
+		return babyapi.InternalServerError(err)
+	}
+
+	return nil
 }
