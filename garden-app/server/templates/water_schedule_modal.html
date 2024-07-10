@@ -27,9 +27,6 @@
                     name="Interval">
             </div>
             <div class="uk-margin">
-                <input class="uk-input" value="{{ if .StartTime }}{{ .StartTime }}{{ else }}15:04:05Z{{ end }}"
-                    placeholder="Start Time" name="StartTime">
-
                 <div class="uk-margin">
                     {{ if .StartTime }}
                     {{ template "startTimeInput" (args "Name" "StartTime" "StartTime" .StartTime) }}
@@ -47,6 +44,22 @@
             <div class="uk-margin">
                 <select class="uk-select" name="ActivePeriod.EndMonth">
                     {{ MonthRows .ActivePeriod false }}
+                </select>
+            </div>
+            
+            <div class="uk-margin">
+                <label class="uk-form-label" for="notification-client-select">Notification Client</label>
+                <select id="notification-client-select" class="uk-select" name="NotificationClientID">
+                    {{ $noClientSelected := true }}
+                    {{ if ne . nil }}
+                    $noClientSelected = eq .NotificationClientID nil
+                    {{ end }}
+                    <option disabled {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
+                    
+                    {{ $ws := . }}
+                    {{ range $i, $nc := .NotificationClients }}
+                    <option value="{{ $nc.ID }}" {{ if CompareNotificationClientID $nc.ID $ws }}selected{{ end }}>{{ $nc.Name }}</option>
+                    {{ end }}
                 </select>
             </div>
 

@@ -114,7 +114,7 @@ func NewGardenAPI() *GardensAPI {
 func (api *GardensAPI) gardenModalRenderer(ctx context.Context, g *pkg.Garden) render.Renderer {
 	notificationClients, err := api.storageClient.NotificationClientConfigs.GetAll(ctx, nil)
 	if err != nil {
-		return babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
+		return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create garden modal: %w", err))
 	}
 
 	slices.SortFunc(notificationClients, func(nc1 *notifications.Client, nc2 *notifications.Client) int {
