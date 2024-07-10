@@ -15,6 +15,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 
@@ -410,6 +411,12 @@ func TestUpdateGarden(t *testing.T) {
 	zone2 := createExampleZone()
 	zone2.ID = babyapi.NewID()
 
+	notificationClient := &notifications.Client{
+		ID:   babyapi.ID{ID: id},
+		Name: "TestClient",
+		Type: "fake",
+	}
+
 	tests := []struct {
 		name           string
 		garden         *pkg.Garden
@@ -424,6 +431,22 @@ func TestUpdateGarden(t *testing.T) {
 			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"}}`,
 			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m0s","start_time":"22:00:02-07:00"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			http.StatusOK,
+		},
+		{
+			"AddNotificationClientIDErrorNotFound",
+			createExampleGarden(),
+			nil,
+			`{"light_schedule":{"notification_client_id":"NOTIFICATION_CLIENT_ID"}}`,
+			`{"status":"Invalid request.","error":"error getting NotificationClient with ID \\"NOTIFICATION_CLIENT_ID\\": resource not found"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"AddNotificationClientIDSuccess",
+			createExampleGarden(),
+			nil,
+			`{"light_schedule":{"notification_client_id":"c5cvhpcbcv45e8bp16dg"}}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","light_schedule":{"duration":"15h0m0s","start_time":"22:00:01-07:00","notification_client_id":"c5cvhpcbcv45e8bp16dg"},"next_light_action":{"time":"0000-12-31T17:00:00-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -466,13 +489,16 @@ func TestUpdateGarden(t *testing.T) {
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
 			storageClient := setupZoneAndGardenStorage(t)
 
+			err := storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
+			assert.NoError(t, err)
+
 			for _, z := range tt.zones {
 				err := storageClient.Zones.Set(context.Background(), z)
 				assert.NoError(t, err)
 			}
 
 			gr := NewGardenAPI()
-			err := gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPatch, "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))

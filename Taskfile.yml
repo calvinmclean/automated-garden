@@ -17,7 +17,7 @@ tasks:
     desc: Run unit tests for Go app
     dir: ./garden-app
     cmds:
-      - go test -short -race -covermode=atomic -coverprofile=coverage.out -coverpkg=./... ./...
+      - go test -short -race -covermode=atomic -coverprofile=coverage.out -coverpkg=./... {{.CLI_ARGS}} ./...
 
   lint:
     desc: Run linting for Go app

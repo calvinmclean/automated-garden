@@ -15,16 +15,17 @@ import (
 // and optional MinimumMoisture which acts as the threshold the Zone's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
-	ID             babyapi.ID       `json:"id" yaml:"id"`
-	Duration       *Duration        `json:"duration" yaml:"duration"`
-	Interval       *Duration        `json:"interval" yaml:"interval"`
-	StartDate      *time.Time       `json:"start_date" yaml:"start_date"`
-	StartTime      *StartTime       `json:"start_time" yaml:"start_time"`
-	EndDate        *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	WeatherControl *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
-	Name           string           `json:"name,omitempty" yaml:"name,omitempty"`
-	Description    string           `json:"description,omitempty" yaml:"description,omitempty"`
-	ActivePeriod   *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
+	ID                   babyapi.ID       `json:"id" yaml:"id"`
+	Duration             *Duration        `json:"duration" yaml:"duration"`
+	Interval             *Duration        `json:"interval" yaml:"interval"`
+	StartDate            *time.Time       `json:"start_date" yaml:"start_date"`
+	StartTime            *StartTime       `json:"start_time" yaml:"start_time"`
+	EndDate              *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	WeatherControl       *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
+	Name                 string           `json:"name,omitempty" yaml:"name,omitempty"`
+	Description          string           `json:"description,omitempty" yaml:"description,omitempty"`
+	ActivePeriod         *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
+	NotificationClientID *string          `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
 }
 
 func (ws *WaterSchedule) GetID() string {
@@ -34,6 +35,14 @@ func (ws *WaterSchedule) GetID() string {
 // String...
 func (ws *WaterSchedule) String() string {
 	return fmt.Sprintf("%+v", *ws)
+}
+
+func (ws *WaterSchedule) GetNotificationClientID() string {
+	if ws.NotificationClientID == nil {
+		return ""
+	}
+
+	return *ws.NotificationClientID
 }
 
 // EndDated returns true if the WaterSchedule is end-dated
@@ -86,6 +95,9 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) *babyapi.ErrResponse {
 			ws.ActivePeriod = &ActivePeriod{}
 		}
 		ws.ActivePeriod.Patch(new.ActivePeriod)
+	}
+	if new.NotificationClientID != nil {
+		ws.NotificationClientID = new.NotificationClientID
 	}
 
 	return nil

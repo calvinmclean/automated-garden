@@ -156,6 +156,12 @@ func templateFuncs(r *http.Request) map[string]any {
 				return item.String() == target.String()
 			})
 		},
+		"CompareNotificationClientID": func(ncID babyapi.ID, parent interface {
+			GetNotificationClientID() string
+		},
+		) bool {
+			return ncID.String() == parent.GetNotificationClientID()
+		},
 		"ZoneQuickWater": func(z *ZoneResponse) []string {
 			var waterDurations []string
 			if z.NextWater.Duration == nil || z.NextWater.Duration.Duration == 0 {

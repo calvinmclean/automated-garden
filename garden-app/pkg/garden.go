@@ -108,7 +108,9 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 		g.LightSchedule.Patch(newGarden.LightSchedule)
 
 		// If both Duration and StartTime are empty, remove the schedule
-		if newGarden.LightSchedule.Duration == nil && newGarden.LightSchedule.StartTime == nil {
+		if newGarden.LightSchedule.Duration == nil &&
+			newGarden.LightSchedule.StartTime == nil &&
+			newGarden.LightSchedule.NotificationClientID == nil {
 			g.LightSchedule = nil
 		}
 	}

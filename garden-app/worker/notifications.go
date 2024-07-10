@@ -9,27 +9,28 @@ import (
 )
 
 func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState, logger *slog.Logger) {
-	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
-	w.sendNotification(title, "Successfully executed LightAction", logger)
-}
-
-func (w *Worker) sendNotification(title, msg string, logger *slog.Logger) {
-	// TODO: this might end up getting client from garden or zone config instead of using all
-	notificationClients, err := w.storageClient.NotificationClientConfigs.GetAll(context.Background(), nil)
-	if err != nil {
-		logger.Error("error getting all notification clients", "error", err)
+	if g.LightSchedule.GetNotificationClientID() == "" {
 		return
 	}
 
-	for _, nc := range notificationClients {
-		ncLogger := logger.With("notification_client_id", nc.GetID())
+	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
+	w.sendNotificationWithClientID(g.LightSchedule.GetNotificationClientID(), title, "Successfully executed LightAction", logger)
+}
 
-		err = nc.SendMessage(title, msg)
-		if err != nil {
-			ncLogger.Error("error sending message", "error", err)
-			continue
-		}
+func (w *Worker) sendNotificationWithClientID(clientID, title, msg string, logger *slog.Logger) {
+	ncLogger := logger.With("notification_client_id", clientID)
 
-		ncLogger.Info("successfully send notification")
+	notificationClient, err := w.storageClient.NotificationClientConfigs.Get(context.Background(), clientID)
+	if err != nil {
+		ncLogger.Error("error getting notification client", "error", err)
+		return
 	}
+
+	err = notificationClient.SendMessage(title, msg)
+	if err != nil {
+		ncLogger.Error("error sending message", "error", err)
+		return
+	}
+
+	ncLogger.Info("successfully send notification")
 }
