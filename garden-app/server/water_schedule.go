@@ -146,7 +146,6 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(r *http.Request, ws *pkg.WaterSch
 	}
 
 	if !ws.EndDated() {
-		// logger.Info("updating/resetting WaterSchedule for WaterSchedule")
 		err := api.worker.ResetWaterSchedule(ws)
 		if err != nil {
 			return babyapi.InternalServerError(fmt.Errorf("unable to update/reset WaterSchedule: %w", err))

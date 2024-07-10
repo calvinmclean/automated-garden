@@ -75,7 +75,14 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 					if err != nil {
 						jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
 						schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
-						go w.sendNotification(fmt.Sprintf("%s: Water Action Error", waterSchedule.Name), err.Error(), jobLogger)
+						if ws.GetNotificationClientID() != "" {
+							go w.sendNotificationWithClientID(
+								ws.GetNotificationClientID(),
+								fmt.Sprintf("%s: Water Action Error", ws.Name),
+								err.Error(),
+								jobLogger,
+							)
+						}
 					}
 				}
 				return nil
@@ -83,7 +90,14 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 			if err != nil {
 				jobLogger.Error("error executing schedule WaterAction", "error", err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
-				w.sendNotification(fmt.Sprintf("%s: Water Action Error", waterSchedule.Name), err.Error(), jobLogger)
+				if waterSchedule.GetNotificationClientID() != "" {
+					w.sendNotificationWithClientID(
+						waterSchedule.GetNotificationClientID(),
+						fmt.Sprintf("%s: Water Action Error", waterSchedule.Name),
+						err.Error(),
+						jobLogger,
+					)
+				}
 			}
 		}, logger.With("source", "scheduled_job"))
 	return err
@@ -471,7 +485,9 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 
-		w.sendNotification(fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
+		if g.LightSchedule.GetNotificationClientID() != "" {
+			w.sendNotificationWithClientID(g.LightSchedule.GetNotificationClientID(), fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
+		}
 		return
 	}
 

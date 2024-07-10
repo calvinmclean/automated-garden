@@ -176,60 +176,78 @@ func TestScheduleWaterAction(t *testing.T) {
 }
 
 func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
-	fake.ResetLastMessage()
+	tests := []struct {
+		name               string
+		enableNotification bool
+		expectedTitle      string
+	}{
+		{"NotificationsEnabled", true, "MyWaterSchedule: Water Action Error"},
+		{"NotificationsDisabled", false, ""},
+	}
 
-	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
-	})
-	assert.NoError(t, err)
-	defer weather.ResetCache()
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake.ResetLastMessage()
 
-	garden := createExampleGarden()
-	zone := createExampleZone()
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+			defer weather.ResetCache()
 
-	err = storageClient.NotificationClientConfigs.Set(context.Background(), &notifications.Client{
-		ID:      babyapi.NewID(),
-		Name:    "TestClient",
-		Type:    "fake",
-		Options: map[string]any{},
-	})
-	assert.NoError(t, err)
+			garden := createExampleGarden()
+			zone := createExampleZone()
 
-	err = storageClient.Gardens.Set(context.Background(), garden)
-	assert.NoError(t, err)
+			notificationClient := &notifications.Client{
+				ID:      babyapi.NewID(),
+				Name:    "TestClient",
+				Type:    "fake",
+				Options: map[string]any{},
+			}
+			err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
+			assert.NoError(t, err)
 
-	err = storageClient.Zones.Set(context.Background(), zone)
-	assert.NoError(t, err)
+			err = storageClient.Gardens.Set(context.Background(), garden)
+			assert.NoError(t, err)
 
-	influxdbClient := new(influxdb.MockClient)
-	mqttClient := new(mqtt.MockClient)
+			err = storageClient.Zones.Set(context.Background(), zone)
+			assert.NoError(t, err)
 
-	mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
-	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(errors.New("publish error"))
-	mqttClient.On("Disconnect", uint(100)).Return()
-	influxdbClient.On("Close").Return()
+			influxdbClient := new(influxdb.MockClient)
+			mqttClient := new(mqtt.MockClient)
 
-	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
-	worker.StartAsync()
+			mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
+			mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(errors.New("publish error"))
+			mqttClient.On("Disconnect", uint(100)).Return()
+			influxdbClient.On("Close").Return()
 
-	ws := createExampleWaterSchedule()
-	ws.Name = "MyWaterSchedule"
-	// Set StartTime to the near future
-	ws.StartTime = pkg.NewStartTime(time.Now().Add(1 * time.Second))
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+			worker.StartAsync()
 
-	err = storageClient.WaterSchedules.Set(context.Background(), ws)
-	assert.NoError(t, err)
+			ws := createExampleWaterSchedule()
+			ws.Name = "MyWaterSchedule"
+			// Set StartTime to the near future
+			ws.StartTime = pkg.NewStartTime(time.Now().Add(1 * time.Second))
+			if tt.enableNotification {
+				ncID := notificationClient.GetID()
+				ws.NotificationClientID = &ncID
+			}
 
-	err = worker.ScheduleWaterAction(ws)
-	assert.NoError(t, err)
+			err = storageClient.WaterSchedules.Set(context.Background(), ws)
+			assert.NoError(t, err)
 
-	time.Sleep(1000 * time.Millisecond)
+			err = worker.ScheduleWaterAction(ws)
+			assert.NoError(t, err)
 
-	worker.Stop()
-	influxdbClient.AssertExpectations(t)
-	mqttClient.AssertExpectations(t)
+			time.Sleep(1000 * time.Millisecond)
 
-	assert.Equal(t, "MyWaterSchedule: Water Action Error", fake.LastMessage().Title)
+			worker.Stop()
+			influxdbClient.AssertExpectations(t)
+			mqttClient.AssertExpectations(t)
+
+			assert.Equal(t, tt.expectedTitle, fake.LastMessage().Title)
+		})
+	}
 }
 
 func TestResetNextWaterTime(t *testing.T) {
