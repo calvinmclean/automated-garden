@@ -40,6 +40,22 @@
                 {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime") }}
                 {{ end }}
             </div>
+            
+            <div class="uk-margin">
+                <label class="uk-form-label" for="notification-client-select">Notification Client</label>
+                <select id="notification-client-select" class="uk-select" name="LightSchedule.NotificationClientID">
+                    {{ $noClientSelected := true }}
+                    {{ if ne .LightSchedule nil }}
+                    $noClientSelected = eq .LightSchedule.NotificationClientID nil
+                    {{ end }}
+                    <option disabled {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
+                    
+                    {{ $ls := .LightSchedule }}
+                    {{ range $i, $nc := .NotificationClients }}
+                    <option value="{{ $nc.ID }}" {{ if CompareNotificationClientID $nc.ID $ls }}selected{{ end }}>{{ $nc.Name }}</option>
+                    {{ end }}
+                </select>
+            </div>
 
             {{ template "modalSubmitButton" }}
             {{ if .Name }}

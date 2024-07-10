@@ -5,10 +5,13 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
+	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
@@ -55,7 +58,7 @@ func NewGardenAPI() *GardensAPI {
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
-			return gardenModalTemplate.Renderer(&pkg.Garden{
+			return api.gardenModalRenderer(r.Context(), &pkg.Garden{
 				ID: babyapi.NewID(),
 			})
 		default:
@@ -66,7 +69,7 @@ func NewGardenAPI() *GardensAPI {
 	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
-			return gardenModalTemplate.Renderer(g), nil
+			return api.gardenModalRenderer(r.Context(), g), nil
 		default:
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
@@ -106,6 +109,22 @@ func NewGardenAPI() *GardensAPI {
 	api.ApplyExtension(extensions.HTMX[*pkg.Garden]{})
 
 	return api
+}
+
+func (api *GardensAPI) gardenModalRenderer(ctx context.Context, g *pkg.Garden) render.Renderer {
+	notificationClients, err := api.storageClient.NotificationClientConfigs.GetAll(ctx, nil)
+	if err != nil {
+		return babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
+	}
+
+	slices.SortFunc(notificationClients, func(nc1 *notifications.Client, nc2 *notifications.Client) int {
+		return strings.Compare(nc1.Name, nc2.Name)
+	})
+
+	return gardenModalTemplate.Renderer(struct {
+		*pkg.Garden
+		NotificationClients []*notifications.Client
+	}{g, notificationClients})
 }
 
 func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) error {
