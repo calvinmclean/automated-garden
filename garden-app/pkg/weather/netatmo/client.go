@@ -52,12 +52,14 @@ type Client struct {
 	storageCallback func(map[string]interface{}) error
 }
 
+var DefaultClient = http.DefaultClient
+
 // NewClient creates a new Netatmo API client from configuration
 // If StationID is not provided, StationName is used to get it from the API
 // If RainModuleID is not provided, RainModuleName is used to get it from the API
 // For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
 func NewClient(options map[string]interface{}, storageCallback func(map[string]interface{}) error) (*Client, error) {
-	client := &Client{Client: http.DefaultClient, storageCallback: storageCallback}
+	client := &Client{Client: DefaultClient, storageCallback: storageCallback}
 
 	err := mapstructure.Decode(options, &client.Config)
 	if err != nil {
@@ -205,7 +207,7 @@ func (c *Client) refreshToken() error {
 		"client_secret": {c.ClientSecret},
 	}
 
-	req, err := http.NewRequest("POST", "https://api.netatmo.com/oauth2/token", strings.NewReader(formData.Encode()))
+	req, err := http.NewRequest(http.MethodPost, "https://api.netatmo.com/oauth2/token", strings.NewReader(formData.Encode()))
 	if err != nil {
 		return err
 	}

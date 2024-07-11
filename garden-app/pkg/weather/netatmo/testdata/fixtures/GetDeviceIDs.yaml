@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+  - id: 0
+    request:
+      proto: HTTP/1.1
+      proto_major: 1
+      proto_minor: 1
+      content_length: 0
+      transfer_encoding: []
+      trailer: {}
+      host: api.netatmo.com
+      remote_addr: ""
+      request_uri: ""
+      body: ""
+      form: {}
+      headers:
+        Accept:
+          - application/json
+        Authorization:
+          - Bearer ACCESS_TOKEN
+      url: https://api.netatmo.com/api/getstationsdata?get_favorites=false
+      method: GET
+    response:
+      proto: HTTP/1.1
+      proto_major: 1
+      proto_minor: 1
+      transfer_encoding:
+        - chunked
+      trailer: {}
+      content_length: -1
+      uncompressed: true
+      body: '{"body":{"devices":[{"_id":"STATION_ID","module_name":"Weather Station","modules":[{"_id":"OUTDOOR_MODULE_ID","module_name":"Outdoor Module"},{"_id":"RAIN_MODULE_ID","module_name":"Smart Rain Gauge"}]}]}}'
+      headers:
+        Access-Control-Allow-Origin:
+          - "*"
+        Cache-Control:
+          - no-cache, must-revalidate
+        Connection:
+          - keep-alive
+        Content-Type:
+          - application/json; charset=utf-8
+        Date:
+          - Thu, 11 Jul 2024 19:30:53 GMT
+        Expires:
+          - "0"
+        Server:
+          - nginx
+        Strict-Transport-Security:
+          - max-age=31536000; includeSubDomains
+        X-Powered-By:
+          - Netatmo
+        X-Xss-Protection:
+          - 1; mode=block
+      status: 200 OK
+      code: 200
+      duration: 10ms

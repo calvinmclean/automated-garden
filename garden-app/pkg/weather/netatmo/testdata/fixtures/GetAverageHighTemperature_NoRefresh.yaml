@@ -1,0 +1,57 @@
+---
+version: 2
+interactions:
+  - id: 0
+    request:
+      proto: HTTP/1.1
+      proto_major: 1
+      proto_minor: 1
+      content_length: 0
+      transfer_encoding: []
+      trailer: {}
+      host: api.netatmo.com
+      remote_addr: ""
+      request_uri: ""
+      body: ""
+      form: {}
+      headers:
+        Accept:
+          - application/json
+        Authorization:
+          - Bearer ACCESS_TOKEN
+      url: https://api.netatmo.com/api/getmeasure?date_begin=DATE_BEGIN&date_end=DATE_END&device_id=STATION_ID&module_id=OUTDOOR_MODULE_ID&optimize=false&real_time=false&scale=1day&type=max_temp
+      method: GET
+    response:
+      proto: HTTP/1.1
+      proto_major: 1
+      proto_minor: 1
+      transfer_encoding:
+        - chunked
+      trailer: {}
+      content_length: -1
+      uncompressed: true
+      body: '{"body":{"1720465200":[49],"1720551600":[48.2],"1720638000":[47]},"status":"ok","time_exec":0.02807903289794922,"time_server":1720725568}'
+      headers:
+        Access-Control-Allow-Origin:
+          - "*"
+        Cache-Control:
+          - no-cache, must-revalidate
+        Connection:
+          - keep-alive
+        Content-Type:
+          - application/json; charset=utf-8
+        Date:
+          - Thu, 11 Jul 2024 19:19:28 GMT
+        Expires:
+          - "0"
+        Server:
+          - nginx
+        Strict-Transport-Security:
+          - max-age=31536000; includeSubDomains
+        X-Powered-By:
+          - Netatmo
+        X-Xss-Protection:
+          - 1; mode=block
+      status: 200 OK
+      code: 200
+      duration: 10ms
