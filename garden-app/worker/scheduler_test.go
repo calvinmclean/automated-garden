@@ -19,6 +19,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -175,6 +176,99 @@ func TestScheduleWaterAction(t *testing.T) {
 	mqttClient.AssertExpectations(t)
 }
 
+func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
+	tests := []struct {
+		name             string
+		lastContact      time.Time
+		expectedMessages []fake.Message
+	}{
+		{
+			"GardenUp",
+			time.Now(),
+			[]fake.Message{},
+		},
+		{
+			"GardenDown",
+			time.Now().Add(-10 * time.Minute),
+			[]fake.Message{
+				{
+					Title:   "test-garden: DOWN",
+					Message: `Attempting to execute Water Action, but last contact was \d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\nDetails: last contact from Garden was 10m1.\d+s ago`,
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			fake.ResetLastMessage()
+
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "hashmap",
+			})
+			assert.NoError(t, err)
+			defer weather.ResetCache()
+
+			garden := createExampleGarden()
+			zone := createExampleZone()
+
+			notificationClient := &notifications.Client{
+				ID:      babyapi.NewID(),
+				Name:    "TestClient",
+				Type:    "fake",
+				Options: map[string]any{},
+			}
+			err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
+			assert.NoError(t, err)
+
+			err = storageClient.Gardens.Set(context.Background(), garden)
+			assert.NoError(t, err)
+
+			err = storageClient.Zones.Set(context.Background(), zone)
+			assert.NoError(t, err)
+
+			mqttClient := new(mqtt.MockClient)
+			mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
+			mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
+			mqttClient.On("Disconnect", uint(100)).Return()
+
+			influxdbClient := new(influxdb.MockClient)
+			influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(tt.lastContact, nil)
+			influxdbClient.On("Close").Return()
+
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+			worker.StartAsync()
+
+			ws := createExampleWaterSchedule()
+			ws.Name = "MyWaterSchedule"
+			// Set StartTime to the near future
+			ws.StartTime = pkg.NewStartTime(time.Now().Add(1 * time.Second))
+			ncID := notificationClient.GetID()
+			ws.NotificationClientID = &ncID
+
+			err = storageClient.WaterSchedules.Set(context.Background(), ws)
+			assert.NoError(t, err)
+
+			err = worker.ScheduleWaterAction(ws)
+			assert.NoError(t, err)
+
+			time.Sleep(1000 * time.Millisecond)
+
+			worker.Stop()
+			influxdbClient.AssertExpectations(t)
+			mqttClient.AssertExpectations(t)
+
+			for i, msg := range fake.Messages() {
+				require.Equal(t, tt.expectedMessages[i].Title, msg.Title)
+				require.Regexp(t, tt.expectedMessages[i].Message, msg.Message)
+			}
+			if len(tt.expectedMessages) == 0 {
+				require.Empty(t, fake.Messages())
+			}
+		})
+	}
+}
+
 func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 	tests := []struct {
 		name               string
@@ -213,12 +307,15 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 			err = storageClient.Zones.Set(context.Background(), zone)
 			assert.NoError(t, err)
 
-			influxdbClient := new(influxdb.MockClient)
 			mqttClient := new(mqtt.MockClient)
-
 			mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
 			mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(errors.New("publish error"))
 			mqttClient.On("Disconnect", uint(100)).Return()
+
+			influxdbClient := new(influxdb.MockClient)
+			if tt.enableNotification {
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(time.Now(), nil)
+			}
 			influxdbClient.On("Close").Return()
 
 			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
@@ -555,6 +652,10 @@ func TestScheduleLightActions(t *testing.T) {
 				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(tt.mqttPublishError)
 				mqttClient.On("Disconnect", uint(100)).Return()
 
+				influxdbClient := new(influxdb.MockClient)
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(time.Now(), nil)
+				influxdbClient.On("Close").Return()
+
 				notificationClient := &notifications.Client{
 					ID:      babyapi.NewID(),
 					Name:    "TestClient",
@@ -564,7 +665,7 @@ func TestScheduleLightActions(t *testing.T) {
 				err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
 				assert.NoError(t, err)
 
-				worker := NewWorker(storageClient, nil, mqttClient, slog.Default())
+				worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
 				worker.StartAsync()
 				defer worker.Stop()
 
@@ -588,6 +689,84 @@ func TestScheduleLightActions(t *testing.T) {
 				if tt.off {
 					time.Sleep(1 * time.Second)
 					assert.Equal(t, tt.expectedOffMessage, fake.LastMessage().Title)
+				}
+			})
+		}
+	})
+
+	t.Run("ScheduledLightActionGardenDownNotification", func(t *testing.T) {
+		tests := []struct {
+			name             string
+			lastContact      time.Time
+			expectedMessages []fake.Message
+		}{
+			{
+				"GardenUp",
+				time.Now(),
+				[]fake.Message{
+					{Title: "test-garden: Light ON", Message: "Successfully executed LightAction"},
+				},
+			},
+			{
+				"GardenDown",
+				time.Now().Add(-10 * time.Minute),
+				[]fake.Message{
+					{
+						Title:   "test-garden: DOWN",
+						Message: `Attempting to execute Light Action, but last contact was \d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\nDetails: last contact from Garden was 10m1.\d+s ago`,
+					},
+					{Title: "test-garden: Light ON", Message: "Successfully executed LightAction"},
+				},
+			},
+		}
+
+		for _, tt := range tests {
+			t.Run(tt.name, func(t *testing.T) {
+				fake.ResetLastMessage()
+
+				storageClient, err := storage.NewClient(storage.Config{
+					Driver: "hashmap",
+				})
+				assert.NoError(t, err)
+
+				mqttClient := new(mqtt.MockClient)
+				mqttClient.On("LightTopic", mock.Anything).Return("test-garden/action/light", nil)
+				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Disconnect", uint(100)).Return()
+
+				influxdbClient := new(influxdb.MockClient)
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(tt.lastContact, nil)
+				influxdbClient.On("Close").Return()
+
+				notificationClient := &notifications.Client{
+					ID:      babyapi.NewID(),
+					Name:    "TestClient",
+					Type:    "fake",
+					Options: map[string]any{},
+				}
+				err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
+				assert.NoError(t, err)
+
+				worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+				worker.StartAsync()
+				defer worker.Stop()
+
+				// Create new LightSchedule that turns on in 1 second for only 1 second
+				now := time.Now().UTC()
+				later := now.Add(1 * time.Second).Truncate(time.Second)
+				g := createExampleGarden()
+				g.LightSchedule.StartTime = pkg.NewStartTime(later)
+				g.LightSchedule.Duration = &pkg.Duration{Duration: time.Second}
+				ncID := notificationClient.GetID()
+				g.LightSchedule.NotificationClientID = &ncID
+
+				err = worker.ScheduleLightActions(g)
+				assert.NoError(t, err)
+
+				time.Sleep(1 * time.Second)
+				for i, msg := range fake.Messages() {
+					require.Equal(t, tt.expectedMessages[i].Title, msg.Title)
+					require.Regexp(t, tt.expectedMessages[i].Message, msg.Message)
 				}
 			})
 		}

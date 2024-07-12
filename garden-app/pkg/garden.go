@@ -12,6 +12,14 @@ import (
 	"github.com/calvinmclean/babyapi"
 )
 
+type HealthStatus string
+
+const (
+	HealthStatusDown    HealthStatus = "DOWN"
+	HealthStatusUp      HealthStatus = "UP"
+	HealthStatusUnknown HealthStatus = "N/A"
+)
+
 // Garden is the representation of a single garden-controller device
 type Garden struct {
 	Name                      string         `json:"name" yaml:"name,omitempty"`
@@ -35,9 +43,9 @@ func (g *Garden) String() string {
 
 // GardenHealth holds information about the Garden controller's health status
 type GardenHealth struct {
-	Status      string     `json:"status,omitempty"`
-	Details     string     `json:"details,omitempty"`
-	LastContact *time.Time `json:"last_contact,omitempty"`
+	Status      HealthStatus `json:"status,omitempty"`
+	Details     string       `json:"details,omitempty"`
+	LastContact *time.Time   `json:"last_contact,omitempty"`
 }
 
 // Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time
@@ -52,7 +60,7 @@ func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) *Ga
 
 	if lastContact.IsZero() {
 		return &GardenHealth{
-			Status:  "DOWN",
+			Status:  HealthStatusDown,
 			Details: "no last contact time available",
 		}
 	}
@@ -61,9 +69,9 @@ func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) *Ga
 	between := time.Since(lastContact)
 	up := between < 5*time.Minute
 
-	status := "UP"
+	status := HealthStatusUp
 	if !up {
-		status = "DOWN"
+		status = HealthStatusDown
 	}
 
 	return &GardenHealth{
