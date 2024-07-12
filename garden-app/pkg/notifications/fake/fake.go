@@ -22,9 +22,8 @@ type Message struct {
 }
 
 var (
-	// lastMessage allows checking the last message that was sent
-	lastMessage    = Message{}
-	lastMessageMtx = sync.Mutex{}
+	messages    = []Message{}
+	messagesMtx = sync.Mutex{}
 )
 
 func NewClient(options map[string]interface{}) (*Client, error) {
@@ -46,21 +45,33 @@ func (c *Client) SendMessage(title, message string) error {
 	if c.SendMessageError != "" {
 		return errors.New(c.SendMessageError)
 	}
-	lastMessageMtx.Lock()
-	lastMessage = Message{title, message}
-	lastMessageMtx.Unlock()
+	messagesMtx.Lock()
+	messages = append(messages, Message{title, message})
+	messagesMtx.Unlock()
 	return nil
 }
 
 func LastMessage() Message {
-	lastMessageMtx.Lock()
-	result := lastMessage
-	lastMessageMtx.Unlock()
+	messagesMtx.Lock()
+	defer messagesMtx.Unlock()
+
+	if len(messages) == 0 {
+		return Message{}
+	}
+	result := messages[len(messages)-1]
+	return result
+}
+
+func Messages() []Message {
+	messagesMtx.Lock()
+	result := make([]Message, len(messages))
+	copy(result, messages)
+	messagesMtx.Unlock()
 	return result
 }
 
 func ResetLastMessage() {
-	lastMessageMtx.Lock()
-	lastMessage = Message{}
-	lastMessageMtx.Unlock()
+	messagesMtx.Lock()
+	messages = []Message{}
+	messagesMtx.Unlock()
 }

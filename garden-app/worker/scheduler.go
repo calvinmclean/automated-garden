@@ -76,7 +76,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 						jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
 						schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
 						if ws.GetNotificationClientID() != "" {
-							go w.sendNotificationWithClientID(
+							go w.sendNotification(
 								ws.GetNotificationClientID(),
 								fmt.Sprintf("%s: Water Action Error", ws.Name),
 								err.Error(),
@@ -91,7 +91,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 				jobLogger.Error("error executing schedule WaterAction", "error", err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
 				if waterSchedule.GetNotificationClientID() != "" {
-					w.sendNotificationWithClientID(
+					w.sendNotification(
 						waterSchedule.GetNotificationClientID(),
 						fmt.Sprintf("%s: Water Action Error", waterSchedule.Name),
 						err.Error(),
@@ -480,13 +480,18 @@ func waterScheduleLabels(ws *pkg.WaterSchedule) []string {
 func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.LightAction, actionLogger *slog.Logger) {
 	actionLogger = actionLogger.With("state", input.State.String())
 	actionLogger.Info("executing LightAction")
+
+	if g.LightSchedule.GetNotificationClientID() != "" {
+		w.sendDownNotification(g, g.LightSchedule.GetNotificationClientID(), "Light")
+	}
+
 	err := w.ExecuteLightAction(g, input)
 	if err != nil {
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 
 		if g.LightSchedule.GetNotificationClientID() != "" {
-			w.sendNotificationWithClientID(g.LightSchedule.GetNotificationClientID(), fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
+			w.sendNotification(g.LightSchedule.GetNotificationClientID(), fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
 		}
 		return
 	}

@@ -17,31 +17,31 @@ func TestHealth(t *testing.T) {
 		name            string
 		lastContactTime time.Time
 		err             error
-		expectedStatus  string
+		expectedStatus  HealthStatus
 	}{
 		{
 			"GardenIsUp",
 			time.Now(),
 			nil,
-			"UP",
+			HealthStatusUp,
 		},
 		{
 			"GardenIsDown",
 			time.Now().Add(-5 * time.Minute),
 			nil,
-			"DOWN",
+			HealthStatusDown,
 		},
 		{
 			"InfluxDBError",
 			time.Time{},
 			errors.New("influxdb error"),
-			"N/A",
+			HealthStatusUnknown,
 		},
 		{
 			"ZeroTime",
 			time.Time{},
 			nil,
-			"DOWN",
+			HealthStatusDown,
 		},
 	}
 

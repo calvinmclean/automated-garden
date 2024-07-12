@@ -32,6 +32,10 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 		return nil
 	}
 
+	if ws.GetNotificationClientID() != "" {
+		w.sendDownNotification(g, ws.GetNotificationClientID(), "Water")
+	}
+
 	return w.ExecuteWaterAction(g, z, &action.WaterAction{
 		Duration: &pkg.Duration{Duration: duration},
 	})

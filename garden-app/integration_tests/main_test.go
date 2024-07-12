@@ -247,7 +247,7 @@ func GardenTests(t *testing.T) {
 
 		// The health status timing can be inconsistent, so it should be retried
 		retries := 1
-		for g.Health.Status != "UP" && retries <= 5 {
+		for g.Health.Status != pkg.HealthStatusUp && retries <= 5 {
 			time.Sleep(time.Duration(retries) * time.Second)
 
 			status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
@@ -257,7 +257,7 @@ func GardenTests(t *testing.T) {
 			retries++
 		}
 
-		assert.Equal(t, "UP", g.Health.Status)
+		assert.Equal(t, pkg.HealthStatusUp, g.Health.Status)
 		assert.Equal(t, 50.0, g.TemperatureHumidityData.TemperatureCelsius)
 		assert.Equal(t, 50.0, g.TemperatureHumidityData.HumidityPercentage)
 	})
