@@ -75,7 +75,7 @@ func NewGardenAPI() *GardensAPI {
 		}
 	}))
 
-	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)
 
@@ -93,7 +93,7 @@ func NewGardenAPI() *GardensAPI {
 		return nil
 	})
 
-	api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetAfterDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)
 
@@ -153,7 +153,7 @@ func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influ
 	return nil
 }
 
-func (api *GardensAPI) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
+func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
 	numZones, err := api.numZones(r.Context(), garden.ID.String())

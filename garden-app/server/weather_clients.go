@@ -30,7 +30,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 
 	api.API = babyapi.NewAPI("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 
-	api.SetOnCreateOrUpdate(func(_ *http.Request, wc *weather.Config) *babyapi.ErrResponse {
+	api.SetOnCreateOrUpdate(func(_ http.ResponseWriter, _ *http.Request, wc *weather.Config) *babyapi.ErrResponse {
 		// make sure a valid WeatherClient can still be created
 		_, err := weather.NewClient(wc, func(map[string]interface{}) error { return nil })
 		if err != nil {
@@ -75,7 +75,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 		}
 	}))
 
-	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		id := api.GetIDParam(r)
 
 		waterSchedules, err := api.storageClient.GetWaterSchedulesUsingWeatherClient(id)

@@ -198,7 +198,7 @@ func (api *ZonesAPI) getGardenFromRequest(r *http.Request) (*pkg.Garden, *babyap
 	return garden, nil
 }
 
-func (api *ZonesAPI) onCreateOrUpdate(r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
+func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
 	gardenID := api.GetParentIDParam(r)

@@ -30,7 +30,7 @@ func NewNotificationClientsAPI() *NotificationClientsAPI {
 
 	api.API = babyapi.NewAPI[*notifications.Client]("NotificationClients", notificationClientsBasePath, func() *notifications.Client { return &notifications.Client{} })
 
-	api.SetOnCreateOrUpdate(func(_ *http.Request, nc *notifications.Client) *babyapi.ErrResponse {
+	api.SetOnCreateOrUpdate(func(_ http.ResponseWriter, _ *http.Request, nc *notifications.Client) *babyapi.ErrResponse {
 		// make sure a valid NotificationClient can still be created
 		err := nc.TestCreate()
 		if err != nil {

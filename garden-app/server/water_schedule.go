@@ -51,7 +51,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
-	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		id := api.GetIDParam(r)
 
 		// Unable to delete WaterSchedule with associated Zones
@@ -66,7 +66,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 		return nil
 	})
 
-	api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetAfterDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		id := api.GetIDParam(r)
 
@@ -147,7 +147,7 @@ func (api *WaterSchedulesAPI) setup(storageClient *storage.Client, worker *worke
 	return nil
 }
 
-func (api *WaterSchedulesAPI) onCreateOrUpdate(r *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
+func (api *WaterSchedulesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, ws *pkg.WaterSchedule) *babyapi.ErrResponse {
 	// Validate the new WaterSchedule.WeatherControl
 	if ws.WeatherControl != nil {
 		err := api.weatherClientsExist(r.Context(), ws)
