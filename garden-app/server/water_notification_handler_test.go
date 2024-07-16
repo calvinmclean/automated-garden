@@ -42,13 +42,13 @@ func TestParseWaterMessage(t *testing.T) {
 	}
 }
 
-func TestHandle(t *testing.T) {
+func TestHandleMessage(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
 		Driver: "hashmap",
 	})
 	require.NoError(t, err)
 
-	handler := NewMQTTHandler(storageClient, slog.Default())
+	handler := NewWaterNotificationHandler(storageClient, slog.Default())
 
 	t.Run("ErrorParsingMessage", func(t *testing.T) {
 		err = handler.handle("garden/data/water", []byte{})

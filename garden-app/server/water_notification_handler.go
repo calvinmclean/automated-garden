@@ -14,16 +14,16 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-type MQTTHandler struct {
+type WaterNotificationHandler struct {
 	storageClient *storage.Client
 	logger        *slog.Logger
 }
 
-func NewMQTTHandler(storageClient *storage.Client, logger *slog.Logger) *MQTTHandler {
-	return &MQTTHandler{storageClient, logger}
+func NewWaterNotificationHandler(storageClient *storage.Client, logger *slog.Logger) *WaterNotificationHandler {
+	return &WaterNotificationHandler{storageClient, logger}
 }
 
-func (h *MQTTHandler) getGarden(topicPrefix string) (*pkg.Garden, error) {
+func (h *WaterNotificationHandler) getGarden(topicPrefix string) (*pkg.Garden, error) {
 	gardens, err := h.storageClient.Gardens.GetAll(context.Background(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all gardens: %w", err)
@@ -42,7 +42,7 @@ func (h *MQTTHandler) getGarden(topicPrefix string) (*pkg.Garden, error) {
 	return garden, nil
 }
 
-func (h *MQTTHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
+func (h *WaterNotificationHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
 	zones, err := h.storageClient.Zones.GetAll(context.Background(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all zones: %w", err)
@@ -63,14 +63,14 @@ func (h *MQTTHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, err
 	return zone, nil
 }
 
-func (h *MQTTHandler) Handle(_ mqtt.Client, msg mqtt.Message) {
+func (h *WaterNotificationHandler) HandleMessage(_ mqtt.Client, msg mqtt.Message) {
 	err := h.handle(msg.Topic(), msg.Payload())
 	if err != nil {
 		h.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
 	}
 }
 
-func (h *MQTTHandler) handle(topic string, payload []byte) error {
+func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
 	logger := h.logger.With("topic", topic)
 	logger.Info("received message", "message", string(payload))
 
@@ -96,7 +96,9 @@ func (h *MQTTHandler) handle(topic string, payload []byte) error {
 	}
 	logger.Info("found zone with position", "zone_position", zonePosition, "zone_id", zone.GetID())
 
-	// TODO: this might end up getting client from garden or zone config instead of using all
+	// TODO: Use Garden notification client here? However, Garden Notifications only work if a lightschedule exists.
+	// Instead, I could move the NotificationClientID from a WaterSched
+	// TODO: rename this file to notification_handler or something since it's hard to find
 	notificationClients, err := h.storageClient.NotificationClientConfigs.GetAll(context.Background(), nil)
 	if err != nil {
 		return fmt.Errorf("error getting all notification clients: %w", err)
