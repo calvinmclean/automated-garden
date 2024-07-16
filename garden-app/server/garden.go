@@ -121,6 +121,11 @@ func (api *GardensAPI) gardenModalRenderer(ctx context.Context, g *pkg.Garden) r
 		return strings.Compare(nc1.Name, nc2.Name)
 	})
 
+	fmt.Println("CLIENTS:", len(notificationClients), notificationClients)
+	if len(notificationClients) == 1 {
+		fmt.Println("X:", *notificationClients[0])
+	}
+
 	return gardenModalTemplate.Renderer(struct {
 		*pkg.Garden
 		NotificationClients []*notifications.Client

@@ -52,7 +52,9 @@
                     
                     {{ $ls := .LightSchedule }}
                     {{ range $i, $nc := .NotificationClients }}
-                    <option value="{{ $nc.ID }}" {{ if CompareNotificationClientID $nc.ID $ls }}selected{{ end }}>{{ $nc.Name }}</option>
+                    {{/* check if $ls is nil before calling CompareNotificationClientID */}}
+                    {{ $selected := and $ls (CompareNotificationClientID $nc.GetID $ls) }}
+                    <option value="{{ $nc.GetID }}" {{ if $selected }}selected{{ end }}>{{ $nc.Name }}</option>
                     {{ end }}
                 </select>
             </div>
