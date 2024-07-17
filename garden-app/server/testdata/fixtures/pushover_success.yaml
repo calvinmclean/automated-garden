@@ -1,0 +1,93 @@
+---
+version: 2
+interactions:
+  - id: 0
+    request:
+      proto: HTTP/1.1
+      proto_major: 1
+      proto_minor: 1
+      content_length: 131
+      transfer_encoding: []
+      trailer: {}
+      host: api.pushover.net
+      remote_addr: ""
+      request_uri: ""
+      body: message=watered+for+6s&priority=0&title=+finished+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      form:
+        message:
+          - watered for 6s
+        priority:
+          - "0"
+        title:
+          - " finished watering"
+        token:
+          - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        user:
+          - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      headers:
+        Content-Type:
+          - application/x-www-form-urlencoded
+      url: https://api.pushover.net/1/messages.json
+      method: POST
+    response:
+      proto: HTTP/2.0
+      proto_major: 2
+      proto_minor: 0
+      transfer_encoding: []
+      trailer: {}
+      content_length: -1
+      uncompressed: true
+      body: '{"status":1,"request":"2e1d184d-da34-414c-ae3c-05022dc4a2f9"}'
+      headers:
+        Access-Control-Allow-Headers:
+          - X-Requested-With, X-Prototype-Version, Origin, Accept, Content-Type, X-CSRF-Token, X-Pushover-App, Authorization
+        Access-Control-Allow-Methods:
+          - POST, OPTIONS
+        Access-Control-Allow-Origin:
+          - "*"
+        Access-Control-Max-Age:
+          - "1728000"
+        Cache-Control:
+          - max-age=0, private, must-revalidate
+        Cf-Cache-Status:
+          - DYNAMIC
+        Cf-Ray:
+          - 8a47468bac122b54-LAX
+        Content-Type:
+          - application/json; charset=utf-8
+        Date:
+          - Wed, 17 Jul 2024 03:51:48 GMT
+        Etag:
+          - W/"fbf804824a9232da76ba211e79a0cd4a"
+        Referrer-Policy:
+          - strict-origin-when-cross-origin
+        Server:
+          - cloudflare
+        Strict-Transport-Security:
+          - max-age=31536000
+        X-Content-Type-Options:
+          - nosniff
+        X-Download-Options:
+          - noopen
+        X-Frame-Options:
+          - SAMEORIGIN
+          - DENY
+        X-Limit-App-Limit:
+          - "10000"
+        X-Limit-App-Remaining:
+          - "9937"
+        X-Limit-App-Reset:
+          - "1722488400"
+        X-Permitted-Cross-Domain-Policies:
+          - none
+        X-Po-H:
+          - a
+        X-Request-Id:
+          - 2e1d184d-da34-414c-ae3c-05022dc4a2f9
+        X-Runtime:
+          - "0.056145"
+        X-Xss-Protection:
+          - 1; mode=block
+      status: 200 OK
+      code: 200
+      duration: 416.0575ms

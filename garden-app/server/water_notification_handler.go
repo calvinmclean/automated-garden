@@ -83,12 +83,20 @@ func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
 	if topicPrefix == "" {
 		return fmt.Errorf("received message on invalid topic: %w", err)
 	}
+	logger = logger.With("topic_prefix", topicPrefix)
 
 	garden, err := h.getGarden(topicPrefix)
 	if err != nil {
 		return fmt.Errorf("error getting garden with topic-prefix %q: %w", topicPrefix, err)
 	}
-	logger.Info("found garden with topic-prefix", "topic_prefix", topicPrefix, "garden_id", garden.GetID())
+	logger = logger.With("garden_id", garden.GetID())
+	logger.Info("found garden with topic-prefix")
+
+	if garden.GetNotificationClientID() == "" {
+		logger.Info("garden does not have notification client", "garden_id", garden.GetID())
+		return nil
+	}
+	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
 	zone, err := h.getZone(garden.GetID(), zonePosition)
 	if err != nil {
@@ -96,10 +104,7 @@ func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
 	}
 	logger.Info("found zone with position", "zone_position", zonePosition, "zone_id", zone.GetID())
 
-	// TODO: Use Garden notification client here? However, Garden Notifications only work if a lightschedule exists.
-	// Instead, I could move the NotificationClientID from a WaterSched
-	// TODO: rename this file to notification_handler or something since it's hard to find
-	notificationClients, err := h.storageClient.NotificationClientConfigs.GetAll(context.Background(), nil)
+	notificationClient, err := h.storageClient.NotificationClientConfigs.Get(context.Background(), garden.GetNotificationClientID())
 	if err != nil {
 		return fmt.Errorf("error getting all notification clients: %w", err)
 	}
@@ -107,17 +112,13 @@ func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
 	title := fmt.Sprintf("%s finished watering", zone.Name)
 	message := fmt.Sprintf("watered for %s", waterDuration.String())
 
-	for _, nc := range notificationClients {
-		ncLogger := logger.With(notificationClientIDLogField, nc.GetID())
-
-		err = nc.SendMessage(title, message)
-		if err != nil {
-			ncLogger.Error("error sending message", "error", err)
-			continue
-		}
-
-		ncLogger.Info("successfully send notification")
+	err = notificationClient.SendMessage(title, message)
+	if err != nil {
+		logger.Error("error sending message", "error", err)
+		return err
 	}
+
+	logger.Info("successfully send notification")
 
 	return nil
 }

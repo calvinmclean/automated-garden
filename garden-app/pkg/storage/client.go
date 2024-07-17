@@ -9,10 +9,10 @@ import (
 
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/storage/kv"
+	"github.com/mitchellh/mapstructure"
 	"github.com/tarmac-project/hord"
 	"github.com/tarmac-project/hord/drivers/hashmap"
 	"github.com/tarmac-project/hord/drivers/redis"
-	"github.com/mitchellh/mapstructure"
 )
 
 // Config is used to identify and configure a storage client

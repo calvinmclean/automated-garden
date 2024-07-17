@@ -178,15 +178,15 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 		}
 	}
 
-	if garden.LightSchedule != nil {
-		// Validate NotificationClient exists
-		if garden.LightSchedule.NotificationClientID != nil {
-			apiErr := checkNotificationClientExists(r.Context(), api.storageClient, *garden.LightSchedule.NotificationClientID)
-			if apiErr != nil {
-				return apiErr
-			}
+	// Validate NotificationClient exists
+	if garden.NotificationClientID != nil {
+		apiErr := checkNotificationClientExists(r.Context(), api.storageClient, *garden.NotificationClientID)
+		if apiErr != nil {
+			return apiErr
 		}
+	}
 
+	if garden.LightSchedule != nil {
 		// Update the light schedule for the Garden (if it exists)
 		logger.Info("updating/resetting LightSchedule for Garden")
 		if err := api.worker.ResetLightSchedule(garden); err != nil {

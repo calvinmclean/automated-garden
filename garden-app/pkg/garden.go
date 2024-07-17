@@ -30,6 +30,7 @@ type Garden struct {
 	EndDate                   *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	LightSchedule             *LightSchedule `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
 	TemperatureHumiditySensor *bool          `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
+	NotificationClientID      *string        `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
 }
 
 func (g *Garden) GetID() string {
@@ -39,6 +40,14 @@ func (g *Garden) GetID() string {
 // String...
 func (g *Garden) String() string {
 	return fmt.Sprintf("%+v", *g)
+}
+
+func (g *Garden) GetNotificationClientID() string {
+	if g.NotificationClientID == nil {
+		return ""
+	}
+
+	return *g.NotificationClientID
 }
 
 // GardenHealth holds information about the Garden controller's health status
@@ -117,13 +126,16 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 
 		// If both Duration and StartTime are empty, remove the schedule
 		if newGarden.LightSchedule.Duration == nil &&
-			newGarden.LightSchedule.StartTime == nil &&
-			newGarden.LightSchedule.NotificationClientID == nil {
+			newGarden.LightSchedule.StartTime == nil {
 			g.LightSchedule = nil
 		}
 	}
 	if newGarden.TemperatureHumiditySensor != nil {
 		g.TemperatureHumiditySensor = newGarden.TemperatureHumiditySensor
+	}
+
+	if newGarden.NotificationClientID != nil {
+		g.NotificationClientID = newGarden.NotificationClientID
 	}
 
 	return nil

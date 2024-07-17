@@ -1,0 +1,80 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 131
+        transfer_encoding: []
+        trailer: {}
+        host: api.pushover.net
+        remote_addr: ""
+        request_uri: ""
+        body: message=watered+for+6s&priority=0&title=+finished+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        form:
+            message:
+                - watered for 6s
+            priority:
+                - "0"
+            title:
+                - ' finished watering'
+            token:
+                - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+            user:
+                - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        headers:
+            Content-Type:
+                - application/x-www-form-urlencoded
+        url: https://api.pushover.net/1/messages.json
+        method: POST
+      response:
+        proto: HTTP/2.0
+        proto_major: 2
+        proto_minor: 0
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: '{"token":"invalid","errors":["application token is invalid, see https://pushover.net/api"],"status":0,"request":"85158a2e-3f89-456b-9262-d14915ad76bc"}'
+        headers:
+            Access-Control-Allow-Headers:
+                - X-Requested-With, X-Prototype-Version, Origin, Accept, Content-Type, X-CSRF-Token, X-Pushover-App, Authorization
+            Access-Control-Allow-Methods:
+                - POST, OPTIONS
+            Access-Control-Allow-Origin:
+                - '*'
+            Access-Control-Max-Age:
+                - "1728000"
+            Cache-Control:
+                - no-cache
+            Cf-Cache-Status:
+                - DYNAMIC
+            Cf-Ray:
+                - 8a4749a09ad07c2d-LAX
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Wed, 17 Jul 2024 03:53:54 GMT
+            Referrer-Policy:
+                - strict-origin-when-cross-origin
+            Server:
+                - cloudflare
+            X-Content-Type-Options:
+                - nosniff
+            X-Download-Options:
+                - noopen
+            X-Frame-Options:
+                - SAMEORIGIN
+            X-Permitted-Cross-Domain-Policies:
+                - none
+            X-Request-Id:
+                - 85158a2e-3f89-456b-9262-d14915ad76bc
+            X-Runtime:
+                - "0.007297"
+            X-Xss-Protection:
+                - 1; mode=block
+        status: 400 Bad Request
+        code: 400
+        duration: 308.7185ms

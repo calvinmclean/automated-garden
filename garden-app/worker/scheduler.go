@@ -481,8 +481,8 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 	actionLogger = actionLogger.With("state", input.State.String())
 	actionLogger.Info("executing LightAction")
 
-	if g.LightSchedule.GetNotificationClientID() != "" {
-		w.sendDownNotification(g, g.LightSchedule.GetNotificationClientID(), "Light")
+	if g.GetNotificationClientID() != "" {
+		w.sendDownNotification(g, g.GetNotificationClientID(), "Light")
 	}
 
 	err := w.ExecuteLightAction(g, input)
@@ -490,8 +490,8 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 
-		if g.LightSchedule.GetNotificationClientID() != "" {
-			w.sendNotification(g.LightSchedule.GetNotificationClientID(), fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
+		if g.GetNotificationClientID() != "" {
+			w.sendNotification(g.GetNotificationClientID(), fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
 		}
 		return
 	}

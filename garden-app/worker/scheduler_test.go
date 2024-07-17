@@ -677,7 +677,7 @@ func TestScheduleLightActions(t *testing.T) {
 				g.LightSchedule.Duration = &pkg.Duration{Duration: time.Second}
 				if tt.enableNotification {
 					ncID := notificationClient.GetID()
-					g.LightSchedule.NotificationClientID = &ncID
+					g.NotificationClientID = &ncID
 				}
 
 				err = worker.ScheduleLightActions(g)
@@ -758,7 +758,7 @@ func TestScheduleLightActions(t *testing.T) {
 				g.LightSchedule.StartTime = pkg.NewStartTime(later)
 				g.LightSchedule.Duration = &pkg.Duration{Duration: time.Second}
 				ncID := notificationClient.GetID()
-				g.LightSchedule.NotificationClientID = &ncID
+				g.NotificationClientID = &ncID
 
 				err = worker.ScheduleLightActions(g)
 				assert.NoError(t, err)
