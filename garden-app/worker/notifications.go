@@ -10,12 +10,12 @@ import (
 )
 
 func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState, logger *slog.Logger) {
-	if g.LightSchedule.GetNotificationClientID() == "" {
+	if g.GetNotificationClientID() == "" {
 		return
 	}
 
 	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
-	w.sendNotification(g.LightSchedule.GetNotificationClientID(), title, "Successfully executed LightAction", logger)
+	w.sendNotification(g.GetNotificationClientID(), title, "Successfully executed LightAction", logger)
 }
 
 func (w *Worker) sendDownNotification(g *pkg.Garden, clientID, actionName string) {

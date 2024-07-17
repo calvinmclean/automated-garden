@@ -14,16 +14,16 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-type MQTTHandler struct {
+type WaterNotificationHandler struct {
 	storageClient *storage.Client
 	logger        *slog.Logger
 }
 
-func NewMQTTHandler(storageClient *storage.Client, logger *slog.Logger) *MQTTHandler {
-	return &MQTTHandler{storageClient, logger}
+func NewWaterNotificationHandler(storageClient *storage.Client, logger *slog.Logger) *WaterNotificationHandler {
+	return &WaterNotificationHandler{storageClient, logger}
 }
 
-func (h *MQTTHandler) getGarden(topicPrefix string) (*pkg.Garden, error) {
+func (h *WaterNotificationHandler) getGarden(topicPrefix string) (*pkg.Garden, error) {
 	gardens, err := h.storageClient.Gardens.GetAll(context.Background(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all gardens: %w", err)
@@ -42,7 +42,7 @@ func (h *MQTTHandler) getGarden(topicPrefix string) (*pkg.Garden, error) {
 	return garden, nil
 }
 
-func (h *MQTTHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
+func (h *WaterNotificationHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
 	zones, err := h.storageClient.Zones.GetAll(context.Background(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all zones: %w", err)
@@ -63,14 +63,14 @@ func (h *MQTTHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, err
 	return zone, nil
 }
 
-func (h *MQTTHandler) Handle(_ mqtt.Client, msg mqtt.Message) {
+func (h *WaterNotificationHandler) HandleMessage(_ mqtt.Client, msg mqtt.Message) {
 	err := h.handle(msg.Topic(), msg.Payload())
 	if err != nil {
 		h.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
 	}
 }
 
-func (h *MQTTHandler) handle(topic string, payload []byte) error {
+func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
 	logger := h.logger.With("topic", topic)
 	logger.Info("received message", "message", string(payload))
 
@@ -83,12 +83,20 @@ func (h *MQTTHandler) handle(topic string, payload []byte) error {
 	if topicPrefix == "" {
 		return fmt.Errorf("received message on invalid topic: %w", err)
 	}
+	logger = logger.With("topic_prefix", topicPrefix)
 
 	garden, err := h.getGarden(topicPrefix)
 	if err != nil {
 		return fmt.Errorf("error getting garden with topic-prefix %q: %w", topicPrefix, err)
 	}
-	logger.Info("found garden with topic-prefix", "topic_prefix", topicPrefix, "garden_id", garden.GetID())
+	logger = logger.With("garden_id", garden.GetID())
+	logger.Info("found garden with topic-prefix")
+
+	if garden.GetNotificationClientID() == "" {
+		logger.Info("garden does not have notification client", "garden_id", garden.GetID())
+		return nil
+	}
+	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
 	zone, err := h.getZone(garden.GetID(), zonePosition)
 	if err != nil {
@@ -96,8 +104,7 @@ func (h *MQTTHandler) handle(topic string, payload []byte) error {
 	}
 	logger.Info("found zone with position", "zone_position", zonePosition, "zone_id", zone.GetID())
 
-	// TODO: this might end up getting client from garden or zone config instead of using all
-	notificationClients, err := h.storageClient.NotificationClientConfigs.GetAll(context.Background(), nil)
+	notificationClient, err := h.storageClient.NotificationClientConfigs.Get(context.Background(), garden.GetNotificationClientID())
 	if err != nil {
 		return fmt.Errorf("error getting all notification clients: %w", err)
 	}
@@ -105,17 +112,13 @@ func (h *MQTTHandler) handle(topic string, payload []byte) error {
 	title := fmt.Sprintf("%s finished watering", zone.Name)
 	message := fmt.Sprintf("watered for %s", waterDuration.String())
 
-	for _, nc := range notificationClients {
-		ncLogger := logger.With(notificationClientIDLogField, nc.GetID())
-
-		err = nc.SendMessage(title, message)
-		if err != nil {
-			ncLogger.Error("error sending message", "error", err)
-			continue
-		}
-
-		ncLogger.Info("successfully send notification")
+	err = notificationClient.SendMessage(title, message)
+	if err != nil {
+		logger.Error("error sending message", "error", err)
+		return err
 	}
+
+	logger.Info("successfully send notification")
 
 	return nil
 }

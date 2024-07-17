@@ -58,7 +58,8 @@
                     
                     {{ $ws := . }}
                     {{ range $i, $nc := .NotificationClients }}
-                    <option value="{{ $nc.ID }}" {{ if CompareNotificationClientID $nc.ID $ws }}selected{{ end }}>{{ $nc.Name }}</option>
+                    {{ $selected := CompareNotificationClientID $nc.GetID $ws }}
+                    <option value="{{ $nc.ID }}" {{ if $selected }}selected{{ end }}>{{ $nc.Name }}</option>
                     {{ end }}
                 </select>
             </div>

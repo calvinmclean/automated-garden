@@ -3,7 +3,6 @@
 #   - run-local: run required services + extras like Grafana and Prometheus
 #   - demo: run everything, including an instance of garden-app and garden-controller
 
-version: "3.9"
 services:
   grafana:
     image: "grafana/grafana:latest"

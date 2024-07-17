@@ -43,16 +43,16 @@
             
             <div class="uk-margin">
                 <label class="uk-form-label" for="notification-client-select">Notification Client</label>
-                <select id="notification-client-select" class="uk-select" name="LightSchedule.NotificationClientID">
+                <select id="notification-client-select" class="uk-select" name="NotificationClientID">
                     {{ $noClientSelected := true }}
-                    {{ if ne .LightSchedule nil }}
-                    $noClientSelected = eq .LightSchedule.NotificationClientID nil
-                    {{ end }}
+                    $noClientSelected = eq .NotificationClientID nil
                     <option disabled {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
                     
-                    {{ $ls := .LightSchedule }}
+                    {{ $g := . }}
                     {{ range $i, $nc := .NotificationClients }}
-                    <option value="{{ $nc.ID }}" {{ if CompareNotificationClientID $nc.ID $ls }}selected{{ end }}>{{ $nc.Name }}</option>
+                    {{/* check if $g is nil before calling CompareNotificationClientID */}}
+                    {{ $selected := and $g (CompareNotificationClientID $nc.GetID $g) }}
+                    <option value="{{ $nc.GetID }}" {{ if $selected }}selected{{ end }}>{{ $nc.Name }}</option>
                     {{ end }}
                 </select>
             </div>

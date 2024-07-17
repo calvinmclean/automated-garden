@@ -75,7 +75,7 @@ func NewGardenAPI() *GardensAPI {
 		}
 	}))
 
-	api.SetBeforeDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)
 
@@ -93,7 +93,7 @@ func NewGardenAPI() *GardensAPI {
 		return nil
 	})
 
-	api.SetAfterDelete(func(r *http.Request) *babyapi.ErrResponse {
+	api.SetAfterDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)
 
@@ -153,7 +153,7 @@ func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influ
 	return nil
 }
 
-func (api *GardensAPI) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
+func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
 	numZones, err := api.numZones(r.Context(), garden.ID.String())
@@ -173,15 +173,15 @@ func (api *GardensAPI) onCreateOrUpdate(r *http.Request, garden *pkg.Garden) *ba
 		}
 	}
 
-	if garden.LightSchedule != nil {
-		// Validate NotificationClient exists
-		if garden.LightSchedule.NotificationClientID != nil {
-			apiErr := checkNotificationClientExists(r.Context(), api.storageClient, *garden.LightSchedule.NotificationClientID)
-			if apiErr != nil {
-				return apiErr
-			}
+	// Validate NotificationClient exists
+	if garden.NotificationClientID != nil {
+		apiErr := checkNotificationClientExists(r.Context(), api.storageClient, *garden.NotificationClientID)
+		if apiErr != nil {
+			return apiErr
 		}
+	}
 
+	if garden.LightSchedule != nil {
 		// Update the light schedule for the Garden (if it exists)
 		logger.Info("updating/resetting LightSchedule for Garden")
 		if err := api.worker.ResetLightSchedule(garden); err != nil {

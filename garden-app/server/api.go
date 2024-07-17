@@ -13,7 +13,6 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/html"
-	paho "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	prommetrics "github.com/slok/go-http-metrics/metrics/prometheus"
 	metrics_middleware "github.com/slok/go-http-metrics/middleware"
@@ -86,7 +85,7 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 	).Info("initializing MQTT client")
 	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, mqtt.DefaultHandler(logger), mqtt.TopicHandler{
 		Topic:   "+/data/water",
-		Handler: paho.MessageHandler(NewMQTTHandler(storageClient, logger).Handle),
+		Handler: NewWaterNotificationHandler(storageClient, logger).HandleMessage,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to initialize MQTT client: %v", err)
