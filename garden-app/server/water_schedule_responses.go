@@ -112,7 +112,7 @@ func (aws AllWaterSchedulesResponse) Render(w http.ResponseWriter, r *http.Reque
 	return aws.ResourceList.Render(w, r)
 }
 
-func (aws AllWaterSchedulesResponse) HTML(r *http.Request) string {
+func (aws AllWaterSchedulesResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	slices.SortFunc(aws.Items, func(w *WaterScheduleResponse, x *WaterScheduleResponse) int {
 		return strings.Compare(w.Name, x.Name)
 	})

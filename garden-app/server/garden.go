@@ -66,7 +66,7 @@ func NewGardenAPI() *GardensAPI {
 		}
 	}))
 
-	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(_ http.ResponseWriter, r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
 			return api.gardenModalRenderer(r.Context(), g), nil
@@ -196,7 +196,7 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 // gardenAction reads a GardenAction request and uses it to execute one of the actions
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
-func (api *GardensAPI) gardenAction(r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+func (api *GardensAPI) gardenAction(_ http.ResponseWriter, r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute GardenAction")
 

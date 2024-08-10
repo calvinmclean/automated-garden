@@ -158,7 +158,7 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 	return agr.ResourceList.Render(w, r)
 }
 
-func (agr AllGardensResponse) HTML(r *http.Request) string {
+func (agr AllGardensResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	slices.SortFunc(agr.Items, func(g *GardenResponse, h *GardenResponse) int {
 		return strings.Compare(g.Name, h.Name)
 	})

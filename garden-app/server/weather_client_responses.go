@@ -51,7 +51,7 @@ func (aws AllWeatherClientsResponse) Render(w http.ResponseWriter, r *http.Reque
 	return aws.ResourceList.Render(w, r)
 }
 
-func (aws AllWeatherClientsResponse) HTML(r *http.Request) string {
+func (aws AllWeatherClientsResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	slices.SortFunc(aws.Items, func(w *WeatherClientResponse, x *WeatherClientResponse) int {
 		return strings.Compare(w.Type, x.Type)
 	})

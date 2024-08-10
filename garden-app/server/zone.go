@@ -72,7 +72,7 @@ func NewZonesAPI() *ZonesAPI {
 		}
 	}))
 
-	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, z *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
+	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(_ http.ResponseWriter, r *http.Request, z *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
 			return api.createModal(r, z)
@@ -145,7 +145,7 @@ func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Render
 // zoneAction reads a ZoneAction request and uses it to execute one of the actions
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
-func (api *ZonesAPI) zoneAction(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
+func (api *ZonesAPI) zoneAction(_ http.ResponseWriter, r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute ZoneAction")
 
@@ -281,7 +281,7 @@ func limitQueryParam(r *http.Request) (uint64, error) {
 }
 
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
-func (api *ZonesAPI) waterHistory(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
+func (api *ZonesAPI) waterHistory(_ http.ResponseWriter, r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
 	logger := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
