@@ -37,7 +37,7 @@ func (api *ZonesAPI) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneRespons
 	}
 }
 
-func (zr *ZoneResponse) HTML(r *http.Request) string {
+func (zr *ZoneResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	// ignoring errors here since this can only be reached for a valid request
 	timeRange, _ := rangeQueryParam(r)
 	limit, _ := limitQueryParam(r)
@@ -162,7 +162,7 @@ func (azr AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error
 	return azr.ResourceList.Render(w, r)
 }
 
-func (azr AllZonesResponse) HTML(r *http.Request) string {
+func (azr AllZonesResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	slices.SortFunc(azr.Items, func(z *ZoneResponse, zz *ZoneResponse) int {
 		return strings.Compare(z.Name, zz.Name)
 	})

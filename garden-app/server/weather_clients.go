@@ -66,7 +66,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 		}
 	}))
 
-	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(r *http.Request, wc *weather.Config) (render.Renderer, *babyapi.ErrResponse) {
+	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(_ http.ResponseWriter, r *http.Request, wc *weather.Config) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
 			return weatherClientModalTemplate.Renderer(wc), nil

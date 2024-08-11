@@ -5,7 +5,7 @@ go 1.21.3
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/ajg/form v1.5.1
-	github.com/calvinmclean/babyapi v0.21.0
+	github.com/calvinmclean/babyapi v0.22.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-chi/render v1.0.3
 	github.com/go-co-op/gocron v1.35.2
