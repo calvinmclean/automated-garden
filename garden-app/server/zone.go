@@ -60,7 +60,7 @@ func NewZonesAPI() *ZonesAPI {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
 			modal, apiErr := api.createModal(r, &pkg.Zone{
-				ID: babyapi.NewID(),
+				ID: NewID(),
 			})
 			if apiErr != nil {
 				return apiErr
@@ -121,14 +121,14 @@ func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Render
 	}
 
 	type pos struct {
-		Num      int
+		Num      uint
 		Selected string
 	}
 	positions := []pos{}
 	// TODO: remove positions that are already in-use by Zones
-	for i := 0; i < int(*g.MaxZones); i++ {
+	for i := uint(0); i < *g.MaxZones; i++ {
 		selected := ""
-		if zone.Position != nil && int(*zone.Position) == i {
+		if zone.Position != nil && *zone.Position == i {
 			selected = "selected"
 		}
 		positions = append(positions, pos{i, selected})

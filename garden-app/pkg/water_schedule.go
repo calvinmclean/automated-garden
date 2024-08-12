@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
@@ -47,7 +48,7 @@ func (ws *WaterSchedule) GetNotificationClientID() string {
 
 // EndDated returns true if the WaterSchedule is end-dated
 func (ws *WaterSchedule) EndDated() bool {
-	return ws.EndDate != nil && ws.EndDate.Before(time.Now())
+	return ws.EndDate != nil && ws.EndDate.Before(clock.Now())
 }
 
 func (ws *WaterSchedule) SetEndDate(now time.Time) {
@@ -246,7 +247,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		}
 		// If StartDate is not included, default to today
 		if ws.StartDate == nil {
-			now := time.Now()
+			now := clock.Now()
 			ws.StartDate = &now
 		}
 		if ws.WeatherControl != nil {

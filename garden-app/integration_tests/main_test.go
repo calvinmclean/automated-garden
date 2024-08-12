@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/controller"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
@@ -161,7 +162,7 @@ func GardenTests(t *testing.T) {
 		// Create new Garden with LightOnTime in the near future, so LightDelay will assume the light is currently off,
 		// meaning adhoc action is going to be predictably delayed
 		maxZones := uint(1)
-		startTime := pkg.NewStartTime(time.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second))
+		startTime := pkg.NewStartTime(clock.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second))
 		newGarden := &pkg.Garden{
 			Name:        "TestGarden",
 			TopicPrefix: "test",
@@ -208,30 +209,36 @@ func GardenTests(t *testing.T) {
 		)
 	})
 	t.Run("ChangeLightScheduleStartTimeResetsLightSchedule", func(t *testing.T) {
-		// Reschedule Light to turn in in 1 second, for 1 second
-		newStartTime := pkg.NewStartTime(time.Now().Add(1 * time.Second).Truncate(time.Second))
-		var g server.GardenResponse
-		status, err := makeRequest(http.MethodPatch, "/gardens/"+gardenID, pkg.Garden{
-			LightSchedule: &pkg.LightSchedule{
-				StartTime: newStartTime,
-				Duration:  &pkg.Duration{Duration: time.Second},
-			},
-		}, &g)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime.String(), g.LightSchedule.StartTime.String())
+		// Reschedule Light to turn in in 2 second, for 1 second
+		newStartTimeDelay := 2 * time.Second
+		newStartTime := pkg.NewStartTime(clock.Now().Add(newStartTimeDelay).Truncate(time.Second))
+
+		t.Run("ModifyLightSchedule", func(t *testing.T) {
+			var g server.GardenResponse
+			status, err := makeRequest(http.MethodPatch, "/gardens/"+gardenID, pkg.Garden{
+				LightSchedule: &pkg.LightSchedule{
+					StartTime: newStartTime,
+					Duration:  &pkg.Duration{Duration: time.Second},
+				},
+			}, &g)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, status)
+			assert.Equal(t, newStartTime.String(), g.LightSchedule.StartTime.String())
+		})
 
 		time.Sleep(100 * time.Millisecond)
 
-		// Make sure NextOnTime and state are changed
-		var g2 server.GardenResponse
-		status, err = makeRequest(http.MethodGet, "/gardens/"+gardenID, nil, &g2)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, newStartTime.String(), pkg.NewStartTime(g2.NextLightAction.Time.Local()).String())
-		assert.Equal(t, pkg.LightStateOn, g2.NextLightAction.State)
+		t.Run("CheckNewNextOnTime", func(t *testing.T) {
+			var g server.GardenResponse
+			status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, nil, &g)
+			assert.NoError(t, err)
+			assert.Equal(t, http.StatusOK, status)
+			assert.Equal(t, newStartTime.String(), pkg.NewStartTime(g.NextLightAction.Time.Local()).String())
+			assert.Equal(t, pkg.LightStateOn, g.NextLightAction.State)
+		})
 
-		time.Sleep(2 * time.Second)
+		// wait a little extra
+		time.Sleep(2*newStartTimeDelay + 500*time.Millisecond)
 
 		// Assert both LightActions
 		c.AssertLightActions(t,
@@ -368,7 +375,7 @@ func ZoneTests(t *testing.T) {
 	})
 	t.Run("ChangeWaterScheduleStartTimeResetsWaterSchedule", func(t *testing.T) {
 		// Reschedule to Water in 2 second, for 1 second
-		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
+		newStartTime := clock.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
 			StartTime: pkg.NewStartTime(newStartTime),
@@ -419,7 +426,7 @@ func WaterScheduleTests(t *testing.T) {
 		})
 
 		// Reschedule to Water in 2 second, for 1 second
-		newStartTime := time.Now().Add(2 * time.Second).Truncate(time.Second)
+		newStartTime := clock.Now().Add(2 * time.Second).Truncate(time.Second)
 		var ws server.WaterScheduleResponse
 		status, err := makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
 			StartTime: pkg.NewStartTime(newStartTime),

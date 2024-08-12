@@ -2,6 +2,8 @@ package netatmo
 
 import (
 	"time"
+
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 )
 
 const minTemperatureInterval = 72 * time.Hour
@@ -14,7 +16,7 @@ func (c *Client) GetAverageHighTemperature(since time.Duration) (float32, error)
 		since = minTemperatureInterval
 	}
 
-	now := time.Now()
+	now := clock.Now()
 	beginDate := now.Add(-since).Truncate(time.Hour)
 	beginDate = time.Date(beginDate.Year(), beginDate.Month(), beginDate.Day()-1, 23, 59, 59, 0, time.Local)
 	// Since we are looking at daily max temp, get time all the way to very end of yesterday

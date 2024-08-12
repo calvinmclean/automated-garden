@@ -130,6 +130,7 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 
 	if zr.Zone.SkipCount != nil && *zr.Zone.SkipCount > 0 {
 		zr.NextWater.Message = fmt.Sprintf("skip_count %d affected the time", *zr.Zone.SkipCount)
+		//nolint:gosec
 		newNextTime := zr.NextWater.Time.Add(time.Duration(*zr.Zone.SkipCount) * nextWaterSchedule.Interval.Duration)
 		zr.NextWater.Time = &newNextTime
 	}

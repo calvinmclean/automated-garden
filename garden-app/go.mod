@@ -1,11 +1,14 @@
 module github.com/calvinmclean/automated-garden/garden-app
 
-go 1.21.3
+go 1.22
+
+toolchain go1.23.0
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/ajg/form v1.5.1
-	github.com/calvinmclean/babyapi v0.22.0
+	github.com/benbjohnson/clock v1.3.5
+	github.com/calvinmclean/babyapi v0.23.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-chi/render v1.0.3
 	github.com/go-co-op/gocron v1.35.2
@@ -24,7 +27,7 @@ require (
 	github.com/tarmac-project/hord v0.6.0
 	github.com/tarmac-project/hord/drivers/hashmap v0.6.0
 	github.com/tarmac-project/hord/drivers/redis v0.6.0
-	gopkg.in/dnaeon/go-vcr.v3 v3.2.0
+	gopkg.in/dnaeon/go-vcr.v4 v4.0.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 

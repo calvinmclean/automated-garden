@@ -5,13 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/dnaeon/go-vcr.v3/cassette"
-	"gopkg.in/dnaeon/go-vcr.v3/recorder"
+	"gopkg.in/dnaeon/go-vcr.v4/pkg/cassette"
+	"gopkg.in/dnaeon/go-vcr.v4/pkg/recorder"
 )
 
 func TestNewClientUsingDeviceName(t *testing.T) {
-	r, err := recorder.New("testdata/fixtures/GetDeviceIDs")
+	r, err := recorder.New(recorder.WithCassette("testdata/fixtures/GetDeviceIDs"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,9 +28,9 @@ func TestNewClientUsingDeviceName(t *testing.T) {
 
 	opts := map[string]any{
 		"authentication": map[string]any{
-			"access_token":    "ACCESS_TOKE",
+			"access_token":    "ACCESS_TOKEN",
 			"refresh_token":   "REFRESH_TOKEN",
-			"expiration_date": time.Now().Add(1 * time.Minute).Format(time.RFC3339Nano),
+			"expiration_date": clock.Now().Add(1 * time.Minute).Format(time.RFC3339Nano),
 		},
 		"client_id":           "CLIENT_ID",
 		"client_secret":       "CLIENT_SECRET",
@@ -48,6 +49,21 @@ func TestNewClientUsingDeviceName(t *testing.T) {
 }
 
 func TestWeatherRequestMethods(t *testing.T) {
+	// Modify request from garden-app to use placeholder for date_begin query param
+	matcher := func(r1 *http.Request, r2 cassette.Request) bool {
+		query := r1.URL.Query()
+		if query.Get("date_begin") != "" {
+			query.Set("date_begin", "DATE_BEGIN")
+			r1.URL.RawQuery = query.Encode()
+		}
+		if query.Get("date_end") != "" {
+			query.Set("date_end", "DATE_END")
+			r1.URL.RawQuery = query.Encode()
+		}
+
+		return cassette.DefaultMatcher(r1, r2)
+	}
+
 	tests := []struct {
 		name            string
 		fixture         string
@@ -57,7 +73,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 		{
 			"GetTotalRain_NoRefresh",
 			"testdata/fixtures/GetTotalRain_NoRefresh",
-			time.Now().Add(1 * time.Minute),
+			clock.Now().Add(1 * time.Minute),
 			func(t *testing.T, client *Client) {
 				rain, err := client.GetTotalRain(72 * time.Hour)
 				require.NoError(t, err)
@@ -67,7 +83,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 		{
 			"GetTotalRain_Refresh",
 			"testdata/fixtures/GetTotalRain_Refresh",
-			time.Now().Add(-1 * time.Minute),
+			clock.Now().Add(-1 * time.Minute),
 			func(t *testing.T, client *Client) {
 				rain, err := client.GetTotalRain(72 * time.Hour)
 				require.NoError(t, err)
@@ -78,7 +94,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 		{
 			"GetAverageHighTemperature_NoRefresh",
 			"testdata/fixtures/GetAverageHighTemperature_NoRefresh",
-			time.Now().Add(1 * time.Minute),
+			clock.Now().Add(1 * time.Minute),
 			func(t *testing.T, client *Client) {
 				temp, err := client.GetAverageHighTemperature(72 * time.Hour)
 				require.NoError(t, err)
@@ -104,7 +120,10 @@ func TestWeatherRequestMethods(t *testing.T) {
 			client, err := NewClient(opts, func(newOpts map[string]interface{}) error { return nil })
 			require.NoError(t, err)
 
-			r, err := recorder.New(tt.fixture)
+			r, err := recorder.New(
+				recorder.WithCassette(tt.fixture),
+				recorder.WithMatcher(matcher),
+			)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -115,21 +134,6 @@ func TestWeatherRequestMethods(t *testing.T) {
 			if r.Mode() != recorder.ModeRecordOnce {
 				t.Fatal("Recorder should be in ModeRecordOnce")
 			}
-
-			// Modify request from garden-app to use placeholder for date_begin query param
-			r.SetMatcher(func(r1 *http.Request, r2 cassette.Request) bool {
-				query := r1.URL.Query()
-				if query.Get("date_begin") != "" {
-					query.Set("date_begin", "DATE_BEGIN")
-					r1.URL.RawQuery = query.Encode()
-				}
-				if query.Get("date_end") != "" {
-					query.Set("date_end", "DATE_END")
-					r1.URL.RawQuery = query.Encode()
-				}
-
-				return cassette.DefaultMatcher(r1, r2)
-			})
 
 			client.Client = r.GetDefaultClient()
 

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/ajg/form"
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -33,7 +34,7 @@ func TestTimeLocationFromOffset(t *testing.T) {
 		},
 	}
 
-	now := time.Now()
+	now := clock.Now()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			expectedLoc, _ := time.LoadLocation(tt.expectedLoc)

@@ -6,6 +6,8 @@ import (
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/server"
+	"github.com/calvinmclean/automated-garden/garden-app/server/vcr"
+
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
@@ -16,6 +18,8 @@ var (
 )
 
 func Execute() {
+	defer vcr.StopRecorder()
+
 	api := server.NewAPI()
 	command := api.Command()
 

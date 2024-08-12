@@ -62,6 +62,17 @@ tasks:
     cmds:
       - DEV_TEMPLATE=server/templates/* go run main.go serve --config config.yaml
 
+  run-vcr:
+    desc: Run backend Go app server with VCR enabled
+    aliases: [vcr]
+    dir: ./garden-app
+    vars:
+      vcr_base_dir: server/vcr/testdata/vcr_server
+    env:
+      VCR_CASSETTE: "{{ .vcr_base_dir }}/fixtures/{{ .CLI_ARGS }}"
+    cmds:
+      - go run main.go serve --config ./{{ .vcr_base_dir }}/config.yaml
+
   run-controller:
     desc: Run mock controller
     aliases: [rc]

@@ -12,8 +12,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
 	"github.com/stretchr/testify/require"
-	"gopkg.in/dnaeon/go-vcr.v3/cassette"
-	"gopkg.in/dnaeon/go-vcr.v3/recorder"
+	"gopkg.in/dnaeon/go-vcr.v4/pkg/cassette"
+	"gopkg.in/dnaeon/go-vcr.v4/pkg/recorder"
 )
 
 func TestParseWaterMessage(t *testing.T) {
@@ -115,7 +115,7 @@ func TestHandleMessage(t *testing.T) {
 	})
 
 	t.Run("ErrorUsingPushover", func(t *testing.T) {
-		r, err := recorder.New("testdata/fixtures/pushover_fail")
+		r, err := recorder.New(recorder.WithCassette("testdata/fixtures/pushover_fail"))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -136,7 +136,18 @@ func TestHandleMessage(t *testing.T) {
 	})
 
 	t.Run("Success", func(t *testing.T) {
-		r, err := recorder.New("testdata/fixtures/pushover_success")
+		numMessages := 0
+
+		r, err := recorder.New(
+			recorder.WithCassette("testdata/fixtures/pushover_success"),
+			recorder.WithHook(func(i *cassette.Interaction) error {
+				// Use hook to count number of message requests
+				if i.Request.URL == "https://api.pushover.net/1/messages.json" {
+					numMessages++
+				}
+				return nil
+			}, recorder.BeforeResponseReplayHook),
+		)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -147,14 +158,6 @@ func TestHandleMessage(t *testing.T) {
 		if r.Mode() != recorder.ModeRecordOnce {
 			t.Fatal("Recorder should be in ModeRecordOnce")
 		}
-
-		numMessages := 0
-		r.AddHook(func(i *cassette.Interaction) error {
-			if i.Request.URL == "https://api.pushover.net/1/messages.json" {
-				numMessages++
-			}
-			return nil
-		}, recorder.BeforeResponseReplayHook)
 
 		// github.com/gregdel/pushover uses http.DefaultClient
 		http.DefaultClient = r.GetDefaultClient()

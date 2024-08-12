@@ -59,7 +59,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
 			return weatherClientModalTemplate.Renderer(&weather.Config{
-				ID: babyapi.NewID(),
+				ID: NewID(),
 			})
 		default:
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
