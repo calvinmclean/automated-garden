@@ -20,12 +20,14 @@ const (
 |> filter(fn: (r) => r["_field"] == "value")
 |> filter(fn: (r) => r["zone"] == "{{.ZonePosition}}")
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/moisture")
+|> drop(columns: ["host"])
 |> mean()`
 	healthQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "health")
 |> filter(fn: (r) => r["_field"] == "garden")
 |> filter(fn: (r) => r["_value"] == "{{.TopicPrefix}}")
+|> drop(columns: ["host"])
 |> last()`
 	waterHistoryQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
@@ -36,12 +38,14 @@ const (
 {{- if .Limit }}
 |> limit(n: {{.Limit}})
 {{- end }}
+|> drop(columns: ["host"])
 |> yield(name: "last")`
 	temperatureAndHumidityQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "temperature" or r["_measurement"] == "humidity")
 |> filter(fn: (r) => r["_field"] == "value")
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/temperature" or r["topic"] == "{{.TopicPrefix}}/data/humidity")
+|> drop(columns: ["host"])
 |> mean()`
 )
 
