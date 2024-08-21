@@ -1,7 +1,6 @@
 garden-app
-config.yaml
-plants.yaml
-gardens.yaml
+/config.yaml
+/gardens.yaml
 cover.out
 coverage.out
 integration_coverage.out

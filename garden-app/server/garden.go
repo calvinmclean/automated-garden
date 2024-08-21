@@ -59,7 +59,7 @@ func NewGardenAPI() *GardensAPI {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
 			return api.gardenModalRenderer(r.Context(), &pkg.Garden{
-				ID: babyapi.NewID(),
+				ID: NewID(),
 			})
 		default:
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))

@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -21,13 +22,13 @@ func TestHealth(t *testing.T) {
 	}{
 		{
 			"GardenIsUp",
-			time.Now(),
+			clock.Now(),
 			nil,
 			HealthStatusUp,
 		},
 		{
 			"GardenIsDown",
-			time.Now().Add(-5 * time.Minute),
+			clock.Now().Add(-5 * time.Minute),
 			nil,
 			HealthStatusDown,
 		},
@@ -61,8 +62,8 @@ func TestHealth(t *testing.T) {
 }
 
 func TestGardenEndDated(t *testing.T) {
-	pastDate := time.Now().Add(-1 * time.Minute)
-	futureDate := time.Now().Add(time.Minute)
+	pastDate := clock.Now().Add(-1 * time.Minute)
+	futureDate := clock.Now().Add(time.Minute)
 	tests := []struct {
 		name     string
 		endDate  *time.Time
@@ -84,7 +85,7 @@ func TestGardenEndDated(t *testing.T) {
 }
 
 func TestGardenPatch(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	ten := uint(10)
 	trueBool := true
 	falseBool := false
@@ -172,7 +173,7 @@ func TestGardenPatch(t *testing.T) {
 	})
 
 	t.Run("PatchDoesNotAddEndDate", func(t *testing.T) {
-		now := time.Now()
+		now := clock.Now()
 		g := &Garden{}
 
 		err := g.Patch(&Garden{EndDate: &now})
@@ -184,7 +185,7 @@ func TestGardenPatch(t *testing.T) {
 	})
 
 	t.Run("PatchRemoveEndDate", func(t *testing.T) {
-		now := time.Now()
+		now := clock.Now()
 		g := &Garden{
 			EndDate: &now,
 		}

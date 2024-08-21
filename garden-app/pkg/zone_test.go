@@ -4,14 +4,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestZoneEndDated(t *testing.T) {
-	pastDate := time.Now().Add(-1 * time.Minute)
-	futureDate := time.Now().Add(time.Minute)
+	pastDate := clock.Now().Add(-1 * time.Minute)
+	futureDate := clock.Now().Add(time.Minute)
 	tests := []struct {
 		name     string
 		endDate  *time.Time
@@ -35,7 +36,7 @@ func TestZoneEndDated(t *testing.T) {
 func TestZonePatch(t *testing.T) {
 	zero := uint(0)
 	three := uint(3)
-	now := time.Now()
+	now := clock.Now()
 	wsID := xid.New()
 	tests := []struct {
 		name    string
@@ -87,7 +88,7 @@ func TestZonePatch(t *testing.T) {
 	}
 
 	t.Run("PatchDoesNotAddEndDate", func(t *testing.T) {
-		now := time.Now()
+		now := clock.Now()
 		p := &Zone{}
 
 		err := p.Patch(&Zone{EndDate: &now})
@@ -99,7 +100,7 @@ func TestZonePatch(t *testing.T) {
 	})
 
 	t.Run("PatchRemoveEndDate", func(t *testing.T) {
-		now := time.Now()
+		now := clock.Now()
 		p := &Zone{
 			EndDate: &now,
 		}

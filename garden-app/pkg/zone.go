@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/babyapi"
 	"github.com/rs/xid"
 )
@@ -38,7 +39,7 @@ func (z *Zone) String() string {
 
 // EndDated returns true if the Zone is end-dated
 func (z *Zone) EndDated() bool {
-	return z.EndDate != nil && z.EndDate.Before(time.Now())
+	return z.EndDate != nil && z.EndDate.Before(clock.Now())
 }
 
 func (z *Zone) SetEndDate(now time.Time) {
@@ -134,7 +135,7 @@ func (z *Zone) Bind(r *http.Request) error {
 	}
 	z.WaterScheduleIDs = wsIDs
 
-	now := time.Now()
+	now := clock.Now()
 	switch r.Method {
 	case http.MethodPost:
 		z.CreatedAt = &now

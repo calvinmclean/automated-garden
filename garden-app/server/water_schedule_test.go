@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -285,7 +286,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 }
 
 func TestEndDateWaterSchedule(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	endDatedWaterSchedule := createExampleWaterSchedule()
 	endDatedWaterSchedule.EndDate = &now
 	endDatedWaterSchedule.ID = babyapi.ID{ID: id2}
@@ -361,7 +362,7 @@ func TestGetAllWaterSchedules(t *testing.T) {
 	waterSchedule := createExampleWaterSchedule()
 	endDatedWaterSchedule := createExampleWaterSchedule()
 	endDatedWaterSchedule.ID = babyapi.NewID()
-	now := time.Now()
+	now := clock.Now()
 	endDatedWaterSchedule.EndDate = &now
 
 	tests := []struct {
@@ -564,7 +565,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 }
 
 func TestWaterScheduleRequest(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	tests := []struct {
 		name string
 		pr   *pkg.WaterSchedule
@@ -777,7 +778,7 @@ func TestWaterScheduleRequest(t *testing.T) {
 }
 
 func TestUpdateWaterScheduleRequest(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	tests := []struct {
 		name string
 		pr   *pkg.WaterSchedule

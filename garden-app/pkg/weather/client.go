@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
 	"github.com/calvinmclean/babyapi"
@@ -127,7 +128,7 @@ func newMetricsWrapperClient(client Client, config *Config) Client {
 
 // GetTotalRain ...
 func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
-	now := time.Now()
+	now := clock.Now()
 	cached := false
 	defer func() {
 		weatherClientSummary.WithLabelValues("GetTotalRain", fmt.Sprintf("%t", cached)).Observe(time.Since(now).Seconds())
@@ -151,7 +152,7 @@ func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
 
 // GetAverageHighTemperature ...
 func (c *clientWrapper) GetAverageHighTemperature(since time.Duration) (float32, error) {
-	now := time.Now()
+	now := clock.Now()
 	cached := false
 	defer func() {
 		weatherClientSummary.WithLabelValues("GetAverageHighTemperature", fmt.Sprintf("%t", cached)).Observe(time.Since(now).Seconds())

@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/html"
@@ -54,7 +55,7 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"ToLower": strings.ToLower,
 		"FormatUpcomingDate": func(date *time.Time) string {
-			now := time.Now()
+			now := clock.Now()
 			if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
 				return date.Format("at 3:04PM")
 			}
@@ -77,7 +78,7 @@ func templateFuncs(r *http.Request) map[string]any {
 			return c*1.8 + 32
 		},
 		"timeNow": func() time.Time {
-			return time.Now()
+			return clock.Now()
 		},
 		"URLContains": func(input string) bool {
 			return strings.Contains(r.URL.Path, input)

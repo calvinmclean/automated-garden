@@ -84,7 +84,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
 			return api.waterScheduleModalRenderer(r.Context(), &pkg.WaterSchedule{
-				ID: babyapi.NewID(),
+				ID: NewID(),
 			})
 		default:
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))

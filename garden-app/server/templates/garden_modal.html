@@ -37,7 +37,7 @@
             <div class="uk-margin">
                 <label class="uk-form-label" for="garden-light-schedule-duration">Light Schedule Duration</label>
                 <select id="garden-light-schedule-duration" class="uk-select" name="LightSchedule.Duration">
-                    <option disabled {{ if eq .LightSchedule nil }}selected{{ end }}>Light Schedule Duration</option>
+                    <option disabled value="" {{ if eq .LightSchedule nil }}selected{{ end }}>Light Schedule Duration</option>
                     {{ range $i, $selected := LightScheduleRange .LightSchedule }}
                     <option value="{{ $i }}h" {{ $selected }}>{{ $i }} hours</option>
                     {{ end }}
@@ -57,7 +57,7 @@
                 <select id="notification-client-select" class="uk-select" name="NotificationClientID">
                     {{ $noClientSelected := true }}
                     $noClientSelected = eq .NotificationClientID nil
-                    <option disabled {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
+                    <option disabled value="" {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
                     
                     {{ $g := . }}
                     {{ range $i, $nc := .NotificationClients }}

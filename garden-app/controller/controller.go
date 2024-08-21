@@ -11,6 +11,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/server"
@@ -115,7 +116,7 @@ func NewController(cfg Config) (*Controller, error) {
 	}
 
 	// Override configured ClientID with the TopicPrefix from command flags
-	controller.MQTTConfig.ClientID = fmt.Sprintf(controller.TopicPrefix)
+	controller.MQTTConfig.ClientID = fmt.Sprint(controller.TopicPrefix)
 	controller.mqttClient, err = mqtt.NewClient(controller.MQTTConfig, mqtt.DefaultHandler(controller.logger), handlers...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to initialize MQTT client: %w", err)
@@ -132,6 +133,7 @@ func (c *Controller) Start() {
 	// Initialize scheduler and schedule publishing Jobs
 	c.logger.Debug("initializing scheduler")
 	scheduler := gocron.NewScheduler(time.Local)
+	scheduler.CustomTime(clock.DefaultClock)
 	if c.MoistureInterval != 0 {
 		for p := 0; p < c.NumZones; p++ {
 			c.logger.With(
@@ -170,7 +172,7 @@ func (c *Controller) Start() {
 	var shutdownStart time.Time
 	go func() {
 		<-c.quit
-		shutdownStart = time.Now()
+		shutdownStart = clock.Now()
 		c.logger.Info("gracefully shutting down controller")
 
 		scheduler.Stop()

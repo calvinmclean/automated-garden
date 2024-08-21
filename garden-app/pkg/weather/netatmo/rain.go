@@ -2,6 +2,8 @@ package netatmo
 
 import (
 	"time"
+
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 )
 
 const minRainInterval = 24 * time.Hour
@@ -13,7 +15,7 @@ func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
 		since = minRainInterval
 	}
 
-	beginDate := time.Now().Add(-since)
+	beginDate := clock.Now().Add(-since)
 	rainData, err := c.getMeasure("sum_rain", "1day", beginDate, nil)
 	if err != nil {
 		return 0, err

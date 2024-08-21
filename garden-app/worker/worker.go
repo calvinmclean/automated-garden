@@ -2,8 +2,10 @@ package worker
 
 import (
 	"log/slog"
+	"sync"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -24,6 +26,15 @@ var (
 	}, []string{"type", "id"})
 )
 
+func init() {
+	sync.OnceFunc(func() {
+		prometheus.MustRegister(
+			scheduleJobsGauge,
+			schedulerErrors,
+		)
+	})()
+}
+
 // Worker contains the necessary clients to schedule and execute actions
 type Worker struct {
 	storageClient  *storage.Client
@@ -40,11 +51,13 @@ func NewWorker(
 	mqttClient mqtt.Client,
 	logger *slog.Logger,
 ) *Worker {
+	scheduler := gocron.NewScheduler(time.UTC)
+	scheduler.CustomTime(clock.DefaultClock)
 	return &Worker{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		mqttClient:     mqttClient,
-		scheduler:      gocron.NewScheduler(time.UTC),
+		scheduler:      scheduler,
 		logger:         logger.With("source", "worker"),
 	}
 }
@@ -52,10 +65,6 @@ func NewWorker(
 // StartAsync starts the Worker's background jobs
 func (w *Worker) StartAsync() {
 	w.scheduler.StartAsync()
-	prometheus.MustRegister(
-		scheduleJobsGauge,
-		schedulerErrors,
-	)
 }
 
 // Stop stops the Worker's background jobs

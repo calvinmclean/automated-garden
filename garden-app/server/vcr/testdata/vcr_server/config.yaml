@@ -1,0 +1,20 @@
+web_server:
+  port: 8080
+  disable_metrics: true
+mqtt:
+  broker: "localhost"
+  port: 1883
+  client_id: "garden-app"
+  water_topic: "{{.Garden}}/command/water"
+  stop_topic: "{{.Garden}}/command/stop"
+  stop_all_topic: "{{.Garden}}/command/stop_all"
+  light_topic: "{{.Garden}}/command/light"
+influxdb:
+  address: "http://localhost:8086"
+  token: "my-token"
+  org: "garden"
+  bucket: "garden"
+storage:
+  driver: "hashmap"
+  # options:
+  #   filename: "./testdata/vcr_server/gardens.yaml"

@@ -8,6 +8,7 @@ import (
 	"sort"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/go-co-op/gocron"
@@ -60,7 +61,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 					return errors.New("WaterSchedule not found")
 				}
 
-				if !ws.IsActive(time.Now()) {
+				if !ws.IsActive(clock.Now()) {
 					jobLogger.Info("skipping WaterSchedule because current time is outside of ActivePeriod", "active_period", *ws.ActivePeriod)
 					return nil
 				}
@@ -183,7 +184,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 
 	lightTime := g.LightSchedule.StartTime.Time.UTC()
 
-	now := time.Now()
+	now := clock.Now()
 	onStartDate := timeAtDate(&now, lightTime)
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
 
@@ -217,7 +218,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	if g.LightSchedule.AdhocOnTime != nil {
 		logger.Debug("garden has adhoc ON time", "adhoc_on_time", g.LightSchedule.AdhocOnTime)
 		// If AdhocOnTime is in the past, reset it and return
-		if g.LightSchedule.AdhocOnTime.Before(time.Now().UTC()) {
+		if g.LightSchedule.AdhocOnTime.Before(clock.Now().UTC()) {
 			logger.Debug("adhoc ON time is in the past and is being removed")
 			g.LightSchedule.AdhocOnTime = nil
 			return w.storageClient.Gardens.Set(context.Background(), g)
@@ -305,7 +306,7 @@ func (w *Worker) ScheduleLightDelay(g *pkg.Garden, input *action.LightAction) er
 	// No need to change any schedules
 	if nextOffTime.Before(*nextOnTime) {
 		logger.Debug("next OFF time is before next ON time; setting schedule to turn light back on", "duration", input.ForDuration.Duration)
-		now := time.Now().UTC()
+		now := clock.Now().UTC()
 
 		// Don't allow a delayDuration that will occur after nextOffTime
 		if nextOffTime.Before(now.Add(input.ForDuration.Duration)) {
@@ -500,7 +501,7 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 }
 
 func timeAtDate(date *time.Time, startTime time.Time) time.Time {
-	actualDate := time.Now()
+	actualDate := clock.Now()
 	if date != nil {
 		actualDate = *date
 	}

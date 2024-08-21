@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
@@ -481,7 +482,7 @@ func TestUpdateZone(t *testing.T) {
 }
 
 func TestEndDateZone(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	endDatedZone := createExampleZone()
 	endDatedZone.EndDate = &now
 
@@ -597,7 +598,7 @@ func TestCreateZone(t *testing.T) {
 	gardenWithZone.MaxZones = &one
 
 	// Predict NextWaterTime so I can test it better
-	now := time.Now()
+	now := clock.Now()
 	expectedNextWaterTime := time.Date(now.Year(), now.Month(), now.Day(), createdAt.Hour(), createdAt.Minute(), createdAt.Second(), createdAt.Nanosecond(), createdAt.Location())
 	if now.After(expectedNextWaterTime) {
 		expectedNextWaterTime = expectedNextWaterTime.Add(24 * time.Hour)
@@ -1071,7 +1072,7 @@ func TestZoneRequest(t *testing.T) {
 
 func TestUpdateZoneRequest(t *testing.T) {
 	pp := uint(0)
-	now := time.Now()
+	now := clock.Now()
 	tests := []struct {
 		name string
 		z    *pkg.Zone

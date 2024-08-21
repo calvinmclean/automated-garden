@@ -51,7 +51,7 @@ func (h *WaterNotificationHandler) getZone(gardenID string, zonePosition int) (*
 	for _, z := range zones {
 		if z.GardenID.String() == gardenID &&
 			z.Position != nil &&
-			int(*z.Position) == zonePosition {
+			*z.Position == uint(zonePosition) {
 			zone = z
 			break
 		}

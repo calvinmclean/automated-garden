@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
@@ -68,7 +69,7 @@ func TestGetGarden(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
-			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
+			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 			storageClient := setupZoneAndGardenStorage(t)
 
 			gr := NewGardenAPI()
@@ -162,7 +163,7 @@ func TestCreateGarden(t *testing.T) {
 			assert.NoError(t, err)
 
 			influxdbClient := new(influxdb.MockClient)
-			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
+			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 			if tt.temperatureHumidityError {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(0.0, 0.0, errors.New("influxdb error"))
 			} else {
@@ -262,7 +263,7 @@ func TestUpdateGardenPUT(t *testing.T) {
 			assert.NoError(t, err)
 
 			influxdbClient := new(influxdb.MockClient)
-			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
+			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 			if tt.temperatureHumidityError {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(0.0, 0.0, errors.New("influxdb error"))
 			} else {
@@ -320,7 +321,7 @@ func TestGetAllGardens(t *testing.T) {
 			}
 
 			influxdbClient := new(influxdb.MockClient)
-			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
+			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 
 			gr := NewGardenAPI()
 			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
@@ -337,7 +338,7 @@ func TestGetAllGardens(t *testing.T) {
 }
 
 func TestEndDateGarden(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	endDatedGarden := createExampleGarden()
 	endDatedGarden.EndDate = &now
 
@@ -486,7 +487,7 @@ func TestUpdateGarden(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
-			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(time.Now(), nil)
+			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 			storageClient := setupZoneAndGardenStorage(t)
 
 			err := storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
@@ -837,7 +838,7 @@ func TestGardenRequest(t *testing.T) {
 }
 
 func TestUpdateGardenRequest(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	zero := uint(0)
 	tests := []struct {
 		name string

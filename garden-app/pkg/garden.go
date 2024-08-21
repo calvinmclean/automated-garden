@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/babyapi"
 )
@@ -92,7 +93,7 @@ func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) *Ga
 
 // EndDated returns true if the Garden is end-dated
 func (g *Garden) EndDated() bool {
-	return g.EndDate != nil && g.EndDate.Before(time.Now())
+	return g.EndDate != nil && g.EndDate.Before(clock.Now())
 }
 
 func (g *Garden) SetEndDate(now time.Time) {
@@ -156,7 +157,7 @@ func (g *Garden) Bind(r *http.Request) error {
 		return err
 	}
 
-	now := time.Now()
+	now := clock.Now()
 	switch r.Method {
 	case http.MethodPost:
 		g.CreatedAt = &now
@@ -195,6 +196,11 @@ func (g *Garden) Bind(r *http.Request) error {
 			if g.LightSchedule.StartTime == nil {
 				return errors.New("missing required light_schedule.start_time field")
 			}
+		}
+
+		// Ignore empty string provided for NotificationClientID
+		if g.NotificationClientID != nil && *g.NotificationClientID == "" {
+			g.NotificationClientID = nil
 		}
 	case http.MethodPatch:
 		illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)

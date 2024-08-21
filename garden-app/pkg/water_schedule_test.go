@@ -5,14 +5,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestWaterScheduleEndDated(t *testing.T) {
-	pastDate := time.Now().Add(-1 * time.Minute)
-	futureDate := time.Now().Add(time.Minute)
+	pastDate := clock.Now().Add(-1 * time.Minute)
+	futureDate := clock.Now().Add(time.Minute)
 	tests := []struct {
 		name     string
 		endDate  *time.Time
@@ -36,7 +37,7 @@ func TestWaterScheduleEndDated(t *testing.T) {
 func TestWaterSchedulePatch(t *testing.T) {
 	one := 1
 	float := float32(1)
-	now := time.Now()
+	now := clock.Now()
 	tests := []struct {
 		name             string
 		newWaterSchedule *WaterSchedule
@@ -139,7 +140,7 @@ func TestWaterSchedulePatch(t *testing.T) {
 	}
 
 	t.Run("PatchDoesNotAddEndDate", func(t *testing.T) {
-		now := time.Now()
+		now := clock.Now()
 		ws := &WaterSchedule{}
 
 		err := ws.Patch(&WaterSchedule{EndDate: &now})
@@ -151,7 +152,7 @@ func TestWaterSchedulePatch(t *testing.T) {
 	})
 
 	t.Run("PatchRemoveEndDate", func(t *testing.T) {
-		now := time.Now()
+		now := clock.Now()
 		ws := &WaterSchedule{
 			EndDate: &now,
 		}
@@ -377,7 +378,7 @@ func TestWaterScheduleIsActive(t *testing.T) {
 			currentMonth, err := time.Parse("January", tt.currentMonth)
 			assert.NoError(t, err)
 
-			currentTime := currentMonth.AddDate(time.Now().Year(), 0, 0)
+			currentTime := currentMonth.AddDate(clock.Now().Year(), 0, 0)
 
 			// Check every day in this month
 			for currentTime.Month() == currentMonth.Month() {
@@ -390,6 +391,6 @@ func TestWaterScheduleIsActive(t *testing.T) {
 	}
 
 	t.Run("NoActivePeriod", func(t *testing.T) {
-		assert.Equal(t, true, (&WaterSchedule{}).IsActive(time.Now()))
+		assert.Equal(t, true, (&WaterSchedule{}).IsActive(clock.Now()))
 	})
 }

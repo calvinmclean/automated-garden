@@ -6,11 +6,15 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/server/vcr"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
+
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/html"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -42,9 +46,6 @@ func NewAPI() *API {
 	api.gardens.AddNestedAPI(api.zones)
 
 	api.API.
-		AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
-			Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
-		}))).
 		AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler()).
 		AddCustomRoute(http.MethodGet, "/", http.RedirectHandler("/gardens", http.StatusFound)).
 		AddNestedAPI(api.gardens).
@@ -52,7 +53,26 @@ func NewAPI() *API {
 		AddNestedAPI(api.notificationClients).
 		AddNestedAPI(api.waterSchedules)
 
+	cassetteName := os.Getenv("VCR_CASSETTE")
+	if cassetteName != "" {
+		EnableMock()
+		vcr.MustSetupVCR(cassetteName)
+	}
+
 	return api
+}
+
+// EnableMock prepares mock IDs and clock
+func EnableMock() {
+	enableMockIDs = true
+	mockIDIndex = 0
+	_ = clock.MockTime()
+}
+
+// DisableMock will disable mock IDs and reset the mock clock
+func DisableMock() {
+	enableMockIDs = false
+	clock.Reset()
 }
 
 // Setup will prepare to run by setting up clients and doing any final configurations for the API
@@ -62,6 +82,12 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 
 	logger := cfg.LogConfig.NewLogger().With("source", "server")
 	slog.SetDefault(logger)
+
+	if !cfg.WebConfig.DisableMetrics {
+		api.API.AddMiddleware(std.HandlerProvider("", metrics_middleware.New(metrics_middleware.Config{
+			Recorder: prommetrics.NewRecorder(prommetrics.Config{Prefix: "garden_app"}),
+		})))
+	}
 
 	// Initialize Storage Client
 	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)

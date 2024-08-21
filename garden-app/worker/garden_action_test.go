@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -106,7 +107,7 @@ func TestGardenAction(t *testing.T) {
 }
 
 func TestLightActionExecute(t *testing.T) {
-	now := time.Now()
+	now := clock.Now()
 	startTime, _ := pkg.StartTimeFromString("23:00:00-07:00")
 	garden := &pkg.Garden{
 		ID:          babyapi.NewID(),

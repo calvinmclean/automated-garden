@@ -17,6 +17,7 @@ type Config struct {
 
 // WebConfig is used to allow reading the "web_server" section into the main Config struct
 type WebConfig struct {
-	Port     int  `mapstructure:"port"`
-	ReadOnly bool `mapstructure:"readonly"`
+	Port           int  `mapstructure:"port"`
+	ReadOnly       bool `mapstructure:"readonly"`
+	DisableMetrics bool `mapstructure:"disable_metrics"`
 }

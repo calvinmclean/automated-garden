@@ -3,6 +3,7 @@ package influxdb
 import (
 	"bytes"
 	"context"
+	"sync"
 	"text/template"
 	"time"
 
@@ -43,6 +44,12 @@ const (
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/temperature" or r["topic"] == "{{.TopicPrefix}}/data/humidity")
 |> mean()`
 )
+
+func init() {
+	sync.OnceFunc(func() {
+		prometheus.MustRegister(influxDBClientSummary)
+	})()
+}
 
 var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 	Namespace: "garden_app",
@@ -95,7 +102,6 @@ type client struct {
 
 // NewClient creates an InfluxDB client from the viper config
 func NewClient(config Config) Client {
-	prometheus.MustRegister(influxDBClientSummary)
 	return &client{
 		influxdb2.NewClient(config.Address, config.Token),
 		config,
