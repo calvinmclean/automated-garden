@@ -48,6 +48,14 @@ func NewAPI() *API {
 	api.API.
 		AddCustomRoute(http.MethodGet, "/metrics", promhttp.Handler()).
 		AddCustomRoute(http.MethodGet, "/", http.RedirectHandler("/gardens", http.StatusFound)).
+		AddCustomRoute(http.MethodGet, "/manifest.json", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			// manifest.json enables PWA for mobile devices
+			_, _ = w.Write([]byte(`{
+			  "name": "Garden App",
+			  "start_url": "/gardens",
+			  "display": "standalone"
+			}`))
+		})).
 		AddNestedAPI(api.gardens).
 		AddNestedAPI(api.weatherClients).
 		AddNestedAPI(api.notificationClients).
