@@ -12,7 +12,7 @@ import (
 )
 
 func TestNewClientUsingDeviceName(t *testing.T) {
-	r, err := recorder.New(recorder.WithCassette("testdata/fixtures/GetDeviceIDs"))
+	r, err := recorder.New("testdata/fixtures/GetDeviceIDs")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -121,7 +121,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 			require.NoError(t, err)
 
 			r, err := recorder.New(
-				recorder.WithCassette(tt.fixture),
+				tt.fixture,
 				recorder.WithMatcher(matcher),
 			)
 			if err != nil {

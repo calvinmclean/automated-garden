@@ -25,7 +25,7 @@ func StopRecorder() {
 func MustSetupVCR(cassetteName string) {
 	var err error
 	rec, err = recorder.New(
-		recorder.WithCassette(cassetteName),
+		cassetteName,
 		recorder.WithMode(recorder.ModeRecordOnly),
 	)
 	if err != nil {

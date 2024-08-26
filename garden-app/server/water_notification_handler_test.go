@@ -115,7 +115,7 @@ func TestHandleMessage(t *testing.T) {
 	})
 
 	t.Run("ErrorUsingPushover", func(t *testing.T) {
-		r, err := recorder.New(recorder.WithCassette("testdata/fixtures/pushover_fail"))
+		r, err := recorder.New("testdata/fixtures/pushover_fail")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -139,7 +139,7 @@ func TestHandleMessage(t *testing.T) {
 		numMessages := 0
 
 		r, err := recorder.New(
-			recorder.WithCassette("testdata/fixtures/pushover_success"),
+			"testdata/fixtures/pushover_success",
 			recorder.WithHook(func(i *cassette.Interaction) error {
 				// Use hook to count number of message requests
 				if i.Request.URL == "https://api.pushover.net/1/messages.json" {

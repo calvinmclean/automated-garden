@@ -27,7 +27,7 @@ require (
 	github.com/tarmac-project/hord v0.6.0
 	github.com/tarmac-project/hord/drivers/hashmap v0.6.0
 	github.com/tarmac-project/hord/drivers/redis v0.6.0
-	gopkg.in/dnaeon/go-vcr.v4 v4.0.0
+	gopkg.in/dnaeon/go-vcr.v4 v4.0.1
 	gopkg.in/yaml.v3 v3.0.1
 )
 
