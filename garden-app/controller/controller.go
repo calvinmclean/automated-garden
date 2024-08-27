@@ -297,6 +297,19 @@ func (c *Controller) publishTemperatureHumidityData() {
 	}
 }
 
+// PublishStartupLog publishes the message that controllers use to signal that they started up
+func (c *Controller) PublishStartupLog(topicPrefix string) error {
+	topic := fmt.Sprintf("%s/data/logs", topicPrefix)
+	msg := "logs message=\"garden-controller setup complete\""
+
+	err := c.mqttClient.Publish(topic, []byte(msg))
+	if err != nil {
+		return fmt.Errorf("error publishing startup log %w", err)
+	}
+
+	return nil
+}
+
 // addNoise will take a base value and introduce some += variance based on the provided percentage range. This will
 // produce sensor data that is relatively consistent but not totally flat
 func addNoise(baseValue float64, percentRange float64) float64 {

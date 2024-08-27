@@ -68,11 +68,21 @@ func (w *Worker) StartAsync() {
 
 	// Skip adding handler when mocked since it's not used
 	_, isMock := w.mqttClient.(*mqtt.MockClient)
-	if !isMock && w.mqttClient != nil {
-		w.mqttClient.AddHandler(mqtt.TopicHandler{
-			Topic:   "+/data/water",
-			Handler: w.handleWaterCompleteMessage,
-		})
+	if isMock || w.mqttClient == nil {
+		return
+	}
+
+	w.mqttClient.AddHandler(mqtt.TopicHandler{
+		Topic:   "+/data/water",
+		Handler: w.handleWaterCompleteMessage,
+	})
+	w.mqttClient.AddHandler(mqtt.TopicHandler{
+		Topic:   "+/data/logs",
+		Handler: w.handleGardenStartupMessage,
+	})
+
+	if err := w.mqttClient.Connect(); err != nil {
+		w.logger.Error("failed to connect to MQTT broker", "error", err)
 	}
 }
 
