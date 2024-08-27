@@ -1,5 +1,7 @@
 package mqtt
 
+//go:generate mockery --all --inpackage
+
 import (
 	"bytes"
 	"errors"
@@ -11,6 +13,8 @@ import (
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+const QOS = byte(1)
 
 var mqttClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 	Namespace: "garden_app",
@@ -39,12 +43,16 @@ type Client interface {
 	LightTopic(string) (string, error)
 	Connect() error
 	Disconnect(uint)
+	AddHandler(TopicHandler)
 }
 
 // client is a wrapper struct for connecting our config and MQTT Client. It implements the Client interface
 type client struct {
 	mu sync.Mutex
 	mqtt.Client
+
+	handlers []TopicHandler
+
 	Config
 }
 
@@ -58,17 +66,21 @@ type TopicHandler struct {
 // using the supplied functions to handle incoming messages. It really should be used with only one function,
 // but I wanted to make it an optional argument, which required using the variadic function argument
 func NewClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...TopicHandler) (Client, error) {
+	client := &client{
+		Config:   config,
+		handlers: handlers,
+	}
+
 	opts := mqtt.NewClientOptions().AddBroker(fmt.Sprintf("tcp://%s:%d", config.Broker, config.Port))
 	opts.ClientID = config.ClientID
 	opts.AutoReconnect = true
 	opts.CleanSession = false
-	if len(handlers) > 0 {
-		opts.OnConnect = func(c mqtt.Client) {
-			for _, handler := range handlers {
-				if token := c.Subscribe(handler.Topic, byte(1), handler.Handler); token.Wait() && token.Error() != nil {
-					// TODO: can I return an error instead of panicking (recover maybe?)
-					panic(token.Error())
-				}
+	opts.OnConnect = func(c mqtt.Client) {
+		for _, handler := range client.handlers {
+			token := c.Subscribe(handler.Topic, QOS, handler.Handler)
+			if token.Wait() && token.Error() != nil {
+				// TODO: can I return an error instead of panicking (recover maybe?)
+				panic(token.Error())
 			}
 		}
 	}
@@ -79,7 +91,13 @@ func NewClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...To
 		return nil, err
 	}
 
-	return &client{Client: mqtt.NewClient(opts), Config: config}, nil
+	client.Client = mqtt.NewClient(opts)
+
+	return client, nil
+}
+
+func (c *client) AddHandler(handler TopicHandler) {
+	c.handlers = append(c.handlers, handler)
 }
 
 // Connect uses the MQTT Client's Connect function but returns the error instead of Token

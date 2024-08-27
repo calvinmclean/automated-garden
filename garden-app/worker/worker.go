@@ -65,6 +65,15 @@ func NewWorker(
 // StartAsync starts the Worker's background jobs
 func (w *Worker) StartAsync() {
 	w.scheduler.StartAsync()
+
+	// Skip adding handler when mocked since it's not used
+	_, isMock := w.mqttClient.(*mqtt.MockClient)
+	if !isMock && w.mqttClient != nil {
+		w.mqttClient.AddHandler(mqtt.TopicHandler{
+			Topic:   "+/data/water",
+			Handler: w.handleWaterCompleteMessage,
+		})
+	}
 }
 
 // Stop stops the Worker's background jobs

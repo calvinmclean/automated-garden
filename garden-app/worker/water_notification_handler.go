@@ -1,30 +1,21 @@
-package server
+package worker
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-type WaterNotificationHandler struct {
-	storageClient *storage.Client
-	logger        *slog.Logger
-}
+const notificationClientIDLogField = "notification_client_id"
 
-func NewWaterNotificationHandler(storageClient *storage.Client, logger *slog.Logger) *WaterNotificationHandler {
-	return &WaterNotificationHandler{storageClient, logger}
-}
-
-func (h *WaterNotificationHandler) getGarden(topicPrefix string) (*pkg.Garden, error) {
-	gardens, err := h.storageClient.Gardens.GetAll(context.Background(), nil)
+func (w *Worker) getGarden(topicPrefix string) (*pkg.Garden, error) {
+	gardens, err := w.storageClient.Gardens.GetAll(context.Background(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all gardens: %w", err)
 	}
@@ -42,8 +33,8 @@ func (h *WaterNotificationHandler) getGarden(topicPrefix string) (*pkg.Garden, e
 	return garden, nil
 }
 
-func (h *WaterNotificationHandler) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
-	zones, err := h.storageClient.Zones.GetAll(context.Background(), nil)
+func (w *Worker) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
+	zones, err := w.storageClient.Zones.GetAll(context.Background(), nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all zones: %w", err)
 	}
@@ -63,15 +54,15 @@ func (h *WaterNotificationHandler) getZone(gardenID string, zonePosition int) (*
 	return zone, nil
 }
 
-func (h *WaterNotificationHandler) HandleMessage(_ mqtt.Client, msg mqtt.Message) {
-	err := h.handle(msg.Topic(), msg.Payload())
+func (w *Worker) handleWaterCompleteMessage(_ mqtt.Client, msg mqtt.Message) {
+	err := w.doWaterCompleteMessage(msg.Topic(), msg.Payload())
 	if err != nil {
-		h.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
+		w.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
 	}
 }
 
-func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
-	logger := h.logger.With("topic", topic)
+func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
+	logger := w.logger.With("topic", topic)
 	logger.Info("received message", "message", string(payload))
 
 	zonePosition, waterDuration, err := parseWaterMessage(payload)
@@ -85,7 +76,7 @@ func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
 	}
 	logger = logger.With("topic_prefix", topicPrefix)
 
-	garden, err := h.getGarden(topicPrefix)
+	garden, err := w.getGarden(topicPrefix)
 	if err != nil {
 		return fmt.Errorf("error getting garden with topic-prefix %q: %w", topicPrefix, err)
 	}
@@ -98,13 +89,13 @@ func (h *WaterNotificationHandler) handle(topic string, payload []byte) error {
 	}
 	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
-	zone, err := h.getZone(garden.GetID(), zonePosition)
+	zone, err := w.getZone(garden.GetID(), zonePosition)
 	if err != nil {
 		return fmt.Errorf("error getting zone with position %d: %w", zonePosition, err)
 	}
 	logger.Info("found zone with position", "zone_position", zonePosition, "zone_id", zone.GetID())
 
-	notificationClient, err := h.storageClient.NotificationClientConfigs.Get(context.Background(), garden.GetNotificationClientID())
+	notificationClient, err := w.storageClient.NotificationClientConfigs.Get(context.Background(), garden.GetNotificationClientID())
 	if err != nil {
 		return fmt.Errorf("error getting all notification clients: %w", err)
 	}
