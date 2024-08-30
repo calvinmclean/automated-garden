@@ -117,10 +117,7 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 		"broker", cfg.MQTTConfig.Broker,
 		"port", cfg.MQTTConfig.Port,
 	).Info("initializing MQTT client")
-	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, mqtt.DefaultHandler(logger), mqtt.TopicHandler{
-		Topic:   "+/data/water",
-		Handler: NewWaterNotificationHandler(storageClient, logger).HandleMessage,
-	})
+	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, mqtt.DefaultHandler(logger))
 	if err != nil {
 		return fmt.Errorf("unable to initialize MQTT client: %v", err)
 	}

@@ -14,6 +14,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/controller"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
+	fake_notification "github.com/calvinmclean/automated-garden/garden-app/pkg/notifications/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/server"
@@ -59,6 +61,7 @@ func TestIntegration(t *testing.T) {
 	t.Run("Garden", GardenTests)
 	t.Run("Zone", ZoneTests)
 	t.Run("WaterSchedule", WaterScheduleTests)
+	t.Run("ControllerStartupNotification", ControllerStartupNotificationTest)
 }
 
 func getConfigs(t *testing.T) (server.Config, controller.Config) {
@@ -409,8 +412,8 @@ func ZoneTests(t *testing.T) {
 	})
 }
 
-func floatPointer(n float32) *float32 {
-	return &n
+func pointer[T any](v T) *T {
+	return &v
 }
 
 func WaterScheduleTests(t *testing.T) {
@@ -443,9 +446,9 @@ func WaterScheduleTests(t *testing.T) {
 		status, err = makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
 			WeatherControl: &weather.Control{
 				Rain: &weather.ScaleControl{
-					BaselineValue: floatPointer(0),
-					Factor:        floatPointer(0),
-					Range:         floatPointer(25.4),
+					BaselineValue: pointer[float32](0),
+					Factor:        pointer[float32](0),
+					Range:         pointer[float32](25.4),
 					ClientID:      weatherClientWithRain,
 				},
 			},
@@ -465,6 +468,49 @@ func WaterScheduleTests(t *testing.T) {
 		// Assert that no watering occurred because the rain should result in a skip
 		assert.NoError(t, err)
 		c.AssertWaterActions(t)
+	})
+}
+
+func ControllerStartupNotificationTest(t *testing.T) {
+	var g server.GardenResponse
+	t.Run("CreateGarden", func(t *testing.T) {
+		status, err := makeRequest(http.MethodPost, "/gardens", `{
+				"name": "Notification",
+				"topic_prefix": "notification",
+				"max_zones": 3
+			}`, &g)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, status)
+	})
+
+	var nc notifications.Client
+	t.Run("CreateNotificationClient", func(t *testing.T) {
+		status, err := makeRequest(http.MethodPost, "/notification_clients", `{
+				"name": "fake client",
+				"type": "fake",
+				"options": {}
+			}`, &nc)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusCreated, status)
+	})
+
+	t.Run("EnableNotificationsForGarden", func(t *testing.T) {
+		status, err := makeRequest(http.MethodPatch, "/gardens/"+g.GetID(), pkg.Garden{
+			NotificationClientID: pointer(nc.GetID()),
+		}, &g)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusOK, status)
+	})
+
+	t.Run("PublishStartupLogAndCheckNotification", func(t *testing.T) {
+		err := c.PublishStartupLog(g.TopicPrefix)
+		require.NoError(t, err)
+
+		time.Sleep(500 * time.Millisecond)
+
+		lastMsg := fake_notification.LastMessage()
+		require.Equal(t, "Notification connected", lastMsg.Title)
+		require.Equal(t, "garden-controller setup complete", lastMsg.Message)
 	})
 }
 

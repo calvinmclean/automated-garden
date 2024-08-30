@@ -12,8 +12,7 @@ import (
 )
 
 const (
-	notificationClientsBasePath  = "/notification_clients"
-	notificationClientIDLogField = "notification_client_id"
+	notificationClientsBasePath = "/notification_clients"
 )
 
 // NotificationClientsAPI encapsulates the structs and dependencies necessary for the NotificationClients API

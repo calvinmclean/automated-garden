@@ -1,4 +1,4 @@
-package server
+package worker
 
 import (
 	"context"
@@ -52,16 +52,16 @@ func TestHandleMessage(t *testing.T) {
 	})
 	require.NoError(t, err)
 
-	handler := NewWaterNotificationHandler(storageClient, slog.Default())
+	handler := NewWorker(storageClient, nil, nil, slog.Default())
 
 	t.Run("ErrorParsingMessage", func(t *testing.T) {
-		err = handler.handle("garden/data/water", []byte{})
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte{})
 		require.Error(t, err)
 		require.Equal(t, `error parsing message: error parsing zone position: invalid integer: strconv.Atoi: parsing "": invalid syntax`, err.Error())
 	})
 
 	t.Run("ErrorGettingGarden", func(t *testing.T) {
-		err = handler.handle("garden/data/water", []byte("water,zone=0 millis=6000"))
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
 		require.Error(t, err)
 		require.Equal(t, "error getting garden with topic-prefix \"garden\": no garden found", err.Error())
 	})
@@ -84,7 +84,7 @@ func TestHandleMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SuccessfulWithNoNotificationClients", func(t *testing.T) {
-		err = handler.handle("garden/data/water", []byte("water,zone=0 millis=6000"))
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
 		require.NoError(t, err)
 	})
 
@@ -109,7 +109,7 @@ func TestHandleMessage(t *testing.T) {
 	})
 
 	t.Run("ErrorGettingZone", func(t *testing.T) {
-		err = handler.handle("garden/data/water", []byte("water,zone=1 millis=6000"))
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=1 millis=6000"))
 		require.Error(t, err)
 		require.Equal(t, "error getting zone with position 1: no zone found", err.Error())
 	})
@@ -130,7 +130,7 @@ func TestHandleMessage(t *testing.T) {
 		// github.com/gregdel/pushover uses http.DefaultClient
 		http.DefaultClient = r.GetDefaultClient()
 
-		err = handler.handle("garden/data/water", []byte("water,zone=0 millis=6000"))
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
 		require.Error(t, err)
 		require.Equal(t, "Errors:\napplication token is invalid, see https://pushover.net/api", err.Error())
 	})
@@ -162,7 +162,7 @@ func TestHandleMessage(t *testing.T) {
 		// github.com/gregdel/pushover uses http.DefaultClient
 		http.DefaultClient = r.GetDefaultClient()
 
-		err = handler.handle("garden/data/water", []byte("water,zone=0 millis=6000"))
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
 		require.NoError(t, err)
 
 		// ensure a message is sent by API
