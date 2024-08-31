@@ -56,23 +56,9 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
 			},
 			"",
-		},
-		{
-			"TopicTemplateError",
-			&pkg.WaterSchedule{
-				Duration: &pkg.Duration{Duration: time.Second},
-			},
-			&pkg.Zone{
-				Position: uintPointer(0),
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
-			},
-			"unable to fill MQTT topic template: template error",
 		},
 		{
 			"SuccessWhenMoistureLessThanMinimum",
@@ -89,8 +75,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), nil)
 				influxdbClient.On("Close")
 			},
@@ -132,8 +117,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
 				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
@@ -187,8 +171,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -214,8 +197,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -241,8 +223,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -268,8 +249,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -295,8 +275,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1250,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1250,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -322,8 +301,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -349,8 +327,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -376,8 +353,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":750,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":750,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -403,8 +379,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -430,8 +405,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -457,8 +431,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -488,8 +461,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":625,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":625,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},
@@ -520,8 +492,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":375,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":375,"id":"00000000000000000000","position":0}`)).Return(nil)
 			},
 			"",
 		},

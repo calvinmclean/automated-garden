@@ -6,6 +6,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 )
 
 // ExecuteGardenAction will execute a GardenAction
@@ -27,9 +28,9 @@ func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) 
 
 // ExecuteStopAction sends the message over MQTT to the embedded garden controller
 func (w *Worker) ExecuteStopAction(g *pkg.Garden, input *action.StopAction) error {
-	topicFunc := w.mqttClient.StopTopic
+	topicFunc := mqtt.StopTopic
 	if input.All {
-		topicFunc = w.mqttClient.StopAllTopic
+		topicFunc = mqtt.StopAllTopic
 	}
 	topic, err := topicFunc(g.TopicPrefix)
 	if err != nil {
@@ -46,7 +47,7 @@ func (w *Worker) ExecuteLightAction(g *pkg.Garden, input *action.LightAction) er
 		return fmt.Errorf("unable to marshal LightAction to JSON: %v", err)
 	}
 
-	topic, err := w.mqttClient.LightTopic(g.TopicPrefix)
+	topic, err := mqtt.LightTopic(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}

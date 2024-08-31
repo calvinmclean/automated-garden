@@ -3,10 +3,8 @@ package mqtt
 //go:generate mockery --all --inpackage
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"html/template"
 	"log/slog"
 	"sync"
 
@@ -27,20 +25,11 @@ type Config struct {
 	ClientID string `mapstructure:"client_id"`
 	Broker   string `mapstructure:"broker"`
 	Port     int    `mapstructure:"port"`
-
-	WaterTopicTemplate   string `mapstructure:"water_topic"`
-	StopTopicTemplate    string `mapstructure:"stop_topic"`
-	StopAllTopicTemplate string `mapstructure:"stop_all_topic"`
-	LightTopicTemplate   string `mapstructure:"light_topic"`
 }
 
 // Client is an interface that allows access to MQTT functionality within the garden-app
 type Client interface {
 	Publish(string, []byte) error
-	WaterTopic(string) (string, error)
-	StopTopic(string) (string, error)
-	StopAllTopic(string) (string, error)
-	LightTopic(string) (string, error)
 	Connect() error
 	Disconnect(uint)
 	AddHandler(TopicHandler)
@@ -130,35 +119,6 @@ func (c *client) Publish(topic string, message []byte) error {
 		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
 	}
 	return nil
-}
-
-// WaterTopic returns the topic string for watering a zone
-func (c *Config) WaterTopic(topicPrefix string) (string, error) {
-	return c.executeTopicTemplate(c.WaterTopicTemplate, topicPrefix)
-}
-
-// StopTopic returns the topic string for stopping watering a single zone
-func (c *Config) StopTopic(topicPrefix string) (string, error) {
-	return c.executeTopicTemplate(c.StopTopicTemplate, topicPrefix)
-}
-
-// StopAllTopic returns the topic string for stopping watering all zones in a garden
-func (c *Config) StopAllTopic(topicPrefix string) (string, error) {
-	return c.executeTopicTemplate(c.StopAllTopicTemplate, topicPrefix)
-}
-
-// LightTopic returns the topic string for changing the light state in a Garden
-func (c *Config) LightTopic(topicPrefix string) (string, error) {
-	return c.executeTopicTemplate(c.LightTopicTemplate, topicPrefix)
-}
-
-// executeTopicTemplate is a helper function used by all the exported topic evaluation functions
-func (c *Config) executeTopicTemplate(templateString string, topicPrefix string) (string, error) {
-	t := template.Must(template.New("topic").Parse(templateString))
-	var result bytes.Buffer
-	data := map[string]string{"Garden": topicPrefix}
-	err := t.Execute(&result, data)
-	return result.String(), err
 }
 
 func DefaultHandler(logger *slog.Logger) mqtt.MessageHandler {

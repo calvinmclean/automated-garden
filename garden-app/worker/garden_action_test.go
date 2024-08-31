@@ -36,28 +36,10 @@ func TestGardenAction(t *testing.T) {
 				Light: &action.LightAction{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
-			},
-		},
-		{
-			"FailedGardenActionWithLightAction",
-			&action.GardenAction{
-				Light: &action.LightAction{},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("", errors.New("template error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to execute LightAction: unable to fill MQTT topic template: template error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
 			},
 		},
 		{
@@ -66,28 +48,10 @@ func TestGardenAction(t *testing.T) {
 				Stop: &action.StopAction{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("StopTopic", "garden").Return("garden/action/stop", nil)
-				mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/stop", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
-			},
-		},
-		{
-			"FailedGardenActionWithStopAction",
-			&action.GardenAction{
-				Stop: &action.StopAction{},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("StopTopic", "garden").Return("", errors.New("template error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to execute StopAction: unable to fill MQTT topic template: template error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
 			},
 		},
 	}
@@ -130,8 +94,7 @@ func TestLightActionExecute(t *testing.T) {
 			"Successful",
 			&action.LightAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -141,8 +104,7 @@ func TestLightActionExecute(t *testing.T) {
 			"SuccessfulWithDelay",
 			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -152,29 +114,13 @@ func TestLightActionExecute(t *testing.T) {
 			"PublishError",
 			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("garden/action/light", nil)
-				mqttClient.On("Publish", "garden/action/light", mock.Anything).Return(errors.New("publish error"))
+				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(errors.New("publish error"))
 			},
 			func(err error, t *testing.T) {
 				if err == nil {
 					t.Error("Expected error, but nil was returned")
 				}
 				if err.Error() != "unable to publish LightAction: publish error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
-			},
-		},
-		{
-			"TopicTemplateError",
-			&action.LightAction{},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("LightTopic", "garden").Return("", errors.New("template error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to fill MQTT topic template: template error" {
 					t.Errorf("Unexpected error string: %v", err)
 				}
 			},
@@ -226,8 +172,7 @@ func TestStopActionExecute(t *testing.T) {
 			"Successful",
 			&action.StopAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("StopTopic", "garden").Return("garden/action/stop", nil)
-				mqttClient.On("Publish", "garden/action/stop", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/stop", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -237,26 +182,10 @@ func TestStopActionExecute(t *testing.T) {
 			"SuccessfulStopAll",
 			&action.StopAction{All: true},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("StopAllTopic", "garden").Return("garden/action/stop_all", nil)
-				mqttClient.On("Publish", "garden/action/stop_all", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/stop_all", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
-			},
-		},
-		{
-			"TopicTemplateError",
-			&action.StopAction{},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("StopTopic", "garden").Return("", errors.New("template error"))
-			},
-			func(err error, t *testing.T) {
-				if err == nil {
-					t.Error("Expected error, but nil was returned")
-				}
-				if err.Error() != "unable to fill MQTT topic template: template error" {
-					t.Errorf("Unexpected error string: %v", err)
-				}
 			},
 		},
 	}
