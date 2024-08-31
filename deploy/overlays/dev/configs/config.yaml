@@ -2,10 +2,6 @@ mqtt:
   broker: "mosquitto"
   port: 1883
   client_id: "garden-controller"
-  water_topic: "{{.Garden}}/command/water"
-  stop_topic: "{{.Garden}}/command/stop"
-  stop_all_topic: "{{.Garden}}/command/stop_all"
-  light_topic: "{{.Garden}}/command/light"
 controller:
   topic_prefix: "garden"
   num_zones: 3

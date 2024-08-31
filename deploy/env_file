@@ -7,14 +7,6 @@ INFLUXDB_TOKEN="my-secret-token"
 INFLUXDB_ORG="garden"
 INFLUXDB_BUCKET="garden"
 
-# Telegraf
-MQTT_WATER_TOPIC="+/data/water"
-MQTT_LIGHT_TOPIC="+/data/light"
-MQTT_MOISTURE_TOPIC="+/data/moisture"
-MQTT_TEMPERATURE_TOPIC="+/data/temperature"
-MQTT_HUMIDITY_TOPIC="+/data/humidity"
-MQTT_LOGGING_TOPIC="+/data/logs"
-MQTT_HEALTH_TOPIC="+/data/health"
 # Grafana
 GF_SECURITY_ADMIN_USER="${ADMIN_USER}"
 GF_SECURITY_ADMIN_PASSWORD="${ADMIN_PSWD}"

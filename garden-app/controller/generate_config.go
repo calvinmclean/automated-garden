@@ -24,26 +24,12 @@ const (
 #ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "{{ .MQTTConfig.Broker }}"
 #define MQTT_PORT {{ .MQTTConfig.Port }}
-#define MQTT_CLIENT_NAME TOPIC_PREFIX
-#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
-#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
-#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
-#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
-#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
-#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
 
 {{ if .PublishHealth }}
 #define ENABLE_MQTT_HEALTH
-#ifdef ENABLE_MQTT_HEALTH
-#define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
-#define HEALTH_PUBLISH_INTERVAL {{ milliseconds .HealthInterval }}
-#endif
 {{ end }}
 
 #define ENABLE_MQTT_LOGGING
-#ifdef ENABLE_MQTT_LOGGING
-#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
-#endif
 
 #define JSON_CAPACITY 48
 #endif
@@ -68,7 +54,6 @@ const (
 
 {{ if .EnableMoistureSensor }}
 #ifdef ENABLE_MOISTURE_SENSORS AND ENABLE_WIFI
-#define MQTT_MOISTURE_DATA_TOPIC TOPIC_PREFIX"/data/moisture"
 #define MOISTURE_SENSOR_AIR_VALUE 3415
 #define MOISTURE_SENSOR_WATER_VALUE 1362
 #define MOISTURE_SENSOR_INTERVAL {{ milliseconds .MoistureInterval }}
@@ -78,8 +63,6 @@ const (
 {{ if .PublishTemperatureHumidity }}
 #define ENABLE_DHT22
 #ifdef ENABLE_DHT22
-#define MQTT_TEMPERATURE_DATA_TOPIC TOPIC_PREFIX"/data/temperature"
-#define MQTT_HUMIDITY_DATA_TOPIC TOPIC_PREFIX"/data/humidity"
 #define DHT22_PIN {{ .TemperatureHumidityPin }}
 #define DHT22_INTERVAL {{ milliseconds .TemperatureHumidityInterval }}
 #endif

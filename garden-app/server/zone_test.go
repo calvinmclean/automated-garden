@@ -293,21 +293,11 @@ func TestZoneAction(t *testing.T) {
 		{
 			"SuccessfulWaterAction",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("WaterTopic", "test-garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
 			},
 			`{"water":{"duration":1000}}`,
 			"{}",
 			http.StatusAccepted,
-		},
-		{
-			"ExecuteErrorForWaterAction",
-			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("WaterTopic", "test-garden").Return("", errors.New("template error"))
-			},
-			`{"water":{"duration":1000}}`,
-			`{"status":"Server Error.","error":"unable to execute WaterAction: unable to fill MQTT topic template: template error"}`,
-			http.StatusInternalServerError,
 		},
 	}
 
@@ -367,8 +357,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionInteger",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("WaterTopic", "test-garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":1000,"id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":1000,"id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
 			},
 			`water.duration=1000`,
 			"{}",
@@ -377,8 +366,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionString",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("WaterTopic", "test-garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", []byte(`{"duration":2000,"id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":2000,"id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
 			},
 			`water.duration=2s`,
 			"{}",

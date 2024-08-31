@@ -6,6 +6,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 )
 
 // ExecuteZoneAction will execute a ZoneAction
@@ -36,7 +37,7 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %w", err)
 	}
 
-	topic, err := w.mqttClient.WaterTopic(g.TopicPrefix)
+	topic, err := mqtt.WaterTopic(g.TopicPrefix)
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %w", err)
 	}

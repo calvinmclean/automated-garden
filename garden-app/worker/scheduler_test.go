@@ -128,8 +128,7 @@ func TestScheduleWaterAction(t *testing.T) {
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
 
-	mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
-	mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
+	mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
@@ -229,8 +228,7 @@ func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
 			assert.NoError(t, err)
 
 			mqttClient := new(mqtt.MockClient)
-			mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
-			mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(nil)
+			mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
 			mqttClient.On("Disconnect", uint(100)).Return()
 
 			influxdbClient := new(influxdb.MockClient)
@@ -309,8 +307,7 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 			assert.NoError(t, err)
 
 			mqttClient := new(mqtt.MockClient)
-			mqttClient.On("WaterTopic", mock.Anything).Return("test-garden/action/water", nil)
-			mqttClient.On("Publish", "test-garden/action/water", mock.Anything).Return(errors.New("publish error"))
+			mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(errors.New("publish error"))
 			mqttClient.On("Disconnect", uint(100)).Return()
 
 			influxdbClient := new(influxdb.MockClient)
@@ -651,8 +648,7 @@ func TestScheduleLightActions(t *testing.T) {
 				assert.NoError(t, err)
 
 				mqttClient := new(mqtt.MockClient)
-				mqttClient.On("LightTopic", mock.Anything).Return("test-garden/action/light", nil)
-				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(tt.mqttPublishError)
+				mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(tt.mqttPublishError)
 				mqttClient.On("Disconnect", uint(100)).Return()
 
 				influxdbClient := new(influxdb.MockClient)
@@ -733,8 +729,7 @@ func TestScheduleLightActions(t *testing.T) {
 				assert.NoError(t, err)
 
 				mqttClient := new(mqtt.MockClient)
-				mqttClient.On("LightTopic", mock.Anything).Return("test-garden/action/light", nil)
-				mqttClient.On("Publish", "test-garden/action/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
 				mqttClient.On("Disconnect", uint(100)).Return()
 
 				influxdbClient := new(influxdb.MockClient)

@@ -26,11 +26,6 @@ configMapGenerator:
       - INFLUXDB_TOKEN=my-secret-token
       - INFLUXDB_ORG=garden
       - INFLUXDB_BUCKET=garden
-      - MQTT_WATER_TOPIC="+/data/water"
-      - MQTT_LIGHT_TOPIC="+/data/light"
-      - MQTT_MOISTURE_TOPIC="+/data/moisture"
-      - MQTT_LOGGING_TOPIC="+/data/logs"
-      - MQTT_HEALTH_TOPIC="+/data/health"
       - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
 resources:
   - garden_app.yaml

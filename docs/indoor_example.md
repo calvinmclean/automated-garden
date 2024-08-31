@@ -93,10 +93,6 @@ mqtt:
   broker: "mosquitto"
   port: 1883
   client_id: "garden-app"
-  water_topic: "{{.Garden}}/command/water"
-  stop_topic: "{{.Garden}}/command/stop"
-  stop_all_topic: "{{.Garden}}/command/stop_all"
-  light_topic: "{{.Garden}}/command/light"
 influxdb:
   address: "http://influxdb:8086"
   token: "my-secret-token"

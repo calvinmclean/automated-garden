@@ -1,7 +1,6 @@
 package worker
 
 import (
-	"errors"
 	"log/slog"
 	"testing"
 	"time"
@@ -42,22 +41,9 @@ func TestZoneAction(t *testing.T) {
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
 			},
 			"",
-		},
-		{
-			"FailedZoneActionWithWaterAction",
-			&action.ZoneAction{
-				Water: &action.WaterAction{
-					Duration: &pkg.Duration{Duration: 1000},
-				},
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
-			},
-			"unable to execute WaterAction: unable to fill MQTT topic template: template error",
 		},
 	}
 
@@ -104,20 +90,9 @@ func TestWaterActionExecute(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
-				mqttClient.On("WaterTopic", "garden").Return("garden/action/water", nil)
-				mqttClient.On("Publish", "garden/action/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
 			},
 			"",
-		},
-		{
-			"TopicTemplateError",
-			&pkg.Zone{
-				Position: uintPointer(0),
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
-				mqttClient.On("WaterTopic", "garden").Return("", errors.New("template error"))
-			},
-			"unable to fill MQTT topic template: template error",
 		},
 	}
 

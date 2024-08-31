@@ -392,10 +392,10 @@ func (c *Controller) getHandlerForTopic(topic string) paho.MessageHandler {
 func (c *Controller) topics() ([]string, error) {
 	topics := []string{}
 	templateFuncs := []func(string) (string, error){
-		c.MQTTConfig.WaterTopic,
-		c.MQTTConfig.StopTopic,
-		c.MQTTConfig.StopAllTopic,
-		c.MQTTConfig.LightTopic,
+		mqtt.WaterTopic,
+		mqtt.StopTopic,
+		mqtt.StopAllTopic,
+		mqtt.LightTopic,
 	}
 	for _, templateFunc := range templateFuncs {
 		topic, err := templateFunc(c.TopicPrefix)

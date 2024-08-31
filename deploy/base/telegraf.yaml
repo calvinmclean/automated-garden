@@ -19,31 +19,6 @@ spec:
             - name: config
               mountPath: /etc/telegraf
           env:
-            - name: MQTT_WATER_TOPIC
-              valueFrom:
-                configMapKeyRef:
-                  name: shared-environment
-                  key: MQTT_WATER_TOPIC
-            - name: MQTT_LIGHT_TOPIC
-              valueFrom:
-                configMapKeyRef:
-                  name: shared-environment
-                  key: MQTT_LIGHT_TOPIC
-            - name: MQTT_MOISTURE_TOPIC
-              valueFrom:
-                configMapKeyRef:
-                  name: shared-environment
-                  key: MQTT_MOISTURE_TOPIC
-            - name: MQTT_LOGGING_TOPIC
-              valueFrom:
-                configMapKeyRef:
-                  name: shared-environment
-                  key: MQTT_LOGGING_TOPIC
-            - name: MQTT_HEALTH_TOPIC
-              valueFrom:
-                configMapKeyRef:
-                  name: shared-environment
-                  key: MQTT_HEALTH_TOPIC
             - name: INFLUXDB_TOKEN
               valueFrom:
                 configMapKeyRef:
