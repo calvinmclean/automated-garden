@@ -9,6 +9,48 @@
 #include "wifi_config.h"
 #include "config.h"
 
+/**
+ * MQTT_CLIENT_NAME
+ *   Name to use when connecting to MQTT broker. By default this is TOPIC_PREFIX
+ * MQTT_WATER_TOPIC
+ *   Topic to subscribe to for incoming commands to water a zone
+ * MQTT_STOP_TOPIC
+ *   Topic to subscribe to for incoming command to stop watering a zone
+ * MQTT_STOP_ALL_TOPIC
+ *   Topic to subscribe to for incoming command to stop watering a zone and clear the watering queue
+ * MQTT_LIGHT_TOPIC
+ *   Topic to subscribe to for incoming command to change the state of an attached grow light
+ * MQTT_LIGHT_DATA_TOPIC
+ *   Topic to publish LightEvents on
+ * MQTT_WATER_DATA_TOPIC
+ *   Topic to publish watering metrics on
+ */
+#define MQTT_CLIENT_NAME TOPIC_PREFIX
+#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
+#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
+#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
+#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
+#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
+#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
+
+#ifdef ENABLE_MQTT_LOGGING
+#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
+#endif
+
+#ifdef ENABLE_MQTT_HEALTH
+#define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
+#define HEALTH_PUBLISH_INTERVAL 60000
+#endif
+
+#ifdef ENABLE_DHT22
+#define MQTT_TEMPERATURE_DATA_TOPIC TOPIC_PREFIX"/data/temperature"
+#define MQTT_HUMIDITY_DATA_TOPIC TOPIC_PREFIX"/data/humidity"
+#endif
+
+#ifdef ENABLE_MOISTURE_SENSORS
+#define MQTT_MOISTURE_DATA_TOPIC TOPIC_PREFIX"/data/moisture"
+#endif
+
 extern PubSubClient client;
 
 void setupMQTT();

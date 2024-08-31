@@ -1,54 +1,29 @@
 #ifndef config_h
 #define config_h
 
+// Unique prefix for this controller. It is used for the root of MQTT topics and as the MQTT ClientID
 #define TOPIC_PREFIX "garden"
 
 // Size of FreeRTOS queues
 #define QUEUE_SIZE 10
 
 /**
- * Wifi and MQTT Configurations
+ * MQTT Configurations
  *   NOTE: Use "wifi_config.h" for Wifi SSID and password (ignored by git)
  *
  * MQTT_ADDRESS
  *   IP address or hostname for MQTT broker
  * MQTT_PORT
  *   Port for MQTT broker
- * MQTT_CLIENT_NAME
- *   Name to use when connecting to MQTT broker. By default this is TOPIC_PREFIX
- * MQTT_WATER_TOPIC
- *   Topic to subscribe to for incoming commands to water a zone
- * MQTT_STOP_TOPIC
- *   Topic to subscribe to for incoming command to stop watering a zone
- * MQTT_STOP_ALL_TOPIC
- *   Topic to subscribe to for incoming command to stop watering a zone and clear the watering queue
- * MQTT_LIGHT_TOPIC
- *   Topic to subscribe to for incoming command to change the state of an attached grow light
- * MQTT_LIGHT_DATA_TOPIC
- *   Topic to publish LightEvents on
- * MQTT_WATER_DATA_TOPIC
- *   Topic to publish watering metrics on
  */
 #define MQTT_ADDRESS "192.168.0.107"
 #define MQTT_PORT 30002
-#define MQTT_CLIENT_NAME TOPIC_PREFIX
-#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
-#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
-#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
-#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
-#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
-#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
 
+// Enable publishing health status to MQTT
 #define ENABLE_MQTT_HEALTH
-#ifdef ENABLE_MQTT_HEALTH
-#define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
-#define HEALTH_PUBLISH_INTERVAL 60000
-#endif
 
+// Enable logging messages to MQTT
 #define ENABLE_MQTT_LOGGING
-#ifdef ENABLE_MQTT_LOGGING
-#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
-#endif
 
  // Size of JSON object calculated using Arduino JSON Assistant
 #define JSON_CAPACITY 48
@@ -91,7 +66,6 @@
 // Currently, moisture sensing requires  MQTT because the logic for handling this data lives in the garden-app
 // #define ENABLE_MOISTURE_SENSORS
 #ifdef ENABLE_MOISTURE_SENSORS
-#define MQTT_MOISTURE_DATA_TOPIC TOPIC_PREFIX"/data/moisture"
 #define MOISTURE_SENSOR_AIR_VALUE 3415
 #define MOISTURE_SENSOR_WATER_VALUE 1362
 #define MOISTURE_SENSOR_INTERVAL 5000
@@ -100,8 +74,6 @@
 // DHT22 Temperature and Humidity sensor
 #define ENABLE_DHT22
 #ifdef ENABLE_DHT22
-#define MQTT_TEMPERATURE_DATA_TOPIC TOPIC_PREFIX"/data/temperature"
-#define MQTT_HUMIDITY_DATA_TOPIC TOPIC_PREFIX"/data/humidity"
 #define DHT22_PIN GPIO_NUM_27
 #define DHT22_INTERVAL 5000
 #endif
