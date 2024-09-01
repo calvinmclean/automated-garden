@@ -5,6 +5,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 
 	"github.com/calvinmclean/babyapi"
@@ -31,6 +32,39 @@ type Client struct {
 }
 
 func NewClient(config Config) (*Client, error) {
+	switch config.Driver {
+	case "sqlite":
+		return newSQLiteClient(config)
+	case "hashmap", "redis":
+		return newKVClient(config)
+	default:
+		return nil, fmt.Errorf("invalid driver: %q", config.Driver)
+	}
+}
+
+func newSQLiteClient(config Config) (*Client, error) {
+	var sqlConfig sql.Config
+	err := mapstructure.Decode(config.Options, &sqlConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error decoding SQL config: %w", err)
+	}
+
+	sqlClient, err := sql.NewClient(sqlConfig)
+	if err != nil {
+		return nil, fmt.Errorf("error creating SQL client: %w", err)
+	}
+
+	return &Client{
+		Gardens:                   sqlClient.Gardens,
+		Zones:                     sqlClient.Zones,
+		WaterSchedules:            sqlClient.WaterSchedules,
+		WeatherClientConfigs:      sqlClient.WeatherClientConfigs,
+		NotificationClientConfigs: sqlClient.NotificationClientConfigs,
+		WaterRoutines:             sqlClient.WaterRoutines,
+	}, nil
+}
+
+func newKVClient(config Config) (*Client, error) {
 	db, err := newHordDB(config)
 	if err != nil {
 		return nil, fmt.Errorf("error creating base client: %w", err)
