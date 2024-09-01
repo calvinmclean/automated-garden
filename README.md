@@ -24,7 +24,7 @@ This system is designed to be flexible for all types of gardening. Here are a fe
 
 ## How It Works
 
-![Garden](docs/_images/FlowDiagram.png?raw=true)
+![Garden](docs/_images/GardenApp.png?raw=true)
 
 ### Garden Server
 This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements all logic and orchestrates the separate systems.
@@ -93,7 +93,7 @@ Use Docker Compose to easily run everything and try it out! This will run all se
   - The "Garden App" dashboard contains application metrics for resource usage, HTTP stats, and others
   - The "Garden Dashboard" dashboard contains more interesting data that comes from the `garden-controller` to show uptime and a watering history. You should see the recent 3 second watering event here
 
-6. Access the UI at http://localhost:8080/gardens 
+6. Access the UI at http://localhost:8080/gardens
 
 And that's it! I encourage you to check out the additional documentation for more detailed API usage and to learn about all of the things that are possible.
 

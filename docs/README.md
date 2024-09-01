@@ -19,7 +19,7 @@ This system is designed to be flexible for all types of gardening. Here are a fe
 
 ## How It Works
 
-![Garden](_images/FlowDiagram.png?raw=true)
+![Garden](_images/GardenApp.png?raw=true)
 
 ### Garden Server
 This Go application is contained in the [`garden-app`](./garden-app) directory and consists of a CLI and web backend for interacting with the garden controller. It implements all logic and orchestrates the separate systems.
