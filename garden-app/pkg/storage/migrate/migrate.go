@@ -5,7 +5,8 @@ import (
 )
 
 type Versioned interface {
-	Version() uint
+	GetVersion() uint
+	SetVersion(uint)
 }
 
 type Migration interface {
@@ -29,7 +30,7 @@ func (m *migration[From, To]) Name() string {
 func (m *migration[From, To]) Migrate(from Versioned) (any, error) {
 	f, ok := from.(From)
 	if !ok {
-		return nil, Error{ErrInvalidType, m.Name(), from.Version()}
+		return nil, Error{ErrInvalidType, m.Name(), from.GetVersion()}
 	}
 
 	return m.migrate(f)
@@ -70,7 +71,7 @@ func Each[From, To Versioned](migrations []Migration, from []From) iter.Seq2[To,
 }
 
 func runMigration[From, To Versioned](migrations []Migration, from From) (To, error) {
-	v := from.Version()
+	v := from.GetVersion()
 
 	if int(v) >= len(migrations) {
 		return *new(To), errNotFound(v)
@@ -84,8 +85,9 @@ func runMigration[From, To Versioned](migrations []Migration, from From) (To, er
 
 	out, ok := to.(To)
 	if !ok {
-		return *new(To), Error{ErrInvalidType, m.Name(), from.Version()}
+		return *new(To), Error{ErrInvalidType, m.Name(), from.GetVersion()}
 	}
+	out.SetVersion(v + 1)
 
 	return out, err
 }

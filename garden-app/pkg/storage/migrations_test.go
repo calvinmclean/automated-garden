@@ -102,7 +102,7 @@ func TestMigrations(t *testing.T) {
 		allZones, err := client.Zones.GetAll(context.Background(), nil)
 		require.NoError(t, err)
 		for _, z := range allZones {
-			require.Equal(t, uint(1), z.Version())
+			require.Equal(t, uint(1), z.GetVersion())
 		}
 	})
 
@@ -110,7 +110,7 @@ func TestMigrations(t *testing.T) {
 		allGardens, err := client.Gardens.GetAll(context.Background(), nil)
 		require.NoError(t, err)
 		for _, g := range allGardens {
-			require.Equal(t, uint(1), g.Version())
+			require.Equal(t, uint(1), g.GetVersion())
 		}
 	})
 
@@ -118,7 +118,7 @@ func TestMigrations(t *testing.T) {
 		allWaterSchedules, err := client.WaterSchedules.GetAll(context.Background(), nil)
 		require.NoError(t, err)
 		for _, ws := range allWaterSchedules {
-			require.Equal(t, uint(1), ws.Version())
+			require.Equal(t, uint(1), ws.GetVersion())
 		}
 	})
 }

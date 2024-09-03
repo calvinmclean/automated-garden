@@ -11,27 +11,18 @@ import (
 var (
 	zoneMigrations = []migrate.Migration{
 		migrate.NewMigration("InitializeVersion", func(z *pkg.Zone) (*pkg.Zone, error) {
-			if z.V == 0 {
-				z.V = 1
-			}
 			return z, nil
 		}),
 	}
 
 	gardenMigrations = []migrate.Migration{
 		migrate.NewMigration("InitializeVersion", func(g *pkg.Garden) (*pkg.Garden, error) {
-			if g.V == 0 {
-				g.V = 1
-			}
 			return g, nil
 		}),
 	}
 
 	waterScheduleMigrations = []migrate.Migration{
 		migrate.NewMigration("InitializeVersion", func(ws *pkg.WaterSchedule) (*pkg.WaterSchedule, error) {
-			if ws.V == 0 {
-				ws.V = 1
-			}
 			return ws, nil
 		}),
 	}
