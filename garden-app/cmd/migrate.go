@@ -12,7 +12,7 @@ import (
 var migrateCommand = &cobra.Command{
 	Use:   "migrate",
 	Short: "Run storage migrations to update all resources",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	RunE: func(cmd *cobra.Command, _ []string) error {
 		var config server.Config
 		err := viper.Unmarshal(&config)
 		if err != nil {

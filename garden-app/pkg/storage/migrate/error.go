@@ -5,8 +5,10 @@ import (
 	"fmt"
 )
 
-var ErrNotFound = errors.New("migration not found")
-var ErrInvalidType = errors.New("unexpected type")
+var (
+	ErrNotFound    = errors.New("migration not found")
+	ErrInvalidType = errors.New("unexpected type")
+)
 
 type Error struct {
 	Err     error

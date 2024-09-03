@@ -17,19 +17,19 @@ func TestMigrations(t *testing.T) {
 
 	t.Run("StoreAllZones", func(t *testing.T) {
 		zones := []*pkg.Zone{
-			&pkg.Zone{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Zone1",
 			},
-			&pkg.Zone{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Zone2",
 			},
-			&pkg.Zone{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Zone3",
 			},
-			&pkg.Zone{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Zone4",
 			},
@@ -43,19 +43,19 @@ func TestMigrations(t *testing.T) {
 
 	t.Run("StoreAllGardens", func(t *testing.T) {
 		gardens := []*pkg.Garden{
-			&pkg.Garden{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Garden1",
 			},
-			&pkg.Garden{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Garden2",
 			},
-			&pkg.Garden{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Garden3",
 			},
-			&pkg.Garden{
+			{
 				ID:   babyapi.NewID(),
 				Name: "Garden4",
 			},
@@ -69,19 +69,19 @@ func TestMigrations(t *testing.T) {
 
 	t.Run("StoreAllWaterSchedules", func(t *testing.T) {
 		waterSchedules := []*pkg.WaterSchedule{
-			&pkg.WaterSchedule{
+			{
 				ID:   babyapi.NewID(),
 				Name: "WaterSchedule1",
 			},
-			&pkg.WaterSchedule{
+			{
 				ID:   babyapi.NewID(),
 				Name: "WaterSchedule2",
 			},
-			&pkg.WaterSchedule{
+			{
 				ID:   babyapi.NewID(),
 				Name: "WaterSchedule3",
 			},
-			&pkg.WaterSchedule{
+			{
 				ID:   babyapi.NewID(),
 				Name: "WaterSchedule4",
 			},

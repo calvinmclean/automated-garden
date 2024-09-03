@@ -14,13 +14,11 @@ type Migration interface {
 	Name() string
 }
 
-type MigrateFunc[From, To Versioned] func(From) (To, error)
+type Func[From, To Versioned] func(From) (To, error)
 
 type migration[From, To Versioned] struct {
 	name    string
-	from    From
-	to      To
-	migrate MigrateFunc[From, To]
+	migrate Func[From, To]
 }
 
 func (m *migration[From, To]) Name() string {
@@ -36,7 +34,7 @@ func (m *migration[From, To]) Migrate(from Versioned) (any, error) {
 	return m.migrate(f)
 }
 
-func NewMigration[From, To Versioned](name string, migrate MigrateFunc[From, To]) Migration {
+func NewMigration[From, To Versioned](name string, migrate Func[From, To]) Migration {
 	return &migration[From, To]{
 		name:    name,
 		migrate: migrate,
@@ -73,7 +71,7 @@ func Each[From, To Versioned](migrations []Migration, from []From) iter.Seq2[To,
 func runMigration[From, To Versioned](migrations []Migration, from From) (To, error) {
 	v := from.GetVersion()
 
-	if int(v) >= len(migrations) {
+	if v >= uint(len(migrations)) {
 		return *new(To), errNotFound(v)
 	}
 	m := migrations[v]
