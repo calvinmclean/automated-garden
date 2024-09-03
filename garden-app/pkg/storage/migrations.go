@@ -2,10 +2,12 @@ package storage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/migrate"
+	"github.com/calvinmclean/babyapi"
 )
 
 var (
@@ -48,13 +50,16 @@ func (c *Client) RunMigrations(ctx context.Context) error {
 }
 
 func (c *Client) RunZoneMigrations(ctx context.Context) error {
-	zones, err := c.Zones.GetAll(ctx, nil)
+	zones, err := c.Zones.GetAll(ctx, babyapi.EndDatedQueryParam(true))
 	if err != nil {
 		return fmt.Errorf("error getting all Zones: %w", err)
 	}
 
 	for zone, err := range migrate.Each[*pkg.Zone, *pkg.Zone](zoneMigrations, zones) {
 		if err != nil {
+			if errors.Is(err, migrate.ErrNotFound) {
+				continue
+			}
 			return fmt.Errorf("error migrating Zone: %w", err)
 		}
 
@@ -68,13 +73,16 @@ func (c *Client) RunZoneMigrations(ctx context.Context) error {
 }
 
 func (c *Client) RunGardenMigrations(ctx context.Context) error {
-	gardens, err := c.Gardens.GetAll(ctx, nil)
+	gardens, err := c.Gardens.GetAll(ctx, babyapi.EndDatedQueryParam(true))
 	if err != nil {
 		return fmt.Errorf("error getting all Gardens: %w", err)
 	}
 
 	for garden, err := range migrate.Each[*pkg.Garden, *pkg.Garden](gardenMigrations, gardens) {
 		if err != nil {
+			if errors.Is(err, migrate.ErrNotFound) {
+				continue
+			}
 			return fmt.Errorf("error migrating Garden: %w", err)
 		}
 
@@ -88,13 +96,16 @@ func (c *Client) RunGardenMigrations(ctx context.Context) error {
 }
 
 func (c *Client) RunWaterScheduleMigrations(ctx context.Context) error {
-	waterSchedules, err := c.WaterSchedules.GetAll(ctx, nil)
+	waterSchedules, err := c.WaterSchedules.GetAll(ctx, babyapi.EndDatedQueryParam(true))
 	if err != nil {
 		return fmt.Errorf("error getting all WaterSchedules: %w", err)
 	}
 
 	for waterSchedule, err := range migrate.Each[*pkg.WaterSchedule, *pkg.WaterSchedule](waterScheduleMigrations, waterSchedules) {
 		if err != nil {
+			if errors.Is(err, migrate.ErrNotFound) {
+				continue
+			}
 			return fmt.Errorf("error migrating WaterSchedule: %w", err)
 		}
 
