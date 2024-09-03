@@ -10,19 +10,19 @@ import (
 
 var (
 	zoneMigrations = []migrate.Migration{
-		migrate.NewMigration("InitializeVersion", func(z *pkg.Zone) (*pkg.Zone, error) {
+		migrate.NewMigration("InitializeVersion1", func(z *pkg.Zone) (*pkg.Zone, error) {
 			return z, nil
 		}),
 	}
 
 	gardenMigrations = []migrate.Migration{
-		migrate.NewMigration("InitializeVersion", func(g *pkg.Garden) (*pkg.Garden, error) {
+		migrate.NewMigration("InitializeVersion1", func(g *pkg.Garden) (*pkg.Garden, error) {
 			return g, nil
 		}),
 	}
 
 	waterScheduleMigrations = []migrate.Migration{
-		migrate.NewMigration("InitializeVersion", func(ws *pkg.WaterSchedule) (*pkg.WaterSchedule, error) {
+		migrate.NewMigration("InitializeVersion1", func(ws *pkg.WaterSchedule) (*pkg.WaterSchedule, error) {
 			return ws, nil
 		}),
 	}

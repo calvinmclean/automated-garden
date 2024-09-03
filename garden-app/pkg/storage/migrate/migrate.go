@@ -6,6 +6,9 @@ import (
 
 type Versioned interface {
 	GetVersion() uint
+}
+
+type IncrementVersion interface {
 	SetVersion(uint)
 }
 
@@ -28,7 +31,7 @@ func (m *migration[From, To]) Name() string {
 func (m *migration[From, To]) Migrate(from Versioned) (any, error) {
 	f, ok := from.(From)
 	if !ok {
-		return nil, Error{ErrInvalidType, m.Name(), from.GetVersion()}
+		return nil, ErrInvalidFromType
 	}
 
 	return m.migrate(f)
@@ -81,11 +84,14 @@ func runMigration[From, To Versioned](migrations []Migration, from From) (To, er
 		return *new(To), Error{err, m.Name(), v}
 	}
 
+	if versionSetter, ok := to.(IncrementVersion); ok {
+		versionSetter.SetVersion(v + 1)
+	}
+
 	out, ok := to.(To)
 	if !ok {
-		return *new(To), Error{ErrInvalidType, m.Name(), from.GetVersion()}
+		return *new(To), Error{ErrInvalidToType, m.Name(), from.GetVersion()}
 	}
-	out.SetVersion(v + 1)
 
 	return out, err
 }

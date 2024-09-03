@@ -6,8 +6,9 @@ import (
 )
 
 var (
-	ErrNotFound    = errors.New("migration not found")
-	ErrInvalidType = errors.New("unexpected type")
+	ErrNotFound        = errors.New("migration not found")
+	ErrInvalidToType   = errors.New("unexpected To type")
+	ErrInvalidFromType = errors.New("unexpected From type")
 )
 
 type Error struct {
