@@ -14,6 +14,11 @@ func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState
 		return
 	}
 
+	if !g.GetNotificationSettings().LightSchedule {
+		logger.Info("garden does not have light_schedule notification enabled")
+		return
+	}
+
 	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
 	w.sendNotification(g.GetNotificationClientID(), title, "Successfully executed LightAction", logger)
 }

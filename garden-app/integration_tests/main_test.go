@@ -497,6 +497,9 @@ func ControllerStartupNotificationTest(t *testing.T) {
 	t.Run("EnableNotificationsForGarden", func(t *testing.T) {
 		status, err := makeRequest(http.MethodPatch, "/gardens/"+g.GetID(), pkg.Garden{
 			NotificationClientID: pointer(nc.GetID()),
+			NotificationSettings: &pkg.NotificationSettings{
+				ControllerStartup: true,
+			},
 		}, &g)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusOK, status)

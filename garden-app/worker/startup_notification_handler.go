@@ -31,6 +31,11 @@ func (w *Worker) doGardenStartupMessage(topic string, payload []byte) error {
 	logger = logger.With("garden_id", garden.GetID())
 	logger.Info("found garden with topic-prefix")
 
+	if !garden.GetNotificationSettings().ControllerStartup {
+		logger.Info("garden does not have controller_startup notification enabled", "garden_id", garden.GetID())
+		return nil
+	}
+
 	title := fmt.Sprintf("%s connected", garden.Name)
 	return w.sendNotificationForGarden(garden, title, msg, logger)
 }

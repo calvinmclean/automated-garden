@@ -145,6 +145,13 @@ func TestGardenPatch(t *testing.T) {
 				TemperatureHumidityPin: pointer(uint(1)),
 			}},
 		},
+		{
+			"PatchNotificationSettings",
+			&Garden{NotificationSettings: &NotificationSettings{
+				ControllerStartup: true,
+				LightSchedule:     true,
+			}},
+		},
 	}
 
 	for _, tt := range tests {

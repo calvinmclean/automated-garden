@@ -21,6 +21,15 @@ var (
 		migrate.NewMigration("InitializeVersion1", func(g *pkg.Garden) (*pkg.Garden, error) {
 			return g, nil
 		}),
+		migrate.NewMigration("EnableNotificationsIfClientIsSet", func(g *pkg.Garden) (*pkg.Garden, error) {
+			if g.NotificationClientID != nil {
+				g.NotificationSettings = &pkg.NotificationSettings{
+					ControllerStartup: true,
+					LightSchedule:     true,
+				}
+			}
+			return g, nil
+		}),
 	}
 
 	waterScheduleMigrations = []migrate.Migration{

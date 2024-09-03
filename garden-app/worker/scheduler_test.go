@@ -677,6 +677,9 @@ func TestScheduleLightActions(t *testing.T) {
 				if tt.enableNotification {
 					ncID := notificationClient.GetID()
 					g.NotificationClientID = &ncID
+					g.NotificationSettings = &pkg.NotificationSettings{
+						LightSchedule: true,
+					}
 				}
 
 				err = worker.ScheduleLightActions(g)

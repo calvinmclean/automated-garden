@@ -107,6 +107,10 @@ func migrateToFinalVersion[From, To Versioned](migrations []Migration, from From
 			return *new(To), err
 		}
 
+		if next.GetVersion() < uint(len(migrations)) {
+			continue
+		}
+
 		result, ok := next.(To)
 		if ok {
 			return result, nil
