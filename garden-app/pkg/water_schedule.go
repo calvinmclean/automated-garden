@@ -27,6 +27,11 @@ type WaterSchedule struct {
 	Description          string           `json:"description,omitempty" yaml:"description,omitempty"`
 	ActivePeriod         *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
 	NotificationClientID *string          `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	V                    uint             `json:"version,omitempty" yaml:"version"`
+}
+
+func (ws *WaterSchedule) Version() uint {
+	return ws.V
 }
 
 func (ws *WaterSchedule) GetID() string {
@@ -222,6 +227,8 @@ type TemperatureData struct {
 }
 
 func (ws *WaterSchedule) Render(_ http.ResponseWriter, _ *http.Request) error {
+	// Version is excluded from responses because it's not important external information
+	ws.V = 0
 	return nil
 }
 
@@ -236,6 +243,9 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 
 	switch r.Method {
 	case http.MethodPut, http.MethodPost:
+		if ws.V == 0 {
+			ws.V = currentVersion
+		}
 		if ws.Interval == nil {
 			return errors.New("missing required interval field")
 		}

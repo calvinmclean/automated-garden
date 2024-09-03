@@ -32,6 +32,11 @@ type Garden struct {
 	LightSchedule             *LightSchedule `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
 	TemperatureHumiditySensor *bool          `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
 	NotificationClientID      *string        `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	V                         uint           `json:"version,omitempty" yaml:"version"`
+}
+
+func (g *Garden) Version() uint {
+	return g.V
 }
 
 func (g *Garden) GetID() string {
@@ -163,6 +168,9 @@ func (g *Garden) Bind(r *http.Request) error {
 		g.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
+		if g.V == 0 {
+			g.V = currentVersion
+		}
 		if g.CreatedAt == nil || g.CreatedAt.IsZero() {
 			g.CreatedAt = &now
 		}
@@ -234,5 +242,7 @@ func (g *Garden) Bind(r *http.Request) error {
 }
 
 func (g *Garden) Render(_ http.ResponseWriter, _ *http.Request) error {
+	// Version is excluded from responses because it's not important external information
+	g.V = 0
 	return nil
 }
