@@ -11,6 +11,8 @@ import (
 	"github.com/rs/xid"
 )
 
+const currentZoneVersion = uint(1)
+
 // Zone represents a "waterable resource" that is owned by a Garden..
 // This allows for more complex Garden setups where a large irrigation system will be watering entire groups of
 // Zones rather than watering individually. This contains the important information for managing WaterSchedules
@@ -26,6 +28,15 @@ type Zone struct {
 	EndDate          *time.Time   `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WaterScheduleIDs []xid.ID     `json:"water_schedule_ids" yaml:"water_schedule_ids"`
 	SkipCount        *uint        `json:"skip_count" yaml:"skip_count"`
+	Version          uint         `json:"version,omitempty" yaml:"version"`
+}
+
+func (z *Zone) GetVersion() uint {
+	return z.Version
+}
+
+func (z *Zone) SetVersion(v uint) {
+	z.Version = v
 }
 
 func (z *Zone) GetID() string {
@@ -141,6 +152,9 @@ func (z *Zone) Bind(r *http.Request) error {
 		z.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
+		if z.Version == 0 {
+			z.Version = currentZoneVersion
+		}
 		if z.CreatedAt == nil || z.CreatedAt.IsZero() {
 			z.CreatedAt = &now
 		}
@@ -163,5 +177,7 @@ func (z *Zone) Bind(r *http.Request) error {
 }
 
 func (z *Zone) Render(_ http.ResponseWriter, _ *http.Request) error {
+	// Version is excluded from responses because it's not important external information
+	z.Version = 0
 	return nil
 }

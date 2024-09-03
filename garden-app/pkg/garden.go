@@ -19,6 +19,8 @@ const (
 	HealthStatusDown    HealthStatus = "DOWN"
 	HealthStatusUp      HealthStatus = "UP"
 	HealthStatusUnknown HealthStatus = "N/A"
+
+	currentGardenVersion = uint(1)
 )
 
 // Garden is the representation of a single garden-controller device
@@ -32,6 +34,15 @@ type Garden struct {
 	LightSchedule             *LightSchedule `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
 	TemperatureHumiditySensor *bool          `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
 	NotificationClientID      *string        `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	Version                   uint           `json:"version,omitempty" yaml:"version"`
+}
+
+func (g *Garden) GetVersion() uint {
+	return g.Version
+}
+
+func (g *Garden) SetVersion(v uint) {
+	g.Version = v
 }
 
 func (g *Garden) GetID() string {
@@ -163,6 +174,9 @@ func (g *Garden) Bind(r *http.Request) error {
 		g.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
+		if g.Version == 0 {
+			g.Version = currentGardenVersion
+		}
 		if g.CreatedAt == nil || g.CreatedAt.IsZero() {
 			g.CreatedAt = &now
 		}
@@ -234,5 +248,7 @@ func (g *Garden) Bind(r *http.Request) error {
 }
 
 func (g *Garden) Render(_ http.ResponseWriter, _ *http.Request) error {
+	// Version is excluded from responses because it's not important external information
+	g.Version = 0
 	return nil
 }
