@@ -11,7 +11,7 @@ import (
 	"github.com/rs/xid"
 )
 
-const currentVersion = uint(1)
+const currentZoneVersion = uint(1)
 
 // Zone represents a "waterable resource" that is owned by a Garden..
 // This allows for more complex Garden setups where a large irrigation system will be watering entire groups of
@@ -153,7 +153,7 @@ func (z *Zone) Bind(r *http.Request) error {
 		fallthrough
 	case http.MethodPut:
 		if z.Version == 0 {
-			z.Version = currentVersion
+			z.Version = currentZoneVersion
 		}
 		if z.CreatedAt == nil || z.CreatedAt.IsZero() {
 			z.CreatedAt = &now

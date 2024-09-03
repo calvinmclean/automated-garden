@@ -19,6 +19,8 @@ const (
 	HealthStatusDown    HealthStatus = "DOWN"
 	HealthStatusUp      HealthStatus = "UP"
 	HealthStatusUnknown HealthStatus = "N/A"
+
+	currentGardenVersion = uint(1)
 )
 
 // Garden is the representation of a single garden-controller device
@@ -173,7 +175,7 @@ func (g *Garden) Bind(r *http.Request) error {
 		fallthrough
 	case http.MethodPut:
 		if g.Version == 0 {
-			g.Version = currentVersion
+			g.Version = currentGardenVersion
 		}
 		if g.CreatedAt == nil || g.CreatedAt.IsZero() {
 			g.CreatedAt = &now

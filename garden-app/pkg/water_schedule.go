@@ -12,6 +12,8 @@ import (
 	"github.com/rs/xid"
 )
 
+const currentWaterScheduleVersion = uint(1)
+
 // WaterSchedule allows the user to have more control over how the Zone is watered using an Interval
 // and optional MinimumMoisture which acts as the threshold the Zone's soil should be above.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
@@ -248,7 +250,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 	switch r.Method {
 	case http.MethodPut, http.MethodPost:
 		if ws.Version == 0 {
-			ws.Version = currentVersion
+			ws.Version = currentWaterScheduleVersion
 		}
 		if ws.Interval == nil {
 			return errors.New("missing required interval field")
