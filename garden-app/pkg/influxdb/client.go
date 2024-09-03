@@ -34,11 +34,11 @@ const (
 |> filter(fn: (r) => r["_measurement"] == "water")
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
 |> filter(fn: (r) => r["zone"] == "{{.ZonePosition}}")
+|> drop(columns: ["host"])
 |> sort(columns: ["_time"], desc: true)
 {{- if .Limit }}
 |> limit(n: {{.Limit}})
 {{- end }}
-|> drop(columns: ["host"])
 |> yield(name: "last")`
 	temperatureAndHumidityQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
