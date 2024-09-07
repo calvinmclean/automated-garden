@@ -63,8 +63,6 @@ Then there are two 6-pin JST connectors that provide power (ground/5V) and 4 dat
 #ifdef ENABLE_MQTT_LOGGING
 #define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
 #endif
-
-#define JSON_CAPACITY 48
 #endif
 
 #define NUM_ZONES 3

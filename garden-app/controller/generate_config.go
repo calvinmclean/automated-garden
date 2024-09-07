@@ -31,7 +31,6 @@ const (
 
 #define ENABLE_MQTT_LOGGING
 
-#define JSON_CAPACITY 48
 #endif
 
 {{ if .DisableWatering }}

@@ -53,7 +53,6 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define ENABLE_MQTT_LOGGING
 
-#define JSON_CAPACITY 48
 #endif
 
 #define NUM_ZONES 1
@@ -109,7 +108,6 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define ENABLE_MQTT_LOGGING
 
-#define JSON_CAPACITY 48
 #endif
 
 #define NUM_ZONES 1
@@ -170,7 +168,6 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define ENABLE_MQTT_LOGGING
 
-#define JSON_CAPACITY 48
 #endif
 
 #define DISABLE_WATERING
@@ -225,7 +222,6 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define ENABLE_MQTT_LOGGING
 
-#define JSON_CAPACITY 48
 #endif
 
 #define NUM_ZONES 4

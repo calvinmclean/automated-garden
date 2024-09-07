@@ -25,8 +25,6 @@ These are the basic options that are required and do not fit in specific categor
 
 `QUEUE_SIZE`: maximum number of messages that can be queued in FreeRTOS queues. 10 is a sensible default that should never overflow unless you have a large number of Zones
 
-`JSON_CAPACITY`: Size of JSON object calculated using Arduino JSON Assistant. This should not be changed
-
 ### MQTT/WiFi Options
 These are all the configurations for setting up MQTT publish/subscribe.
 

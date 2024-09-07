@@ -35,8 +35,6 @@ Notice that in this example, `GPIO_NUM_MAX` is used as the moisture sensor pin o
 #define MQTT_PORT 30002
 #define MQTT_CLIENT_NAME TOPIC_PREFIX"-sensors"
 
-#define JSON_CAPACITY 48
-
 #define DISABLE_WATERING
 #define NUM_ZONES 3
 #define PUMP_PIN GPIO_NUM_18

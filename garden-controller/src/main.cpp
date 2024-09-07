@@ -6,6 +6,7 @@
 #include "config.h"
 #include "mqtt.h"
 #include "main.h"
+#include "wifi_manager.h"
 #ifdef ENABLE_BUTTONS
 #include "buttons.h"
 #endif
@@ -47,6 +48,7 @@ void setup() {
   light_state = 0;
 #endif
 
+  setupWifiManager();
   setupWifi();
   setupMQTT();
 #ifdef ENABLE_MOISTURE_SENSORS

@@ -2,7 +2,7 @@
 #define config_h
 
 // Unique prefix for this controller. It is used for the root of MQTT topics and as the MQTT ClientID
-#define TOPIC_PREFIX "garden"
+#define TOPIC_PREFIX "test-garden"
 
 // Size of FreeRTOS queues
 #define QUEUE_SIZE 10
@@ -24,9 +24,6 @@
 
 // Enable logging messages to MQTT
 #define ENABLE_MQTT_LOGGING
-
- // Size of JSON object calculated using Arduino JSON Assistant
-#define JSON_CAPACITY 48
 
 /**
  * Garden Configurations

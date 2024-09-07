@@ -54,8 +54,6 @@ This has a very basic setup since it just consists of the ESP32 and a single rel
 #ifdef ENABLE_MQTT_LOGGING
 #define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
 #endif
-
-#define JSON_CAPACITY 48
 #endif
 
 #define NUM_ZONES 1
