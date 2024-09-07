@@ -35,7 +35,6 @@ func TestWaterScheduleEndDated(t *testing.T) {
 }
 
 func TestWaterSchedulePatch(t *testing.T) {
-	one := 1
 	float := float32(1)
 	now := clock.Now()
 	tests := []struct {
@@ -64,16 +63,6 @@ func TestWaterSchedulePatch(t *testing.T) {
 			"PatchDescription",
 			&WaterSchedule{
 				Description: "description",
-			},
-		},
-		{
-			"PatchWeatherControl.SoilMoisture.MinimumMoisture",
-			&WaterSchedule{
-				WeatherControl: &weather.Control{
-					SoilMoisture: &weather.SoilMoistureControl{
-						MinimumMoisture: &one,
-					},
-				},
 			},
 		},
 		{

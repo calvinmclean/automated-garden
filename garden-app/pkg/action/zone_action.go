@@ -31,9 +31,8 @@ func (action *ZoneAction) Bind(*http.Request) error {
 
 // WaterAction is an action for watering a Zone for the specified amount of time
 type WaterAction struct {
-	Duration       *pkg.Duration `json:"duration" form:"duration"`
-	IgnoreMoisture bool          `json:"ignore_moisture"`
-	IgnoreWeather  bool          `json:"ignore_weather"`
+	Duration      *pkg.Duration `json:"duration" form:"duration"`
+	IgnoreWeather bool          `json:"ignore_weather"`
 }
 
 // WaterMessage is the message being sent over MQTT to the embedded garden controller

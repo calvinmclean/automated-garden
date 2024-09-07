@@ -20,7 +20,6 @@ This small garden has worked really well for growing herbs or even cherry tomato
 
 ### 3D Printed
 - Electronics case
-- Buttons case
 - Hose splitter
 - Hose routing clips
 - Grow light mounts
@@ -34,53 +33,7 @@ Then there are two 6-pin JST connectors that provide power (ground/5V) and 4 dat
 <!-- tabs:start -->
 #### **`garden-controller/config.h`**
 ```c
-#ifndef config_h
-#define config_h
-
-#define TOPIC_PREFIX "garden"
-
-#define QUEUE_SIZE 10
-
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
-#define MQTT_ADDRESS "192.168.0.107"
-#define MQTT_PORT 30002
-#define MQTT_CLIENT_NAME TOPIC_PREFIX
-#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
-#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
-#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
-#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
-#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
-#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
-
-#define ENABLE_MQTT_HEALTH
-#ifdef ENABLE_MQTT_HEALTH
-#define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
-#define HEALTH_PUBLISH_INTERVAL 60000
-#endif
-
-#define ENABLE_MQTT_LOGGING
-#ifdef ENABLE_MQTT_LOGGING
-#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
-#endif
-#endif
-
-#define NUM_ZONES 3
-#define PUMP_PIN GPIO_NUM_18
-#define ZONE_1 { PUMP_PIN, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 }
-#define ZONE_2 { PUMP_PIN, GPIO_NUM_17, GPIO_NUM_21, GPIO_NUM_39 }
-#define ZONE_3 { PUMP_PIN, GPIO_NUM_5, GPIO_NUM_22, GPIO_NUM_34 }
-#define ZONES { ZONE_1, ZONE_2, ZONE_3 }
-#define DEFAULT_WATER_TIME 5000
-
-#define LIGHT_PIN GPIO_NUM_32
-
-#define ENABLE_BUTTONS
-#ifdef ENABLE_BUTTONS
-#define STOP_BUTTON_PIN GPIO_NUM_23
-#endif
-
-#endif
+WIP
 ```
 
 #### **`garden-app/config.yaml`**

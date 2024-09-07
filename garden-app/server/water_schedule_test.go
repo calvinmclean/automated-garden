@@ -724,18 +724,6 @@ func TestWaterScheduleRequest(t *testing.T) {
 			"error validating weather_control: error validating rain_control: range must be a positive number",
 		},
 		{
-			"WeatherControlMissingMinimumMoisture",
-			&pkg.WaterSchedule{
-				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: pkg.NewStartTime(now),
-				WeatherControl: &weather.Control{
-					SoilMoisture: &weather.SoilMoistureControl{},
-				},
-			},
-			"error validating weather_control: error validating moisture_control: missing required field: minimum_moisture",
-		},
-		{
 			"ActivePeriodInvalid",
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},

@@ -12,7 +12,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-// ZoneResponse is used to represent a Zone in the response body with the additional Moisture data
+// ZoneResponse is used to represent a Zone in the response body with the additional data
 // and hypermedia Links fields
 type ZoneResponse struct {
 	*pkg.Zone
@@ -137,17 +137,6 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 
 	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
 		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.api.storageClient)
-
-		if nextWaterSchedule.HasSoilMoistureControl() && garden != nil {
-			logger.Debug("getting moisture data for Zone")
-			soilMoisture, err := zr.api.getMoisture(ctx, garden, zr.Zone)
-			if err != nil {
-				logger.Warn("unable to get moisture data for Zone", "error", err)
-			} else {
-				logger.Debug("successfully got moisture data for Zone", "moisture", soilMoisture)
-				zr.WeatherData.SoilMoisturePercent = &soilMoisture
-			}
-		}
 	}
 
 	return nil

@@ -31,8 +31,7 @@ func TestGenerateMainConfig(t *testing.T) {
 							ValvePin: "GPIO_NUM_16",
 						},
 					},
-					TopicPrefix:      "garden",
-					DefaultWaterTime: 5 * time.Second,
+					TopicPrefix: "garden",
 				},
 				MQTTConfig: mqtt.Config{
 					Broker: "localhost",
@@ -51,14 +50,18 @@ func TestGenerateMainConfig(t *testing.T) {
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
 
-#define ENABLE_MQTT_LOGGING
-
 #endif
 
 #define NUM_ZONES 1
-#define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX } }
-#define DEFAULT_WATER_TIME 5000
+#define VALVES { GPIO_NUM_16 }
+#define PUMPS { GPIO_NUM_18 }
 
+#define LIGHT_ENABLED false
+#define LIGHT_PIN GPIO_NUM_MAX
+
+#define ENABLE_DHT22 false
+#define DHT22_PIN GPIO_NUM_MAX
+#define DHT22_INTERVAL 0
 #endif
 `,
 		},
@@ -68,19 +71,12 @@ func TestGenerateMainConfig(t *testing.T) {
 				NestedConfig: NestedConfig{
 					Zones: []ZoneConfig{
 						{
-							PumpPin:           "GPIO_NUM_18",
-							ValvePin:          "GPIO_NUM_16",
-							ButtonPin:         "GPIO_NUM_19",
-							MoistureSensorPin: "GPIO_NUM_36",
+							PumpPin:  "GPIO_NUM_18",
+							ValvePin: "GPIO_NUM_16",
 						},
 					},
 					TopicPrefix:                 "garden",
-					DefaultWaterTime:            5 * time.Second,
 					LightPin:                    "GPIO_NUM_32",
-					EnableButtons:               true,
-					StopButtonPin:               "GPIO_NUM_23",
-					EnableMoistureSensor:        true,
-					MoistureInterval:            5 * time.Second,
 					PublishHealth:               true,
 					HealthInterval:              1 * time.Minute,
 					PublishTemperatureHumidity:  true,
@@ -104,34 +100,18 @@ func TestGenerateMainConfig(t *testing.T) {
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
 
-#define ENABLE_MQTT_HEALTH
-
-#define ENABLE_MQTT_LOGGING
-
 #endif
 
 #define NUM_ZONES 1
-#define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 } }
-#define DEFAULT_WATER_TIME 5000
+#define VALVES { GPIO_NUM_16 }
+#define PUMPS { GPIO_NUM_18 }
 
+#define LIGHT_ENABLED true
 #define LIGHT_PIN GPIO_NUM_32
 
-#define ENABLE_BUTTONS
-#ifdef ENABLE_BUTTONS
-#define STOP_BUTTON_PIN GPIO_NUM_23
-#endif
-
-#ifdef ENABLE_MOISTURE_SENSORS AND ENABLE_WIFI
-#define MOISTURE_SENSOR_AIR_VALUE 3415
-#define MOISTURE_SENSOR_WATER_VALUE 1362
-#define MOISTURE_SENSOR_INTERVAL 5000
-#endif
-
-#define ENABLE_DHT22
-#ifdef ENABLE_DHT22
+#define ENABLE_DHT22 true
 #define DHT22_PIN GPIO_NUM_27
 #define DHT22_INTERVAL 300000
-#endif
 #endif
 `,
 		},
@@ -145,9 +125,7 @@ func TestGenerateMainConfig(t *testing.T) {
 							ValvePin: "GPIO_NUM_16",
 						},
 					},
-					TopicPrefix:      "garden",
-					DefaultWaterTime: 5 * time.Second,
-					DisableWatering:  true,
+					TopicPrefix: "garden",
 				},
 				MQTTConfig: mqtt.Config{
 					Broker: "localhost",
@@ -166,15 +144,18 @@ func TestGenerateMainConfig(t *testing.T) {
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
 
-#define ENABLE_MQTT_LOGGING
-
 #endif
 
-#define DISABLE_WATERING
 #define NUM_ZONES 1
-#define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX } }
-#define DEFAULT_WATER_TIME 5000
+#define VALVES { GPIO_NUM_16 }
+#define PUMPS { GPIO_NUM_18 }
 
+#define LIGHT_ENABLED false
+#define LIGHT_PIN GPIO_NUM_MAX
+
+#define ENABLE_DHT22 false
+#define DHT22_PIN GPIO_NUM_MAX
+#define DHT22_INTERVAL 0
 #endif
 `,
 		},
@@ -200,8 +181,7 @@ func TestGenerateMainConfig(t *testing.T) {
 							ValvePin: "GPIO_NUM_16",
 						},
 					},
-					TopicPrefix:      "garden",
-					DefaultWaterTime: 5 * time.Second,
+					TopicPrefix: "garden",
 				},
 				MQTTConfig: mqtt.Config{
 					Broker: "localhost",
@@ -220,14 +200,18 @@ func TestGenerateMainConfig(t *testing.T) {
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
 
-#define ENABLE_MQTT_LOGGING
-
 #endif
 
 #define NUM_ZONES 4
-#define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX }, { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX }, { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX }, { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_MAX, GPIO_NUM_MAX } }
-#define DEFAULT_WATER_TIME 5000
+#define VALVES { GPIO_NUM_16, GPIO_NUM_16, GPIO_NUM_16, GPIO_NUM_16 }
+#define PUMPS { GPIO_NUM_18, GPIO_NUM_18, GPIO_NUM_18, GPIO_NUM_18 }
 
+#define LIGHT_ENABLED false
+#define LIGHT_PIN GPIO_NUM_MAX
+
+#define ENABLE_DHT22 false
+#define DHT22_PIN GPIO_NUM_MAX
+#define DHT22_INTERVAL 0
 #endif
 `,
 		},

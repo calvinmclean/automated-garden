@@ -17,9 +17,6 @@ storage:
 controller:
   topic_prefix: "test"
   num_zones: 3
-  moisture_strategy: random
-  moisture_value: 100
-  moisture_interval: 10s
   publish_water_event: true
   publish_health: true
   health_interval: 500ms

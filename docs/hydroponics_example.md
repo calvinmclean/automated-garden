@@ -25,42 +25,7 @@ This has a very basic setup since it just consists of the ESP32 and a single rel
 <!-- tabs:start -->
 #### **`garden-controller/config.h`**
 ```c
-#ifndef config_h
-#define config_h
-
-#define TOPIC_PREFIX "aerogarden"
-
-#define QUEUE_SIZE 10
-
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
-#define MQTT_ADDRESS "192.168.0.107"
-#define MQTT_PORT 30002
-#define MQTT_CLIENT_NAME TOPIC_PREFIX
-#define MQTT_WATER_TOPIC TOPIC_PREFIX"/command/water"
-#define MQTT_STOP_TOPIC TOPIC_PREFIX"/command/stop"
-#define MQTT_STOP_ALL_TOPIC TOPIC_PREFIX"/command/stop_all"
-#define MQTT_LIGHT_TOPIC TOPIC_PREFIX"/command/light"
-#define MQTT_LIGHT_DATA_TOPIC TOPIC_PREFIX"/data/light"
-#define MQTT_WATER_DATA_TOPIC TOPIC_PREFIX"/data/water"
-
-#define ENABLE_MQTT_HEALTH
-#ifdef ENABLE_MQTT_HEALTH
-#define MQTT_HEALTH_DATA_TOPIC TOPIC_PREFIX"/data/health"
-#define HEALTH_PUBLISH_INTERVAL 60000
-#endif
-
-#define ENABLE_MQTT_LOGGING
-#ifdef ENABLE_MQTT_LOGGING
-#define MQTT_LOGGING_TOPIC TOPIC_PREFIX"/data/logs"
-#endif
-#endif
-
-#define NUM_ZONES 1
-#define ZONES { { GPIO_NUM_18, GPIO_NUM_16, GPIO_NUM_19, GPIO_NUM_36 } }
-#define DEFAULT_WATER_TIME 5000
-
-#endif
+WIP
 ```
 
 #### **`garden-app/config.yaml`**

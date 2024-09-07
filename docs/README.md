@@ -38,7 +38,6 @@ Key features include:
   - Control valves or devices (only limited by number of output pins)
   - Queue up water events to water multiple zones one after the other
   - Publish data and logs to InfluxDB via Telegraf + MQTT
-  - Respond to buttons to water individual zones and cancel watering
 
 ## Core Technologies
 - Arduino/FreeRTOS

@@ -13,15 +13,7 @@ import (
 
 const (
 	// QueryTimeout is the default time to use for a query's context timeout
-	QueryTimeout          = time.Millisecond * 1000
-	moistureQueryTemplate = `from(bucket: "{{.Bucket}}")
-|> range(start: -{{.Start}})
-|> filter(fn: (r) => r["_measurement"] == "moisture")
-|> filter(fn: (r) => r["_field"] == "value")
-|> filter(fn: (r) => r["zone"] == "{{.ZonePosition}}")
-|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/moisture")
-|> drop(columns: ["host"])
-|> mean()`
+	QueryTimeout        = time.Millisecond * 1000
 	healthQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "health")
@@ -63,7 +55,6 @@ var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
-	GetMoisture(context.Context, uint, string) (float64, error)
 	GetLastContact(context.Context, string) (time.Time, error)
 	GetWaterHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
 	GetTemperatureAndHumidity(context.Context, string) (float64, float64, error)
@@ -110,38 +101,6 @@ func NewClient(config Config) Client {
 		influxdb2.NewClient(config.Address, config.Token),
 		config,
 	}
-}
-
-// GetMoisture returns the Zone's average soil moisture in the last 15 minutes
-func (client *client) GetMoisture(ctx context.Context, zonePosition uint, topicPrefix string) (float64, error) {
-	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetMoisture"))
-	defer timer.ObserveDuration()
-
-	// Prepare query
-	queryString, err := queryData{
-		Bucket:       client.config.Bucket,
-		Start:        time.Minute * 15,
-		ZonePosition: zonePosition,
-		TopicPrefix:  topicPrefix,
-	}.Render(moistureQueryTemplate)
-	if err != nil {
-		return 0, err
-	}
-
-	// Query InfluxDB
-	queryAPI := client.QueryAPI(client.config.Org)
-	queryResult, err := queryAPI.Query(ctx, queryString)
-	if err != nil {
-		return 0, err
-	}
-
-	// Read and return the result
-	var result float64
-	if queryResult.Next() {
-		result = queryResult.Record().Value().(float64)
-	}
-
-	return result, queryResult.Err()
 }
 
 func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (time.Time, error) {
@@ -212,7 +171,7 @@ func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, to
 
 // GetTemperatureAndHumidity gets the recent temperature and humidity data for a Garden
 func (client *client) GetTemperatureAndHumidity(ctx context.Context, topicPrefix string) (float64, float64, error) {
-	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetMoisture"))
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetTemperatureAndHumidity"))
 	defer timer.ObserveDuration()
 
 	queryString, err := queryData{

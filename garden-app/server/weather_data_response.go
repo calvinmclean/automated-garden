@@ -11,9 +11,8 @@ import (
 
 // WeatherData is used to represent the data used for WeatherControl to a user
 type WeatherData struct {
-	Rain                *RainData        `json:"rain,omitempty"`
-	Temperature         *TemperatureData `json:"average_temperature,omitempty"`
-	SoilMoisturePercent *float64         `json:"soil_moisture_percent,omitempty"`
+	Rain        *RainData        `json:"rain,omitempty"`
+	Temperature *TemperatureData `json:"average_temperature,omitempty"`
 }
 
 // RainData shows the total rain in the last watering interval and the scaling factor it would result in

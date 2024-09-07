@@ -630,10 +630,6 @@ components:
               type: string
               description: time of the next scheduled watering
               format: date-time
-            moisture:
-              type: number
-              format: float
-              description: moisture percentage of a Plant with a soil moisture sensor
             links:
               type: array
               items:
@@ -900,8 +896,6 @@ components:
       type: object
       description: |
         Allows control over how/when the Zone is watered. The `interval` is used to control the amount of time the pump runs to water the Garden.
-        Specifying a `minimum_moisture` will instruct the server to consider moisture sensor data when executing the WaterAction.
-        To avoid falsely triggering watering and avoid the complexity if constantly checking moisture data, the moisture is only checked when executing a WaterAction.
       properties:
         duration:
           type: string
@@ -1006,18 +1000,6 @@ components:
             baseline_value: 27
             factor: 0.5
             range: 10
-        moisture_control:
-          type: object
-          description: skip watering based on temperature measurements
-          properties:
-            minimum_moisture:
-              type: integer
-              minimum: 0
-              maximum: 100
-              description: |
-                this is a percentage representing the threshold that the Plant's moisture must be
-                below to enable a WaterAction
-              example: 50
 
     ScaleControl:
       type: object
@@ -1041,7 +1023,7 @@ components:
           type: number
           format: float
           description: |
-            the most extreme value (when added to baseline_value) that scaling will be 
+            the most extreme value (when added to baseline_value) that scaling will be
             affected by (used as max/min)
 
     Zone:
@@ -1209,10 +1191,6 @@ components:
               type: number
               format: float
               description: scale factor calculated by WeatherControl setup and recent temperature data
-        soil_moisture_percent:
-          type: number
-          format: float
-          description: moisture percentage of a Zone with a soil moisture sensor
 
     WaterHistoryResponse:
       type: object
@@ -1265,8 +1243,5 @@ components:
           type: string
           description: amount of time, as duration string, that Zone should be watered
           example: 15m
-        ignore_moisture:
-          type: boolean
-          description: if Zone is configured with a `minimum_moisture` for watering, ignore it and force watering
       required:
         - duration

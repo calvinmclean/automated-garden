@@ -14,8 +14,7 @@ import (
 
 const currentWaterScheduleVersion = uint(1)
 
-// WaterSchedule allows the user to have more control over how the Zone is watered using an Interval
-// and optional MinimumMoisture which acts as the threshold the Zone's soil should be above.
+// WaterSchedule allows the user to have more control over how the Zone is watered using an Interval.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
 	ID                   babyapi.ID       `json:"id" yaml:"id"`
@@ -70,7 +69,7 @@ func (ws *WaterSchedule) SetEndDate(now time.Time) {
 // This checks that WeatherControl is defined and has at least one type of control configured
 func (ws *WaterSchedule) HasWeatherControl() bool {
 	return ws != nil &&
-		(ws.HasRainControl() || ws.HasSoilMoistureControl() || ws.HasTemperatureControl())
+		(ws.HasRainControl() || ws.HasTemperatureControl())
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
@@ -119,13 +118,6 @@ func (ws *WaterSchedule) Patch(new *WaterSchedule) *babyapi.ErrResponse {
 func (ws *WaterSchedule) HasRainControl() bool {
 	return ws.WeatherControl != nil &&
 		ws.WeatherControl.Rain != nil
-}
-
-// HasSoilMoistureControl is used to determine if soil moisture conditions should be checked before watering the Zone
-func (ws *WaterSchedule) HasSoilMoistureControl() bool {
-	return ws.WeatherControl != nil &&
-		ws.WeatherControl.SoilMoisture != nil &&
-		ws.WeatherControl.SoilMoisture.MinimumMoisture != nil
 }
 
 // HasTemperatureControl is used to determine if configuration is available for environmental scaling
@@ -215,9 +207,8 @@ type NextWaterDetails struct {
 
 // WeatherData is used to represent the data used for WeatherControl to a user
 type WeatherData struct {
-	Rain                *RainData        `json:"rain,omitempty"`
-	Temperature         *TemperatureData `json:"average_temperature,omitempty"`
-	SoilMoisturePercent *float64         `json:"soil_moisture_percent,omitempty"`
+	Rain        *RainData        `json:"rain,omitempty"`
+	Temperature *TemperatureData `json:"average_temperature,omitempty"`
 }
 
 // RainData shows the total rain in the last watering interval and the scaling factor it would result in
@@ -313,11 +304,6 @@ func ValidateWeatherControl(wc *weather.Control) error {
 		err := ValidateScaleControl(wc.Rain)
 		if err != nil {
 			return fmt.Errorf("error validating rain_control: %w", err)
-		}
-	}
-	if wc.SoilMoisture != nil {
-		if wc.SoilMoisture.MinimumMoisture == nil {
-			return errors.New("error validating moisture_control: missing required field: minimum_moisture")
 		}
 	}
 	return nil

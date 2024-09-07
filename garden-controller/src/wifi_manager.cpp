@@ -67,19 +67,19 @@ void setupFS() {
   std::unique_ptr<char[]> buf(new char[size]);
 
   configFile.readBytes(buf.get(), size);
+  configFile.close();
 
   DynamicJsonDocument json(1024);
   auto deserializeError = deserializeJson(json, buf.get());
-  if (!deserializeError) {
-    strcpy(mqtt_server, json["mqtt_server"]);
-    strcpy(mqtt_topic_prefix, json["mqtt_topic_prefix"]);
-    mqtt_port = json["mqtt_port"];
-
-    printf("loaded config JSON: %s %s %d\n", mqtt_server, mqtt_topic_prefix, mqtt_port);
-  } else {
+  if (deserializeError) {
     printf("failed to load json config\n");
+    return;
   }
-  configFile.close();
+  strcpy(mqtt_server, json["mqtt_server"]);
+  strcpy(mqtt_topic_prefix, json["mqtt_topic_prefix"]);
+  mqtt_port = json["mqtt_port"];
+
+  printf("loaded config JSON: %s %s %d\n", mqtt_server, mqtt_topic_prefix, mqtt_port);
 }
 
 /*

@@ -1,5 +1,4 @@
 #include "config.h"
-#ifdef ENABLE_DHT22
 
 #include <Arduino.h>
 #include "dht22.h"
@@ -50,5 +49,3 @@ void dht22PublishTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
-
-#endif

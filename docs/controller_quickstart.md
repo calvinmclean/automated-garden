@@ -36,7 +36,7 @@ In this interactive mode, the CLI will walk you through each required configurat
 garden-app controller generate-config --config config.yaml
 ```
 
-The following `config.yaml` file creates the necessary configuration for a 3-zone garden with moisture sensing, buttons, and light control:
+The following `config.yaml` file creates the necessary configuration for a 3-zone garden with light control:
 
 ```YAML
 mqtt:
@@ -49,25 +49,14 @@ controller:
   zones:
     - pump_pin: GPIO_NUM_18
       valve_pin: GPIO_NUM_16
-      button_pin: GPIO_NUM_19
-      moisture_sensor_pin: GPIO_NUM_36
     - pump_pin: GPIO_NUM_18
       valve_pin: GPIO_NUM_17
-      button_pin: GPIO_NUM_21
-      moisture_sensor_pin: GPIO_NUM_39
     - pump_pin: GPIO_NUM_18
       valve_pin: GPIO_NUM_5
-      button_pin: GPIO_NUM_22
-      moisture_sensor_pin: GPIO_NUM_34
-  enable_moisture_sensor: true
-  enable_buttons: true
-  stop_water_button: GPIO_NUM_23
   light_pin: GPIO_NUM_32
   topic_prefix: "garden"
-  default_water_time: 5s
   publish_health: true
   health_interval: 1m
-  moisture_interval: 5s
 ```
 
 ## Advanced

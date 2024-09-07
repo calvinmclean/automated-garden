@@ -32,23 +32,13 @@
 #define MQTT_LIGHT_DATA_TOPIC "/data/light"
 #define MQTT_WATER_DATA_TOPIC "/data/water"
 
-#ifdef ENABLE_MQTT_LOGGING
 #define MQTT_LOGGING_TOPIC "/data/logs"
-#endif
 
-#ifdef ENABLE_MQTT_HEALTH
 #define MQTT_HEALTH_DATA_TOPIC "/data/health"
 #define HEALTH_PUBLISH_INTERVAL 60000
-#endif
 
-#ifdef ENABLE_DHT22
 #define MQTT_TEMPERATURE_DATA_TOPIC "/data/temperature"
 #define MQTT_HUMIDITY_DATA_TOPIC "/data/humidity"
-#endif
-
-#ifdef ENABLE_MOISTURE_SENSORS
-#define MQTT_MOISTURE_DATA_TOPIC "/data/moisture"
-#endif
 
 extern PubSubClient client;
 
@@ -68,9 +58,7 @@ extern TaskHandle_t mqttLoopTaskHandle;
 extern TaskHandle_t healthPublisherTaskHandle;
 extern TaskHandle_t waterPublisherTaskHandle;
 extern QueueHandle_t waterPublisherQueue;
-#ifdef LIGHT_PIN
 extern QueueHandle_t lightPublisherQueue;
 extern TaskHandle_t lightPublisherTaskHandle;
-#endif
 
 #endif

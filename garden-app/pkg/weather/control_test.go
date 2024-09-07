@@ -9,7 +9,6 @@ import (
 )
 
 func TestPatch(t *testing.T) {
-	fifty := 50
 	tests := []struct {
 		name       string
 		newControl *Control
@@ -54,14 +53,6 @@ func TestPatch(t *testing.T) {
 				},
 			},
 		},
-		{
-			"PatchSoilMoisture.MinimumMoisture",
-			&Control{
-				SoilMoisture: &SoilMoistureControl{
-					MinimumMoisture: &fifty,
-				},
-			},
-		},
 	}
 
 	for _, tt := range tests {
@@ -77,13 +68,9 @@ func TestPatch(t *testing.T) {
 			if tt.newControl.Temperature == nil {
 				tt.newControl.Temperature = &ScaleControl{}
 			}
-			if tt.newControl.SoilMoisture == nil {
-				tt.newControl.SoilMoisture = &SoilMoistureControl{}
-			}
 			c := &Control{
-				Rain:         &ScaleControl{},
-				Temperature:  &ScaleControl{},
-				SoilMoisture: &SoilMoistureControl{},
+				Rain:        &ScaleControl{},
+				Temperature: &ScaleControl{},
 			}
 			c.Patch(tt.newControl)
 			assert.Equal(t, tt.newControl, c)

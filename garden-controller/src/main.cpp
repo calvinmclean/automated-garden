@@ -7,19 +7,18 @@
 #include "mqtt.h"
 #include "main.h"
 #include "wifi_manager.h"
-#ifdef ENABLE_BUTTONS
-#include "buttons.h"
-#endif
-#ifdef ENABLE_MOISTURE_SENSORS
-#include "moisture.h"
-#endif
-#ifdef ENABLE_DHT22
 #include "dht22.h"
-#endif
 
 
-/* zone/valve variables */
-gpio_num_t zones[NUM_ZONES][4] = ZONES;
+/* zone valve and pump variables */
+gpio_num_t valves[NUM_ZONES] = VALVES;
+gpio_num_t pumps[NUM_ZONES] = PUMPS;
+
+/* light variables */
+bool lightEnabled = LIGHT_ENABLED;
+gpio_num_t lightPin = LIGHT_PIN;
+
+bool dht22Enabled = ENABLE_DHT22;
 
 /* FreeRTOS Queue and Task handlers */
 QueueHandle_t waterQueue;
@@ -28,62 +27,22 @@ TaskHandle_t waterZoneTaskHandle;
 /* state variables */
 int light_state;
 
-void setup() {
-#ifndef DISABLE_WATERING
-  // Prepare pins
-  for (int i = 0; i < NUM_ZONES; i++) {
-    // Setup valve pins
-    gpio_reset_pin(zones[i][1]);
-    gpio_set_direction(zones[i][1], GPIO_MODE_OUTPUT);
+void setupZones() {
+    for (int i = 0; i < NUM_ZONES; i++) {
+      // Setup valve and pump pins
+      gpio_reset_pin(valves[i]);
+      gpio_set_direction(valves[i], GPIO_MODE_OUTPUT);
 
-    // Setup pump pins
-    gpio_reset_pin(zones[i][0]);
-    gpio_set_direction(zones[i][0], GPIO_MODE_OUTPUT);
-  }
-#endif
-
-#ifdef LIGHT_PIN
-  gpio_reset_pin(LIGHT_PIN);
-  gpio_set_direction(LIGHT_PIN, GPIO_MODE_OUTPUT);
-  light_state = 0;
-#endif
-
-  setupWifiManager();
-  setupWifi();
-  setupMQTT();
-#ifdef ENABLE_MOISTURE_SENSORS
-  setupMoistureSensors();
-#endif
-
-#ifdef ENABLE_DHT22
-  setupDHT22();
-#endif
-
-#ifdef ENABLE_BUTTONS
-  setupButtons();
-#endif
-
-  // Initialize Queues
-  waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
-  if (waterQueue == NULL) {
-    printf("error creating the waterQueue\n");
-  }
-
-  // Start all tasks (currently using equal priorities)
-  xTaskCreate(waterZoneTask, "WaterZoneTask", 2048, NULL, 1, &waterZoneTaskHandle);
-
-#ifdef ENABLE_MQTT_LOGGING
-  // Delay 1 second to allow MQTT to connect
-  delay(1000);
-  if (client.connected()) {
-    client.publish(MQTT_LOGGING_TOPIC, "logs message=\"garden-controller setup complete\"");
-  } else {
-    printf("unable to publish: not connected to MQTT broker\n");
-  }
-#endif
+      gpio_reset_pin(pumps[i]);
+      gpio_set_direction(pumps[i], GPIO_MODE_OUTPUT);
+    }
 }
 
-void loop() {}
+void setupLight() {
+    gpio_reset_pin(lightPin);
+    gpio_set_direction(lightPin, GPIO_MODE_OUTPUT);
+    light_state = 0;
+}
 
 /*
   waterZoneTask will wait for WaterEvents on a queue and will then open the
@@ -99,10 +58,6 @@ void waterZoneTask(void* parameters) {
       // First clear the notifications to prevent a bug that would cause
       // watering to be skipped if I run xTaskNotify when not waiting
       ulTaskNotifyTake(NULL, 0);
-
-      if (we.duration == 0) {
-        we.duration = DEFAULT_WATER_TIME;
-      }
 
       unsigned long start = millis();
       zoneOn(we.position);
@@ -123,8 +78,8 @@ void waterZoneTask(void* parameters) {
 */
 void zoneOn(int id) {
   printf("turning on zone %d\n", id);
-  gpio_set_level(zones[id][0], 1);
-  gpio_set_level(zones[id][1], 1);
+  gpio_set_level(pumps[id], 1);
+  gpio_set_level(valves[id], 1);
 }
 
 /*
@@ -132,8 +87,8 @@ void zoneOn(int id) {
 */
 void zoneOff(int id) {
   printf("turning off zone %d\n", id);
-  gpio_set_level(zones[id][0], 0);
-  gpio_set_level(zones[id][1], 0);
+    gpio_set_level(pumps[id], 0);
+    gpio_set_level(valves[id], 0);
 }
 
 /*
@@ -166,7 +121,6 @@ void waterZone(WaterEvent we) {
   xQueueSend(waterQueue, &we, portMAX_DELAY);
 }
 
-#ifdef LIGHT_PIN
 /*
   changeLight will use the state on the LightEvent to change the state of the light. If the state
   is empty, this will toggle the current state.
@@ -183,9 +137,42 @@ void changeLight(LightEvent le) {
     printf("Unrecognized LightEvent.state, so state will be unchanged\n");
   }
   printf("Setting light state to %d\n", light_state);
-  gpio_set_level(LIGHT_PIN, light_state);
+  gpio_set_level(lightPin, light_state);
 
   // Log data to MQTT if enabled
   xQueueSend(lightPublisherQueue, &light_state, portMAX_DELAY);
 }
-#endif
+
+void setup() {
+  setupZones();
+  if (lightEnabled) {
+    setupLight();
+  }
+
+  setupWifiManager();
+  setupWifi();
+  setupMQTT();
+
+  if (dht22Enabled) {
+      setupDHT22();
+  }
+
+  // Initialize Queues
+  waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
+  if (waterQueue == NULL) {
+    printf("error creating the waterQueue\n");
+  }
+
+  // Start all tasks (currently using equal priorities)
+  xTaskCreate(waterZoneTask, "WaterZoneTask", 2048, NULL, 1, &waterZoneTaskHandle);
+
+  // Delay 1 second to allow MQTT to connect
+  delay(1000);
+  if (client.connected()) {
+    client.publish(MQTT_LOGGING_TOPIC, "logs message=\"garden-controller setup complete\"");
+  } else {
+    printf("unable to publish: not connected to MQTT broker\n");
+  }
+}
+
+void loop() {}

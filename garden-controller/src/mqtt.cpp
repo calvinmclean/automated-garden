@@ -10,10 +10,8 @@ TaskHandle_t mqttLoopTaskHandle;
 TaskHandle_t healthPublisherTaskHandle;
 TaskHandle_t waterPublisherTaskHandle;
 QueueHandle_t waterPublisherQueue;
-#ifdef LIGHT_PIN
 QueueHandle_t lightPublisherQueue;
 TaskHandle_t lightPublisherTaskHandle;
-#endif
 
 char waterCommandTopic[50];
 char stopCommandTopic[50];
@@ -50,16 +48,15 @@ void setupMQTT() {
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
-#ifdef LIGHT_PIN
-    lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightEvent));
-    if (lightPublisherQueue == NULL) {
-        printf("error creating the lightPublisherQueue\n");
+
+    if (lightEnabled) {
+        lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightEvent));
+        if (lightPublisherQueue == NULL) {
+            printf("error creating the lightPublisherQueue\n");
+        }
+        xTaskCreate(lightPublisherTask, "LightPublisherTask", 2048, NULL, 1, &lightPublisherTaskHandle);
+        xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
     }
-    xTaskCreate(lightPublisherTask, "LightPublisherTask", 2048, NULL, 1, &lightPublisherTaskHandle);
-#endif
-#ifdef ENABLE_MQTT_HEALTH
-    xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
-#endif
 }
 
 void setupWifi() {
@@ -105,7 +102,6 @@ void waterPublisherTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
-#ifdef LIGHT_PIN
 /*
   lightPublisherTask reads from a queue to publish LightEvents as an InfluxDB
   line protocol message to MQTT
@@ -127,9 +123,7 @@ void lightPublisherTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
-#endif
 
-#ifdef ENABLE_MQTT_HEALTH
 /*
   healthPublisherTask runs every minute and publishes a message to MQTT to record a health check-in
 */
@@ -148,7 +142,6 @@ void healthPublisherTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
-#endif
 
 /*
   mqttConnectTask will periodically attempt to reconnect to MQTT if needed
@@ -161,14 +154,13 @@ void mqttConnectTask(void* parameters) {
             // Connect with defaul arguments + cleanSession = false for persistent sessions
             if (client.connect(mqtt_topic_prefix, NULL, NULL, 0, 0, 0, 0, false)) {
                 printf("connected\n");
-#ifndef DISABLE_WATERING
                 client.subscribe(waterCommandTopic, 1);
                 client.subscribe(stopCommandTopic, 1);
                 client.subscribe(stopAllCommandTopic, 1);
-#endif
-#ifdef LIGHT_PIN
-                client.subscribe(lightCommandTopic, 1);
-#endif
+
+                if (lightEnabled) {
+                    client.subscribe(lightCommandTopic, 1);
+                }
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }
@@ -229,10 +221,8 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         LightEvent le = {
             doc["state"] | ""
         };
-#ifdef LIGHT_PIN
         printf("received command to change state of the light: '%s'\n", le.state);
         changeLight(le);
-#endif
     }
 }
 
