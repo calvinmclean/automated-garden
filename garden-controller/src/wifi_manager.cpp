@@ -105,6 +105,10 @@ void connectWifiDirect() {
 
     printf("Wifi connected...\n");
 
+    strcpy(mqtt_server, MQTT_ADDRESS);
+    strcpy(mqtt_topic_prefix, TOPIC_PREFIX);
+    mqtt_port = MQTT_PORT;
+
     wifiManager.setEnableConfigPortal(false);
     wifiManager.setConfigPortalBlocking(false);
     wifiManager.autoConnect();
@@ -129,9 +133,7 @@ void setupWifiManager() {
   wifiManager.addParameter(&custom_mqtt_topic_prefix);
   wifiManager.addParameter(&custom_mqtt_port);
 
-  char hostname[50];
-  snprintf(hostname, sizeof(hostname), "%s-controller", mqtt_topic_prefix);
-  wifiManager.setHostname(hostname);
+  wifiManager.setHostname(mqtt_topic_prefix);
 
   // wifiManager.resetSettings();
 
@@ -150,6 +152,11 @@ void setupWifiManager() {
   wifiManager.startWebPortal();
 
   xTaskCreate(wifiManagerLoopTask, "WifiManagerLoopTask", 4096, NULL, 1, &wifiManagerLoopTaskHandle);
+
+  if (!MDNS.begin(mqtt_topic_prefix)) {
+    printf("error starting mDNS\n");
+    return;
+  }
 
   // Create event handler tp reconnect to WiFi
   WiFi.onEvent(wifiDisconnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);

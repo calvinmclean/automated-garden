@@ -45,12 +45,8 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define QUEUE_SIZE 10
 
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
-
-#endif
 
 #define NUM_ZONES 1
 #define VALVES { GPIO_NUM_16 }
@@ -95,12 +91,8 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define QUEUE_SIZE 10
 
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
-
-#endif
 
 #define NUM_ZONES 1
 #define VALVES { GPIO_NUM_16 }
@@ -139,12 +131,8 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define QUEUE_SIZE 10
 
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
-
-#endif
 
 #define NUM_ZONES 1
 #define VALVES { GPIO_NUM_16 }
@@ -195,12 +183,8 @@ func TestGenerateMainConfig(t *testing.T) {
 
 #define QUEUE_SIZE 10
 
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "localhost"
 #define MQTT_PORT 1883
-
-#endif
 
 #define NUM_ZONES 4
 #define VALVES { GPIO_NUM_16, GPIO_NUM_16, GPIO_NUM_16, GPIO_NUM_16 }

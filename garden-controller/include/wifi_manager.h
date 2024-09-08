@@ -5,6 +5,7 @@
 #include <WiFiManager.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>
+#include <ESPmDNS.h>
 
 #define FORMAT_LITTLEFS_IF_FAILED true
 

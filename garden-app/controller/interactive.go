@@ -64,15 +64,6 @@ func mqttPrompts(config *Config) error {
 			},
 			Validate: survey.Required,
 		},
-		{
-			Name: "publish_health",
-			Prompt: &survey.Input{
-				Message: "Enable health publishing?",
-				Default: fmt.Sprintf("%t", config.PublishHealth),
-				Help:    "control whether or not healh publishing is enabled. Enable it unless you have a good reason not to",
-			},
-			Validate: survey.Required,
-		},
 	}
 	err := survey.Ask(qs, config)
 	if err != nil {

@@ -20,12 +20,8 @@ const (
 
 #define QUEUE_SIZE 10
 
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "{{ .MQTTConfig.Broker }}"
 #define MQTT_PORT {{ .MQTTConfig.Port }}
-
-#endif
 
 #define NUM_ZONES {{ len .Zones }}
 #define VALVES { {{ range $index, $z := .Zones }}{{if $index}}, {{end}}{{ $z.ValvePin }}{{ end }} }
