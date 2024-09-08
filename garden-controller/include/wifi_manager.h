@@ -1,6 +1,7 @@
 #ifndef wifi_manager_h
 #define wifi_manager_h
 
+#include <WiFi.h>
 #include <WiFiManager.h>
 #include <ArduinoJson.h>
 #include <LittleFS.h>

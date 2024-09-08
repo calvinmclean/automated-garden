@@ -59,27 +59,6 @@ void setupMQTT() {
     }
 }
 
-void setupWifi() {
-    char hostname[50];
-    snprintf(hostname, sizeof(hostname), "%s-controller", mqtt_topic_prefix);
-    WiFi.setHostname(hostname);
-
-    #if defined(SSID) && defined(PASSWORD)
-    printf(strcat("Connecting to " SSID " as ", mqtt_topic_prefix, "-controller\n"));
-    WiFi.begin(SSID, PASSWORD);
-
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        printf(".");
-    }
-
-    printf("Wifi connected...\n");
-    #endif
-
-    // Create event handler tp recpnnect to WiFi
-    WiFi.onEvent(wifiDisconnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
-}
-
 /*
   waterPublisherTask reads from a queue to publish WaterEvents as an InfluxDB
   line protocol message to MQTT
@@ -224,8 +203,4 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         printf("received command to change state of the light: '%s'\n", le.state);
         changeLight(le);
     }
-}
-
-void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
-    ESP.restart();
 }

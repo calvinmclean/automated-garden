@@ -1,19 +1,20 @@
 #include "wifi_manager.h"
 #include "config.h"
+#include "wifi_config.h"
 
 char* mqtt_server = new char();
 char* mqtt_topic_prefix = new char();
 int mqtt_port;
 
-WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "", 40);
-WiFiManagerParameter custom_mqtt_topic_prefix("topic_prefix", "mqtt topic prefix", "", 40);
-WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "8080", 6);
+WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "192.168.0.x", 40);
+WiFiManagerParameter custom_mqtt_topic_prefix("topic_prefix", "mqtt topic prefix", "garden", 40);
+WiFiManagerParameter custom_mqtt_port("port", "mqtt port", "1883", 6);
 
 WiFiManager wifiManager;
 
 TaskHandle_t wifiManagerLoopTaskHandle;
 
-void saveConfig() {
+void saveParamsToConfig() {
   // read updated parameters
   strcpy(mqtt_server, custom_mqtt_server.getValue());
   strcpy(mqtt_topic_prefix, custom_mqtt_topic_prefix.getValue());
@@ -36,17 +37,11 @@ void saveConfig() {
 void setupFS() {
   printf("setting up filesystem\n");
 
-  // start with defaults
-  strcpy(mqtt_server, MQTT_ADDRESS);
-  strcpy(mqtt_topic_prefix, TOPIC_PREFIX);
-  mqtt_port = MQTT_PORT;
-
   if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
     printf("failed to mount FS\n");
     return;
   }
   printf("successfully mounted FS\n");
-
 
   if (!LittleFS.exists("/config.json")) {
     printf("config doesn't exist\n");
@@ -93,29 +88,69 @@ void wifiManagerLoopTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
+void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
+    ESP.restart();
+}
+
+#if defined SSID && defined PASSWORD
+/* connect directly to WiFi and run web portal in the background */
+void connectWifiDirect() {
+    printf("Connecting to %s as %s\n", SSID, mqtt_topic_prefix);
+    WiFi.begin(SSID, PASSWORD);
+
+    while (WiFi.status() != WL_CONNECTED) {
+        delay(500);
+        printf(".");
+    }
+
+    printf("Wifi connected...\n");
+
+    wifiManager.setEnableConfigPortal(false);
+    wifiManager.setConfigPortalBlocking(false);
+    wifiManager.autoConnect();
+}
+#endif
+
+void runWifiManagerPortal() {
+    bool connected = wifiManager.autoConnect("GardenControllerSetup", "password");
+    if (!connected) {
+      printf("failed to connect and hit timeout\n");
+      delay(3000);
+      ESP.restart();
+      delay(5000);
+    }
+}
+
 void setupWifiManager() {
-  wifiManager.setSaveConfigCallback(saveConfig);
-  wifiManager.setSaveParamsCallback(saveConfig);
+  wifiManager.setSaveConfigCallback(saveParamsToConfig);
+  wifiManager.setSaveParamsCallback(saveParamsToConfig);
 
   wifiManager.addParameter(&custom_mqtt_server);
   wifiManager.addParameter(&custom_mqtt_topic_prefix);
   wifiManager.addParameter(&custom_mqtt_port);
 
+  char hostname[50];
+  snprintf(hostname, sizeof(hostname), "%s-controller", mqtt_topic_prefix);
+  wifiManager.setHostname(hostname);
+
   // wifiManager.resetSettings();
 
   setupFS();
 
-  if (!wifiManager.autoConnect("GardenControllerSetup", "password")) {
-    printf("failed to connect and hit timeout\n");
-    delay(3000);
-    // reset and try again, or maybe put it to deep sleep
-    ESP.restart();
-    delay(5000);
-  }
+  // If SSID/PASSWORD are configured, connect regularly and use WifiManager for setup portal only
+  #if defined SSID && defined PASSWORD
+  connectWifiDirect();
+  #else
+  // Otherwise, use WifiManager autoconnect portal
+  runWifiManagerPortal();
+  #endif
 
   wifiManager.setParamsPage(true);
   wifiManager.setConfigPortalBlocking(false);
   wifiManager.startWebPortal();
 
   xTaskCreate(wifiManagerLoopTask, "WifiManagerLoopTask", 4096, NULL, 1, &wifiManagerLoopTaskHandle);
+
+  // Create event handler tp reconnect to WiFi
+  WiFi.onEvent(wifiDisconnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }

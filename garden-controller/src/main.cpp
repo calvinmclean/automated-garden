@@ -150,7 +150,6 @@ void setup() {
   }
 
   setupWifiManager();
-  setupWifi();
   setupMQTT();
 
   if (dht22Enabled) {

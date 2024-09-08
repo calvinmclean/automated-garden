@@ -1,12 +1,9 @@
 #ifndef mqtt_h
 #define mqtt_h
 
-#include <WiFi.h>
 #include <ArduinoJson.h>
 #include <PubSubClient.h>
 
-// Configure network name and password in this file
-#include "wifi_config.h"
 #include "config.h"
 
 /**
@@ -50,7 +47,6 @@ void healthPublisherTask(void* parameters);
 void mqttConnectTask(void* parameters);
 void mqttLoopTask(void* parameters);
 void processIncomingMessage(char* topic, byte* message, unsigned int length);
-void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info);
 
 /* FreeRTOS Queue and Task handlers */
 extern TaskHandle_t mqttConnectTaskHandle;
