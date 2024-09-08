@@ -4,6 +4,8 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+#define FORMAT_LITTLEFS_IF_FAILED true
+
 struct Config {
     int mqttPort;
     const char* mqttServer;
@@ -23,5 +25,9 @@ struct Config {
 
 void serializeConfig(const Config& config, String& jsonString);
 bool deserializeConfig(const String& jsonString, Config& config);
+void initFS();
+bool configFileExists();
+void saveConfigToFile(const Config& config);
+void loadConfigFromFile(Config& config);
 
 #endif

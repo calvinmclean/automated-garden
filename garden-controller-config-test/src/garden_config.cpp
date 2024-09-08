@@ -1,4 +1,5 @@
 #include "garden_config.h"
+#include <LittleFS.h>
 
 // Write Config to JSON
 void serializeConfig(const Config& config, String& jsonString) {
@@ -53,4 +54,53 @@ bool deserializeConfig(const String& jsonString, Config& config) {
     config.dht22Interval = doc["dht22Interval"].as<int>();
 
     return true;
+}
+
+void initFS() {
+    if (!LittleFS.begin(false)) {
+        printf("failed to mount FS\n");
+    }
+}
+
+bool configFileExists() {
+    return LittleFS.exists("/config.json");
+}
+
+void loadConfigFromFile(Config& config) {
+    File configFile = LittleFS.open("/config.json", "r");
+    if (!configFile) {
+      return;
+    }
+    printf("opened config file\n");
+
+    size_t size = configFile.size();
+
+    // Allocate a buffer to store contents of the file.
+    std::unique_ptr<char[]> buf(new char[size]);
+
+    configFile.readBytes(buf.get(), size);
+    configFile.close();
+
+    if (deserializeConfig(buf.get(), config)) {
+      printf("failed to load json config\n");
+      return;
+    }
+}
+
+void saveConfigToFile(const Config& config) {
+  String configJSON;
+  serializeConfig(config, configJSON);
+
+  File configFile = LittleFS.open("/config.json", "w");
+  if (!configFile) {
+    printf("failed to open config file for writing\n");
+  }
+
+  if (configFile.print(configJSON)) {
+    printf("File written successfully\n");
+  } else {
+    printf("Write failed\n");
+  }
+
+  configFile.close();
 }
