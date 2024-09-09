@@ -13,13 +13,17 @@ QueueHandle_t waterPublisherQueue;
 QueueHandle_t lightPublisherQueue;
 TaskHandle_t lightPublisherTaskHandle;
 
+// command topics (subscribe)
 char waterCommandTopic[50];
 char stopCommandTopic[50];
 char stopAllCommandTopic[50];
-char waterDataTopic[50];
 char lightCommandTopic[50];
+
+// data topics (publish)
+char waterDataTopic[50];
 char lightDataTopic[50];
 char healthDataTopic[50];
+char logDataTopic[50];
 
 #define ZERO (unsigned long int) 0
 
@@ -33,10 +37,12 @@ void setupMQTT() {
     snprintf(waterCommandTopic, sizeof(waterCommandTopic), "%s" MQTT_WATER_TOPIC, mqtt_topic_prefix);
     snprintf(stopCommandTopic, sizeof(stopCommandTopic), "%s" MQTT_STOP_TOPIC, mqtt_topic_prefix);
     snprintf(stopAllCommandTopic, sizeof(stopAllCommandTopic), "%s" MQTT_STOP_ALL_TOPIC, mqtt_topic_prefix);
-    snprintf(waterDataTopic, sizeof(waterDataTopic), "%s" MQTT_WATER_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(lightCommandTopic, sizeof(lightCommandTopic), "%s" MQTT_LIGHT_TOPIC, mqtt_topic_prefix);
+
+    snprintf(waterDataTopic, sizeof(waterDataTopic), "%s" MQTT_WATER_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(lightDataTopic, sizeof(lightDataTopic), "%s" MQTT_LIGHT_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(healthDataTopic, sizeof(healthDataTopic), "%s" MQTT_HEALTH_DATA_TOPIC, mqtt_topic_prefix);
+    snprintf(logDataTopic, sizeof(logDataTopic), "%s" MQTT_LOGGING_TOPIC, mqtt_topic_prefix);
 
     // Initialize publisher Queue
     waterPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
@@ -140,6 +146,8 @@ void mqttConnectTask(void* parameters) {
                 if (lightEnabled) {
                     client.subscribe(lightCommandTopic, 1);
                 }
+
+                client.publish(logDataTopic, "logs message=\"garden-controller setup complete\"");
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }

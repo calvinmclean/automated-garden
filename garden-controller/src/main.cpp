@@ -156,22 +156,12 @@ void setup() {
       setupDHT22();
   }
 
-  // Initialize Queues
   waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
   if (waterQueue == NULL) {
     printf("error creating the waterQueue\n");
   }
 
-  // Start all tasks (currently using equal priorities)
   xTaskCreate(waterZoneTask, "WaterZoneTask", 2048, NULL, 1, &waterZoneTaskHandle);
-
-  // Delay 1 second to allow MQTT to connect
-  delay(1000);
-  if (client.connected()) {
-    client.publish(MQTT_LOGGING_TOPIC, "logs message=\"garden-controller setup complete\"");
-  } else {
-    printf("unable to publish: not connected to MQTT broker\n");
-  }
 }
 
 void loop() {}
