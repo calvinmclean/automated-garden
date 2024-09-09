@@ -21,7 +21,7 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 		w.logger.Info("skipping watering Zone because of SkipCount", "zone_id", z.GetID())
 		return nil
 	}
-	duration, err := w.exerciseWeatherControl(g, z, ws)
+	duration, err := w.exerciseWeatherControl(ws)
 	if err != nil {
 		w.logger.Error("error executing weather controls, continuing to water", "error", err)
 		duration = ws.Duration.Duration
@@ -40,7 +40,7 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 	})
 }
 
-func (w *Worker) exerciseWeatherControl(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) (time.Duration, error) {
+func (w *Worker) exerciseWeatherControl(ws *pkg.WaterSchedule) (time.Duration, error) {
 	if !ws.HasWeatherControl() {
 		return ws.Duration.Duration, nil
 	}
