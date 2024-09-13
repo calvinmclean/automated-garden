@@ -4,9 +4,8 @@ import "github.com/rs/xid"
 
 // Control defines certain parameters and behaviors to influence watering patterns based off weather data
 type Control struct {
-	Rain         *ScaleControl        `json:"rain_control,omitempty"`
-	SoilMoisture *SoilMoistureControl `json:"moisture_control,omitempty"`
-	Temperature  *ScaleControl        `json:"temperature_control,omitempty"`
+	Rain        *ScaleControl `json:"rain_control,omitempty"`
+	Temperature *ScaleControl `json:"temperature_control,omitempty"`
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
@@ -17,27 +16,12 @@ func (wc *Control) Patch(new *Control) {
 		}
 		wc.Rain.Patch(new.Rain)
 	}
-	if new.SoilMoisture != nil {
-		if wc.SoilMoisture == nil {
-			wc.SoilMoisture = &SoilMoistureControl{}
-		}
-		if new.SoilMoisture.MinimumMoisture != nil {
-			wc.SoilMoisture.MinimumMoisture = new.SoilMoisture.MinimumMoisture
-		}
-	}
 	if new.Temperature != nil {
 		if wc.Temperature == nil {
 			wc.Temperature = &ScaleControl{}
 		}
 		wc.Temperature.Patch(new.Temperature)
 	}
-}
-
-// SoilMoistureControl defines parameters for delaying watering based on soil moisture data. This will skip watering if the
-// soil moisture is below the minimum
-// soil moisture value is currently hard-coded as the average value over the last 15 minutes
-type SoilMoistureControl struct {
-	MinimumMoisture *int `json:"minimum_moisture,omitempty"`
 }
 
 // ScaleControl is a generic struct that enables scaling

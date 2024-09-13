@@ -14,4 +14,3 @@
 * Examples
     * [Indoor Herb Garden](indoor_example.md)
     * [Indoor Hydroponics](hydroponics_example.md)
-    * [Sensors-Only Garden Add-on](sensors_only_example.md)

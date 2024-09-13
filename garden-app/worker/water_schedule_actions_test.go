@@ -2,7 +2,6 @@ package worker
 
 import (
 	"context"
-	"errors"
 	"log/slog"
 	"testing"
 	"time"
@@ -38,8 +37,6 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 		ClientID:      weatherClientID,
 	}
 
-	fifty := 50
-
 	tests := []struct {
 		name          string
 		waterSchedule *pkg.WaterSchedule
@@ -57,69 +54,6 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
-			},
-			"",
-		},
-		{
-			"SuccessWhenMoistureLessThanMinimum",
-			&pkg.WaterSchedule{
-				Duration: &pkg.Duration{Duration: time.Second},
-				Interval: &pkg.Duration{Duration: time.Hour * 24},
-				WeatherControl: &weather.Control{
-					SoilMoisture: &weather.SoilMoistureControl{
-						MinimumMoisture: &fifty,
-					},
-				},
-			},
-			&pkg.Zone{
-				Position: uintPointer(0),
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
-				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), nil)
-				influxdbClient.On("Close")
-			},
-			"",
-		},
-		{
-			"SuccessWhenMoistureGreaterThanMinimum",
-			&pkg.WaterSchedule{
-				Duration: &pkg.Duration{Duration: time.Second},
-				Interval: &pkg.Duration{Duration: time.Hour * 24},
-				WeatherControl: &weather.Control{
-					SoilMoisture: &weather.SoilMoistureControl{
-						MinimumMoisture: &fifty,
-					},
-				},
-			},
-			&pkg.Zone{
-				Position: uintPointer(0),
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(51), nil)
-				influxdbClient.On("Close")
-				// No MQTT calls made
-			},
-			"",
-		},
-		{
-			"InfluxDBClientErrorStillWaters",
-			&pkg.WaterSchedule{
-				Duration: &pkg.Duration{Duration: time.Second},
-				Interval: &pkg.Duration{Duration: time.Hour * 24},
-				WeatherControl: &weather.Control{
-					SoilMoisture: &weather.SoilMoistureControl{
-						MinimumMoisture: &fifty,
-					},
-				},
-			},
-			&pkg.Zone{
-				Position: uintPointer(0),
-			},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
-				influxdbClient.On("GetMoisture", mock.Anything, uint(0), garden.Name).Return(float64(0), errors.New("influxdb error"))
-				influxdbClient.On("Close")
 			},
 			"",
 		},

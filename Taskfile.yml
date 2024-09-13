@@ -135,3 +135,8 @@ tasks:
     dir: ./garden-app
     cmds:
       - flyctl deploy
+
+  pio:
+    dir: ./garden-controller
+    cmds:
+      - pio {{ .CLI_ARGS | default "run" }}

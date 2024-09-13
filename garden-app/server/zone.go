@@ -325,16 +325,6 @@ func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone,
 	return history, nil
 }
 
-func (api *ZonesAPI) getMoisture(ctx context.Context, g *pkg.Garden, z *pkg.Zone) (float64, error) {
-	defer api.influxdbClient.Close()
-
-	moisture, err := api.influxdbClient.GetMoisture(ctx, *z.Position, g.TopicPrefix)
-	if err != nil {
-		return 0, err
-	}
-	return moisture, err
-}
-
 // getWaterHistory gets previous WaterEvents for this Zone from InfluxDB
 func (api *ZonesAPI) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WaterHistory, err error) {
 	defer api.influxdbClient.Close()

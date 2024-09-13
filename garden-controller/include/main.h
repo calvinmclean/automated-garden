@@ -19,6 +19,6 @@ void stopWatering();
 void stopAllWatering();
 void changeLight(LightEvent le);
 
-extern gpio_num_t zones[NUM_ZONES][4];
+extern bool lightEnabled;
 
 #endif

@@ -14,7 +14,7 @@ import (
 	"github.com/go-chi/render"
 )
 
-// GardenResponse is used to represent a Garden in the response body with the additional Moisture data
+// GardenResponse is used to represent a Garden in the response body with additional data
 // and hypermedia Links fields
 type GardenResponse struct {
 	*pkg.Garden

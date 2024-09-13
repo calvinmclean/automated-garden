@@ -90,7 +90,6 @@ A `Zone` represents a resource that can be watered. It may contain zero or more 
         "start_time": "2021-07-24T19:00:00-07:00"
     }
     ```
-  - Control of watering based on moisture using `minimum_moisture` in the `water_schedule`. This sets the moisture percentage the zone's soil must drop below to enable watering
   - On-demand control of watering using a `WaterAction` to the `/action` endpoint
   - Access to a Zone's watering history from InfluxDB using `/history` endpoint
 

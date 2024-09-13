@@ -32,8 +32,6 @@ type Config struct {
 type NestedConfig struct {
 	// Configs used only for running mock controller
 	EnableUI                        bool    `mapstructure:"enable_ui" survey:"enable_ui"`
-	MoistureStrategy                string  `mapstructure:"moisture_strategy" survey:"moisture_strategy"`
-	MoistureValue                   int     `mapstructure:"moisture_value" survey:"moisture_value"`
 	PublishWaterEvent               bool    `mapstructure:"publish_water_event" survey:"publish_water_event"`
 	TemperatureValue                float64 `mapstructure:"temperature_value"`
 	HumidityValue                   float64 `mapstructure:"humidity_value"`
@@ -42,7 +40,6 @@ type NestedConfig struct {
 	// Configs used for both
 	TopicPrefix                 string        `mapstructure:"topic_prefix" survey:"topic_prefix"`
 	NumZones                    int           `mapstructure:"num_zones" survey:"num_zones"`
-	MoistureInterval            time.Duration `mapstructure:"moisture_interval" survey:"moisture_interval"`
 	PublishHealth               bool          `mapstructure:"publish_health" survey:"publish_health"`
 	HealthInterval              time.Duration `mapstructure:"health_interval" survey:"health_interval"`
 	PublishTemperatureHumidity  bool          `mapstructure:"publish_temperature_humidity" survey:"publish_temperature_humidity"`
@@ -50,14 +47,9 @@ type NestedConfig struct {
 
 	// Configs only used for generate-config
 	WifiConfig             `mapstructure:"wifi" survey:"wifi"`
-	Zones                  []ZoneConfig  `mapstructure:"zones" survey:"zones"`
-	DefaultWaterTime       time.Duration `mapstructure:"default_water_time" survey:"default_water_time"`
-	EnableButtons          bool          `mapstructure:"enable_buttons" survey:"enable_buttons"`
-	EnableMoistureSensor   bool          `mapstructure:"enable_moisture_sensor" survey:"enable_moisture_sensor"`
-	LightPin               string        `mapstructure:"light_pin" survey:"light_pin"`
-	StopButtonPin          string        `mapstructure:"stop_water_button" survey:"stop_water_button"`
-	DisableWatering        bool          `mapstructure:"disable_watering" survey:"disable_watering"`
-	TemperatureHumidityPin string        `mapstructure:"temperature_humidity_pin" survey:"temperature_humidity_pin"`
+	Zones                  []ZoneConfig `mapstructure:"zones" survey:"zones"`
+	LightPin               string       `mapstructure:"light_pin" survey:"light_pin"`
+	TemperatureHumidityPin string       `mapstructure:"temperature_humidity_pin" survey:"temperature_humidity_pin"`
 
 	MQTTAddress string `survey:"mqtt_address"`
 	MQTTPort    int    `survey:"mqtt_port"`
@@ -95,10 +87,6 @@ func NewController(cfg Config) (*Controller, error) {
 
 	controller.logger.Info("starting controller", "topic_prefix", controller.TopicPrefix)
 
-	if cfg.NumZones > 0 {
-		controller.pubLogger.Info("publishing moisture data for Zones", "num_zones", cfg.NumZones)
-	}
-
 	topics, err := controller.topics()
 	if err != nil {
 		return nil, fmt.Errorf("unable to determine topics: %w", err)
@@ -134,19 +122,6 @@ func (c *Controller) Start() {
 	c.logger.Debug("initializing scheduler")
 	scheduler := gocron.NewScheduler(time.Local)
 	scheduler.CustomTime(clock.DefaultClock)
-	if c.MoistureInterval != 0 {
-		for p := 0; p < c.NumZones; p++ {
-			c.logger.With(
-				"interval", c.MoistureInterval.String(),
-				"strategy", c.MoistureStrategy,
-			).Debug("create scheduled job to publish moisture data")
-			_, err := scheduler.Every(c.MoistureInterval).Do(c.publishMoistureData, p)
-			if err != nil {
-				c.logger.Error("error scheduling moisture publishing", "error", err)
-				return
-			}
-		}
-	}
 	if c.PublishHealth {
 		c.logger.Debug("create scheduled job to publish health data", "interval", c.HealthInterval.String())
 		_, err := scheduler.Every(c.HealthInterval).Do(c.publishHealthData)
@@ -219,10 +194,6 @@ func (c *Controller) setupUI() *tview.Application {
 	header := tview.NewTextView().
 		SetTextAlign(tview.AlignCenter).
 		SetText(c.TopicPrefix)
-	tview.ANSIWriter(header).Write([]byte(fmt.Sprintf(
-		"\n%d Zones\nPublishWaterEvent: %t, PublishHealth: %t, MoistureStrategy: %s",
-		c.NumZones, c.PublishWaterEvent, c.PublishHealth, c.MoistureStrategy),
-	))
 
 	grid := tview.NewGrid().
 		SetRows(3, 0).
@@ -237,25 +208,6 @@ func (c *Controller) setupUI() *tview.Application {
 	tview.ANSIWriter(right).Write([]byte("\n"))
 
 	return app.SetRoot(grid, true)
-}
-
-// publishMoistureData publishes an InfluxDB line containing moisture data for a Zone
-func (c *Controller) publishMoistureData(zone int) {
-	moisture := c.createMoistureData()
-	topic := fmt.Sprintf("%s/data/moisture", c.TopicPrefix)
-	moistureLogger := c.pubLogger.With(
-		"topic", topic,
-		"moisture", moisture,
-		"zone", zone,
-	)
-	moistureLogger.Info("publishing moisture data for Zone")
-	err := c.mqttClient.Publish(
-		topic,
-		[]byte(fmt.Sprintf("moisture,zone=%d value=%d", zone, moisture)),
-	)
-	if err != nil {
-		moistureLogger.Error("unable to publish moisture data", "error", err)
-	}
 }
 
 // publishHealthData publishes an InfluxDB line to record that the controller is alive and active
@@ -318,32 +270,7 @@ func addNoise(baseValue float64, percentRange float64) float64 {
 	return baseValue + diff
 }
 
-// createMoistureData uses the MoistureStrategy config to create a moisture data point
-func (c *Controller) createMoistureData() int {
-	switch c.MoistureStrategy {
-	case "random":
-		// nolint:gosec
-		return rand.Intn(c.MoistureValue)
-	case "constant":
-		return c.MoistureValue
-	case "increasing":
-		c.MoistureValue++
-		if c.MoistureValue > 100 {
-			c.MoistureValue = 0
-		}
-		return c.MoistureValue
-	case "decreasing":
-		c.MoistureValue--
-		if c.MoistureValue < 0 {
-			c.MoistureValue = 100
-		}
-		return c.MoistureValue
-	default:
-		return 0
-	}
-}
-
-// publishWaterEvent logs moisture data to InfluxDB via Telegraf and MQTT
+// publishWaterEvent publishes completed water events
 func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic string) {
 	if !c.PublishWaterEvent {
 		c.pubLogger.Debug("publishing water events is disabled")

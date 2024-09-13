@@ -1,5 +1,6 @@
 #include "mqtt.h"
 #include "main.h"
+#include "wifi_manager.h"
 
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
@@ -9,44 +10,39 @@ TaskHandle_t mqttLoopTaskHandle;
 TaskHandle_t healthPublisherTaskHandle;
 TaskHandle_t waterPublisherTaskHandle;
 QueueHandle_t waterPublisherQueue;
-#ifdef LIGHT_PIN
 QueueHandle_t lightPublisherQueue;
 TaskHandle_t lightPublisherTaskHandle;
-#endif
 
-#ifdef DISABLE_WATERING
-const char* waterCommandTopic = "";
-const char* stopCommandTopic = "";
-const char* stopAllCommandTopic = "";
-const char* waterDataTopic = "";
-#else
-const char* waterCommandTopic = MQTT_WATER_TOPIC;
-const char* stopCommandTopic = MQTT_STOP_TOPIC;
-const char* stopAllCommandTopic = MQTT_STOP_ALL_TOPIC;
-const char* waterDataTopic = MQTT_WATER_DATA_TOPIC;
-#endif
+// command topics (subscribe)
+char waterCommandTopic[50];
+char stopCommandTopic[50];
+char stopAllCommandTopic[50];
+char lightCommandTopic[50];
 
-#ifdef LIGHT_PIN
-const char* lightCommandTopic = MQTT_LIGHT_TOPIC;
-const char* lightDataTopic = MQTT_LIGHT_DATA_TOPIC;
-#else
-const char* lightCommandTopic = "";
-const char* lightDataTopic = "";
-#endif
-
-#ifdef ENABLE_MQTT_HEALTH
-const char* healthDataTopic = MQTT_HEALTH_DATA_TOPIC;
-#else
-const char* healthDataTopic = "";
-#endif
+// data topics (publish)
+char waterDataTopic[50];
+char lightDataTopic[50];
+char healthDataTopic[50];
+char logDataTopic[50];
 
 #define ZERO (unsigned long int) 0
 
 void setupMQTT() {
     // Connect to MQTT
-    client.setServer(MQTT_ADDRESS, MQTT_PORT);
+    printf("connecting to mqtt server: %s:%d\n", mqtt_server, mqtt_port);
+    client.setServer(mqtt_server, mqtt_port);
     client.setCallback(processIncomingMessage);
     client.setKeepAlive(MQTT_KEEPALIVE);
+
+    snprintf(waterCommandTopic, sizeof(waterCommandTopic), "%s" MQTT_WATER_TOPIC, mqtt_topic_prefix);
+    snprintf(stopCommandTopic, sizeof(stopCommandTopic), "%s" MQTT_STOP_TOPIC, mqtt_topic_prefix);
+    snprintf(stopAllCommandTopic, sizeof(stopAllCommandTopic), "%s" MQTT_STOP_ALL_TOPIC, mqtt_topic_prefix);
+    snprintf(lightCommandTopic, sizeof(lightCommandTopic), "%s" MQTT_LIGHT_TOPIC, mqtt_topic_prefix);
+
+    snprintf(waterDataTopic, sizeof(waterDataTopic), "%s" MQTT_WATER_DATA_TOPIC, mqtt_topic_prefix);
+    snprintf(lightDataTopic, sizeof(lightDataTopic), "%s" MQTT_LIGHT_DATA_TOPIC, mqtt_topic_prefix);
+    snprintf(healthDataTopic, sizeof(healthDataTopic), "%s" MQTT_HEALTH_DATA_TOPIC, mqtt_topic_prefix);
+    snprintf(logDataTopic, sizeof(logDataTopic), "%s" MQTT_LOGGING_TOPIC, mqtt_topic_prefix);
 
     // Initialize publisher Queue
     waterPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
@@ -58,34 +54,15 @@ void setupMQTT() {
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
-#ifdef LIGHT_PIN
-    lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightEvent));
-    if (lightPublisherQueue == NULL) {
-        printf("error creating the lightPublisherQueue\n");
+
+    if (lightEnabled) {
+        lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightEvent));
+        if (lightPublisherQueue == NULL) {
+            printf("error creating the lightPublisherQueue\n");
+        }
+        xTaskCreate(lightPublisherTask, "LightPublisherTask", 2048, NULL, 1, &lightPublisherTaskHandle);
+        xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
     }
-    xTaskCreate(lightPublisherTask, "LightPublisherTask", 2048, NULL, 1, &lightPublisherTaskHandle);
-#endif
-#ifdef ENABLE_MQTT_HEALTH
-    xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
-#endif
-}
-
-void setupWifi() {
-    delay(10);
-    printf("Connecting to " SSID " as " TOPIC_PREFIX "-controller\n");
-
-    WiFi.setHostname(TOPIC_PREFIX"-controller");
-    WiFi.begin(SSID, PASSWORD);
-
-    while (WiFi.status() != WL_CONNECTED) {
-        delay(500);
-        printf(".");
-    }
-
-    printf("Wifi connected...\n");
-
-    // Create event handler tp recpnnect to WiFi
-    WiFi.onEvent(wifiDisconnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
 
 /*
@@ -110,7 +87,6 @@ void waterPublisherTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
-#ifdef LIGHT_PIN
 /*
   lightPublisherTask reads from a queue to publish LightEvents as an InfluxDB
   line protocol message to MQTT
@@ -120,7 +96,7 @@ void lightPublisherTask(void* parameters) {
     while (true) {
         if (xQueueReceive(lightPublisherQueue, &state, portMAX_DELAY)) {
             char message[50];
-            sprintf(message, "light,garden=\"%s\" state=%d", TOPIC_PREFIX, state);
+            sprintf(message, "light,garden=\"%s\" state=%d", mqtt_topic_prefix, state);
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", lightDataTopic, message);
                 client.publish(lightDataTopic, message);
@@ -132,9 +108,7 @@ void lightPublisherTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
-#endif
 
-#ifdef ENABLE_MQTT_HEALTH
 /*
   healthPublisherTask runs every minute and publishes a message to MQTT to record a health check-in
 */
@@ -142,7 +116,7 @@ void healthPublisherTask(void* parameters) {
     WaterEvent we;
     while (true) {
         char message[50];
-        sprintf(message, "health garden=\"%s\"", TOPIC_PREFIX);
+        sprintf(message, "health garden=\"%s\"", mqtt_topic_prefix);
         if (client.connected()) {
             printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", healthDataTopic, message);
             client.publish(healthDataTopic, message);
@@ -153,7 +127,6 @@ void healthPublisherTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
-#endif
 
 /*
   mqttConnectTask will periodically attempt to reconnect to MQTT if needed
@@ -164,16 +137,17 @@ void mqttConnectTask(void* parameters) {
         if (!client.connected()) {
             printf("attempting MQTT connection...");
             // Connect with defaul arguments + cleanSession = false for persistent sessions
-            if (client.connect(MQTT_CLIENT_NAME, NULL, NULL, 0, 0, 0, 0, false)) {
+            if (client.connect(mqtt_topic_prefix, NULL, NULL, 0, 0, 0, 0, false)) {
                 printf("connected\n");
-#ifndef DISABLE_WATERING
                 client.subscribe(waterCommandTopic, 1);
                 client.subscribe(stopCommandTopic, 1);
                 client.subscribe(stopAllCommandTopic, 1);
-#endif
-#ifdef LIGHT_PIN
-                client.subscribe(lightCommandTopic, 1);
-#endif
+
+                if (lightEnabled) {
+                    client.subscribe(lightCommandTopic, 1);
+                }
+
+                client.publish(logDataTopic, "logs message=\"garden-controller setup complete\"");
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }
@@ -210,7 +184,7 @@ void mqttLoopTask(void* parameters) {
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
 
-    StaticJsonDocument<JSON_CAPACITY> doc;
+    DynamicJsonDocument doc(1024);
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
         printf("deserialize failed: %s\n", err.c_str());
@@ -234,13 +208,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         LightEvent le = {
             doc["state"] | ""
         };
-#ifdef LIGHT_PIN
         printf("received command to change state of the light: '%s'\n", le.state);
         changeLight(le);
-#endif
     }
-}
-
-void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
-    ESP.restart();
 }

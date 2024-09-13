@@ -57,7 +57,7 @@ func GetNextWaterDetails(r *http.Request, ws *pkg.WaterSchedule, worker *worker.
 	return result
 }
 
-// WaterScheduleResponse is used to represent a WaterSchedule in the response body with the additional Moisture data
+// WaterScheduleResponse is used to represent a WaterSchedule in the response body with the additional data
 // and hypermedia Links fields
 type WaterScheduleResponse struct {
 	*pkg.WaterSchedule

@@ -20,52 +20,29 @@ const (
 
 #define QUEUE_SIZE 10
 
-#define ENABLE_WIFI
-#ifdef ENABLE_WIFI
 #define MQTT_ADDRESS "{{ .MQTTConfig.Broker }}"
 #define MQTT_PORT {{ .MQTTConfig.Port }}
 
-{{ if .PublishHealth }}
-#define ENABLE_MQTT_HEALTH
-{{ end }}
-
-#define ENABLE_MQTT_LOGGING
-
-#define JSON_CAPACITY 48
-#endif
-
-{{ if .DisableWatering }}
-#define DISABLE_WATERING
-{{ end -}}
 #define NUM_ZONES {{ len .Zones }}
-#define ZONES { {{ range $index, $z := .Zones }}{{if $index}}, {{end}}{ {{ $z.PumpPin }}, {{ $z.ValvePin }}, {{ or $z.ButtonPin "GPIO_NUM_MAX" }}, {{ or $z.MoistureSensorPin "GPIO_NUM_MAX" }} }{{ end }} }
-#define DEFAULT_WATER_TIME {{ milliseconds  .DefaultWaterTime }}
+#define VALVES { {{ range $index, $z := .Zones }}{{if $index}}, {{end}}{{ $z.ValvePin }}{{ end }} }
+#define PUMPS { {{ range $index, $z := .Zones }}{{if $index}}, {{end}}{{ $z.PumpPin }}{{ end }} }
 
 {{ if .LightPin }}
+#define LIGHT_ENABLED true
 #define LIGHT_PIN {{ .LightPin }}
+{{ else }}
+#define LIGHT_ENABLED false
+#define LIGHT_PIN GPIO_NUM_MAX
 {{ end }}
-
-{{ if .EnableButtons }}
-#define ENABLE_BUTTONS
-#ifdef ENABLE_BUTTONS
-#define STOP_BUTTON_PIN {{ .StopButtonPin }}
-#endif
-{{ end }}
-
-{{ if .EnableMoistureSensor }}
-#ifdef ENABLE_MOISTURE_SENSORS AND ENABLE_WIFI
-#define MOISTURE_SENSOR_AIR_VALUE 3415
-#define MOISTURE_SENSOR_WATER_VALUE 1362
-#define MOISTURE_SENSOR_INTERVAL {{ milliseconds .MoistureInterval }}
-#endif
-{{ end -}}
 
 {{ if .PublishTemperatureHumidity }}
-#define ENABLE_DHT22
-#ifdef ENABLE_DHT22
+#define ENABLE_DHT22 true
 #define DHT22_PIN {{ .TemperatureHumidityPin }}
 #define DHT22_INTERVAL {{ milliseconds .TemperatureHumidityInterval }}
-#endif
+{{ else }}
+#define ENABLE_DHT22 false
+#define DHT22_PIN GPIO_NUM_MAX
+#define DHT22_INTERVAL 0
 {{ end -}}
 #endif
 `
@@ -87,10 +64,8 @@ type WifiConfig struct {
 
 // ZoneConfig has the configuration details for controlling hardware pins
 type ZoneConfig struct {
-	PumpPin           string `mapstructure:"pump_pin" survey:"pump_pin"`
-	ValvePin          string `mapstructure:"valve_pin" survey:"valve_pin"`
-	ButtonPin         string `mapstructure:"button_pin" survey:"button_pin"`
-	MoistureSensorPin string `mapstructure:"moisture_sensor_pin" survey:"moisture_sensor_pin"`
+	PumpPin  string `mapstructure:"pump_pin" survey:"pump_pin"`
+	ValvePin string `mapstructure:"valve_pin" survey:"valve_pin"`
 }
 
 // GenerateConfig will create config.h and wifi_config.h based on the provided configurations. It can optionally write to files

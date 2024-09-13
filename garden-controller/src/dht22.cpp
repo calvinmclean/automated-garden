@@ -1,20 +1,23 @@
 #include "config.h"
-#ifdef ENABLE_DHT22
 
 #include <Arduino.h>
 #include "dht22.h"
 #include "main.h"
 #include "mqtt.h"
 #include "DHT.h"
+#include "wifi_manager.h"
 
 TaskHandle_t dht22TaskHandle;
 
-const char* temperatureDataTopic = MQTT_TEMPERATURE_DATA_TOPIC;
-const char* humidityDataTopic = MQTT_HUMIDITY_DATA_TOPIC;
+char temperatureDataTopic[50];
+char humidityDataTopic[50];
 
 DHT dht(DHT22_PIN, DHT22);
 
 void setupDHT22() {
+    snprintf(temperatureDataTopic, sizeof(temperatureDataTopic), "%s" MQTT_TEMPERATURE_DATA_TOPIC, mqtt_topic_prefix);
+    snprintf(humidityDataTopic, sizeof(humidityDataTopic), "%s" MQTT_TEMPERATURE_DATA_TOPIC, mqtt_topic_prefix);
+
     dht.begin();
     xTaskCreate(dht22PublishTask, "DHT22Task", 2048, NULL, 1, &dht22TaskHandle);
 }
@@ -46,5 +49,3 @@ void dht22PublishTask(void* parameters) {
     }
     vTaskDelete(NULL);
 }
-
-#endif
