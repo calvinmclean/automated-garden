@@ -105,6 +105,13 @@ func TestCreateGarden(t *testing.T) {
 			http.StatusCreated,
 		},
 		{
+			"SuccessfulWithControllerConfig",
+			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "controller_config":{"temperature_humidity_pin":1,"light_pin":2,"valve_pins":[3,4,5],"pump_pins":[6,7,8]}}`,
+			false,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","controller_config":{"valve_pins":\[3,4,5\],"pump_pins":\[6,7,8\],"light_pin":2,"temperature_humidity_pin":1},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			http.StatusCreated,
+		},
+		{
 			"SuccessfulWithTemperatureAndHumidity",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
 			false,

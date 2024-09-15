@@ -25,16 +25,17 @@ const (
 
 // Garden is the representation of a single garden-controller device
 type Garden struct {
-	Name                      string         `json:"name" yaml:"name,omitempty"`
-	TopicPrefix               string         `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
-	ID                        babyapi.ID     `json:"id" yaml:"id,omitempty"`
-	MaxZones                  *uint          `json:"max_zones" yaml:"max_zones"`
-	CreatedAt                 *time.Time     `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate                   *time.Time     `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	LightSchedule             *LightSchedule `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
-	TemperatureHumiditySensor *bool          `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
-	NotificationClientID      *string        `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
-	Version                   uint           `json:"version,omitempty" yaml:"version"`
+	Name                      string            `json:"name" yaml:"name,omitempty"`
+	TopicPrefix               string            `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
+	ID                        babyapi.ID        `json:"id" yaml:"id,omitempty"`
+	MaxZones                  *uint             `json:"max_zones" yaml:"max_zones"`
+	CreatedAt                 *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate                   *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	LightSchedule             *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
+	TemperatureHumiditySensor *bool             `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
+	NotificationClientID      *string           `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	ControllerConfig          *ControllerConfig `json:"controller_config,omitempty" yaml:"controller_config,omitempty"`
+	Version                   uint              `json:"version,omitempty" yaml:"version"`
 }
 
 func (g *Garden) GetVersion() uint {
@@ -145,9 +146,17 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 	if newGarden.TemperatureHumiditySensor != nil {
 		g.TemperatureHumiditySensor = newGarden.TemperatureHumiditySensor
 	}
-
 	if newGarden.NotificationClientID != nil {
 		g.NotificationClientID = newGarden.NotificationClientID
+	}
+	if newGarden.ControllerConfig != nil {
+		if g.ControllerConfig == nil {
+			g.ControllerConfig = &ControllerConfig{}
+		}
+		err := g.ControllerConfig.Patch(newGarden.ControllerConfig)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
