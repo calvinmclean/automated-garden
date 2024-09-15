@@ -11,25 +11,32 @@ import (
 // GardenAction collects all the possible actions for a Garden into a single struct so these can easily be
 // received as one request
 type GardenAction struct {
-	Light *LightAction `json:"light" form:"light"`
-	Stop  *StopAction  `json:"stop" form:"stop"`
+	Light  *LightAction  `json:"light" form:"light"`
+	Stop   *StopAction   `json:"stop" form:"stop"`
+	Update *UpdateAction `json:"update" form:"update"`
 }
 
 // String...
 func (action *GardenAction) String() string {
-	return fmt.Sprintf("{LightAction: %+v, StopAction: %+v}", action.Light, action.Stop)
+	return fmt.Sprintf("{LightAction: %+v, StopAction: %+v, UpdateAction: %+v}", action.Light, action.Stop, action.Update)
 }
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
 // It will verify that the request is valid
 func (action *GardenAction) Bind(_ *http.Request) error {
-	if action == nil || (action.Light == nil && action.Stop == nil) {
+	if action == nil || (action.Light == nil && action.Stop == nil && action.Update == nil) {
 		return errors.New("missing required action fields")
 	}
 
 	if action.Light != nil && action.Light.ForDuration != nil {
 		if action.Light.ForDuration.Duration < 0 {
 			return errors.New("delay duration must be greater than 0")
+		}
+	}
+
+	if action.Update != nil {
+		if !action.Update.Config {
+			return errors.New("update action must have config=true")
 		}
 	}
 	return nil
@@ -46,4 +53,9 @@ type LightAction struct {
 // currently watering and optionally clearing the queue of Zones to water.
 type StopAction struct {
 	All bool `json:"all" form:"all"`
+}
+
+// Update action is used to send the Garden's current ControllerConfig to the the controller
+type UpdateAction struct {
+	Config bool `json:"config" form:"config"`
 }

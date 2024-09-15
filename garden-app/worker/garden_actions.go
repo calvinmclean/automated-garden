@@ -2,6 +2,7 @@ package worker
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -11,16 +12,21 @@ import (
 
 // ExecuteGardenAction will execute a GardenAction
 func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) error {
-	if input.Light != nil {
+	switch {
+	case input.Light != nil:
 		err := w.ExecuteLightAction(g, input.Light)
 		if err != nil {
 			return fmt.Errorf("unable to execute LightAction: %v", err)
 		}
-	}
-	if input.Stop != nil {
+	case input.Stop != nil:
 		err := w.ExecuteStopAction(g, input.Stop)
 		if err != nil {
 			return fmt.Errorf("unable to execute StopAction: %v", err)
+		}
+	case input.Update != nil:
+		err := w.ExecuteUpdateAction(g, input.Update)
+		if err != nil {
+			return fmt.Errorf("unable to execute UpdateActin: %v", err)
 		}
 	}
 	return nil
@@ -64,5 +70,28 @@ func (w *Worker) ExecuteLightAction(g *pkg.Garden, input *action.LightAction) er
 			return fmt.Errorf("unable to handle light delay: %v", err)
 		}
 	}
+	return nil
+}
+
+// ExecuteUpdateAction sends an MQTT message to the garden controller with the current configuration
+func (w *Worker) ExecuteUpdateAction(g *pkg.Garden, input *action.UpdateAction) error {
+	if !input.Config {
+		return errors.New("update action must have config=true")
+	}
+	msg, err := json.Marshal(g.ControllerConfig)
+	if err != nil {
+		return fmt.Errorf("unable to marshal ControllerConfig to JSON: %v", err)
+	}
+
+	topic, err := mqtt.UpdateTopic(g.TopicPrefix)
+	if err != nil {
+		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
+	}
+
+	err = w.mqttClient.Publish(topic, msg)
+	if err != nil {
+		return fmt.Errorf("unable to publish UpdateAction: %v", err)
+	}
+
 	return nil
 }

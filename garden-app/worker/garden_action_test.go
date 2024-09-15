@@ -22,6 +22,9 @@ func TestGardenAction(t *testing.T) {
 	garden := &pkg.Garden{
 		Name:        "garden",
 		TopicPrefix: "garden",
+		ControllerConfig: &pkg.ControllerConfig{
+			ValvePins: []uint{1, 2, 3},
+		},
 	}
 
 	tests := []struct {
@@ -52,6 +55,29 @@ func TestGardenAction(t *testing.T) {
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
+			},
+		},
+		{
+			"SuccessfulGardenActionWithUpdateAction",
+			&action.GardenAction{
+				Update: &action.UpdateAction{Config: true},
+			},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("Publish", "garden/command/update", mock.Anything).Return(nil)
+			},
+			func(err error, t *testing.T) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			"UpdateActionErrorFalse",
+			&action.GardenAction{
+				Update: &action.UpdateAction{Config: false},
+			},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
+			func(err error, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, "unable to execute UpdateActin: update action must have config=true", err.Error())
 			},
 		},
 	}
