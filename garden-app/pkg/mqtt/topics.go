@@ -10,7 +10,7 @@ const (
 	stopTopicTemplate    = "{{.Garden}}/command/stop"
 	stopAllTopicTemplate = "{{.Garden}}/command/stop_all"
 	lightTopicTemplate   = "{{.Garden}}/command/light"
-	updateTopicTemplate  = "{{.Garden}}/command/update"
+	updateTopicTemplate  = "{{.Garden}}/command/update_config"
 )
 
 // WaterTopic returns the topic string for watering a zone

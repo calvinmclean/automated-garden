@@ -63,7 +63,7 @@ func TestGardenAction(t *testing.T) {
 				Update: &action.UpdateAction{Config: true},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/update", mock.Anything).Return(nil)
+				mqttClient.On("Publish", "garden/command/update_config", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)

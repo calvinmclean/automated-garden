@@ -7,9 +7,12 @@ PubSubClient client(wifiClient);
 
 TaskHandle_t mqttConnectTaskHandle;
 TaskHandle_t mqttLoopTaskHandle;
+
 TaskHandle_t healthPublisherTaskHandle;
+
 TaskHandle_t waterPublisherTaskHandle;
 QueueHandle_t waterPublisherQueue;
+
 QueueHandle_t lightPublisherQueue;
 TaskHandle_t lightPublisherTaskHandle;
 
@@ -18,6 +21,7 @@ char waterCommandTopic[50];
 char stopCommandTopic[50];
 char stopAllCommandTopic[50];
 char lightCommandTopic[50];
+char updateConfigCommandTopic[50];
 
 // data topics (publish)
 char waterDataTopic[50];
@@ -38,11 +42,15 @@ void setupMQTT() {
     snprintf(stopCommandTopic, sizeof(stopCommandTopic), "%s" MQTT_STOP_TOPIC, mqtt_topic_prefix);
     snprintf(stopAllCommandTopic, sizeof(stopAllCommandTopic), "%s" MQTT_STOP_ALL_TOPIC, mqtt_topic_prefix);
     snprintf(lightCommandTopic, sizeof(lightCommandTopic), "%s" MQTT_LIGHT_TOPIC, mqtt_topic_prefix);
+    snprintf(updateConfigCommandTopic, sizeof(updateConfigCommandTopic), "%s" MQTT_UPDATE_CONFIG_TOPIC, mqtt_topic_prefix);
 
     snprintf(waterDataTopic, sizeof(waterDataTopic), "%s" MQTT_WATER_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(lightDataTopic, sizeof(lightDataTopic), "%s" MQTT_LIGHT_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(healthDataTopic, sizeof(healthDataTopic), "%s" MQTT_HEALTH_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(logDataTopic, sizeof(logDataTopic), "%s" MQTT_LOGGING_TOPIC, mqtt_topic_prefix);
+
+    // printf("Topics:\n");
+    // printf("  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n", waterCommandTopic,stopCommandTopic,stopAllCommandTopic,lightCommandTopic,updateConfigCommandTopic,waterDataTopic,lightDataTopic,healthDataTopic,logDataTopic);
 
     // Initialize publisher Queue
     waterPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
@@ -54,14 +62,14 @@ void setupMQTT() {
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
+    xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
 
-    if (lightEnabled) {
+    if (config.light) {
         lightPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(LightEvent));
         if (lightPublisherQueue == NULL) {
             printf("error creating the lightPublisherQueue\n");
         }
         xTaskCreate(lightPublisherTask, "LightPublisherTask", 2048, NULL, 1, &lightPublisherTaskHandle);
-        xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
     }
 }
 
@@ -142,8 +150,9 @@ void mqttConnectTask(void* parameters) {
                 client.subscribe(waterCommandTopic, 1);
                 client.subscribe(stopCommandTopic, 1);
                 client.subscribe(stopAllCommandTopic, 1);
+                client.subscribe(updateConfigCommandTopic, 1);
 
-                if (lightEnabled) {
+                if (config.light) {
                     client.subscribe(lightCommandTopic, 1);
                 }
 
@@ -171,6 +180,47 @@ void mqttLoopTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
+void handleWaterCommand(byte* message) {
+    DynamicJsonDocument doc(1024);
+    DeserializationError err = deserializeJson(doc, message);
+    if (err) {
+        printf("deserialize failed: %s\n", err.c_str());
+    }
+
+    WaterEvent we = {
+        doc["position"] | -1,
+        doc["duration"] | ZERO,
+        doc["id"] | "N/A"
+    };
+    printf("received command to water zone %d (%s) for %lu\n", we.position, we.id, we.duration);
+    waterZone(we);
+}
+
+void handleLightCommand(byte* message) {
+    DynamicJsonDocument doc(1024);
+    DeserializationError err = deserializeJson(doc, message);
+    if (err) {
+        printf("deserialize failed: %s\n", err.c_str());
+    }
+
+    LightEvent le = {
+        doc["state"] | ""
+    };
+    printf("received command to change state of the light: '%s'\n", le.state);
+    changeLight(le);
+}
+
+void handleConfigCommand(byte* message) {
+    bool result = deserializeConfig((char*)message, config);
+    if (!result) {
+        printf("failed to deserialize config: %s\n", (char*)message);
+    }
+
+    saveConfigToFile(config);
+
+    reboot(1000);
+}
+
 /*
   processIncomingMessage is a callback function for the MQTT client that will
   react to incoming messages. Currently, the topics are:
@@ -180,24 +230,13 @@ void mqttLoopTask(void* parameters) {
     - stopAllCommandTopic: ignores message, stops the currently-watering zone,
                            and clears the waterQueue
     - lightCommandTopic: accepts LightEvent JSON to control a grow light
+    - updateConfigCommandTopic: accepts Config JSON to update
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
 
-    DynamicJsonDocument doc(1024);
-    DeserializationError err = deserializeJson(doc, message);
-    if (err) {
-        printf("deserialize failed: %s\n", err.c_str());
-    }
-
     if (strcmp(topic, waterCommandTopic) == 0) {
-        WaterEvent we = {
-            doc["position"] | -1,
-            doc["duration"] | ZERO,
-            doc["id"] | "N/A"
-        };
-        printf("received command to water zone %d (%s) for %lu\n", we.position, we.id, we.duration);
-        waterZone(we);
+        handleWaterCommand(message);
     } else if (strcmp(topic, stopCommandTopic) == 0) {
         printf("received command to stop watering\n");
         stopWatering();
@@ -205,10 +244,10 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         printf("received command to stop ALL watering\n");
         stopAllWatering();
     } else if (strcmp(topic, lightCommandTopic) == 0) {
-        LightEvent le = {
-            doc["state"] | ""
-        };
-        printf("received command to change state of the light: '%s'\n", le.state);
-        changeLight(le);
+        handleLightCommand(message);
+    } else if (strcmp(topic, updateConfigCommandTopic) == 0) {
+        handleConfigCommand(message);
+    } else {
+        printf("unexpected topic: %s\n", topic);
     }
 }

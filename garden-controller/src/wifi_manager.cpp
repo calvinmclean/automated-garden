@@ -35,26 +35,18 @@ void saveParamsToConfig() {
 }
 
 void setupFS() {
-  printf("setting up filesystem\n");
-
-  if (!LittleFS.begin(FORMAT_LITTLEFS_IF_FAILED)) {
-    printf("failed to mount FS\n");
-    return;
-  }
-  printf("successfully mounted FS\n");
-
   if (!LittleFS.exists("/config.json")) {
-    printf("config doesn't exist\n");
+    printf("mqtt config doesn't exist\n");
     return;
   }
-  printf("config file exists\n");
+  printf("mqtt config file exists\n");
 
   // file exists, reading and loading
   File configFile = LittleFS.open("/config.json", "r");
   if (!configFile) {
     return;
   }
-  printf("opened config file\n");
+  printf("opened mqtt config file\n");
 
   size_t size = configFile.size();
 
@@ -67,14 +59,14 @@ void setupFS() {
   DynamicJsonDocument json(1024);
   auto deserializeError = deserializeJson(json, buf.get());
   if (deserializeError) {
-    printf("failed to load json config\n");
+    printf("failed to load mqtt json config\n");
     return;
   }
   strcpy(mqtt_server, json["mqtt_server"]);
   strcpy(mqtt_topic_prefix, json["mqtt_topic_prefix"]);
   mqtt_port = json["mqtt_port"];
 
-  printf("loaded config JSON: %s %s %d\n", mqtt_server, mqtt_topic_prefix, mqtt_port);
+  printf("loaded mqtt config: %s %s %d\n", mqtt_server, mqtt_topic_prefix, mqtt_port);
 }
 
 /*

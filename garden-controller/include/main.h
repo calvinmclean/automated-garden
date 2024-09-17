@@ -1,6 +1,11 @@
 #ifndef main_h
 #define main_h
 
+// Size of FreeRTOS queues
+#define QUEUE_SIZE 10
+
+#include "garden_config.h"
+
 struct WaterEvent {
     int position;
     unsigned long duration;
@@ -18,7 +23,8 @@ void waterZoneTask(void* parameters);
 void stopWatering();
 void stopAllWatering();
 void changeLight(LightEvent le);
+void reboot(unsigned long duration);
 
-extern bool lightEnabled;
+extern Config config;
 
 #endif

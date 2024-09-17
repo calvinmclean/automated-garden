@@ -7,8 +7,6 @@
 #include <LittleFS.h>
 #include <ESPmDNS.h>
 
-#define FORMAT_LITTLEFS_IF_FAILED true
-
 extern WiFiManager wifiManager;
 
 extern char* mqtt_server;
