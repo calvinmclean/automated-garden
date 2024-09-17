@@ -81,6 +81,7 @@ func (w *Worker) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
 	for _, z := range zones {
 		if z.GardenID.String() == gardenID &&
 			z.Position != nil &&
+			//nolint:gosec
 			*z.Position == uint(zonePosition) {
 			zone = z
 			break

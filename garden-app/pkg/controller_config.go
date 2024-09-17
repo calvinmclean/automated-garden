@@ -52,6 +52,7 @@ func (c *ControllerConfig) ToMessage() ControllerConfigMessage {
 		message.TemperatureHumidityPin = *c.LightPin
 
 		if c.TemperatureHumidityInterval != nil {
+			//nolint:gosec
 			message.TemperatureHumidityInterval = uint(c.TemperatureHumidityInterval.Duration.Milliseconds())
 		}
 	}
