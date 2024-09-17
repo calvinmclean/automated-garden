@@ -78,7 +78,11 @@ func (w *Worker) ExecuteUpdateAction(g *pkg.Garden, input *action.UpdateAction) 
 	if !input.Config {
 		return errors.New("update action must have config=true")
 	}
-	msg, err := json.Marshal(g.ControllerConfig)
+	if g.ControllerConfig == nil {
+		return errors.New("ControllerConfig is nil")
+	}
+
+	msg, err := json.Marshal(g.ControllerConfig.ToMessage())
 	if err != nil {
 		return fmt.Errorf("unable to marshal ControllerConfig to JSON: %v", err)
 	}

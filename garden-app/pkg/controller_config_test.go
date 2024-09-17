@@ -1,8 +1,10 @@
 package pkg
 
 import (
+	"errors"
 	"testing"
 
+	"github.com/calvinmclean/babyapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -29,16 +31,12 @@ func TestControllerConfigPatch(t *testing.T) {
 			&ControllerConfig{ValvePins: []uint{}},
 		},
 		{
-			"ValvePinsNotEmpty",
-			&ControllerConfig{ValvePins: []uint{1, 2, 3}},
-		},
-		{
 			"PumpPinsEmpty",
 			&ControllerConfig{PumpPins: []uint{}},
 		},
 		{
-			"PumpPinsNotEmpty",
-			&ControllerConfig{PumpPins: []uint{1, 2, 3}},
+			"ValvePinsPumpPinsNotEmpty",
+			&ControllerConfig{ValvePins: []uint{1, 2, 3}, PumpPins: []uint{1, 2, 3}},
 		},
 	}
 
@@ -53,23 +51,28 @@ func TestControllerConfigPatch(t *testing.T) {
 		})
 	}
 
-	t.Run("RemoveValvePins", func(t *testing.T) {
+	t.Run("RemoveValvePinsErrorNotEqual", func(t *testing.T) {
 		c := &ControllerConfig{
 			ValvePins: []uint{1, 2, 3},
 		}
 
 		err := c.Patch(&ControllerConfig{ValvePins: []uint{5}})
-		require.Nil(t, err)
+		require.Error(t, err)
+
+		var babyapiErr *babyapi.ErrResponse
+		errors.As(err, &babyapiErr)
+		require.Equal(t, "pump_pins and valve_pins must be the same length", babyapiErr.Err.Error())
 
 		assert.ElementsMatch(t, []uint{5}, c.ValvePins)
 	})
 
-	t.Run("RemovePumpPins", func(t *testing.T) {
+	t.Run("RemovePumpPinsValvePins", func(t *testing.T) {
 		c := &ControllerConfig{
-			PumpPins: []uint{1, 2, 3},
+			ValvePins: []uint{1, 2, 3},
+			PumpPins:  []uint{1, 2, 3},
 		}
 
-		err := c.Patch(&ControllerConfig{PumpPins: []uint{5}})
+		err := c.Patch(&ControllerConfig{PumpPins: []uint{5}, ValvePins: []uint{5}})
 		require.Nil(t, err)
 
 		assert.ElementsMatch(t, []uint{5}, c.PumpPins)
