@@ -53,10 +53,6 @@ void waterZoneTask(void* parameters) {
   WaterEvent we;
   while (true) {
     if (xQueueReceive(waterQueue, &we, 0)) {
-      // First clear the notifications to prevent a bug that would cause
-      // watering to be skipped if I run xTaskNotify when not waiting
-      ulTaskNotifyTake(NULL, 0);
-
       unsigned long start = millis();
       zoneOn(we.position);
       // Delay for specified watering time with option to interrupt
@@ -153,8 +149,6 @@ void rebootTask(void* parameters) {
   unsigned long delay;
   while (true) {
     if (xQueueReceive(rebootQueue, &delay, 0)) {
-      ulTaskNotifyTake(NULL, 0);
-
       xTaskNotifyWait(0x00, ULONG_MAX, NULL, delay / portTICK_PERIOD_MS);
       ESP.restart();
     }
