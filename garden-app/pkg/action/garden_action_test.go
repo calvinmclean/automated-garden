@@ -28,6 +28,11 @@ func TestGardenActionBind(t *testing.T) {
 			&GardenAction{},
 			"missing required action fields",
 		},
+		{
+			"ErrorMissingUpdateConfig",
+			&GardenAction{Update: &UpdateAction{}},
+			"update action must have config=true",
+		},
 	}
 
 	t.Run("SuccessfulLightAction", func(t *testing.T) {
