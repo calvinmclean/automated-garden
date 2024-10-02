@@ -109,6 +109,15 @@
                     <span uk-icon="ban"></span> Stop Watering
                 </a>
             </li>
+            {{- if .ControllerConfig }}
+            <li>
+                <a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none" {{
+                    template "actionFeedback" "primary" }}>
+                    <input type="hidden" name="update.config" value="true">
+                    <span uk-icon="push"></span> Update Config
+                </a>
+            </li>
+            {{- end }}
         </ul>
     </div>
 </div>
