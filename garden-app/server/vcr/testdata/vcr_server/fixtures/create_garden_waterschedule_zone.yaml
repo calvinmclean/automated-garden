@@ -1,0 +1,1888 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - none
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/gardens/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newGarden from:body\" uk-grid>\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 1
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 41ns
+    - id: 2
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens/components?type=create_modal
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens
+            Hx-Request:
+                - "true"
+            Hx-Target:
+                - create-modal-here
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/components?type=create_modal
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div id=\"modal\" class=\"uk-modal\" style=\"display:block;\">\n    <div class=\"uk-modal-dialog uk-modal-body\">\n        <h3 class=\"uk-modal-title\">Create Garden</h3>\n\n        <form _=\"on submit take .uk-open from #modal\" hx-put=\"/gardens/cqsnecmiuvoqlhrmf2jg\" hx-headers='{\"Accept\": \"text/html\"}'\n            hx-swap=\"none\">\n            <input type=\"hidden\" value=\"cqsnecmiuvoqlhrmf2jg\" name=\"ID\">\n            <input type=\"hidden\" value=\"\" name=\"CreatedAt\">\n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"garden-name\">Name</label>\n                <input id=\"garden-name\" class=\"uk-input\" value=\"\" placeholder=\"Name\" name=\"Name\">\n            </div>\n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"garden-topic-prefix\">Topic Prefix</label>\n                <input id=\"garden-topic-prefix\" class=\"uk-input\" value=\"\" placeholder=\"Topic Prefix\"\n                    name=\"TopicPrefix\">\n            </div>\n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"garden-max-zones\">Max Zones</label>\n                <input id=\"garden-max-zones\" class=\"uk-input\" type=\"number\"\n                    value=\"1\" placeholder=\"MaxZones\"\n                    name=\"MaxZones\">\n            </div>\n\n            <div class=\"uk-margin\">\n                <input\n                    class=\"uk-checkbox\"\n                    id=\"garden-temp-hum\"\n                    type=\"checkbox\"\n                    name=\"TemperatureHumiditySensor\"\n                    value=\"true\"\n                    >\n                <label class=\"uk-form-label\" for=\"garden-temp-hum\"> Temperature/Humidity Sensor</label>\n            </div>\n\n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"garden-light-schedule-duration\">Light Schedule Duration</label>\n                <select id=\"garden-light-schedule-duration\" class=\"uk-select\" name=\"LightSchedule.Duration\">\n                    <option disabled value=\"\" selected>Light Schedule Duration</option>\n                    \n                    <option value=\"0h\" ZgotmplZ>0 hours</option>\n                    \n                    <option value=\"1h\" ZgotmplZ>1 hours</option>\n                    \n                    <option value=\"2h\" ZgotmplZ>2 hours</option>\n                    \n                    <option value=\"3h\" ZgotmplZ>3 hours</option>\n                    \n                    <option value=\"4h\" ZgotmplZ>4 hours</option>\n                    \n                    <option value=\"5h\" ZgotmplZ>5 hours</option>\n                    \n                    <option value=\"6h\" ZgotmplZ>6 hours</option>\n                    \n                    <option value=\"7h\" ZgotmplZ>7 hours</option>\n                    \n                    <option value=\"8h\" ZgotmplZ>8 hours</option>\n                    \n                    <option value=\"9h\" ZgotmplZ>9 hours</option>\n                    \n                    <option value=\"10h\" ZgotmplZ>10 hours</option>\n                    \n                    <option value=\"11h\" ZgotmplZ>11 hours</option>\n                    \n                    <option value=\"12h\" ZgotmplZ>12 hours</option>\n                    \n                    <option value=\"13h\" ZgotmplZ>13 hours</option>\n                    \n                    <option value=\"14h\" ZgotmplZ>14 hours</option>\n                    \n                    <option value=\"15h\" ZgotmplZ>15 hours</option>\n                    \n                    <option value=\"16h\" ZgotmplZ>16 hours</option>\n                    \n                    <option value=\"17h\" ZgotmplZ>17 hours</option>\n                    \n                    <option value=\"18h\" ZgotmplZ>18 hours</option>\n                    \n                    <option value=\"19h\" ZgotmplZ>19 hours</option>\n                    \n                    <option value=\"20h\" ZgotmplZ>20 hours</option>\n                    \n                    <option value=\"21h\" ZgotmplZ>21 hours</option>\n                    \n                    <option value=\"22h\" ZgotmplZ>22 hours</option>\n                    \n                    <option value=\"23h\" ZgotmplZ>23 hours</option>\n                    \n                </select>\n            </div>\n            <div class=\"uk-margin\">\n                \n                \n<div class=\"uk-grid-small\" uk-grid>\n    <div class=\"uk-width-1-3@s\">\n        <label class=\"uk-form-label\" for=\"start-time-hour\">Hour</label>\n        <input id=\"start-time-hour\" class=\"uk-input\" type=\"number\" min=\"0\" max=\"23\"  name=\"LightSchedule.StartTime.Hour\">\n    </div>\n    <div class=\"uk-width-1-3@s\">\n        <label class=\"uk-form-label\" for=\"start-time-minute\">Minute</label>\n        <input id=\"start-time-minute\" class=\"uk-input\" type=\"number\" min=\"0\" max=\"59\"  name=\"LightSchedule.StartTime.Minute\">\n    </div>\n    <div class=\"uk-width-1-3@s\">\n        <label class=\"uk-form-label\" for=\"start-time-tz\">Timezone Offset</label>\n        <select id=\"zone-position\" class=\"uk-select\" name=\"LightSchedule.StartTime.TZ\">\n            \n            <option value=\"Z\" ZgotmplZ>UTC</option>\n            \n            <option value=\"-07:00\" ZgotmplZ>UTC-07:00</option>\n            \n        </select>\n    </div>\n</div>\n\n                \n            </div>\n            \n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"notification-client-select\">Notification Client</label>\n                <select id=\"notification-client-select\" class=\"uk-select\" name=\"NotificationClientID\">\n                    \n                    $noClientSelected = eq .NotificationClientID nil\n                    <option disabled value=\"\" selected>Notification Client</option>\n                    \n                    \n                    \n                </select>\n            </div>\n            \n            \n\n            \n\n            \n\n            \n<button type=\"submit\" class=\"uk-button uk-button-primary\" \n_=\"on click take .uk-open from #modal wait 200ms then remove #modal\"\n>\n    Submit\n</button>\n\n            \n            \n<button id=\"cancelButton\" type=\"button\" class=\"uk-button uk-button-default\" \n_=\"on click take .uk-open from #modal wait 200ms then remove #modal\"\n>\n    Close\n</button>\n\n        </form>\n    </div>\n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 167ns
+    - id: 3
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 223
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg
+        body: ID=cqsnecmiuvoqlhrmf2jg&CreatedAt=&Name=New%20Garden&TopicPrefix=new-garden&MaxZones=1&LightSchedule.Duration=&LightSchedule.StartTime.Hour=&LightSchedule.StartTime.Minute=&LightSchedule.StartTime.TZ=Z&NotificationClientID=
+        form:
+            CreatedAt:
+                - ""
+            ID:
+                - cqsnecmiuvoqlhrmf2jg
+            LightSchedule.Duration:
+                - ""
+            LightSchedule.StartTime.Hour:
+                - ""
+            LightSchedule.StartTime.Minute:
+                - ""
+            LightSchedule.StartTime.TZ:
+                - Z
+            MaxZones:
+                - "1"
+            Name:
+                - New Garden
+            NotificationClientID:
+                - ""
+            TopicPrefix:
+                - new-garden
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Content-Length:
+                - "223"
+            Content-Type:
+                - application/x-www-form-urlencoded
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens
+            Hx-Request:
+                - "true"
+            Origin:
+                - http://localhost:8080
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg
+        method: PUT
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |
+            {"name":"New Garden","topic_prefix":"new-garden","id":"cqsnecmiuvoqlhrmf2jg","max_zones":1,"created_at":"2023-08-23T10:00:00Z","health":{"status":"N/A","details":"Post \"http://localhost:8086/api/v2/query?org=garden\": dial tcp [::1]:8086: connect: connection refused"},"num_zones":0,"links":[{"rel":"self","href":"/gardens/cqsnecmiuvoqlhrmf2jg"},{"rel":"zones","href":"/gardens/cqsnecmiuvoqlhrmf2jg/zones"},{"rel":"action","href":"/gardens/cqsnecmiuvoqlhrmf2jg/action"}]}
+        headers:
+            Content-Type:
+                - application/json
+            Hx-Trigger:
+                - newGarden
+        status: 200 OK
+        code: 200
+        duration: 84ns
+    - id: 4
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens?refresh=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens
+            Hx-Request:
+                - "true"
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens?refresh=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newGarden from:body\" uk-grid>\n    \n    \n<div class=\"uk-width-1-2@m\" id=\"garden-card-cqsnecmiuvoqlhrmf2jg\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom\">\n                <a href=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true\">New Garden</a>\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n            \n\n\n<span class=\"uk-label uk-label-warning\">\n    N/A\n</span>\n<div uk-dropdown=\"pos: right-center\">\n    <p>Post &#34;http://localhost:8086/api/v2/query?org=garden&#34;: dial tcp [::1]:8086: connect: connection refused</p>\n</div>\n\n            \n\n            <span class=\"uk-label\">\n                0 Zones <i class=\"bi-grid\"></i>\n            </span>\n\n            \n\n            \n        </div>\n        <div class=\"uk-card-footer\">\n            <div class=\"uk-clearfix\">\n                <div class=\"uk-float-left\">\n                    \n<div class=\"uk-inline\">\n    <button class=\"uk-button uk-button-default\" type=\"button\">Actions</button>\n    <div uk-dropdown>\n        <ul class=\"uk-nav uk-dropdown-nav\">\n            \n            <li>\n                <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-danger wait 500ms then remove .uk-text-danger\"\n>\n                    <input type=\"hidden\" name=\"stop.all\" value=\"true\">\n                    <span uk-icon=\"ban\"></span> Stop Watering\n                </a>\n            </li>\n        </ul>\n    </div>\n</div>\n\n                </div>\n                <div class=\"uk-float-right\">\n                    \n<div class=\"uk-inline\">\n    <span class=\"uk-margin-small-right\" uk-icon=\"info\"></span>\n    <div uk-dropdown>\n        <p><b>cqsnecmiuvoqlhrmf2jg</b></p>\n        <p>Topic prefix: new-garden</p>\n    </div>\n</div>\n\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n    \n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 42ns
+    - id: 5
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /water_schedules?exclude_weather_data=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules?exclude_weather_data=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li class=\"uk-active\" ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/water_schedules/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<div hx-swap=\"outerHTML\" hx-get=\"/water_schedules?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"load, newWaterSchedule from:body\" uk-grid>\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 6
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 7
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /water_schedules?refresh=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules?refresh=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div hx-swap=\"outerHTML\" hx-get=\"/water_schedules?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newWaterSchedule from:body\" uk-grid>\n    \n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 8
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /water_schedules/components?type=create_modal
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Hx-Target:
+                - create-modal-here
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules/components?type=create_modal
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n\n\n\n\n<div id=\"modal\" class=\"uk-modal \" style=\"display:block;\">\n    <div class=\"uk-modal-dialog uk-modal-body uk-text-center\">\n        <h3 class=\"uk-modal-title\">Create Water Schedule\n        </h3>\n\n        <form _=\"on submit take .uk-open from #modal\" hx-put=\"/water_schedules/cqsnecmiuvoqlhrmf2k0\"\n            hx-headers='{\"Accept\": \"text/html\"}' hx-swap=\"none\">\n            <input type=\"hidden\" value=\"cqsnecmiuvoqlhrmf2k0\" name=\"ID\">\n            <div class=\"uk-margin\">\n                <input class=\"uk-input\" value=\"\" placeholder=\"Name\" name=\"Name\">\n            </div>\n            <div class=\"uk-margin\">\n                <input class=\"uk-input\" value=\"\" placeholder=\"Description\" name=\"Description\">\n            </div>\n            <div class=\"uk-margin\">\n                <input class=\"uk-input\" value=\"\" placeholder=\"Duration\"\n                    name=\"Duration\">\n            </div>\n            <div class=\"uk-margin\">\n                <input class=\"uk-input\" value=\"\" placeholder=\"Interval\"\n                    name=\"Interval\">\n            </div>\n            <div class=\"uk-margin\">\n                <div class=\"uk-margin\">\n                    \n                    \n<div class=\"uk-grid-small\" uk-grid>\n    <div class=\"uk-width-1-3@s\">\n        <label class=\"uk-form-label\" for=\"start-time-hour\">Hour</label>\n        <input id=\"start-time-hour\" class=\"uk-input\" type=\"number\" min=\"0\" max=\"23\"  name=\"StartTime.Hour\">\n    </div>\n    <div class=\"uk-width-1-3@s\">\n        <label class=\"uk-form-label\" for=\"start-time-minute\">Minute</label>\n        <input id=\"start-time-minute\" class=\"uk-input\" type=\"number\" min=\"0\" max=\"59\"  name=\"StartTime.Minute\">\n    </div>\n    <div class=\"uk-width-1-3@s\">\n        <label class=\"uk-form-label\" for=\"start-time-tz\">Timezone Offset</label>\n        <select id=\"zone-position\" class=\"uk-select\" name=\"StartTime.TZ\">\n            \n            <option value=\"Z\" ZgotmplZ>UTC</option>\n            \n            <option value=\"-07:00\" ZgotmplZ>UTC-07:00</option>\n            \n        </select>\n    </div>\n</div>\n\n                    \n                </div>\n            </div>\n\n            <div class=\"uk-margin\">\n                <select class=\"uk-select\" name=\"ActivePeriod.StartMonth\">\n                    <option value=\"\" disabled selected>Start being active in...</option>\n<option value=\"January\">January</option>\n<option value=\"February\">February</option>\n<option value=\"March\">March</option>\n<option value=\"April\">April</option>\n<option value=\"May\">May</option>\n<option value=\"June\">June</option>\n<option value=\"July\">July</option>\n<option value=\"August\">August</option>\n<option value=\"September\">September</option>\n<option value=\"October\">October</option>\n<option value=\"November\">November</option>\n<option value=\"December\">December</option>\n\n                </select>\n            </div>\n            <div class=\"uk-margin\">\n                <select class=\"uk-select\" name=\"ActivePeriod.EndMonth\">\n                    <option value=\"\" disabled selected>Stop being active after...</option>\n<option value=\"January\">January</option>\n<option value=\"February\">February</option>\n<option value=\"March\">March</option>\n<option value=\"April\">April</option>\n<option value=\"May\">May</option>\n<option value=\"June\">June</option>\n<option value=\"July\">July</option>\n<option value=\"August\">August</option>\n<option value=\"September\">September</option>\n<option value=\"October\">October</option>\n<option value=\"November\">November</option>\n<option value=\"December\">December</option>\n\n                </select>\n            </div>\n            \n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"notification-client-select\">Notification Client</label>\n                <select id=\"notification-client-select\" class=\"uk-select\" name=\"NotificationClientID\">\n                    \n                    \n                    $noClientSelected = eq .NotificationClientID nil\n                    \n                    <option disabled selected>Notification Client</option>\n                    \n                    \n                    \n                </select>\n            </div>\n\n            \n<button type=\"submit\" class=\"uk-button uk-button-primary\" \n_=\"on click take .uk-open from #modal wait 200ms then remove #modal\"\n>\n    Submit\n</button>\n\n            \n            \n<button id=\"cancelButton\" type=\"button\" class=\"uk-button uk-button-default\" \n_=\"on click take .uk-open from #modal wait 200ms then remove #modal\"\n>\n    Close\n</button>\n\n        </form>\n    </div>\n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 125ns
+    - id: 9
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 251
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /water_schedules/cqsnecmiuvoqlhrmf2k0
+        body: ID=cqsnecmiuvoqlhrmf2k0&Name=New%20Water%20Schedule&Description=Description&Duration=1h&Interval=24h&StartTime.Hour=05&StartTime.Minute=00&StartTime.TZ=-07%3A00&ActivePeriod.StartMonth=&ActivePeriod.EndMonth=&NotificationClientID=Notification%20Client
+        form:
+            ActivePeriod.EndMonth:
+                - ""
+            ActivePeriod.StartMonth:
+                - ""
+            Description:
+                - Description
+            Duration:
+                - 1h
+            ID:
+                - cqsnecmiuvoqlhrmf2k0
+            Interval:
+                - 24h
+            Name:
+                - New Water Schedule
+            NotificationClientID:
+                - Notification Client
+            StartTime.Hour:
+                - "05"
+            StartTime.Minute:
+                - "00"
+            StartTime.TZ:
+                - "-07:00"
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Content-Length:
+                - "251"
+            Content-Type:
+                - application/x-www-form-urlencoded
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Origin:
+                - http://localhost:8080
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules/cqsnecmiuvoqlhrmf2k0
+        method: PUT
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |
+            {"id":"cqsnecmiuvoqlhrmf2k0","duration":"1h0m0s","interval":"24h0m0s","start_date":"2023-08-23T10:00:00Z","start_time":"05:00:00-07:00","name":"New Water Schedule","description":"Description","notification_client_id":"Notification Client","next_water":{"time":"2023-08-23T05:00:00-07:00","duration":"1h0m0s"},"links":[{"rel":"self","href":"/water_schedules/cqsnecmiuvoqlhrmf2k0"}]}
+        headers:
+            Content-Type:
+                - application/json
+            Hx-Trigger:
+                - newWaterSchedule
+        status: 200 OK
+        code: 200
+        duration: 125ns
+    - id: 10
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /water_schedules?refresh=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules?refresh=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div hx-swap=\"outerHTML\" hx-get=\"/water_schedules?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newWaterSchedule from:body\" uk-grid>\n    \n    \n\n\n<div class=\"uk-width-1-2@m\" id=\"ws-card-cqsnecmiuvoqlhrmf2k0\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom\">\n                New Water Schedule\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n            \n\n\n<div>\n    Watering for\n    <span class=\"uk-text-primary\">1h</span>\n    at 5:00AM\n</div>\n\n\n\n\n\n            \n\n            \n<div class=\"uk-margin-top\" uk-margin>\n    <p>Description</p>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Duration\">\n        <span uk-icon=\"future\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1h\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Start Time\">\n        <span uk-icon=\"clock\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 5:00AM\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Interval\">\n        <span uk-icon=\"refresh\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1 days\n    </span>\n    \n</div>\n\n        </div>\n    </div>\n</div>\n\n    \n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 11
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/gardens/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newGarden from:body\" uk-grid>\n    \n    \n<div class=\"uk-width-1-2@m\" id=\"garden-card-cqsnecmiuvoqlhrmf2jg\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom\">\n                <a href=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true\">New Garden</a>\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n            \n\n\n<span class=\"uk-label uk-label-warning\">\n    N/A\n</span>\n<div uk-dropdown=\"pos: right-center\">\n    <p>Post &#34;http://localhost:8086/api/v2/query?org=garden&#34;: dial tcp [::1]:8086: connect: connection refused</p>\n</div>\n\n            \n\n            <span class=\"uk-label\">\n                0 Zones <i class=\"bi-grid\"></i>\n            </span>\n\n            \n\n            \n        </div>\n        <div class=\"uk-card-footer\">\n            <div class=\"uk-clearfix\">\n                <div class=\"uk-float-left\">\n                    \n<div class=\"uk-inline\">\n    <button class=\"uk-button uk-button-default\" type=\"button\">Actions</button>\n    <div uk-dropdown>\n        <ul class=\"uk-nav uk-dropdown-nav\">\n            \n            <li>\n                <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-danger wait 500ms then remove .uk-text-danger\"\n>\n                    <input type=\"hidden\" name=\"stop.all\" value=\"true\">\n                    <span uk-icon=\"ban\"></span> Stop Watering\n                </a>\n            </li>\n        </ul>\n    </div>\n</div>\n\n                </div>\n                <div class=\"uk-float-right\">\n                    \n<div class=\"uk-inline\">\n    <span class=\"uk-margin-small-right\" uk-icon=\"info\"></span>\n    <div uk-dropdown>\n        <p><b>cqsnecmiuvoqlhrmf2jg</b></p>\n        <p>Topic prefix: new-garden</p>\n    </div>\n</div>\n\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 12
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 292ns
+    - id: 13
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n<h1 class=\"uk-heading-small uk-text-center\">New Garden</h1>\n\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"load, newZone from:body\" hx-disinherit=\"*\" uk-grid>\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 42ns
+    - id: 14
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 208ns
+    - id: 15
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newZone from:body\" hx-disinherit=\"*\" uk-grid>\n    \n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 125ns
+    - id: 16
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones/components?type=create_modal
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Hx-Target:
+                - create-modal-here
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones/components?type=create_modal
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div id=\"modal\" class=\"uk-modal\" style=\"display:block;\">\n    <div class=\"uk-modal-dialog uk-modal-body\">\n        <h3 class=\"uk-modal-title uk-text-center\">\n            Create Zone\n        </h3>\n\n        <form _=\"on submit take .uk-open from #modal\" hx-put=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg\"\n            hx-headers='{\"Accept\": \"text/html\"}' hx-swap=\"none\">\n\n            <input type=\"hidden\" value=\"cqsnecmiuvoqlhrmf2kg\" name=\"ID\">\n            <input type=\"hidden\" value=\"\" name=\"CreatedAt\">\n\n            <div class=\"uk-grid-small\" uk-grid>\n                <div class=\"uk-width-2-3@s\">\n                    <label class=\"uk-form-label\" for=\"zone-name\">Name</label>\n                    <input id=\"zone-name\" class=\"uk-input\" name=\"Name\" placeholder=\"Name\" value=\"\">\n                </div>\n                <div class=\"uk-width-1-3@s\">\n                    <label class=\"uk-form-label\" for=\"zone-position\">Position</label>\n                    <select id=\"zone-position\" class=\"uk-select\" name=\"Position\">\n                        \n                        <option value=\"0\" ZgotmplZ>0</option>\n                        \n                    </select>\n                </div>\n            </div>\n\n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"zone-description\">Description</label>\n                <input id=\"zone-description\" class=\"uk-input\"\n                    value=\"\" name=\"Details.Description\"\n                    placeholder=\"Description\">\n            </div>\n\n            <div class=\"uk-margin\">\n                <label class=\"uk-form-label\" for=\"zone-notes\">Notes</label>\n                <input id=\"zone-notes\" class=\"uk-input\" value=\"\"\n                    name=\"Details.Notes\" placeholder=\"Notes\">\n            </div>\n\n            <label class=\"uk-form-label\" for=\"zone-water-schedules\">Water Schedules</label>\n            <div id=\"zone-water-schedules\" class=\"uk-margin uk-child-width-auto uk-grid\">\n                \n                \n                \n                \n                <div class=\"uk-width-1-2@m\">\n                    <label>\n                        <div class=\"uk-inline\">\n                            <input class=\"uk-checkbox\" type=\"checkbox\" name=\"WaterScheduleIDs.0\"\n                                value=\"cqsnecmiuvoqlhrmf2k0\" > New Water Schedule\n                            <span class=\"uk-margin-small-right\" uk-icon=\"icon: info; ratio: 0.75\"></span>\n                            <div uk-dropdown=\"pos: right-center\">\n                                \n<div class=\"uk-margin-top\" uk-margin>\n    <p>Description</p>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Duration\">\n        <span uk-icon=\"future\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1h\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Start Time\">\n        <span uk-icon=\"clock\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 5:00AM\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Interval\">\n        <span uk-icon=\"refresh\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1 days\n    </span>\n    \n</div>\n\n                            </div>\n                        </div>\n                    </label>\n                </div>\n                \n            </div>\n\n            <div class=\"uk-text-center\">\n                \n<button type=\"submit\" class=\"uk-button uk-button-primary\" \n_=\"on click take .uk-open from #modal wait 200ms then remove #modal\"\n>\n    Submit\n</button>\n\n                \n                \n<button id=\"cancelButton\" type=\"button\" class=\"uk-button uk-button-default\" \n_=\"on click take .uk-open from #modal wait 200ms then remove #modal\"\n>\n    Close\n</button>\n\n            </div>\n        </form>\n    </div>\n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 42ns
+    - id: 17
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 160
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg
+        body: ID=cqsnecmiuvoqlhrmf2kg&CreatedAt=&Name=Zone%201&Position=0&Details.Description=My%20Zone&Details.Notes=My%20Zone%20Note&WaterScheduleIDs.0=cqsnecmiuvoqlhrmf2k0
+        form:
+            CreatedAt:
+                - ""
+            Details.Description:
+                - My Zone
+            Details.Notes:
+                - My Zone Note
+            ID:
+                - cqsnecmiuvoqlhrmf2kg
+            Name:
+                - Zone 1
+            Position:
+                - "0"
+            WaterScheduleIDs.0:
+                - cqsnecmiuvoqlhrmf2k0
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Content-Length:
+                - "160"
+            Content-Type:
+                - application/x-www-form-urlencoded
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Origin:
+                - http://localhost:8080
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg
+        method: PUT
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<h1 class=\"uk-heading-small uk-text-center\">Zone 1</h1>\n<div uk-grid>\n    \n<div class=\"uk-align-center uk-width-1-1 uk-margin-left uk-margin-right\">\n    <div class=\"uk-child-width-1-3@m uk-grid-small uk-grid-match\" uk-grid>\n        <div>\n            <div class=\"uk-card uk-card-default uk-card-body  uk-text-center\">\n                <h3 class=\"uk-card-title\">Actions</h3>\n                <form class=\"uk-form-horizontal\" hx-headers='{\"Accept\": \"text/html\"}'\n                    hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-on::after-request=\"this.reset()\"\n                    hx-swap=\"none\">\n                    <input class=\"uk-input uk-form-width-small\" type=\"text\" placeholder=\"Duration\"\n                        name=\"water.duration\">\n                    <button class=\"uk-button uk-button-primary uk-margin-left\">Water Zone</button>\n                </form>\n            </div>\n        </div>\n        <div>\n            <div id=\"detail-modal-here\"></div>\n            <div class=\"uk-card uk-card-default uk-card-body uk-text-center\">\n                <h3 class=\"uk-card-title\">\n                    \n                    <a hx-get=\"/water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=detail_modal\"\n                        hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#detail-modal-here\"\n                        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                        Water Schedule\n                    </a>\n                    \n                </h3>\n                \n\n\n<div>\n    Watering for\n    <span class=\"uk-text-primary\">1h</span>\n    at 5:00AM\n</div>\n\n\n\n\n\n            </div>\n        </div>\n        <div>\n            <div class=\"uk-card uk-card-default uk-card-body\">\n                <h3 class=\"uk-card-title uk-text-center\">Details</h3>\n                \n                <p>My Zone</p>\n                <p>My Zone Note</p>\n                \n            </div>\n        </div>\n    </div>\n</div>\n\n    \n<div class=\"uk-card uk-width-1-1\">\n    <div class=\"uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h2>Water History</h2>\n        </div>\n        <table class=\"uk-table uk-table-striped uk-margin-left uk-margin-right\">\n            <colgroup>\n                <col>\n                <col>\n            </colgroup>\n            <thead>\n                <tr>\n                    <th>Time</th>\n                    <th>Duration</th>\n                </tr>\n            </thead>\n\n            <tbody>\n                \n                <tr>\n                    <td>Post &#34;http://localhost:8086/api/v2/query?org=garden&#34;: dial tcp [::1]:8086: connect: connection refused</td>\n                    <td></td>\n                </tr>\n                \n                \n            </tbody>\n        </table>\n    </div>\n</div>\n\n</div>\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+            Hx-Trigger:
+                - newZone
+        status: 200 OK
+        code: 200
+        duration: 250ns
+    - id: 18
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newZone from:body\" hx-disinherit=\"*\" uk-grid>\n    \n    \n<div class=\"uk-width-1-2@m\" id=\"zone-card-cqsnecmiuvoqlhrmf2kg\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom uk-text-center\">\n                <a href=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h\">Zone 1</a>\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n\n\n<div>\n    Watering for\n    <span class=\"uk-text-primary\">1h</span>\n    at 5:00AM\n</div>\n\n\n\n\n\n        </div>\n        <div class=\"uk-card-footer\">\n            <div class=\"uk-clearfix\">\n                <div class=\"uk-float-left\">\n                    \n<div id=\"action-modal-here\"></div>\n<div class=\"uk-inline\">\n    <button class=\"uk-button uk-button-default\" type=\"button\">Quick Water</button>\n    <div uk-dropdown>\n        <ul class=\"uk-nav uk-dropdown-nav\">\n            <li>\n                <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/components?type=action_modal\"\n                    hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#action-modal-here\"\n                    _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                    Custom\n                </a>\n            </li>\n\n            \n\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"15m\"> 15m\n    </a>\n</li>\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"30m\"> 30m\n    </a>\n</li>\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"1h\"> 1h\n    </a>\n</li>\n\n\n        </ul>\n    </div>\n</div>\n\n                </div>\n                <div class=\"uk-float-right\">\n                    \n<div class=\"uk-inline\">\n    <div uk-dropdown>\n        <p><b>cqsnecmiuvoqlhrmf2kg</b></p>\n        <p>Position: 0</p>\n        <p>Water Schedules: [cqsnecmiuvoqlhrmf2k0]</p>\n    </div>\n</div>\n\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n    \n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 19
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/gardens/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newGarden from:body\" uk-grid>\n    \n    \n<div class=\"uk-width-1-2@m\" id=\"garden-card-cqsnecmiuvoqlhrmf2jg\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom\">\n                <a href=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true\">New Garden</a>\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n            \n\n\n<span class=\"uk-label uk-label-warning\">\n    N/A\n</span>\n<div uk-dropdown=\"pos: right-center\">\n    <p>Post &#34;http://localhost:8086/api/v2/query?org=garden&#34;: dial tcp [::1]:8086: connect: connection refused</p>\n</div>\n\n            \n\n            <span class=\"uk-label\">\n                1 Zones <i class=\"bi-grid\"></i>\n            </span>\n\n            \n\n            \n        </div>\n        <div class=\"uk-card-footer\">\n            <div class=\"uk-clearfix\">\n                <div class=\"uk-float-left\">\n                    \n<div class=\"uk-inline\">\n    <button class=\"uk-button uk-button-default\" type=\"button\">Actions</button>\n    <div uk-dropdown>\n        <ul class=\"uk-nav uk-dropdown-nav\">\n            \n            <li>\n                <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-danger wait 500ms then remove .uk-text-danger\"\n>\n                    <input type=\"hidden\" name=\"stop.all\" value=\"true\">\n                    <span uk-icon=\"ban\"></span> Stop Watering\n                </a>\n            </li>\n        </ul>\n    </div>\n</div>\n\n                </div>\n                <div class=\"uk-float-right\">\n                    \n<div class=\"uk-inline\">\n    <span class=\"uk-margin-small-right\" uk-icon=\"info\"></span>\n    <div uk-dropdown>\n        <p><b>cqsnecmiuvoqlhrmf2jg</b></p>\n        <p>Topic prefix: new-garden</p>\n    </div>\n</div>\n\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 20
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 42ns
+    - id: 21
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /water_schedules?exclude_weather_data=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules?exclude_weather_data=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li class=\"uk-active\" ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/water_schedules/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<div hx-swap=\"outerHTML\" hx-get=\"/water_schedules?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"load, newWaterSchedule from:body\" uk-grid>\n    \n    \n\n\n<div class=\"uk-width-1-2@m\" id=\"ws-card-cqsnecmiuvoqlhrmf2k0\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom\">\n                New Water Schedule\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n            \n\n<div class=\"uk-text-center\">\n    <div uk-spinner></div>\n</div>\n\n\n            \n\n            \n<div class=\"uk-margin-top\" uk-margin>\n    <p>Description</p>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Duration\">\n        <span uk-icon=\"future\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1h\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Start Time\">\n        <span uk-icon=\"clock\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 5:00AM\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Interval\">\n        <span uk-icon=\"refresh\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1 days\n    </span>\n    \n</div>\n\n        </div>\n    </div>\n</div>\n\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 42ns
+    - id: 22
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 42ns
+    - id: 23
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /water_schedules?refresh=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules?refresh=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div hx-swap=\"outerHTML\" hx-get=\"/water_schedules?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newWaterSchedule from:body\" uk-grid>\n    \n    \n\n\n<div class=\"uk-width-1-2@m\" id=\"ws-card-cqsnecmiuvoqlhrmf2k0\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom\">\n                New Water Schedule\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n            \n\n\n<div>\n    Watering for\n    <span class=\"uk-text-primary\">1h</span>\n    at 5:00AM\n</div>\n\n\n\n\n\n            \n\n            \n<div class=\"uk-margin-top\" uk-margin>\n    <p>Description</p>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Duration\">\n        <span uk-icon=\"future\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1h\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Start Time\">\n        <span uk-icon=\"clock\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 5:00AM\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Interval\">\n        <span uk-icon=\"refresh\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1 days\n    </span>\n    \n</div>\n\n        </div>\n    </div>\n</div>\n\n    \n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 42ns
+    - id: 24
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /gardens
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/water_schedules?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/gardens/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newGarden from:body\" uk-grid>\n    \n    \n<div class=\"uk-width-1-2@m\" id=\"garden-card-cqsnecmiuvoqlhrmf2jg\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom\">\n                <a href=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true\">New Garden</a>\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n            \n\n\n<span class=\"uk-label uk-label-warning\">\n    N/A\n</span>\n<div uk-dropdown=\"pos: right-center\">\n    <p>Post &#34;http://localhost:8086/api/v2/query?org=garden&#34;: dial tcp [::1]:8086: connect: connection refused</p>\n</div>\n\n            \n\n            <span class=\"uk-label\">\n                1 Zones <i class=\"bi-grid\"></i>\n            </span>\n\n            \n\n            \n        </div>\n        <div class=\"uk-card-footer\">\n            <div class=\"uk-clearfix\">\n                <div class=\"uk-float-left\">\n                    \n<div class=\"uk-inline\">\n    <button class=\"uk-button uk-button-default\" type=\"button\">Actions</button>\n    <div uk-dropdown>\n        <ul class=\"uk-nav uk-dropdown-nav\">\n            \n            <li>\n                <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-danger wait 500ms then remove .uk-text-danger\"\n>\n                    <input type=\"hidden\" name=\"stop.all\" value=\"true\">\n                    <span uk-icon=\"ban\"></span> Stop Watering\n                </a>\n            </li>\n        </ul>\n    </div>\n</div>\n\n                </div>\n                <div class=\"uk-float-right\">\n                    \n<div class=\"uk-inline\">\n    <span class=\"uk-margin-small-right\" uk-icon=\"info\"></span>\n    <div uk-dropdown>\n        <p><b>cqsnecmiuvoqlhrmf2jg</b></p>\n        <p>Topic prefix: new-garden</p>\n    </div>\n</div>\n\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 84ns
+    - id: 25
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 125ns
+    - id: 26
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/gardens
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n                <div class=\"uk-navbar-right\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li>\n                            <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/components?type=create_modal\" hx-headers='{\"Accept\": \"text/html\"}'\n                                hx-target=\"#create-modal-here\"\n                                _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                                <span uk-icon=\"icon: plus-circle; ratio: 1.25\"></span>\n                            </a>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n<h1 class=\"uk-heading-small uk-text-center\">New Garden</h1>\n\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"load, newZone from:body\" hx-disinherit=\"*\" uk-grid>\n    \n    \n<div class=\"uk-width-1-2@m\" id=\"zone-card-cqsnecmiuvoqlhrmf2kg\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom uk-text-center\">\n                <a href=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h\">Zone 1</a>\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n\n<div class=\"uk-text-center\">\n    <div uk-spinner></div>\n</div>\n\n\n        </div>\n        <div class=\"uk-card-footer\">\n            <div class=\"uk-clearfix\">\n                <div class=\"uk-float-left\">\n                    \n<div id=\"action-modal-here\"></div>\n<div class=\"uk-inline\">\n    <button class=\"uk-button uk-button-default\" type=\"button\">Quick Water</button>\n    <div uk-dropdown>\n        <ul class=\"uk-nav uk-dropdown-nav\">\n            <li>\n                <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/components?type=action_modal\"\n                    hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#action-modal-here\"\n                    _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                    Custom\n                </a>\n            </li>\n\n            \n\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"15m\"> 15m\n    </a>\n</li>\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"30m\"> 30m\n    </a>\n</li>\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"1h\"> 1h\n    </a>\n</li>\n\n\n        </ul>\n    </div>\n</div>\n\n                </div>\n                <div class=\"uk-float-right\">\n                    \n<div class=\"uk-inline\">\n    <div uk-dropdown>\n        <p><b>cqsnecmiuvoqlhrmf2kg</b></p>\n        <p>Position: 0</p>\n        <p>Water Schedules: [cqsnecmiuvoqlhrmf2k0]</p>\n    </div>\n</div>\n\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n    \n</div>\n\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 250ns
+    - id: 27
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 125ns
+    - id: 28
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Hx-Request:
+                - "true"
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n<div hx-swap=\"outerHTML\" hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones?refresh=true\" hx-headers='{\"Accept\": \"text/html\"}'\n    hx-trigger=\"newZone from:body\" hx-disinherit=\"*\" uk-grid>\n    \n    \n<div class=\"uk-width-1-2@m\" id=\"zone-card-cqsnecmiuvoqlhrmf2kg\">\n    <div id=\"edit-modal-here\"></div>\n    <div class=\"uk-card uk-card-default\" style=\"margin: 5%;\">\n        <div class=\"uk-card-header\">\n            <h3 class=\"uk-card-title uk-margin-remove-bottom uk-text-center\">\n                <a href=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h\">Zone 1</a>\n            </h3>\n            \n<div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n    <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/components?type=edit_modal\" hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#edit-modal-here\" uk-icon=\"icon: file-edit\"\n        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n    </a>\n</div>\n\n        </div>\n        <div class=\"uk-card-body\">\n            \n\n\n<div>\n    Watering for\n    <span class=\"uk-text-primary\">1h</span>\n    at 5:00AM\n</div>\n\n\n\n\n\n        </div>\n        <div class=\"uk-card-footer\">\n            <div class=\"uk-clearfix\">\n                <div class=\"uk-float-left\">\n                    \n<div id=\"action-modal-here\"></div>\n<div class=\"uk-inline\">\n    <button class=\"uk-button uk-button-default\" type=\"button\">Quick Water</button>\n    <div uk-dropdown>\n        <ul class=\"uk-nav uk-dropdown-nav\">\n            <li>\n                <a hx-get=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/components?type=action_modal\"\n                    hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#action-modal-here\"\n                    _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                    Custom\n                </a>\n            </li>\n\n            \n\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"15m\"> 15m\n    </a>\n</li>\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"30m\"> 30m\n    </a>\n</li>\n\n<li>\n    <a hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-include=\"this\" hx-swap=\"none\" \n_=\"on click add .uk-text-primary wait 500ms then remove .uk-text-primary\"\n>\n        <input type=\"hidden\" name=\"water.duration\" value=\"1h\"> 1h\n    </a>\n</li>\n\n\n        </ul>\n    </div>\n</div>\n\n                </div>\n                <div class=\"uk-float-right\">\n                    \n<div class=\"uk-inline\">\n    <div uk-dropdown>\n        <p><b>cqsnecmiuvoqlhrmf2kg</b></p>\n        <p>Position: 0</p>\n        <p>Water Schedules: [cqsnecmiuvoqlhrmf2k0]</p>\n    </div>\n</div>\n\n                </div>\n            </div>\n        </div>\n    </div>\n</div>\n\n    \n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 29
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=0, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones?exclude_weather_data=true
+            Sec-Fetch-Dest:
+                - document
+            Sec-Fetch-Mode:
+                - navigate
+            Sec-Fetch-Site:
+                - same-origin
+            Upgrade-Insecure-Requests:
+                - "1"
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n<!doctype html>\n<html>\n\n<head>\n    <meta charset=\"UTF-8\">\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n    <title>Garden App</title>\n    <link rel=\"manifest\" href=\"/manifest.json\" />\n    <link rel=\"stylesheet\" href=\"https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css\" />\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js\"></script>\n    <script src=\"https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js\"></script>\n    <script src=\"https://unpkg.com/htmx.org@1.9.8\"></script>\n    <script src=\"https://unpkg.com/hyperscript.org@0.9.12\"></script>\n</head>\n\n<style>\n    div.htmx-swapping {\n        opacity: 0;\n        transition: opacity 1s ease-out;\n    }\n</style>\n\n<body>\n    <div id=\"create-modal-here\"></div>\n    <nav class=\"uk-navbar-container\">\n        <div class=\"uk-container\">\n            <div uk-navbar>\n                <div class=\"uk-navbar-left\">\n                    <ul class=\"uk-navbar-nav\">\n                        <li class=\"uk-active\" ><a href=\"/gardens\">Gardens</a>\n                        </li>\n                        <li ><a\n                                href=\"/water_schedules?exclude_weather_data=true\">Water Schedules</a></li>\n                        <li ><a\n                                href=\"/weather_clients\">Weather Clients</a></li>\n                        <li>\n                        </li>\n                    </ul>\n                </div>\n                \n            </div>\n        </div>\n    </nav>\n    \n\n<h1 class=\"uk-heading-small uk-text-center\">Zone 1</h1>\n<div uk-grid>\n    \n<div class=\"uk-align-center uk-width-1-1 uk-margin-left uk-margin-right\">\n    <div class=\"uk-child-width-1-3@m uk-grid-small uk-grid-match\" uk-grid>\n        <div>\n            <div class=\"uk-card uk-card-default uk-card-body  uk-text-center\">\n                <h3 class=\"uk-card-title\">Actions</h3>\n                <form class=\"uk-form-horizontal\" hx-headers='{\"Accept\": \"text/html\"}'\n                    hx-post=\"/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg/action\" hx-on::after-request=\"this.reset()\"\n                    hx-swap=\"none\">\n                    <input class=\"uk-input uk-form-width-small\" type=\"text\" placeholder=\"Duration\"\n                        name=\"water.duration\">\n                    <button class=\"uk-button uk-button-primary uk-margin-left\">Water Zone</button>\n                </form>\n            </div>\n        </div>\n        <div>\n            <div id=\"detail-modal-here\"></div>\n            <div class=\"uk-card uk-card-default uk-card-body uk-text-center\">\n                <h3 class=\"uk-card-title\">\n                    \n                    <a hx-get=\"/water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=detail_modal\"\n                        hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#detail-modal-here\"\n                        _=\"on htmx:afterOnLoad wait 10ms then add .uk-open to #modal\">\n                        Water Schedule\n                    </a>\n                    \n                </h3>\n                \n\n\n<div>\n    Watering for\n    <span class=\"uk-text-primary\">1h</span>\n    at 5:00AM\n</div>\n\n\n\n\n\n            </div>\n        </div>\n        <div>\n            <div class=\"uk-card uk-card-default uk-card-body\">\n                <h3 class=\"uk-card-title uk-text-center\">Details</h3>\n                \n                <p>My Zone</p>\n                <p>My Zone Note</p>\n                \n            </div>\n        </div>\n    </div>\n</div>\n\n    \n<div class=\"uk-card uk-width-1-1\">\n    <div class=\"uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top\">\n        <div class=\"uk-card-header uk-text-center\">\n            <h2>Water History</h2>\n        </div>\n        <table class=\"uk-table uk-table-striped uk-margin-left uk-margin-right\">\n            <colgroup>\n                <col>\n                <col>\n            </colgroup>\n            <thead>\n                <tr>\n                    <th>Time</th>\n                    <th>Duration</th>\n                </tr>\n            </thead>\n\n            <tbody>\n                \n                <tr>\n                    <td>Post &#34;http://localhost:8086/api/v2/query?org=garden&#34;: dial tcp [::1]:8086: connect: connection refused</td>\n                    <td></td>\n                </tr>\n                \n                \n            </tbody>\n        </table>\n    </div>\n</div>\n\n</div>\n\n</body>\n\n</html>\n\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 166ns
+    - id: 30
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65023'
+        request_uri: /manifest.json
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - '*/*'
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Priority:
+                - u=5, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h
+            Sec-Fetch-Dest:
+                - manifest
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/manifest.json
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: |-
+            {
+            			  "name": "Garden App",
+            			  "start_url": "/gardens",
+            			  "display": "standalone"
+            			}
+        headers: {}
+        status: 200 OK
+        code: 200
+        duration: 83ns
+    - id: 31
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: localhost:8080
+        remote_addr: '[::1]:65022'
+        request_uri: /water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=detail_modal
+        body: ""
+        form: {}
+        headers:
+            Accept:
+                - text/html
+            Accept-Encoding:
+                - gzip, deflate
+            Accept-Language:
+                - en-US,en;q=0.9
+            Connection:
+                - keep-alive
+            Cookie:
+                - session_token=eyJfcmFpbHMiOnsibWVzc2FnZSI6IkltSTROMk0xTmpZMkxUSmlPVEF0TkRWaVl5MDROamhtTFdJM016ZGlOMlV6WkRVeE9TST0iLCJleHAiOiIyMDQ0LTEwLTI5VDIxOjM1OjA0LjM5MVoiLCJwdXIiOiJjb29raWUuc2Vzc2lvbl90b2tlbiJ9fQ%3D%3D--666d9f51a0a6c3c458b3fe98e1ec32086cad3a9d; agh_session=e465445a38e030f4622d4fb3f412cdda
+            Hx-Current-Url:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h
+            Hx-Request:
+                - "true"
+            Hx-Target:
+                - detail-modal-here
+            Priority:
+                - u=3, i
+            Referer:
+                - http://localhost:8080/gardens/cqsnecmiuvoqlhrmf2jg/zones/cqsnecmiuvoqlhrmf2kg?limit=10&range=720h
+            Sec-Fetch-Dest:
+                - empty
+            Sec-Fetch-Mode:
+                - cors
+            Sec-Fetch-Site:
+                - same-origin
+            User-Agent:
+                - Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.1.1 Safari/605.1.15
+        url: http://go-vcr/water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=detail_modal
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding: []
+        trailer: {}
+        content_length: -1
+        uncompressed: false
+        body: "\n\n\n<div id=\"modal\" class=\"uk-modal\" style=\"display:block;\">\n    <div class=\"uk-modal-dialog uk-modal-body\">\n        <h3 class=\"uk-modal-title\">New Water Schedule</h3>\n\n        <div class=\"uk-position-top-right uk-margin-small-top uk-margin-small-right\">\n            <a hx-get=\"/water_schedules/cqsnecmiuvoqlhrmf2k0/components?type=edit_modal&open=true\"\n                hx-headers='{\"Accept\": \"text/html\"}' hx-target=\"#modal\" uk-icon=\"icon: file-edit\" hx-swap=\"outerHTML\">\n            </a>\n        </div>\n\n        \n        <p>Description</p>\n        \n\n        \n<div class=\"uk-margin-top\" uk-margin>\n    <p>Description</p>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Duration\">\n        <span uk-icon=\"future\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1h\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Start Time\">\n        <span uk-icon=\"clock\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 5:00AM\n    </span>\n    <span class=\"uk-label uk-label-primary\" uk-tooltip=\"Interval\">\n        <span uk-icon=\"refresh\" class=\"uk-margin-small-top uk-margin-small-bottom\"></span> 1 days\n    </span>\n    \n</div>\n\n\n        <div class=\"uk-margin-top\">\n            \n<button id=\"cancelButton\" type=\"button\" class=\"uk-button uk-button-default\" \n_=\"on click take .uk-open from #modal wait 200ms then remove #modal\"\n>\n    Close\n</button>\n\n        </div>\n    </div>\n</div>\n"
+        headers:
+            Content-Type:
+                - text/html; charset=utf-8
+        status: 200 OK
+        code: 200
+        duration: 166ns

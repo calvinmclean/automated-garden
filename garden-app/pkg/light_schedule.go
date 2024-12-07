@@ -77,14 +77,14 @@ func (ls *LightSchedule) String() string {
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
-func (ls *LightSchedule) Patch(new *LightSchedule) {
-	if new.Duration != nil {
-		ls.Duration = new.Duration
+func (ls *LightSchedule) Patch(newLightSchedule *LightSchedule) {
+	if newLightSchedule.Duration != nil {
+		ls.Duration = newLightSchedule.Duration
 	}
-	if new.StartTime != nil {
-		ls.StartTime = new.StartTime
+	if newLightSchedule.StartTime != nil {
+		ls.StartTime = newLightSchedule.StartTime
 	}
-	if new.AdhocOnTime == nil {
+	if newLightSchedule.AdhocOnTime == nil {
 		ls.AdhocOnTime = nil
 	}
 }

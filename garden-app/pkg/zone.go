@@ -104,12 +104,12 @@ func (zd *ZoneDetails) String() string {
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
-func (zd *ZoneDetails) Patch(new *ZoneDetails) {
-	if new.Description != "" {
-		zd.Description = new.Description
+func (zd *ZoneDetails) Patch(newZoneDetails *ZoneDetails) {
+	if newZoneDetails.Description != "" {
+		zd.Description = newZoneDetails.Description
 	}
-	if new.Notes != "" {
-		zd.Notes = new.Notes
+	if newZoneDetails.Notes != "" {
+		zd.Notes = newZoneDetails.Notes
 	}
 }
 
