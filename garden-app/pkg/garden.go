@@ -225,6 +225,18 @@ func (g *Garden) Bind(r *http.Request) error {
 		if g.NotificationClientID != nil && *g.NotificationClientID == "" {
 			g.NotificationClientID = nil
 		}
+
+		if g.ControllerConfig != nil {
+			if g.ControllerConfig.TemperatureHumidityPin != nil && *g.ControllerConfig.TemperatureHumidityPin == 0 {
+				g.ControllerConfig.TemperatureHumidityPin = nil
+			}
+			if g.ControllerConfig.LightPin != nil && *g.ControllerConfig.LightPin == 0 {
+				g.ControllerConfig.LightPin = nil
+			}
+			if g.ControllerConfig.TemperatureHumidityInterval != nil && (*g.ControllerConfig.TemperatureHumidityInterval == Duration{}) {
+				g.ControllerConfig.TemperatureHumidityInterval = nil
+			}
+		}
 	case http.MethodPatch:
 		illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)
 		if illegalRegexp.MatchString(g.TopicPrefix) {

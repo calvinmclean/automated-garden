@@ -212,6 +212,16 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 			return result
 		},
+		"UIntRange": func(n *uint) []uint {
+			if n == nil {
+				return []uint{}
+			}
+			result := make([]uint, *n)
+			for i := range *n {
+				result[i] = i
+			}
+			return result
+		},
 	}
 }
 

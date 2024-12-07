@@ -170,3 +170,109 @@ func TestToMessage(t *testing.T) {
 		})
 	}
 }
+
+func TestValvePin(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *ControllerConfig
+		input    uint
+		expected string
+	}{
+		{
+			"NilConfig",
+			nil,
+			3,
+			"",
+		},
+		{
+			"EmptyPins",
+			&ControllerConfig{},
+			3,
+			"",
+		},
+		{
+			"IndexOutOfBounds",
+			&ControllerConfig{
+				ValvePins: []uint{1, 2},
+			},
+			3,
+			"",
+		},
+		{
+			"0",
+			&ControllerConfig{
+				ValvePins: []uint{1, 2},
+			},
+			0,
+			"1",
+		},
+		{
+			"1",
+			&ControllerConfig{
+				ValvePins: []uint{1, 2},
+			},
+			1,
+			"2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := tt.config.ValvePin(tt.input)
+			require.Equal(t, tt.expected, out)
+		})
+	}
+}
+
+func TestPumpPin(t *testing.T) {
+	tests := []struct {
+		name     string
+		config   *ControllerConfig
+		input    uint
+		expected string
+	}{
+		{
+			"NilConfig",
+			nil,
+			3,
+			"",
+		},
+		{
+			"EmptyPins",
+			&ControllerConfig{},
+			3,
+			"",
+		},
+		{
+			"IndexOutOfBounds",
+			&ControllerConfig{
+				PumpPins: []uint{1, 2},
+			},
+			3,
+			"",
+		},
+		{
+			"0",
+			&ControllerConfig{
+				PumpPins: []uint{1, 2},
+			},
+			0,
+			"1",
+		},
+		{
+			"1",
+			&ControllerConfig{
+				PumpPins: []uint{1, 2},
+			},
+			1,
+			"2",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			out := tt.config.PumpPin(tt.input)
+			require.Equal(t, tt.expected, out)
+		})
+	}
+}

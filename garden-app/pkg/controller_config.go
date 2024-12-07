@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/calvinmclean/babyapi"
 )
@@ -86,4 +87,20 @@ func (c *ControllerConfig) Patch(newVal *ControllerConfig) *babyapi.ErrResponse 
 	}
 
 	return nil
+}
+
+// ValvePin gets the config's valve pin at a specific index, if it exists, as a string representation for templating
+func (c *ControllerConfig) ValvePin(i uint) string {
+	if c == nil || uint(len(c.ValvePins)) <= i {
+		return ""
+	}
+	return fmt.Sprint(c.ValvePins[i])
+}
+
+// PumpPin gets the config's pump pin at a specific index, if it exists, as a string representation for templating
+func (c *ControllerConfig) PumpPin(i uint) string {
+	if c == nil || uint(len(c.PumpPins)) <= i {
+		return ""
+	}
+	return fmt.Sprint(c.PumpPins[i])
 }
