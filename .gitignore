@@ -4,3 +4,4 @@ wifi_config.h
 *_notes.md
 .task/
 vendor/
+deploy/configs/telegraf/.cache

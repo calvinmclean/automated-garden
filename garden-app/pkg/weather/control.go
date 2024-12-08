@@ -9,18 +9,18 @@ type Control struct {
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
-func (wc *Control) Patch(new *Control) {
-	if new.Rain != nil {
+func (wc *Control) Patch(newControl *Control) {
+	if newControl.Rain != nil {
 		if wc.Rain == nil {
 			wc.Rain = &ScaleControl{}
 		}
-		wc.Rain.Patch(new.Rain)
+		wc.Rain.Patch(newControl.Rain)
 	}
-	if new.Temperature != nil {
+	if newControl.Temperature != nil {
 		if wc.Temperature == nil {
 			wc.Temperature = &ScaleControl{}
 		}
-		wc.Temperature.Patch(new.Temperature)
+		wc.Temperature.Patch(newControl.Temperature)
 	}
 }
 
@@ -51,18 +51,18 @@ type ScaleControl struct {
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
-func (sc *ScaleControl) Patch(new *ScaleControl) {
-	if new.BaselineValue != nil {
-		sc.BaselineValue = new.BaselineValue
+func (sc *ScaleControl) Patch(newScaleControl *ScaleControl) {
+	if newScaleControl.BaselineValue != nil {
+		sc.BaselineValue = newScaleControl.BaselineValue
 	}
-	if new.Factor != nil {
-		sc.Factor = new.Factor
+	if newScaleControl.Factor != nil {
+		sc.Factor = newScaleControl.Factor
 	}
-	if new.Range != nil {
-		sc.Range = new.Range
+	if newScaleControl.Range != nil {
+		sc.Range = newScaleControl.Range
 	}
-	if !new.ClientID.IsNil() {
-		sc.ClientID = new.ClientID
+	if !newScaleControl.ClientID.IsNil() {
+		sc.ClientID = newScaleControl.ClientID
 	}
 }
 

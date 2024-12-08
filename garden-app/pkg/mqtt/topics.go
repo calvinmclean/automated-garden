@@ -10,6 +10,7 @@ const (
 	stopTopicTemplate    = "{{.Garden}}/command/stop"
 	stopAllTopicTemplate = "{{.Garden}}/command/stop_all"
 	lightTopicTemplate   = "{{.Garden}}/command/light"
+	updateTopicTemplate  = "{{.Garden}}/command/update_config"
 )
 
 // WaterTopic returns the topic string for watering a zone
@@ -30,6 +31,11 @@ func StopAllTopic(topicPrefix string) (string, error) {
 // LightTopic returns the topic string for changing the light state in a Garden
 func LightTopic(topicPrefix string) (string, error) {
 	return executeTopicTemplate(lightTopicTemplate, topicPrefix)
+}
+
+// UpdateTopic returns the topic string for updating a controller
+func UpdateTopic(topicPrefix string) (string, error) {
+	return executeTopicTemplate(updateTopicTemplate, topicPrefix)
 }
 
 // executeTopicTemplate is a helper function used by all the exported topic evaluation functions

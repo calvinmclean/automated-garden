@@ -73,42 +73,42 @@ func (ws *WaterSchedule) HasWeatherControl() bool {
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
-func (ws *WaterSchedule) Patch(new *WaterSchedule) *babyapi.ErrResponse {
-	if new.Duration != nil {
-		ws.Duration = new.Duration
+func (ws *WaterSchedule) Patch(newWaterSchedule *WaterSchedule) *babyapi.ErrResponse {
+	if newWaterSchedule.Duration != nil {
+		ws.Duration = newWaterSchedule.Duration
 	}
-	if new.Interval != nil {
-		ws.Interval = new.Interval
+	if newWaterSchedule.Interval != nil {
+		ws.Interval = newWaterSchedule.Interval
 	}
-	if new.StartDate != nil {
-		ws.StartDate = new.StartDate
+	if newWaterSchedule.StartDate != nil {
+		ws.StartDate = newWaterSchedule.StartDate
 	}
-	if new.StartTime != nil {
-		ws.StartTime = new.StartTime
+	if newWaterSchedule.StartTime != nil {
+		ws.StartTime = newWaterSchedule.StartTime
 	}
-	if ws.EndDate != nil && new.EndDate == nil {
-		ws.EndDate = new.EndDate
+	if ws.EndDate != nil && newWaterSchedule.EndDate == nil {
+		ws.EndDate = newWaterSchedule.EndDate
 	}
-	if new.WeatherControl != nil {
+	if newWaterSchedule.WeatherControl != nil {
 		if ws.WeatherControl == nil {
 			ws.WeatherControl = &weather.Control{}
 		}
-		ws.WeatherControl.Patch(new.WeatherControl)
+		ws.WeatherControl.Patch(newWaterSchedule.WeatherControl)
 	}
-	if new.Name != "" {
-		ws.Name = new.Name
+	if newWaterSchedule.Name != "" {
+		ws.Name = newWaterSchedule.Name
 	}
-	if new.Description != "" {
-		ws.Description = new.Description
+	if newWaterSchedule.Description != "" {
+		ws.Description = newWaterSchedule.Description
 	}
-	if new.ActivePeriod != nil {
+	if newWaterSchedule.ActivePeriod != nil {
 		if ws.ActivePeriod == nil {
 			ws.ActivePeriod = &ActivePeriod{}
 		}
-		ws.ActivePeriod.Patch(new.ActivePeriod)
+		ws.ActivePeriod.Patch(newWaterSchedule.ActivePeriod)
 	}
-	if new.NotificationClientID != nil {
-		ws.NotificationClientID = new.NotificationClientID
+	if newWaterSchedule.NotificationClientID != nil {
+		ws.NotificationClientID = newWaterSchedule.NotificationClientID
 	}
 
 	return nil
@@ -188,12 +188,12 @@ func (ap *ActivePeriod) Validate() error {
 }
 
 // Patch allows for easily updating/editing an ActivePeriod
-func (ap *ActivePeriod) Patch(new *ActivePeriod) {
-	if new.StartMonth != "" {
-		ap.StartMonth = new.StartMonth
+func (ap *ActivePeriod) Patch(newActivePeriod *ActivePeriod) {
+	if newActivePeriod.StartMonth != "" {
+		ap.StartMonth = newActivePeriod.StartMonth
 	}
-	if new.EndMonth != "" {
-		ap.EndMonth = new.EndMonth
+	if newActivePeriod.EndMonth != "" {
+		ap.EndMonth = newActivePeriod.EndMonth
 	}
 }
 

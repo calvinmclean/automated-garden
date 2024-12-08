@@ -9,38 +9,36 @@
 #include "wifi_manager.h"
 #include "dht22.h"
 
-
-/* zone valve and pump variables */
-gpio_num_t valves[NUM_ZONES] = VALVES;
-gpio_num_t pumps[NUM_ZONES] = PUMPS;
-
-/* light variables */
-bool lightEnabled = LIGHT_ENABLED;
-gpio_num_t lightPin = LIGHT_PIN;
-
-bool dht22Enabled = ENABLE_DHT22;
+Config config;
 
 /* FreeRTOS Queue and Task handlers */
 QueueHandle_t waterQueue;
 TaskHandle_t waterZoneTaskHandle;
+QueueHandle_t rebootQueue;
+TaskHandle_t rebootTaskHandle;
 
 /* state variables */
 int light_state;
 
-void setupZones() {
-    for (int i = 0; i < NUM_ZONES; i++) {
-      // Setup valve and pump pins
-      gpio_reset_pin(valves[i]);
-      gpio_set_direction(valves[i], GPIO_MODE_OUTPUT);
+void setupConfigVars() {
+    loadConfigFromFile(config);
+    printConfig(config);
+}
 
-      gpio_reset_pin(pumps[i]);
-      gpio_set_direction(pumps[i], GPIO_MODE_OUTPUT);
+void setupZones() {
+    for (int i = 0; i < config.numZones; i++) {
+      // Setup valve and pump pins
+      gpio_reset_pin(config.valvePins[i]);
+      gpio_set_direction(config.valvePins[i], GPIO_MODE_OUTPUT);
+
+      gpio_reset_pin(config.pumpPins[i]);
+      gpio_set_direction(config.pumpPins[i], GPIO_MODE_OUTPUT);
     }
 }
 
 void setupLight() {
-    gpio_reset_pin(lightPin);
-    gpio_set_direction(lightPin, GPIO_MODE_OUTPUT);
+    gpio_reset_pin(config.lightPin);
+    gpio_set_direction(config.lightPin, GPIO_MODE_OUTPUT);
     light_state = 0;
 }
 
@@ -55,10 +53,6 @@ void waterZoneTask(void* parameters) {
   WaterEvent we;
   while (true) {
     if (xQueueReceive(waterQueue, &we, 0)) {
-      // First clear the notifications to prevent a bug that would cause
-      // watering to be skipped if I run xTaskNotify when not waiting
-      ulTaskNotifyTake(NULL, 0);
-
       unsigned long start = millis();
       zoneOn(we.position);
       // Delay for specified watering time with option to interrupt
@@ -78,8 +72,10 @@ void waterZoneTask(void* parameters) {
 */
 void zoneOn(int id) {
   printf("turning on zone %d\n", id);
-  gpio_set_level(pumps[id], 1);
-  gpio_set_level(valves[id], 1);
+  if (id < config.numZones) {
+    gpio_set_level(config.pumpPins[id], 1);
+    gpio_set_level(config.valvePins[id], 1);
+  }
 }
 
 /*
@@ -87,8 +83,10 @@ void zoneOn(int id) {
 */
 void zoneOff(int id) {
   printf("turning off zone %d\n", id);
-    gpio_set_level(pumps[id], 0);
-    gpio_set_level(valves[id], 0);
+  if (id < config.numZones) {
+    gpio_set_level(config.pumpPins[id], 0);
+    gpio_set_level(config.valvePins[id], 0);
+  }
 }
 
 /*
@@ -113,7 +111,7 @@ void stopAllWatering() {
 */
 void waterZone(WaterEvent we) {
   // Exit if valveID is out of bounds
-  if (we.position >= NUM_ZONES || we.position < 0) {
+  if (we.position >= config.numZones || we.position < 0) {
     printf("position %d is out of range, aborting request\n", we.position);
     return;
   }
@@ -137,22 +135,42 @@ void changeLight(LightEvent le) {
     printf("Unrecognized LightEvent.state, so state will be unchanged\n");
   }
   printf("Setting light state to %d\n", light_state);
-  gpio_set_level(lightPin, light_state);
+  gpio_set_level(config.lightPin, light_state);
 
   // Log data to MQTT if enabled
   xQueueSend(lightPublisherQueue, &light_state, portMAX_DELAY);
 }
 
+void reboot(unsigned long duration) {
+    xQueueSend(rebootQueue, &duration, portMAX_DELAY);
+}
+
+void rebootTask(void* parameters) {
+  unsigned long delay;
+  while (true) {
+    if (xQueueReceive(rebootQueue, &delay, 0)) {
+      xTaskNotifyWait(0x00, ULONG_MAX, NULL, delay / portTICK_PERIOD_MS);
+      ESP.restart();
+    }
+    vTaskDelay(5 / portTICK_PERIOD_MS);
+  }
+  vTaskDelete(NULL);
+}
+
 void setup() {
+  initFS();
+  setupConfigVars();
+
   setupZones();
-  if (lightEnabled) {
+
+  if (config.light) {
     setupLight();
   }
 
   setupWifiManager();
   setupMQTT();
 
-  if (dht22Enabled) {
+  if (config.tempHumidity) {
       setupDHT22();
   }
 
@@ -161,7 +179,13 @@ void setup() {
     printf("error creating the waterQueue\n");
   }
 
+  rebootQueue = xQueueCreate(1, sizeof(unsigned long));
+  if (rebootQueue == NULL) {
+    printf("error creating the rebootQueue\n");
+  }
+
   xTaskCreate(waterZoneTask, "WaterZoneTask", 2048, NULL, 1, &waterZoneTaskHandle);
+  xTaskCreate(rebootTask, "RebootTask", 2048, NULL, 1, &rebootTaskHandle);
 }
 
 void loop() {}

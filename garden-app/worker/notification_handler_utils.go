@@ -15,8 +15,7 @@ const notificationClientIDLogField = "notification_client_id"
 
 func (w *Worker) sendNotificationForGarden(garden *pkg.Garden, title, message string, logger *slog.Logger) error {
 	if garden.GetNotificationClientID() == "" {
-		logger.Info("garden does not have notification client", "garden_id", garden.GetID())
-		return nil
+		return errors.New("garden does not have notification client")
 	}
 	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
@@ -81,6 +80,7 @@ func (w *Worker) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
 	for _, z := range zones {
 		if z.GardenID.String() == gardenID &&
 			z.Position != nil &&
+			//nolint:gosec
 			*z.Position == uint(zonePosition) {
 			zone = z
 			break

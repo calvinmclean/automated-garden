@@ -12,11 +12,13 @@ TaskHandle_t dht22TaskHandle;
 char temperatureDataTopic[50];
 char humidityDataTopic[50];
 
-DHT dht(DHT22_PIN, DHT22);
+DHT dht(config.tempHumidityPin, DHT22);
 
 void setupDHT22() {
+    printf("setting up temperature humidity publishing\n");
+
     snprintf(temperatureDataTopic, sizeof(temperatureDataTopic), "%s" MQTT_TEMPERATURE_DATA_TOPIC, mqtt_topic_prefix);
-    snprintf(humidityDataTopic, sizeof(humidityDataTopic), "%s" MQTT_TEMPERATURE_DATA_TOPIC, mqtt_topic_prefix);
+    snprintf(humidityDataTopic, sizeof(humidityDataTopic), "%s" MQTT_HUMIDITY_DATA_TOPIC, mqtt_topic_prefix);
 
     dht.begin();
     xTaskCreate(dht22PublishTask, "DHT22Task", 2048, NULL, 1, &dht22TaskHandle);
@@ -45,7 +47,7 @@ void dht22PublishTask(void* parameters) {
         } else {
             printf("unable to publish: not connected to MQTT broker\n");
         }
-        vTaskDelay(DHT22_INTERVAL / portTICK_PERIOD_MS);
+        vTaskDelay(config.tempHumidityInterval / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
 }

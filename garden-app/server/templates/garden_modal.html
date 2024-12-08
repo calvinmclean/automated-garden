@@ -67,6 +67,60 @@
                     {{ end }}
                 </select>
             </div>
+            
+            {{ if .MaxZones }}
+            {{ $controllerConfig := .ControllerConfig }}
+            <div class="uk-margin">
+                <label class="uk-form-label">Valve Pins</label>
+                <div class="uk-grid-small" uk-grid>
+                    {{ range $i := (UIntRange .MaxZones) }}
+                    <div>
+                        <label class="uk-form-label" for="garden-config-valvepin-{{ $i }}">Zone {{ $i }}</label>
+                        <input id="garden-config-valvepin-{{ $i }}" class="uk-input uk-form-width-xsmall" type="number"
+                            value="{{ $controllerConfig.ValvePin $i }}" placeholder="" min="0"
+                            name="ControllerConfig.ValvePins.{{ $i }}">
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+            <div class="uk-margin">
+                <label class="uk-form-label">Pump Pins<span uk-tooltip="If you don't use a pump, set to the same pin as valves" uk-icon="icon: info; ratio: 0.75"></span></label>
+                <div class="uk-grid-small" uk-grid>
+                    {{ range $i := (UIntRange .MaxZones) }}
+                    <div>
+                        <label class="uk-form-label" for="garden-config-pumppin-{{ $i }}">Zone {{ $i }}</label>
+                        <input id="garden-config-pumppin-{{ $i }}" class="uk-input uk-form-width-xsmall" type="number"
+                            value="{{ $controllerConfig.PumpPin $i }}" placeholder="" min="0"
+                            name="ControllerConfig.PumpPins.{{ $i }}">
+                    </div>
+                    {{ end }}
+                </div>
+            </div>
+            {{ end }}
+
+            {{ if .LightSchedule }}
+            <div class="uk-margin">
+                <label class="uk-form-label" for="garden-config-light-pin">Light Pin</label>
+                <input id="garden-config-light-pin" class="uk-input" type="number"
+                    value="{{ if and .ControllerConfig .ControllerConfig.LightPin }}{{ .ControllerConfig.LightPin }}{{ end }}" placeholder="Light Pin"
+                    name="ControllerConfig.LightPin">
+            </div>
+            {{ end }}
+
+            {{ if .TemperatureHumiditySensor }}
+            <div class="uk-margin">
+                <label class="uk-form-label" for="garden-config-temp-hum-pin">Temperature/Humidity Sensor Pin</label>
+                <input id="garden-config-temp-hum-pin" class="uk-input" type="number"
+                    value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityPin }}{{ .ControllerConfig.TemperatureHumidityPin }}{{ end }}" placeholder="Temperature/Humidity Sensor Pin"
+                    name="ControllerConfig.TemperatureHumidityPin">
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
+                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
+                    name="ControllerConfig.TemperatureHumidityInterval">
+            </div>
+            {{ end }}
 
             {{ template "modalSubmitButton" }}
             {{ if .Name }}

@@ -122,7 +122,7 @@ func TestWaterActionExecute(t *testing.T) {
 	}
 }
 
-func uintPointer(n int) *uint {
+func uintPointer(n uint) *uint {
 	uintn := uint(n)
 	return &uintn
 }

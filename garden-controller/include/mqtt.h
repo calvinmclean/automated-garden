@@ -5,11 +5,13 @@
 #include <PubSubClient.h>
 
 #include "config.h"
+#include "garden_config.h"
 
 #define MQTT_WATER_TOPIC "/command/water"
 #define MQTT_STOP_TOPIC "/command/stop"
 #define MQTT_STOP_ALL_TOPIC "/command/stop_all"
 #define MQTT_LIGHT_TOPIC "/command/light"
+#define MQTT_UPDATE_CONFIG_TOPIC "/command/update_config"
 
 #define MQTT_LIGHT_DATA_TOPIC "/data/light"
 #define MQTT_WATER_DATA_TOPIC "/data/water"

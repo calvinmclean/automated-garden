@@ -228,6 +228,7 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 	}
 
 	// Validate that adding a Zone does not exceed Garden.MaxZones
+	//nolint:gosec
 	if uint(len(zonesForGarden)+1) > *garden.MaxZones {
 		err := fmt.Errorf("adding a Zone would exceed Garden's max_zones=%d", *garden.MaxZones)
 		logger.Error("invalid request to create Zone", "error", err)

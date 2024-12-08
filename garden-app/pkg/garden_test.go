@@ -136,6 +136,15 @@ func TestGardenPatch(t *testing.T) {
 			"PatchTemperatureHumiditySensorFalse",
 			&Garden{TemperatureHumiditySensor: &falseBool},
 		},
+		{
+			"ControllerConfig",
+			&Garden{ControllerConfig: &ControllerConfig{
+				ValvePins:              []uint{1, 2},
+				PumpPins:               []uint{3, 4},
+				LightPin:               pointer(uint(1)),
+				TemperatureHumidityPin: pointer(uint(1)),
+			}},
+		},
 	}
 
 	for _, tt := range tests {
@@ -154,6 +163,7 @@ func TestGardenPatch(t *testing.T) {
 			if g.CreatedAt != tt.newGarden.CreatedAt {
 				t.Errorf("Unexpected result for CreatedAt: expected=%v, actual=%v", tt.newGarden.CreatedAt, g.CreatedAt)
 			}
+			assert.EqualValues(t, tt.newGarden.ControllerConfig, g.ControllerConfig)
 		})
 	}
 
