@@ -15,8 +15,7 @@ const notificationClientIDLogField = "notification_client_id"
 
 func (w *Worker) sendNotificationForGarden(garden *pkg.Garden, title, message string, logger *slog.Logger) error {
 	if garden.GetNotificationClientID() == "" {
-		logger.Info("garden does not have notification client", "garden_id", garden.GetID())
-		return nil
+		return errors.New("garden does not have notification client")
 	}
 	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 

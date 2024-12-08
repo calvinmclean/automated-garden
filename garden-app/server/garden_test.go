@@ -820,6 +820,21 @@ func TestGardenRequest(t *testing.T) {
 		err := gr.Bind(r)
 		assert.NoError(t, err)
 	})
+	t.Run("SuccessfulRemoveControllerConfigPins", func(t *testing.T) {
+		gr := &pkg.Garden{
+			TopicPrefix: "garden",
+			Name:        "garden",
+			MaxZones:    &one,
+			ControllerConfig: &pkg.ControllerConfig{
+				TemperatureHumidityPin:      pointer[uint](0),
+				LightPin:                    pointer[uint](0),
+				TemperatureHumidityInterval: &pkg.Duration{},
+			},
+		}
+		r := httptest.NewRequest(http.MethodPost, "/", http.NoBody)
+		err := gr.Bind(r)
+		assert.NoError(t, err)
+	})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, "/", http.NoBody)

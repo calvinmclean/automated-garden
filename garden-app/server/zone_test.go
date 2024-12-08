@@ -105,6 +105,10 @@ func float32Pointer(n float64) *float32 {
 	return &f
 }
 
+func pointer[T any](v T) *T {
+	return &v
+}
+
 func TestGetZone(t *testing.T) {
 	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
 
