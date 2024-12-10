@@ -434,6 +434,18 @@ func TestCreateWaterSchedule(t *testing.T) {
 			http.StatusCreated,
 		},
 		{
+			"ErrorDurationZero",
+			`{"duration":"0s","interval":"24h0m0s","start_time":"11:24:52-07:00"}`,
+			`{"status":"Invalid request.","error":"duration must not be 0"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorIntervalZero",
+			`{"duration":"10s","interval":0,"start_time":"11:24:52-07:00"}`,
+			`{"status":"Invalid request.","error":"interval must not be 0"}`,
+			http.StatusBadRequest,
+		},
+		{
 			"ErrorRainWeatherClientDNE",
 			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for RainControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,

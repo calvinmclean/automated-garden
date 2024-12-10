@@ -289,6 +289,13 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		}
 	}
 
+	if ws.Duration != nil && ws.Duration.Duration == 0 {
+		return errors.New("duration must not be 0")
+	}
+	if ws.Interval != nil && ws.Interval.Duration == 0 {
+		return errors.New("interval must not be 0")
+	}
+
 	return nil
 }
 
