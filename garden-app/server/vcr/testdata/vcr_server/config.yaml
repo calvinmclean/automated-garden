@@ -13,4 +13,4 @@ influxdb:
 storage:
   driver: "hashmap"
   # options:
-  #   filename: "./testdata/vcr_server/gardens.yaml"
+  #   filename: "./server/vcr/testdata/vcr_server/gardens.yaml"
