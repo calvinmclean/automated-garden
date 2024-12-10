@@ -76,7 +76,7 @@
                     {{ range $i := (UIntRange .MaxZones) }}
                     <div>
                         <label class="uk-form-label" for="garden-config-valvepin-{{ $i }}">Zone {{ $i }}</label>
-                        <input id="garden-config-valvepin-{{ $i }}" class="uk-input uk-form-width-xsmall" type="number"
+                        <input id="garden-config-valvepin-{{ $i }}" class="uk-input uk-form-width-small" type="number"
                             value="{{ $controllerConfig.ValvePin $i }}" placeholder="" min="0"
                             name="ControllerConfig.ValvePins.{{ $i }}">
                     </div>
@@ -84,12 +84,12 @@
                 </div>
             </div>
             <div class="uk-margin">
-                <label class="uk-form-label">Pump Pins<span uk-tooltip="If you don't use a pump, set to the same pin as valves" uk-icon="icon: info; ratio: 0.75"></span></label>
+                <label class="uk-form-label">Pump Pins <span uk-tooltip="If you don't use a pump, set to the same pin as valves" uk-icon="icon: info; ratio: 0.75"></span></label>
                 <div class="uk-grid-small" uk-grid>
                     {{ range $i := (UIntRange .MaxZones) }}
                     <div>
                         <label class="uk-form-label" for="garden-config-pumppin-{{ $i }}">Zone {{ $i }}</label>
-                        <input id="garden-config-pumppin-{{ $i }}" class="uk-input uk-form-width-xsmall" type="number"
+                        <input id="garden-config-pumppin-{{ $i }}" class="uk-input uk-form-width-small" type="number"
                             value="{{ $controllerConfig.PumpPin $i }}" placeholder="" min="0"
                             name="ControllerConfig.PumpPins.{{ $i }}">
                     </div>
