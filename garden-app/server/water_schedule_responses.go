@@ -38,6 +38,10 @@ func GetNextWaterDetails(r *http.Request, ws *pkg.WaterSchedule, worker *worker.
 		result.Duration = &pkg.Duration{Duration: time.Duration(wd)}
 	}
 
+	if result.Time == nil {
+		return result
+	}
+
 	var loc *time.Location
 	tzHeader := r.Header.Get("X-TZ-Offset")
 	if tzHeader != "" {
