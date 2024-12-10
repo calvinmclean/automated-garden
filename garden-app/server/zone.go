@@ -212,6 +212,7 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 		return httpErr
 	}
 
+	zoneAlreadyExists := false
 	zonesForGarden, err := api.storageClient.Zones.GetAll(r.Context(), nil)
 	if err != nil {
 		err = fmt.Errorf("error getting all zones for Garden %q: %w", gardenID, err)
@@ -219,6 +220,9 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 		return babyapi.InternalServerError(err)
 	}
 	zonesForGarden = babyapi.FilterFunc[*pkg.Zone](func(z *pkg.Zone) bool {
+		if z.GetID() == zone.GetID() {
+			zoneAlreadyExists = true
+		}
 		return z.GardenID.String() == gardenID && !z.EndDated()
 	}).Filter(zonesForGarden)
 
@@ -229,7 +233,7 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 
 	// Validate that adding a Zone does not exceed Garden.MaxZones
 	//nolint:gosec
-	if uint(len(zonesForGarden)+1) > *garden.MaxZones {
+	if !zoneAlreadyExists && uint(len(zonesForGarden)+1) > *garden.MaxZones {
 		err := fmt.Errorf("adding a Zone would exceed Garden's max_zones=%d", *garden.MaxZones)
 		logger.Error("invalid request to create Zone", "error", err)
 		return babyapi.ErrInvalidRequest(err)

@@ -763,12 +763,12 @@ func TestUpdateZonePUT(t *testing.T) {
 			http.StatusBadRequest,
 		},
 		{
-			"ErrorMaxZonesExceeded",
-			nil,
+			"MaxZonesEdit_NoErrorMaxZonesExceeded",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
 			gardenWithZone,
-			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
-			`{"status":"Invalid request.","error":"adding a Zone would exceed Garden's max_zones=1"}`,
-			http.StatusBadRequest,
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","skip_count":3,"position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			``,
+			http.StatusOK,
 		},
 		{
 			"ErrorInvalidZonePosition",
@@ -821,6 +821,168 @@ func TestUpdateZonePUT(t *testing.T) {
 			defer zr.worker.Stop()
 
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, zone.ID), strings.NewReader(tt.body))
+			r.Header.Set("Content-Type", "application/json")
+			r.Header.Set("X-TZ-Offset", "420")
+			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
+
+			assert.Equal(t, tt.code, w.Code)
+			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
+		})
+	}
+}
+
+func TestCreateZonePUT(t *testing.T) {
+	otherCreatedAt := createdAt.Add(-1 * time.Second)
+	otherWS := &pkg.WaterSchedule{
+		ID:        babyapi.ID{ID: id2},
+		Duration:  &pkg.Duration{Duration: time.Second * 10},
+		Interval:  &pkg.Duration{Duration: time.Hour * 24},
+		StartTime: pkg.NewStartTime(otherCreatedAt),
+	}
+	gardenWithZone := createExampleGarden()
+	gardenWithZone.ID = babyapi.ID{ID: id2}
+	one := uint(1)
+	gardenWithZone.MaxZones = &one
+
+	tests := []struct {
+		name           string
+		waterSchedules []*pkg.WaterSchedule
+		garden         *pkg.Garden
+		id             string
+		body           string
+		expectedRegexp string
+		code           int
+	}{
+		{
+			"Successful",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			``,
+			http.StatusOK,
+		},
+		{
+			"SuccessfulWithGardenIDSet",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			``,
+			http.StatusOK,
+		},
+		{
+			"ErrorCannotSetGardenIDDifferentFromPath",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","garden_id":"chkodpg3lcj13q82mq40","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"garden_id for zone must match URL path"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorMissingID",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"missing required id field"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorWrongID",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"chkodpg3lcj13q82mq40","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"id must match URL path"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"SuccessfulWithSkipCount",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule()},
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","skip_count":3,"position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			``,
+			http.StatusOK,
+		},
+		{
+			"SuccessfulMultipleWaterSchedules",
+			[]*pkg.WaterSchedule{createExampleWaterSchedule(), otherWS},
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg","chkodpg3lcj13q82mq40"]}`,
+			``,
+			http.StatusOK,
+		},
+		{
+			"ErrorNegativeZonePosition",
+			nil,
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":-1,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"json: cannot unmarshal number -1 into Go struct field Zone.position of type uint"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorMaxZonesExceeded",
+			nil,
+			gardenWithZone,
+			"chkodpg3lcj13q82mq40",
+			`{"id":"chkodpg3lcj13q82mq40","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"adding a Zone would exceed Garden's max_zones=1"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorInvalidZonePosition",
+			nil,
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":2,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"position invalid for Garden with max_zones=2"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorBadRequestBadJSON",
+			nil,
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			"this is not json",
+			`{"status":"Invalid request.","error":"invalid character 'h' in literal true \(expecting 'r'\)"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"ErrorWaterScheduleNotFound",
+			nil,
+			createExampleGarden(),
+			"c5cvhpcbcv45e8bp16dg",
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"test-zone","position":0,"water_schedule_ids":["c5cvhpcbcv45e8bp16dg"]}`,
+			`{"status":"Invalid request.","error":"error getting WaterSchedule with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
+			http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient := setupStorage(t, tt.garden)
+
+			for _, ws := range tt.waterSchedules {
+				err := storageClient.WaterSchedules.Set(context.Background(), ws)
+				assert.NoError(t, err)
+			}
+
+			zr := NewZonesAPI()
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+
+			for _, ws := range tt.waterSchedules {
+				err := zr.worker.ScheduleWaterAction(ws)
+				assert.NoError(t, err)
+			}
+			zr.worker.StartAsync()
+			defer zr.worker.Stop()
+
+			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, tt.id), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
