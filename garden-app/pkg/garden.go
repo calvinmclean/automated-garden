@@ -20,22 +20,28 @@ const (
 	HealthStatusUp      HealthStatus = "UP"
 	HealthStatusUnknown HealthStatus = "N/A"
 
-	currentGardenVersion = uint(1)
+	currentGardenVersion = uint(2)
 )
 
 // Garden is the representation of a single garden-controller device
 type Garden struct {
-	Name                      string            `json:"name" yaml:"name,omitempty"`
-	TopicPrefix               string            `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
-	ID                        babyapi.ID        `json:"id" yaml:"id,omitempty"`
-	MaxZones                  *uint             `json:"max_zones" yaml:"max_zones"`
-	CreatedAt                 *time.Time        `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate                   *time.Time        `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	LightSchedule             *LightSchedule    `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
-	TemperatureHumiditySensor *bool             `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
-	NotificationClientID      *string           `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
-	ControllerConfig          *ControllerConfig `json:"controller_config,omitempty" yaml:"controller_config,omitempty"`
-	Version                   uint              `json:"version,omitempty" yaml:"version"`
+	Name                      string                `json:"name" yaml:"name,omitempty"`
+	TopicPrefix               string                `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
+	ID                        babyapi.ID            `json:"id" yaml:"id,omitempty"`
+	MaxZones                  *uint                 `json:"max_zones" yaml:"max_zones"`
+	CreatedAt                 *time.Time            `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate                   *time.Time            `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	LightSchedule             *LightSchedule        `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
+	TemperatureHumiditySensor *bool                 `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
+	NotificationClientID      *string               `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	NotificationSettings      *NotificationSettings `json:"notification_settings,omitempty" yaml:"notification_settings,omitempty"`
+	ControllerConfig          *ControllerConfig     `json:"controller_config,omitempty" yaml:"controller_config,omitempty"`
+	Version                   uint                  `json:"version,omitempty" yaml:"version"`
+}
+
+type NotificationSettings struct {
+	ControllerStartup bool `json:"controller_startup" yaml:"controller_startup"`
+	LightSchedule     bool `json:"light_schedule" yaml:"light_schedule"`
 }
 
 func (g *Garden) GetVersion() uint {
@@ -61,6 +67,14 @@ func (g *Garden) GetNotificationClientID() string {
 	}
 
 	return *g.NotificationClientID
+}
+
+func (g *Garden) GetNotificationSettings() NotificationSettings {
+	if g.NotificationSettings == nil {
+		return NotificationSettings{}
+	}
+
+	return *g.NotificationSettings
 }
 
 // GardenHealth holds information about the Garden controller's health status
@@ -149,6 +163,7 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 	if newGarden.NotificationClientID != nil {
 		g.NotificationClientID = newGarden.NotificationClientID
 	}
+
 	if newGarden.ControllerConfig != nil {
 		if g.ControllerConfig == nil {
 			g.ControllerConfig = &ControllerConfig{}
@@ -157,6 +172,14 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 		if err != nil {
 			return err
 		}
+	}
+
+	if newGarden.NotificationSettings != nil {
+		if g.NotificationSettings == nil {
+			g.NotificationSettings = &NotificationSettings{}
+		}
+		g.NotificationSettings.ControllerStartup = newGarden.NotificationSettings.ControllerStartup
+		g.NotificationSettings.LightSchedule = newGarden.NotificationSettings.LightSchedule
 	}
 
 	return nil

@@ -66,6 +66,35 @@
                     <option value="{{ $nc.GetID }}" {{ if $selected }}selected{{ end }}>{{ $nc.Name }}</option>
                     {{ end }}
                 </select>
+                
+                <div id="zone-water-schedules" class="uk-margin uk-child-width-auto uk-grid">
+                    <div class="uk-width-1-2@m">
+                        <label>
+                            <div class="uk-inline">
+                                <input class="uk-checkbox" type="checkbox" name="NotificationSettings.ControllerStartup"
+                                    value="true" {{ if and .NotificationSettings .NotificationSettings.ControllerStartup }}checked{{ end }}>
+                                Controller startup
+                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                                <div uk-dropdown="pos: right-center">
+                                    Enable notifications when the controller starts up and connects
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="uk-width-1-2@m">
+                        <label>
+                            <div class="uk-inline">
+                                <input class="uk-checkbox" type="checkbox" name="NotificationSettings.LightSchedule"
+                                    value="true" {{ if and .NotificationSettings .NotificationSettings.LightSchedule }}checked{{ end }}>
+                                Light schedule
+                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                                <div uk-dropdown="pos: right-center">
+                                    Enable notifications when the Garden's light is turned on or off by the schedule
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
             </div>
             
             {{ if .MaxZones }}

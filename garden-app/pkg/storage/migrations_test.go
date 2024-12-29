@@ -56,8 +56,9 @@ func TestMigrations(t *testing.T) {
 				Name: "Garden3",
 			},
 			{
-				ID:   babyapi.NewID(),
-				Name: "Garden4",
+				ID:                   babyapi.NewID(),
+				Name:                 "GardenWithNotificationClient",
+				NotificationClientID: pointer("client_id"),
 			},
 		}
 
@@ -110,7 +111,14 @@ func TestMigrations(t *testing.T) {
 		allGardens, err := client.Gardens.GetAll(context.Background(), nil)
 		require.NoError(t, err)
 		for _, g := range allGardens {
-			require.Equal(t, uint(1), g.GetVersion())
+			require.Equal(t, uint(2), g.GetVersion())
+
+			if g.Name == "GardenWithNotificationClient" {
+				t.Run("GardenWithNotificationClientHasSettingsTrue_Migration2", func(t *testing.T) {
+					require.True(t, g.GetNotificationSettings().ControllerStartup)
+					require.True(t, g.GetNotificationSettings().LightSchedule)
+				})
+			}
 		}
 	})
 
@@ -121,4 +129,8 @@ func TestMigrations(t *testing.T) {
 			require.Equal(t, uint(1), ws.GetVersion())
 		}
 	})
+}
+
+func pointer[T any](v T) *T {
+	return &v
 }
