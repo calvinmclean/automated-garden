@@ -24,6 +24,7 @@ import (
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 var (
@@ -1097,11 +1098,30 @@ func TestWaterHistory(t *testing.T) {
 }
 
 func TestGetNextWaterTime(t *testing.T) {
+	clock.MockTime()
+	defer clock.Reset()
+
+	activePeriodWS := createExampleWaterSchedule()
+	activePeriodWS.ActivePeriod = &pkg.ActivePeriod{
+		StartMonth: "September",
+		EndMonth:   "November",
+	}
+
 	tests := []struct {
 		name         string
-		expectedDiff time.Duration
+		ws           *pkg.WaterSchedule
+		expectedTime time.Time
 	}{
-		{"ZeroSkip", 0},
+		{
+			"ZeroSkip",
+			createExampleWaterSchedule(),
+			time.Date(2023, time.August, 23, 18, 24, 52, 0, time.UTC),
+		},
+		{
+			"OutsideActivePeriod",
+			activePeriodWS,
+			time.Date(2023, time.September, 0o1, 18, 24, 52, 0, time.UTC),
+		},
 	}
 
 	for _, tt := range tests {
@@ -1114,20 +1134,14 @@ func TestGetNextWaterTime(t *testing.T) {
 			zr := &ZonesAPI{
 				worker: worker.NewWorker(storageClient, nil, nil, slog.Default()),
 			}
-			ws := createExampleWaterSchedule()
 
-			err = zr.worker.ScheduleWaterAction(ws)
+			err = zr.worker.ScheduleWaterAction(tt.ws)
 			assert.NoError(t, err)
 			zr.worker.StartAsync()
 			defer zr.worker.Stop()
 
-			NextWaterTime := zr.worker.GetNextWaterTime(ws)
-			NextWaterTimeWithSkip := zr.worker.GetNextWaterTime(ws)
-
-			diff := NextWaterTimeWithSkip.Sub(*NextWaterTime)
-			if diff != tt.expectedDiff {
-				t.Errorf("Unexpected difference between next watering times: expected=%v, actual=%v", tt.expectedDiff, diff)
-			}
+			nextWaterTime := zr.worker.GetNextWaterTime(tt.ws)
+			require.Equal(t, tt.expectedTime, *nextWaterTime)
 		})
 	}
 }

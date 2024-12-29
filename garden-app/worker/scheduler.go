@@ -166,10 +166,15 @@ func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
 
 	for _, job := range w.scheduler.Jobs() {
 		for _, tag := range job.Tags() {
-			if tag == ws.ID.String() {
-				result := job.NextRun()
-				return &result
+			if tag != ws.ID.String() {
+				continue
 			}
+
+			result := job.NextRun()
+			for !ws.IsActive(result) {
+				result = result.Add(ws.Interval.Duration)
+			}
+			return &result
 		}
 	}
 	return nil
