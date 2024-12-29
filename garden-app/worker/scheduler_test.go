@@ -775,6 +775,9 @@ func TestScheduleLightActions(t *testing.T) {
 }
 
 func TestScheduleLightDelay(t *testing.T) {
+	_ = clock.MockTime()
+	defer t.Cleanup(clock.Reset)
+
 	tests := []struct {
 		name          string
 		garden        *pkg.Garden
@@ -894,7 +897,7 @@ func TestScheduleLightDelay(t *testing.T) {
 					tt.garden.LightSchedule.StartTime.Time.Minute(),
 					tt.garden.LightSchedule.StartTime.Time.Second(),
 					0,
-					time.Local,
+					now.Location(),
 				).Add(tt.expectedDelay).Truncate(time.Second)
 			}
 
