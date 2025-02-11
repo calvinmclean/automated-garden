@@ -161,7 +161,7 @@ TODO: add UI for new downtime notifications
 
             <div class="uk-margin">
                 <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
-                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
+                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
                     name="ControllerConfig.TemperatureHumidityInterval">
             </div>
             {{ end }}
