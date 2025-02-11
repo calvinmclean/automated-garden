@@ -9,13 +9,13 @@ import (
 )
 
 func (w *Worker) handleGardenStartupMessage(_ mqtt.Client, msg mqtt.Message) {
-	err := w.getGardenAndSendMessage(msg.Topic(), string(msg.Payload()))
+	err := w.getGardenAndSendStartupMessage(msg.Topic(), string(msg.Payload()))
 	if err != nil {
 		w.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
 	}
 }
 
-func (w *Worker) getGardenAndSendMessage(topic string, payload string) error {
+func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) error {
 	logger := w.logger.With("topic", topic)
 
 	msg := parseStartupMessage(payload)
@@ -44,7 +44,7 @@ func (w *Worker) sendGardenStartupMessage(garden *pkg.Garden, topic string, msg 
 	}
 
 	title := fmt.Sprintf("%s connected", garden.Name)
-	return w.sendNotificationForGarden(garden, title, msg, logger)
+	return w.sendNotificationForGarden(garden, title, msg)
 }
 
 func parseStartupMessage(msg string) string {

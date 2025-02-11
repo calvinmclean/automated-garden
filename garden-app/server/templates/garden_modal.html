@@ -1,3 +1,5 @@
+TODO: add UI for new downtime notifications
+
 {{ define "GardenModal" }}
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body">
@@ -94,6 +96,19 @@
                             </div>
                         </label>
                     </div>
+                    <div class="uk-width-1-2@m">
+                        <label>
+                            <div class="uk-inline uk-margin-small-top">
+                                Downtime Notification
+                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                                <div uk-dropdown="pos: right-center">
+                                    Enable notifications when the controller fails to publish health checks for the specified duration
+                                </div>
+                                <input class="uk-input" type="text" name="NotificationSettings.Downtime"
+                                    value="{{ if and .NotificationSettings .NotificationSettings.Downtime }}{{ .NotificationSettings.Downtime }}{{ end }}">
+                            </div>
+                        </label>
+                </div>
                 </div>
             </div>
             
@@ -146,7 +161,7 @@
 
             <div class="uk-margin">
                 <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
-                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
+                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
                     name="ControllerConfig.TemperatureHumidityInterval">
             </div>
             {{ end }}

@@ -44,7 +44,7 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 
 	title := fmt.Sprintf("%s finished watering", zone.Name)
 	message := fmt.Sprintf("watered for %s", waterDuration.String())
-	return w.sendNotificationForGarden(garden, title, message, logger)
+	return w.sendNotificationForGarden(garden, title, message)
 }
 
 func parseWaterMessage(msg []byte) (int, time.Duration, error) {

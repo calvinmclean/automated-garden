@@ -72,7 +72,7 @@ func TestGetGardenAndSendMessage_WarnLogs(t *testing.T) {
 			w := &Worker{
 				logger: slog.New(slog.NewTextHandler(&logBuffer, nil)),
 			}
-			err := w.getGardenAndSendMessage(tt.topic, tt.payload)
+			err := w.getGardenAndSendStartupMessage(tt.topic, tt.payload)
 			require.NoError(t, err)
 
 			// Remove the time attribute before asserting
