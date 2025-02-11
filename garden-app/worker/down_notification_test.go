@@ -66,7 +66,7 @@ func TestHandleHealthMessage(t *testing.T) {
 		TopicPrefix:          "garden",
 		NotificationClientID: nil,
 		NotificationSettings: &pkg.NotificationSettings{
-			Downtime: testDowntimeThreshold,
+			Downtime: &pkg.Duration{Duration: testDowntimeThreshold},
 		},
 	}
 	err = storageClient.Gardens.Set(context.Background(), garden)
@@ -140,5 +140,33 @@ func TestHandleHealthMessage(t *testing.T) {
 
 		logs := logBuffer.String()
 		assert.Contains(t, logs, `msg="reset timer" source=worker topic=garden/data/health`)
+	})
+
+	t.Run("GardenWithoutDowntime_NoNotification", func(t *testing.T) {
+		defer fake.Reset()
+		mockClock := clock.MockTime()
+
+		garden := &pkg.Garden{
+			Name:        "MyNewGarden",
+			ID:          babyapi.NewID(),
+			TopicPrefix: "new-garden",
+		}
+		err = storageClient.Gardens.Set(context.Background(), garden)
+		require.NoError(t, err)
+
+		var logBuffer bytes.Buffer
+		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, nil)))
+
+		topic := "new-garden/data/health"
+		w.handleHealthMessage(topic, `health garden="new-garden"`)
+
+		mockClock.Add(testDowntimeThreshold + 1*time.Second)
+
+		w.Stop()
+
+		assert.Empty(t, fake.Messages())
+
+		logs := logBuffer.String()
+		assert.Contains(t, logs, `msg="received message" source=worker topic=new-garden/data/health`)
 	})
 }

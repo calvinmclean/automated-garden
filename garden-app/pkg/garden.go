@@ -40,9 +40,9 @@ type Garden struct {
 }
 
 type NotificationSettings struct {
-	ControllerStartup bool          `json:"controller_startup" yaml:"controller_startup"`
-	LightSchedule     bool          `json:"light_schedule" yaml:"light_schedule"`
-	Downtime          time.Duration `json:"downtime" yaml:"downtime"`
+	ControllerStartup bool      `json:"controller_startup" yaml:"controller_startup"`
+	LightSchedule     bool      `json:"light_schedule" yaml:"light_schedule"`
+	Downtime          *Duration `json:"downtime" yaml:"downtime"`
 }
 
 func (g *Garden) GetVersion() uint {

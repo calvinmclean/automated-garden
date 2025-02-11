@@ -29,17 +29,17 @@ func (w *Worker) handleHealthMessage(topic, payload string) {
 	}
 
 	downtime := garden.GetNotificationSettings().Downtime
-	if downtime <= 0 {
+	if downtime == nil || downtime.Duration <= 0 {
 		return
 	}
 
 	timer, ok := w.downTimers[topic]
 	if !ok {
-		timer := w.newDownTimer(downtime, topic)
+		timer := w.newDownTimer(downtime.Duration, topic)
 		w.downTimers[topic] = timer
 		logger.Info("created new timer")
 	} else {
-		timer.Reset(downtime)
+		timer.Reset(downtime.Duration)
 		logger.Info("reset timer")
 	}
 }
@@ -71,7 +71,7 @@ func (w *Worker) handleDowntimeNotification(topic string) error {
 	}
 
 	downtime := garden.GetNotificationSettings().Downtime
-	if downtime <= 0 {
+	if downtime == nil || downtime.Duration <= 0 {
 		return nil
 	}
 
