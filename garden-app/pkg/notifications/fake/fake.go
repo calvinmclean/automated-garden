@@ -70,7 +70,7 @@ func Messages() []Message {
 	return result
 }
 
-func ResetLastMessage() {
+func Reset() {
 	messagesMtx.Lock()
 	messages = []Message{}
 	messagesMtx.Unlock()

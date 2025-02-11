@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"strconv"
 	"strings"
 
@@ -13,11 +12,10 @@ import (
 
 const notificationClientIDLogField = "notification_client_id"
 
-func (w *Worker) sendNotificationForGarden(garden *pkg.Garden, title, message string, logger *slog.Logger) error {
+func (w *Worker) sendNotificationForGarden(garden *pkg.Garden, title, message string) error {
 	if garden.GetNotificationClientID() == "" {
 		return errors.New("garden does not have notification client")
 	}
-	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
 	notificationClient, err := w.storageClient.NotificationClientConfigs.Get(context.Background(), garden.GetNotificationClientID())
 	if err != nil {
@@ -26,12 +24,24 @@ func (w *Worker) sendNotificationForGarden(garden *pkg.Garden, title, message st
 
 	err = notificationClient.SendMessage(title, message)
 	if err != nil {
-		logger.Error("error sending message", "error", err)
 		return err
 	}
 
-	logger.Info("successfully send notification")
 	return nil
+}
+
+func getTopicPrefix(topic string) (string, error) {
+	splitTopic := strings.Split(topic, "/")
+	if len(splitTopic) != 3 {
+		return "", fmt.Errorf("unexpected short topic: %q", topic)
+	}
+
+	topicPrefix := splitTopic[0]
+	if topicPrefix == "" {
+		return "", errors.New("received message on empty topic")
+	}
+
+	return topicPrefix, nil
 }
 
 func (w *Worker) getGardenForTopic(topic string) (*pkg.Garden, error) {
@@ -43,6 +53,11 @@ func (w *Worker) getGardenForTopic(topic string) (*pkg.Garden, error) {
 	topicPrefix := splitTopic[0]
 	if topicPrefix == "" {
 		return nil, errors.New("received message on empty topic")
+	}
+
+	topicPrefix, err := getTopicPrefix(topic)
+	if err != nil {
+		return nil, err
 	}
 
 	garden, err := w.getGarden(topicPrefix)

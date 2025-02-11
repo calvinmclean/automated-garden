@@ -116,6 +116,9 @@ func TestScheduleWaterAction(t *testing.T) {
 	assert.NoError(t, err)
 	defer weather.ResetCache()
 
+	clock.Reset()
+	defer clock.Reset()
+
 	garden := createExampleGarden()
 	zone := createExampleZone()
 
@@ -201,7 +204,7 @@ func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fake.ResetLastMessage()
+			fake.Reset()
 
 			storageClient, err := storage.NewClient(storage.Config{
 				Driver: "hashmap",
@@ -280,7 +283,7 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fake.ResetLastMessage()
+			fake.Reset()
 
 			storageClient, err := storage.NewClient(storage.Config{
 				Driver: "hashmap",
@@ -640,7 +643,7 @@ func TestScheduleLightActions(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				fake.ResetLastMessage()
+				fake.Reset()
 
 				storageClient, err := storage.NewClient(storage.Config{
 					Driver: "hashmap",
@@ -724,7 +727,7 @@ func TestScheduleLightActions(t *testing.T) {
 
 		for _, tt := range tests {
 			t.Run(tt.name, func(t *testing.T) {
-				fake.ResetLastMessage()
+				fake.Reset()
 
 				storageClient, err := storage.NewClient(storage.Config{
 					Driver: "hashmap",

@@ -9,6 +9,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+
 	"github.com/go-co-op/gocron"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -42,6 +43,12 @@ type Worker struct {
 	mqttClient     mqtt.Client
 	scheduler      *gocron.Scheduler
 	logger         *slog.Logger
+
+	// When Garden health messages are received, Timers are created to track their
+	// uptime and notify if they go down
+	downTimers map[string]clock.Timer
+	// Wait for any downtime notifications before shutting down
+	downtimeWG *sync.WaitGroup
 }
 
 // NewWorker creates a Worker with specified clients
@@ -59,6 +66,8 @@ func NewWorker(
 		mqttClient:     mqttClient,
 		scheduler:      scheduler,
 		logger:         logger.With("source", "worker"),
+		downTimers:     map[string]clock.Timer{},
+		downtimeWG:     &sync.WaitGroup{},
 	}
 }
 
@@ -80,6 +89,10 @@ func (w *Worker) StartAsync() {
 		Topic:   "+/data/logs",
 		Handler: w.handleGardenStartupMessage,
 	})
+	w.mqttClient.AddHandler(mqtt.TopicHandler{
+		Topic:   "+/data/health",
+		Handler: w.healthMessageHandler,
+	})
 
 	if err := w.mqttClient.Connect(); err != nil {
 		w.logger.Error("failed to connect to MQTT broker", "error", err)
@@ -95,6 +108,8 @@ func (w *Worker) Stop() {
 	if w.influxdbClient != nil {
 		w.influxdbClient.Close()
 	}
+
+	w.downtimeWG.Wait()
 
 	prometheus.Unregister(scheduleJobsGauge)
 	prometheus.Unregister(schedulerErrors)

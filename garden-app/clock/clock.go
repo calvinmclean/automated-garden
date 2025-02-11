@@ -7,6 +7,10 @@ import (
 	"github.com/go-co-op/gocron"
 )
 
+type Timer interface {
+	Reset(d time.Duration) bool
+}
+
 // Clock allows mocking time
 type Clock struct {
 	clock.Clock
@@ -40,4 +44,8 @@ func MockTime() *clock.Mock {
 // Reset returns the DefaultClock to real time
 func Reset() {
 	DefaultClock = Clock{clock.New()}
+}
+
+func AfterFunc(d time.Duration, f func()) Timer {
+	return DefaultClock.AfterFunc(d, f)
 }
