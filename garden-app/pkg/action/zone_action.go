@@ -38,7 +38,7 @@ type WaterAction struct {
 // WaterMessage is the message being sent over MQTT to the embedded garden controller
 type WaterMessage struct {
 	Duration int64  `json:"duration"`
-	ZoneID   string `json:"id"`
+	ZoneID   string `json:"zone_id"`
 	Position uint   `json:"position"`
 }
 

@@ -115,7 +115,7 @@ void waterZone(WaterEvent we) {
     printf("position %d is out of range, aborting request\n", we.position);
     return;
   }
-  printf("pushing WaterEvent to queue: id=%s, position=%d, time=%lu\n", we.id, we.position, we.duration);
+  printf("pushing WaterEvent to queue: zone_id=%s, position=%d, time=%lu\n", we.zone_id, we.position, we.duration);
   xQueueSend(waterQueue, &we, portMAX_DELAY);
 }
 

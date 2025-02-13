@@ -191,9 +191,9 @@ void handleWaterCommand(byte* message) {
     WaterEvent we = {
         doc["position"] | -1,
         doc["duration"] | ZERO,
-        doc["id"] | "N/A"
+        doc["zone_id"] | "N/A"
     };
-    printf("received command to water zone %d (%s) for %lu\n", we.position, we.id, we.duration);
+    printf("received command to water zone %d (%s) for %lu\n", we.position, we.zone_id, we.duration);
     waterZone(we);
 }
 
