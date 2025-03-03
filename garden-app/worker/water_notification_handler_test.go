@@ -45,24 +45,41 @@ func TestParseWaterMessage(t *testing.T) {
 			"",
 		},
 		{
-			"water,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			"water,status=complete,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
 			action.WaterMessage{
 				Position: 0,
 				Duration: 0,
 				ZoneID:   "zoneID",
 				EventID:  "eventID",
+				Start:    false,
 			},
 			"",
 		},
 		{
-			"water,zone=-1,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			"water,status=start,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			action.WaterMessage{
+				Position: 0,
+				Duration: 0,
+				ZoneID:   "zoneID",
+				EventID:  "eventID",
+				Start:    true,
+			},
+			"",
+		},
+		{
+			"water,zone=-1,zone_id=zoneID,id=eventID millis=0",
 			action.WaterMessage{},
 			`invalid integer for position: strconv.ParseUint: parsing "-1": invalid syntax`,
 		},
 		{
-			"water,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=X",
+			"water,zone=0,zone_id=zoneID,id=eventID millis=X",
 			action.WaterMessage{},
 			"invalid integer for millis: strconv.ParseInt: parsing \"X\": invalid syntax",
+		},
+		{
+			"water,status=X,zone=0,zone_id=zoneID,id=eventID millis=1",
+			action.WaterMessage{},
+			`invalid status: "X"`,
 		},
 	}
 

@@ -276,6 +276,7 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 		c.pubLogger.Debug("publishing water events is disabled")
 		return
 	}
+
 	// Incoming topic is "{{.TopicPrefix}}/command/water" but we need to publish on "{{.TopicPrefix}}/data/water"
 	dataTopic := strings.ReplaceAll(cmdTopic, "command", "data")
 	waterEventLogger := c.pubLogger.With(
@@ -285,8 +286,15 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 		"event_id", waterMsg.EventID,
 	)
 	waterEventLogger.Info("publishing watering event for Zone")
-	msg := fmt.Sprintf("water,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
-	err := c.mqttClient.Publish(dataTopic, []byte(msg))
+
+	startMsg := fmt.Sprintf("water,status=start,zone=%d,id=%s,zone_id=%s millis=0", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID)
+	err := c.mqttClient.Publish(dataTopic, []byte(startMsg))
+	if err != nil {
+		waterEventLogger.Error("unable to publish watering started event", "error", err)
+	}
+
+	doneMsg := fmt.Sprintf("water,status=complete,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
+	err = c.mqttClient.Publish(dataTopic, []byte(doneMsg))
 	if err != nil {
 		waterEventLogger.Error("unable to publish watering event", "error", err)
 	}

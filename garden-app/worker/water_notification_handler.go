@@ -27,6 +27,12 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	if err != nil {
 		return fmt.Errorf("error parsing message: %w", err)
 	}
+	logger = logger.With("event_id", waterMessage.EventID, "zone_id", waterMessage.ZoneID)
+
+	if waterMessage.Start {
+		logger.Info("skipping message since it is start of watering")
+		return nil
+	}
 
 	garden, err := w.getGardenForTopic(topic)
 	if err != nil {
@@ -45,7 +51,7 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	if err != nil {
 		return fmt.Errorf("error getting zone %s: %w", waterMessage.ZoneID, err)
 	}
-	logger.Info("found zone", "zone_id", zone.GetID())
+	logger.Info("found zone")
 
 	title := fmt.Sprintf("%s finished watering", zone.Name)
 	dur := time.Duration(waterMessage.Duration) * time.Millisecond
@@ -82,6 +88,21 @@ func parseWaterMessage(msg []byte) (action.WaterMessage, error) {
 			result.EventID = strings.Trim(val, `"`)
 		case "zone_id":
 			result.ZoneID = strings.Trim(val, `"`)
+		case "status":
+			switch val {
+			case "complete":
+				result.Start = false
+			case "start":
+				result.Start = true
+			default:
+				return action.WaterMessage{}, fmt.Errorf("invalid status: %q", val)
+			}
+
+			if val == "complete" {
+				result.Start = false
+			} else if val == "start" {
+				result.Start = true
+			}
 		}
 
 		part, err = p.readNextPair()

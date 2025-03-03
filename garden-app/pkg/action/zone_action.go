@@ -41,6 +41,10 @@ type WaterMessage struct {
 	ZoneID   string `json:"zone_id"`
 	Position uint   `json:"position"`
 	EventID  string `json:"id"`
+
+	// Start is a boolean showing if this record is the start or finish event. It is excluded
+	// from JSON because it is just used when parsing incoming messages that log the start/finish
+	Start bool `json:"-"`
 }
 
 // String...

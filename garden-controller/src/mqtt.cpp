@@ -83,7 +83,11 @@ void waterPublisherTask(void* parameters) {
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
             char message[50];
-            sprintf(message, "water,zone=%d,id=%s,zone_id=%s millis=%lu", we.position, we.duration, we.id, we.zone_id);
+            if (we.done) {
+                sprintf(message, "water,status=complete,zone=%d,id=%s,zone_id=%s millis=%lu", we.position, we.id, we.zone_id, we.duration);
+            } else {
+                sprintf(message, "water,status=start,zone=%d,id=%s,zone_id=%s millis=0", we.position, we.id, we.zone_id);
+            }
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
                 client.publish(waterDataTopic, message);
@@ -192,7 +196,8 @@ void handleWaterCommand(byte* message) {
         doc["position"] | -1,
         doc["duration"] | ZERO,
         doc["zone_id"] | "N/A",
-        doc["id"] | "N/A"
+        doc["id"] | "N/A",
+        false
     };
     printf("received command to water zone %d (%s) for %lu\n", we.position, we.zone_id, we.duration);
     waterZone(we);

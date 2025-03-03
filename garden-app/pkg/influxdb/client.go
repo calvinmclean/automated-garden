@@ -28,6 +28,7 @@ const (
 |> filter(fn: (r) => r["_measurement"] == "water")
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
 |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
+|> filter(fn: (r) => r["status"] == "complete")
 |> drop(columns: ["host"])
 |> sort(columns: ["_time"], desc: true)
 {{- if .Limit }}
