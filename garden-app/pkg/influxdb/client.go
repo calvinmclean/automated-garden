@@ -3,10 +3,12 @@ package influxdb
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"text/template"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
 	"github.com/prometheus/client_golang/prometheus"
 )
@@ -25,7 +27,7 @@ const (
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "water")
 |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
-|> filter(fn: (r) => r["zone"] == "{{.ZonePosition}}")
+|> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
 |> drop(columns: ["host"])
 |> sort(columns: ["_time"], desc: true)
 {{- if .Limit }}
@@ -56,10 +58,12 @@ var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
 	GetLastContact(context.Context, string) (time.Time, error)
-	GetWaterHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
+	GetWaterHistory(context.Context, string, string, time.Duration, uint64) ([]pkg.WaterHistory, error)
 	GetTemperatureAndHumidity(context.Context, string) (float64, float64, error)
 	influxdb2.Client
 }
+
+var _ Client = &client{}
 
 // Config holds configuration values for connecting the the InfluxDB server
 type Config struct {
@@ -71,11 +75,11 @@ type Config struct {
 
 // queryData is used to fill out any of the query templates
 type queryData struct {
-	Bucket       string
-	Start        time.Duration
-	ZonePosition uint
-	TopicPrefix  string
-	Limit        uint64
+	Bucket      string
+	Start       time.Duration
+	ZoneID      string
+	TopicPrefix string
+	Limit       uint64
 }
 
 // Render executes the specified template with the queryData to create a string
@@ -135,17 +139,17 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (t
 }
 
 // GetWaterHistory gets recent water events for a specific Zone
-func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, topicPrefix string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
+func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicPrefix string, timeRange time.Duration, limit uint64) ([]pkg.WaterHistory, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetWaterHistory"))
 	defer timer.ObserveDuration()
 
 	// Prepare query
 	queryString, err := queryData{
-		Bucket:       client.config.Bucket,
-		Start:        timeRange,
-		TopicPrefix:  topicPrefix,
-		ZonePosition: zonePosition,
-		Limit:        limit,
+		Bucket:      client.config.Bucket,
+		Start:       timeRange,
+		TopicPrefix: topicPrefix,
+		ZoneID:      zoneID,
+		Limit:       limit,
 	}.Render(waterHistoryQueryTemplate)
 	if err != nil {
 		return nil, err
@@ -159,12 +163,26 @@ func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, to
 	}
 
 	// Read and return the result as slice of maps
-	result := []map[string]interface{}{}
+	result := []pkg.WaterHistory{}
 	for queryResult.Next() {
-		result = append(result, map[string]interface{}{
-			"Duration":   int(queryResult.Record().Value().(float64)),
-			"RecordTime": queryResult.Record().Time(),
-		})
+		h := pkg.WaterHistory{}
+
+		millis := queryResult.Record().Value()
+		durationVal, ok := millis.(float64)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for duration millis: %T", millis)
+		}
+		h.Duration = (time.Duration(durationVal) * time.Millisecond).String()
+
+		h.RecordTime = queryResult.Record().Time()
+
+		eventID := queryResult.Record().ValueByKey("id")
+		h.EventID, ok = eventID.(string)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for event ID: %T", eventID)
+		}
+
+		result = append(result, h)
 	}
 	return result, queryResult.Err()
 }

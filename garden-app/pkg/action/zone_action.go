@@ -40,6 +40,7 @@ type WaterMessage struct {
 	Duration int64  `json:"duration"`
 	ZoneID   string `json:"zone_id"`
 	Position uint   `json:"position"`
+	EventID  string `json:"id"`
 }
 
 // String...

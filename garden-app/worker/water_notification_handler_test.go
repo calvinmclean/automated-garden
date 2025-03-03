@@ -2,15 +2,17 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"testing"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
 	"gopkg.in/dnaeon/go-vcr.v4/pkg/cassette"
 	"gopkg.in/dnaeon/go-vcr.v4/pkg/recorder"
@@ -18,30 +20,62 @@ import (
 
 func TestParseWaterMessage(t *testing.T) {
 	tests := []struct {
-		in            string
-		expectedPos   int
-		waterDuration time.Duration
+		in       string
+		expected action.WaterMessage
+		error    string
 	}{
 		{
-			"water,zone=1 millis=6000",
-			1, 6000 * time.Millisecond,
+			"water,zone=1,zone_id=\"zoneID\",id=\"eventID\" millis=6000",
+			action.WaterMessage{
+				Position: 1,
+				Duration: 6000,
+				ZoneID:   "zoneID",
+				EventID:  "eventID",
+			},
+			"",
 		},
 		{
-			"water,zone=100 millis=1",
-			100, 1 * time.Millisecond,
+			"water,zone=100,zone_id=\"zoneID\",id=\"eventID\" millis=1",
+			action.WaterMessage{
+				Position: 100,
+				Duration: 1,
+				ZoneID:   "zoneID",
+				EventID:  "eventID",
+			},
+			"",
 		},
 		{
-			"water,zone=0 millis=0",
-			0, 0,
+			"water,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			action.WaterMessage{
+				Position: 0,
+				Duration: 0,
+				ZoneID:   "zoneID",
+				EventID:  "eventID",
+			},
+			"",
+		},
+		{
+			"water,zone=-1,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			action.WaterMessage{},
+			`invalid integer for position: strconv.ParseUint: parsing "-1": invalid syntax`,
+		},
+		{
+			"water,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=X",
+			action.WaterMessage{},
+			"invalid integer for millis: strconv.ParseInt: parsing \"X\": invalid syntax",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			zonePosition, waterDuration, err := parseWaterMessage([]byte(tt.in))
-			require.NoError(t, err)
-			require.Equal(t, tt.expectedPos, zonePosition)
-			require.Equal(t, tt.waterDuration, waterDuration)
+			waterMessage, err := parseWaterMessage([]byte(tt.in))
+			if tt.error == "" {
+				require.NoError(t, err)
+			} else {
+				require.Error(t, err)
+				require.Equal(t, tt.error, err.Error())
+			}
+			require.Equal(t, tt.expected, waterMessage)
 		})
 	}
 }
@@ -57,11 +91,13 @@ func TestHandleMessage(t *testing.T) {
 	t.Run("ErrorParsingMessage", func(t *testing.T) {
 		err = handler.doWaterCompleteMessage("garden/data/water", []byte{})
 		require.Error(t, err)
-		require.Equal(t, `error parsing message: error parsing zone position: invalid integer: strconv.Atoi: parsing "": invalid syntax`, err.Error())
+		require.Equal(t, "error getting garden with topic-prefix \"garden\": no garden found", err.Error())
 	})
 
+	zoneID := babyapi.NewID()
 	t.Run("ErrorGettingGarden", func(t *testing.T) {
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
+		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
+		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, "error getting garden with topic-prefix \"garden\": no garden found", err.Error())
 	})
@@ -76,7 +112,7 @@ func TestHandleMessage(t *testing.T) {
 
 	zero := uint(0)
 	zone := &pkg.Zone{
-		ID:       babyapi.NewID(),
+		ID:       zoneID,
 		GardenID: garden.ID.ID,
 		Position: &zero,
 	}
@@ -84,7 +120,8 @@ func TestHandleMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SuccessfulWithNoNotificationClients", func(t *testing.T) {
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
+		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
+		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.NoError(t, err)
 	})
 
@@ -109,9 +146,11 @@ func TestHandleMessage(t *testing.T) {
 	})
 
 	t.Run("ErrorGettingZone", func(t *testing.T) {
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=1 millis=6000"))
+		dneID := xid.New().String()
+		msg := []byte(fmt.Sprintf("water,zone=1 millis=6000 zone_id=%s id=eventID", dneID))
+		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.Error(t, err)
-		require.Equal(t, "error getting zone with position 1: no zone found", err.Error())
+		require.Equal(t, fmt.Sprintf("error getting zone %s: resource not found", dneID), err.Error())
 	})
 
 	t.Run("ErrorUsingPushover", func(t *testing.T) {
@@ -130,7 +169,8 @@ func TestHandleMessage(t *testing.T) {
 		// github.com/gregdel/pushover uses http.DefaultClient
 		http.DefaultClient = r.GetDefaultClient()
 
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
+		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
+		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, "Errors:\napplication token is invalid, see https://pushover.net/api", err.Error())
 	})
@@ -162,7 +202,8 @@ func TestHandleMessage(t *testing.T) {
 		// github.com/gregdel/pushover uses http.DefaultClient
 		http.DefaultClient = r.GetDefaultClient()
 
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte("water,zone=0 millis=6000"))
+		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
+		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.NoError(t, err)
 
 		// ensure a message is sent by API

@@ -359,7 +359,8 @@ func ZoneTests(t *testing.T) {
 		retries := 0
 
 		var history server.ZoneWaterHistoryResponse
-		for retries < 10 && history.Count < 1 {
+		for retries < 100 && history.Count < 1 {
+			retries++
 			time.Sleep(300 * time.Millisecond)
 
 			status, err := makeRequest(

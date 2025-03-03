@@ -282,12 +282,11 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 		"topic", dataTopic,
 		"zone_position", waterMsg.Position,
 		"duration", waterMsg.Duration,
+		"event_id", waterMsg.EventID,
 	)
 	waterEventLogger.Info("publishing watering event for Zone")
-	err := c.mqttClient.Publish(
-		dataTopic,
-		[]byte(fmt.Sprintf("water,zone=%d millis=%d", waterMsg.Position, waterMsg.Duration)),
-	)
+	msg := fmt.Sprintf("water,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
+	err := c.mqttClient.Publish(dataTopic, []byte(msg))
 	if err != nil {
 		waterEventLogger.Error("unable to publish watering event", "error", err)
 	}

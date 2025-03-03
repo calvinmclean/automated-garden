@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -22,6 +23,13 @@ func (c *Controller) AssertWaterActions(t *testing.T, expected ...action.WaterMe
 	t.Helper()
 
 	c.assertionData.Lock()
+
+	for i, msg := range c.assertionData.waterActions {
+		_, err := xid.FromString(msg.EventID)
+		assert.NoError(t, err, "EventID should be valid XID")
+		// remove ID so next assertion works
+		c.assertionData.waterActions[i].EventID = ""
+	}
 	assert.Equal(t, expected, c.assertionData.waterActions)
 	c.assertionData.waterActions = nil
 	c.assertionData.Unlock()

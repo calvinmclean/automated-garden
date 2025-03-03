@@ -117,6 +117,7 @@ func (zd *ZoneDetails) Patch(newZoneDetails *ZoneDetails) {
 type WaterHistory struct {
 	Duration   string    `json:"duration"`
 	RecordTime time.Time `json:"record_time"`
+	EventID    string    `json:"event_id"`
 }
 
 // ZoneAndGarden allows grouping the Zone and Garden it belongs too and is useful in some cases

@@ -1,9 +1,14 @@
 package worker
 
 import (
+	"bytes"
+	"context"
 	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
@@ -18,7 +23,7 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	logger := w.logger.With("topic", topic)
 	logger.Info("received message", "message", string(payload))
 
-	zonePosition, waterDuration, err := parseWaterMessage(payload)
+	waterMessage, err := parseWaterMessage(payload)
 	if err != nil {
 		return fmt.Errorf("error parsing message: %w", err)
 	}
@@ -36,29 +41,54 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	}
 	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
-	zone, err := w.getZone(garden.GetID(), zonePosition)
+	zone, err := w.storageClient.Zones.Get(context.Background(), waterMessage.ZoneID)
 	if err != nil {
-		return fmt.Errorf("error getting zone with position %d: %w", zonePosition, err)
+		return fmt.Errorf("error getting zone %s: %w", waterMessage.ZoneID, err)
 	}
-	logger.Info("found zone with position", "zone_position", zonePosition, "zone_id", zone.GetID())
+	logger.Info("found zone", "zone_id", zone.GetID())
 
 	title := fmt.Sprintf("%s finished watering", zone.Name)
-	message := fmt.Sprintf("watered for %s", waterDuration.String())
+	dur := time.Duration(waterMessage.Duration) * time.Millisecond
+	message := fmt.Sprintf("watered for %s", dur.String())
 	return w.sendNotificationForGarden(garden, title, message)
 }
 
-func parseWaterMessage(msg []byte) (int, time.Duration, error) {
-	p := &parser{msg, 0}
-	zonePosition, err := p.readNextInt()
+func parseWaterMessage(msg []byte) (action.WaterMessage, error) {
+	p := parser{data: bytes.TrimPrefix(msg, []byte("water,"))}
+
+	result := action.WaterMessage{}
+
+	part, err := p.readNextPair()
+	for part != "" && err == nil {
+		key, val, found := strings.Cut(part, "=")
+		if !found {
+			continue
+		}
+
+		switch key {
+		case "zone":
+			zonePos, err := strconv.ParseUint(val, 10, 0)
+			if err != nil {
+				return action.WaterMessage{}, fmt.Errorf("invalid integer for position: %w", err)
+			}
+			result.Position = uint(zonePos)
+		case "millis":
+			dur, err := strconv.ParseInt(val, 10, 64)
+			if err != nil {
+				return action.WaterMessage{}, fmt.Errorf("invalid integer for millis: %w", err)
+			}
+			result.Duration = dur
+		case "id":
+			result.EventID = strings.Trim(val, `"`)
+		case "zone_id":
+			result.ZoneID = strings.Trim(val, `"`)
+		}
+
+		part, err = p.readNextPair()
+	}
 	if err != nil {
-		return 0, 0, fmt.Errorf("error parsing zone position: %w", err)
+		return action.WaterMessage{}, fmt.Errorf("error reading next pair: %w", err)
 	}
 
-	waterMillis, err := p.readNextInt()
-	if err != nil {
-		return 0, 0, fmt.Errorf("error parsing watering time: %w", err)
-	}
-	waterDuration := time.Duration(waterMillis) * time.Millisecond
-
-	return zonePosition, waterDuration, nil
+	return result, nil
 }

@@ -221,7 +221,7 @@ func TestGetZone(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s?exclude_weather_data=%t", garden.ID, zone.ID, tt.excludeWeatherData), http.NoBody)
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -285,7 +285,7 @@ func TestZoneAction(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -297,6 +297,14 @@ func TestZoneAction(t *testing.T) {
 }
 
 func TestZoneActionForm(t *testing.T) {
+	worker.CreateNewID = func() xid.ID {
+		return xid.NilID()
+	}
+
+	defer func() {
+		worker.CreateNewID = xid.New
+	}()
+
 	tests := []struct {
 		name      string
 		setupMock func(*mqtt.MockClient)
@@ -314,7 +322,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionInteger",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":1000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":1000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000"}`)).Return(nil)
 			},
 			`water.duration=1000`,
 			"{}",
@@ -323,7 +331,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionString",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":2000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":2000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000"}`)).Return(nil)
 			},
 			`water.duration=2s`,
 			"{}",
@@ -418,7 +426,7 @@ func TestUpdateZone(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
@@ -465,7 +473,7 @@ func TestEndDateZone(t *testing.T) {
 			zone := createExampleZone()
 
 			r := httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), http.NoBody)
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -518,7 +526,7 @@ func TestGetAllZones(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones%s", garden.ID, tt.targetURL), http.NoBody)
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
 			actual := strings.TrimSpace(w.Body.String())
@@ -670,7 +678,7 @@ func TestCreateZone(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones", tt.garden.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -824,7 +832,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -986,7 +994,7 @@ func TestCreateZonePUT(t *testing.T) {
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, tt.id), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, tt.garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
@@ -1020,42 +1028,44 @@ func TestWaterHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistoryEmpty",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).Return([]map[string]interface{}{}, nil)
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).Return([]pkg.WaterHistory{}, nil)
 				influxdbClient.On("Close")
 			},
 			"",
-			`{"history":null,"count":0,"average":"0s","total":"0s"}`,
+			`{"history":[],"count":0,"average":"0s","total":"0s"}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfulWaterHistory",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).
-					Return([]map[string]interface{}{{"Duration": 3000, "RecordTime": recordTime}}, nil)
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).
+					Return([]pkg.WaterHistory{
+						{Duration: "3s", RecordTime: recordTime, EventID: "00000000000000000000"},
+					}, nil)
 				influxdbClient.On("Close")
 			},
 			"",
-			`{"history":[{"duration":"3s","record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"duration":"3s","record_time":"2021-10-03T11:24:52.891386-07:00","event_id":"00000000000000000000"}],"count":1,"average":"3s","total":"3s"}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfulWaterHistoryWithLimit",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(1)).
-					Return([]map[string]interface{}{
-						{"Duration": 3000, "RecordTime": recordTime},
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(1)).
+					Return([]pkg.WaterHistory{
+						{Duration: "3s", RecordTime: recordTime, EventID: "00000000000000000000"},
 					}, nil)
 				influxdbClient.On("Close")
 			},
 			"?limit=1",
-			`{"history":[{"duration":"3s","record_time":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"duration":"3s","record_time":"2021-10-03T11:24:52.891386-07:00","event_id":"00000000000000000000"}],"count":1,"average":"3s","total":"3s"}`,
 			http.StatusOK,
 		},
 		{
 			"InfluxDBClientError",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, uint(0), "test-garden", time.Hour*72, uint64(0)).
-					Return([]map[string]interface{}{}, errors.New("influxdb error"))
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).
+					Return([]pkg.WaterHistory{}, errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},
 			"",
@@ -1087,7 +1097,7 @@ func TestWaterHistory(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s/history%s", garden.ID, zone.ID, tt.queryParams), http.NoBody)
 			r.Header.Set("X-TZ-Offset", "420")
-			w := babytest.TestWithParentRoute[*pkg.Zone, *pkg.Garden](t, zr.API, garden, "Gardens", "/gardens", r)
+			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))

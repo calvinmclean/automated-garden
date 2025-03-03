@@ -25,6 +25,7 @@ func (c *Controller) waterHandler(topic string) paho.MessageHandler {
 			"zone_id", waterMsg.ZoneID,
 			"position", waterMsg.Position,
 			"duration", waterMsg.Duration,
+			"event_id", waterMsg.EventID,
 		).Info("received WaterAction")
 		c.publishWaterEvent(waterMsg, topic)
 	}
