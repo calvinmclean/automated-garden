@@ -53,16 +53,24 @@ void waterZoneTask(void* parameters) {
   WaterEvent we;
   while (true) {
     if (xQueueReceive(waterQueue, &we, 0)) {
-      unsigned long start = millis();
+      // Copy ZoneID and EventID to re-use when sending the completed event
+      char* zone_id = strdup(we.zone_id);
+      char* event_id = strdup(we.id);
+
       xQueueSend(waterPublisherQueue, &we, portMAX_DELAY);
+
+      unsigned long start = millis();
       zoneOn(we.position);
       // Delay for specified watering time with option to interrupt
       xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
-      unsigned long stop = millis();
       zoneOff(we.position);
-      we.duration = stop - start;
-      we.done = true;
-      xQueueSend(waterPublisherQueue, &we, portMAX_DELAY);
+      unsigned long stop = millis();
+
+      WaterEvent completeEvent = {we.position, stop-start, zone_id, event_id, true};
+      xQueueSend(waterPublisherQueue, &completeEvent, portMAX_DELAY);
+
+      free(zone_id);
+      free(event_id);
     }
     vTaskDelay(5 / portTICK_PERIOD_MS);
   }

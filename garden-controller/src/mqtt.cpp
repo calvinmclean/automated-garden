@@ -82,12 +82,10 @@ void waterPublisherTask(void* parameters) {
     WaterEvent we;
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
-            char message[50];
-            if (we.done) {
-                sprintf(message, "water,status=complete,zone=%d,id=%s,zone_id=%s millis=%lu", we.position, we.id, we.zone_id, we.duration);
-            } else {
-                sprintf(message, "water,status=start,zone=%d,id=%s,zone_id=%s millis=0", we.position, we.id, we.zone_id);
-            }
+            char message[150];
+            snprintf(message, sizeof(message), "water,status=%s,zone=%d,id=%s,zone_id=%s millis=%lu",
+                     we.done ? "complete" : "start", we.position, we.id, we.zone_id, we.done ? we.duration : 0);
+
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
                 client.publish(waterDataTopic, message);
