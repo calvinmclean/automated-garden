@@ -56,8 +56,12 @@ void waterZoneTask(void* parameters) {
       // Copy ZoneID and EventID to re-use when sending the completed event
       char* zone_id = strdup(we.zone_id);
       char* event_id = strdup(we.id);
+      free(we.zone_id);
+      free(we.id);
 
-      xQueueSend(waterPublisherQueue, &we, portMAX_DELAY);
+      WaterEvent event = {we.position, 0, zone_id, event_id, false};
+      // printf("DEBUG: waterZoneTask sends 1: zone_id=%s event_id=%s\n", zone_id, event_id);
+      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
 
       unsigned long start = millis();
       zoneOn(we.position);
@@ -66,8 +70,10 @@ void waterZoneTask(void* parameters) {
       zoneOff(we.position);
       unsigned long stop = millis();
 
-      WaterEvent completeEvent = {we.position, stop-start, zone_id, event_id, true};
-      xQueueSend(waterPublisherQueue, &completeEvent, portMAX_DELAY);
+      event.done = true;
+      event.duration = stop - start;
+      // printf("DEBUG: waterZoneTask sends 2: zone_id=%s event_id=%s\n", zone_id, event_id);
+      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
 
       free(zone_id);
       free(event_id);

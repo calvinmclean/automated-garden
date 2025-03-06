@@ -83,6 +83,7 @@ void waterPublisherTask(void* parameters) {
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
             char message[150];
+            memset(message, '\0', sizeof(message));
             snprintf(message, sizeof(message), "water,status=%s,zone=%d,id=%s,zone_id=%s millis=%lu",
                      we.done ? "complete" : "start", we.position, we.id, we.zone_id, we.done ? we.duration : 0);
 
@@ -193,8 +194,8 @@ void handleWaterCommand(byte* message) {
     WaterEvent we = {
         doc["position"] | -1,
         doc["duration"] | ZERO,
-        doc["zone_id"] | "N/A",
-        doc["id"] | "N/A",
+        strdup(doc["zone_id"] | "N/A"),
+        strdup(doc["id"] | "N/A"),
         false
     };
     printf("received command to water zone %d (%s) for %lu\n", we.position, we.zone_id, we.duration);
