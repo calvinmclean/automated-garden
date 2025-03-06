@@ -42,6 +42,9 @@ func (zr *ZoneResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	timeRange, _ := rangeQueryParam(r)
 	limit, _ := limitQueryParam(r)
 
+	// Reverse history for better presentation in UI
+	slices.Reverse(zr.History.History)
+
 	return zoneDetailsTemplate.Render(r, map[string]any{
 		"TimeRange": timeRange,
 		"Limit":     limit,
