@@ -293,11 +293,14 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 		waterEventLogger.Error("unable to publish watering started event", "error", err)
 	}
 
-	doneMsg := fmt.Sprintf("water,status=complete,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
-	err = c.mqttClient.Publish(dataTopic, []byte(doneMsg))
-	if err != nil {
-		waterEventLogger.Error("unable to publish watering event", "error", err)
-	}
+	go func() {
+		time.Sleep(time.Duration(waterMsg.Duration) * time.Millisecond)
+		doneMsg := fmt.Sprintf("water,status=complete,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
+		err = c.mqttClient.Publish(dataTopic, []byte(doneMsg))
+		if err != nil {
+			waterEventLogger.Error("unable to publish watering event", "error", err)
+		}
+	}()
 }
 
 // getHandlerForTopic provides a different MessageHandler function for each of the expected

@@ -10,6 +10,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/mitchellh/mapstructure"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -23,18 +24,41 @@ const (
 |> filter(fn: (r) => r["_value"] == "{{.TopicPrefix}}")
 |> drop(columns: ["host"])
 |> last()`
-	waterHistoryQueryTemplate = `from(bucket: "{{.Bucket}}")
-|> range(start: -{{.Start}})
-|> filter(fn: (r) => r["_measurement"] == "water")
-|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
-|> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
-|> filter(fn: (r) => r["status"] == "complete")
-|> drop(columns: ["host"])
-|> sort(columns: ["_time"], desc: true)
-{{- if .Limit }}
-|> limit(n: {{.Limit}})
-{{- end }}
-|> yield(name: "last")`
+	waterHistoryQueryTemplate = `
+waterCommands = from(bucket: "{{.Bucket}}")
+  |> range(start: -{{.Start}})
+  |> filter(fn: (r) => r._measurement == "water_command")
+  |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/command/water")
+  |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
+  |> keep(columns: ["_time","zone_id", "id", "_value"])
+  |> set(key: "command", value: "true")
+
+waterEvents = from(bucket: "garden")
+  |> range(start: -{{.Start}})
+  |> filter(fn: (r) => r._measurement == "water")
+  |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
+  |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
+  |> keep(columns: ["_time","zone_id", "id", "status", "_value"])
+
+union(tables: [waterCommands, waterEvents])
+  |> group(columns: ["zone_id", "id"])
+  |> sort(columns: ["_time"], desc: false)
+  |> reduce(
+      fn: (r, accumulator) => ({
+        event_id: r.id,
+        zone_id: r.zone_id,
+        status: if exists r.status then r.status else "sent",
+        _value: if r.status == "start" then accumulator._value else r._value,
+        sent_at: if exists r.command then r._time else accumulator.sent_at,
+        started_at: if r.status == "start" then r._time else accumulator.started_at,
+        completed_at: if r.status == "complete" then r._time else accumulator.completed_at,
+      }),
+      identity: {event_id: "", zone_id: "", status: "", sent_at: time(v:0), started_at: time(v:0), completed_at: time(v:0), _value: 0.0}
+    )
+  {{- if .Limit }}
+  |> limit(n: {{.Limit}})
+  {{- end }}
+  |> yield(name: "waterHistory")`
 	temperatureAndHumidityQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "temperature" or r["_measurement"] == "humidity")
@@ -168,20 +192,30 @@ func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicP
 	for queryResult.Next() {
 		h := pkg.WaterHistory{}
 
-		millis := queryResult.Record().Value()
-		durationVal, ok := millis.(float64)
-		if !ok {
-			return nil, fmt.Errorf("unexpected type for duration millis: %T", millis)
+		values := queryResult.Record().Values()
+		err = mapstructure.Decode(values, &h)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding values: %w", err)
 		}
-		h.Duration = (time.Duration(durationVal) * time.Millisecond).String()
 
-		h.RecordTime = queryResult.Record().Time()
-
-		eventID := queryResult.Record().ValueByKey("id")
-		h.EventID, ok = eventID.(string)
-		if !ok {
-			return nil, fmt.Errorf("unexpected type for event ID: %T", eventID)
+		// a "zero" or null Time from InfluxDB is different from Go's zero value
+		zeroTime := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
+		if h.SentAt == zeroTime {
+			h.SentAt = time.Time{}
 		}
+		if h.StartedAt == zeroTime {
+			h.StartedAt = time.Time{}
+		}
+		if h.CompletedAt == zeroTime {
+			h.CompletedAt = time.Time{}
+		}
+
+		value := queryResult.Record().Value()
+		millis, ok := value.(float64)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for duration value: %T", value)
+		}
+		h.Duration = pkg.Duration{Duration: time.Duration(millis) * time.Millisecond}
 
 		result = append(result, h)
 	}

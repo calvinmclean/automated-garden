@@ -1040,12 +1040,37 @@ func TestWaterHistory(t *testing.T) {
 			func(influxdbClient *influxdb.MockClient) {
 				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).
 					Return([]pkg.WaterHistory{
-						{Duration: "3s", RecordTime: recordTime, EventID: "00000000000000000000"},
+						{
+							Duration:    pkg.Duration{Duration: 3 * time.Second},
+							Status:      pkg.WaterStatusCompleted,
+							SentAt:      recordTime,
+							StartedAt:   recordTime,
+							CompletedAt: recordTime,
+							EventID:     "00000000000000000000",
+						},
 					}, nil)
 				influxdbClient.On("Close")
 			},
 			"",
-			`{"history":[{"duration":"3s","record_time":"2021-10-03T11:24:52.891386-07:00","event_id":"00000000000000000000"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			http.StatusOK,
+		},
+		{
+			"SuccessfulWaterHistory_SentOnly",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).
+					Return([]pkg.WaterHistory{
+						{
+							Duration: pkg.Duration{Duration: 3 * time.Second},
+							Status:   pkg.WaterStatusSent,
+							SentAt:   recordTime,
+							EventID:  "00000000000000000000",
+						},
+					}, nil)
+				influxdbClient.On("Close")
+			},
+			"",
+			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"sent","sent_at":"2021-10-03T11:24:52.891386-07:00"}],"count":0,"average":"0s","total":"0s"}`,
 			http.StatusOK,
 		},
 		{
@@ -1053,12 +1078,19 @@ func TestWaterHistory(t *testing.T) {
 			func(influxdbClient *influxdb.MockClient) {
 				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(1)).
 					Return([]pkg.WaterHistory{
-						{Duration: "3s", RecordTime: recordTime, EventID: "00000000000000000000"},
+						{
+							Duration:    pkg.Duration{Duration: 3 * time.Second},
+							Status:      pkg.WaterStatusCompleted,
+							SentAt:      recordTime,
+							StartedAt:   recordTime,
+							CompletedAt: recordTime,
+							EventID:     "00000000000000000000",
+						},
 					}, nil)
 				influxdbClient.On("Close")
 			},
 			"?limit=1",
-			`{"history":[{"duration":"3s","record_time":"2021-10-03T11:24:52.891386-07:00","event_id":"00000000000000000000"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
 			http.StatusOK,
 		},
 		{

@@ -185,15 +185,19 @@ type ZoneWaterHistoryResponse struct {
 // NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
 func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryResponse {
 	total := time.Duration(0)
+	count := 0
 	for _, h := range history {
-		amountDuration, _ := time.ParseDuration(h.Duration)
-		total += amountDuration
+		if h.Status == pkg.WaterStatusCompleted {
+			total += h.Duration.Duration
+			count++
+		}
 	}
-	count := len(history)
+
 	average := time.Duration(0)
 	if count != 0 {
-		average = time.Duration(int(total) / len(history))
+		average = time.Duration(int(total) / count)
 	}
+
 	return ZoneWaterHistoryResponse{
 		History: history,
 		Count:   count,
