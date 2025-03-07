@@ -261,7 +261,7 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 func rangeQueryParam(r *http.Request) (time.Duration, error) {
 	timeRangeString := r.URL.Query().Get("range")
 	if len(timeRangeString) == 0 {
-		timeRangeString = "72h"
+		return 72 * time.Hour, nil
 	}
 
 	timeRange, err := time.ParseDuration(timeRangeString)
@@ -274,7 +274,7 @@ func rangeQueryParam(r *http.Request) (time.Duration, error) {
 func limitQueryParam(r *http.Request) (uint64, error) {
 	limitString := r.URL.Query().Get("limit")
 	if len(limitString) == 0 {
-		limitString = "0"
+		return 5, nil
 	}
 
 	limit, err := strconv.ParseUint(limitString, 0, 64)

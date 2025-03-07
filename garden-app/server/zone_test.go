@@ -1028,7 +1028,7 @@ func TestWaterHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistoryEmpty",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).Return([]pkg.WaterHistory{}, nil)
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(5)).Return([]pkg.WaterHistory{}, nil)
 				influxdbClient.On("Close")
 			},
 			"",
@@ -1038,7 +1038,7 @@ func TestWaterHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistory",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(5)).
 					Return([]pkg.WaterHistory{
 						{
 							Duration:    pkg.Duration{Duration: 3 * time.Second},
@@ -1058,7 +1058,7 @@ func TestWaterHistory(t *testing.T) {
 		{
 			"SuccessfulWaterHistory_SentOnly",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(5)).
 					Return([]pkg.WaterHistory{
 						{
 							Duration: pkg.Duration{Duration: 3 * time.Second},
@@ -1096,7 +1096,7 @@ func TestWaterHistory(t *testing.T) {
 		{
 			"InfluxDBClientError",
 			func(influxdbClient *influxdb.MockClient) {
-				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(0)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(5)).
 					Return([]pkg.WaterHistory{}, errors.New("influxdb error"))
 				influxdbClient.On("Close")
 			},

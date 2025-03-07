@@ -21,8 +21,9 @@ type ZoneResponse struct {
 	Links       []Link           `json:"links,omitempty"`
 
 	// History is only used in HTML responses and is excluded from JSON
-	History      ZoneWaterHistoryResponse `json:"-"`
-	HistoryError string                   `json:"-"`
+	History      ZoneWaterHistoryResponse  `json:"-"`
+	HistoryError string                    `json:"-"`
+	Progress     *pkg.WaterHistoryProgress `json:"-"`
 
 	api *ZonesAPI
 }
@@ -41,9 +42,6 @@ func (zr *ZoneResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	// ignoring errors here since this can only be reached for a valid request
 	timeRange, _ := rangeQueryParam(r)
 	limit, _ := limitQueryParam(r)
-
-	// Reverse history for better presentation in UI
-	slices.Reverse(zr.History.History)
 
 	return zoneDetailsTemplate.Render(r, map[string]any{
 		"TimeRange": timeRange,
@@ -104,14 +102,19 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	)
 
 	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
-		// only get history when rendering a ZoneDetail page
-		if zr.api.GetIDParam(r) != "" {
-			history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
-			if apiErr != nil {
-				logger.Error("error getting water history", "error", apiErr)
-				zr.HistoryError = apiErr.ErrorText
-			}
-			zr.History = NewZoneWaterHistoryResponse(history)
+		history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
+		if apiErr != nil {
+			logger.Error("error getting water history", "error", apiErr)
+			zr.HistoryError = apiErr.ErrorText
+		}
+		zr.History = NewZoneWaterHistoryResponse(history)
+
+		// Reverse history for better presentation in UI
+		slices.Reverse(zr.History.History)
+
+		progress := pkg.CalculateWaterProgress(zr.History.History)
+		if progress != (pkg.WaterHistoryProgress{}) {
+			zr.Progress = &progress
 		}
 
 		if r.Method == http.MethodPut {
