@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"net"
 	"net/http"
 	"os"
 
@@ -150,8 +151,12 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 }
 
 func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) error {
-	if cfg.ReadOnly {
+	if cfg.WebConfig.ReadOnly {
 		api.API.AddMiddleware(readOnlyMiddleware)
+	}
+
+	if cfg.WebConfig.Port != 0 {
+		api.SetAddress(net.JoinHostPort("", fmt.Sprint(cfg.WebConfig.Port)))
 	}
 
 	err := api.gardens.setup(cfg, storageClient, influxdbClient, worker)

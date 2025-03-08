@@ -8,7 +8,7 @@ import (
 
 // Config holds all the options and sub-configs for the server
 type Config struct {
-	WebConfig      `mapstructure:"web_server"`
+	WebConfig      WebConfig       `mapstructure:"web_server"`
 	InfluxDBConfig influxdb.Config `mapstructure:"influxdb"`
 	MQTTConfig     mqtt.Config     `mapstructure:"mqtt"`
 	StorageConfig  storage.Config  `mapstructure:"storage"`

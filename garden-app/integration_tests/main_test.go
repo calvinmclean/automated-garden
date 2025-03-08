@@ -47,7 +47,7 @@ func TestIntegration(t *testing.T) {
 
 	go c.Start()
 	go func() {
-		serveErr := api.Serve(":8080")
+		serveErr := api.SetAddress(":8080").Serve()
 		if serveErr != nil {
 			panic(serveErr.Error())
 		}
