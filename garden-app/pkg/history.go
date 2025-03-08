@@ -49,6 +49,12 @@ func (p WaterHistoryProgress) Percent() string {
 	return fmt.Sprintf("%.0f%%", p.Progress*100)
 }
 
+// OneSecondProgress is the amount that Progress will increase every second.
+// This is used for incrementing a dynamic progress bar in the UI
+func (p WaterHistoryProgress) OneSecondProgress() float32 {
+	return (1 / float32(p.Duration.Duration.Seconds()))
+}
+
 // CalculateWaterProgress parses the WaterHistory to create WaterHistoryProgress based on the recent entries.
 // If the most recent event is Started, this calculates how far along it is.
 // If the most recent event is Completed, it will show for 1 hour and then is considered irrelevant.

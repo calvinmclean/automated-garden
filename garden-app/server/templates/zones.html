@@ -44,10 +44,23 @@
                 {{ end }}
             </p>
             <progress
+                id="{{ .ID }}-progressbar"
                 class="uk-progress"
                 value="{{ .Progress.Progress }}"
                 max="1"
                 uk-tooltip="Watered for {{ FormatDuration .Progress.Elapsed }} of {{ FormatDuration .Progress.Duration }} ({{ .Progress.Percent }})"></progress>
+            <script>
+                UIkit.util.ready(function () {
+                    var bar = document.getElementById('{{ .ID }}-progressbar');
+                    var oneSecValue = {{ .Progress.OneSecondProgress }};
+                    var animate = setInterval(function () {
+                        bar.value += oneSecValue;
+                        if (bar.value >= bar.max) {
+                            clearInterval(animate);
+                        }
+                    }, 1000);
+                });
+            </script>
             {{ end }}
         </div>
         <div class="uk-card-footer">
