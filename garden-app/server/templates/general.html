@@ -1,6 +1,6 @@
 {{ define "cardEditButton" }}
-<div class="uk-position-top-right uk-margin-small-top uk-margin-small-right">
-    <a hx-get="{{ . }}" hx-headers='{"Accept": "text/html"}' hx-target="#edit-modal-here" uk-icon="icon: file-edit"
+<div class="uk-position-top-right uk-margin-small-top uk-margin-small-right uk-text-muted">
+    <a hx-get="{{ . }}" hx-headers='{"Accept": "text/html"}' hx-target="#edit-modal-here" uk-icon="icon: file-edit; ratio: 1.5"
         _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
     </a>
 </div>
