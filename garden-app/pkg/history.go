@@ -99,6 +99,11 @@ func CalculateWaterProgress(history []WaterHistory) WaterHistoryProgress {
 				return WaterHistoryProgress{}
 			}
 
+			// If this is the first event, then nothing is in-progress
+			if queue == 0 {
+				return WaterHistoryProgress{}
+			}
+
 			// If an event was Sent after this one, and this was completed > 1s ago, we have a problem
 			if prev.Status == WaterStatusSent && elapsed >= time.Second {
 				return WaterHistoryProgress{

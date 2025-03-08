@@ -39,7 +39,7 @@ func TestHistoryProgress(t *testing.T) {
 			},
 		},
 		{
-			"OneEvent_Complete",
+			"OneEvent_Complete_ShowsNone",
 			[]WaterHistory{{
 				Duration:    Duration{Duration: 30 * time.Minute},
 				EventID:     "EventID",
@@ -48,12 +48,7 @@ func TestHistoryProgress(t *testing.T) {
 				StartedAt:   now.Add(-31 * time.Minute),
 				CompletedAt: now.Add(-1 * time.Minute),
 			}},
-			WaterHistoryProgress{
-				Duration: Duration{Duration: 30 * time.Minute},
-				Elapsed:  Duration{Duration: 1 * time.Minute},
-				Progress: 1.00,
-				Queue:    0,
-			},
+			WaterHistoryProgress{},
 		},
 		{
 			"OneEvent_ElapsedLongerThanDuration_Error",
