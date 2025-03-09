@@ -122,6 +122,7 @@ func TestHandleMessage(t *testing.T) {
 	garden := &pkg.Garden{
 		ID:                   babyapi.NewID(),
 		TopicPrefix:          "garden",
+		Name:                 "garden",
 		NotificationClientID: nil,
 	}
 	err = storageClient.Gardens.Set(context.Background(), garden)

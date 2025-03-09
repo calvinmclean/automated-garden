@@ -55,7 +55,7 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 
 	title := fmt.Sprintf("%s finished watering", zone.Name)
 	dur := time.Duration(waterMessage.Duration) * time.Millisecond
-	message := fmt.Sprintf("watered for %s", dur.String())
+	message := fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
 	return w.sendNotificationForGarden(garden, title, message)
 }
 
