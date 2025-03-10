@@ -355,6 +355,7 @@ func ZoneTests(t *testing.T) {
 			Duration: 3000,
 			ZoneID:   id.String(),
 			Position: 0,
+			Source:   action.SourceCommand,
 		})
 	})
 	t.Run("CheckWateringHistory", func(t *testing.T) {
@@ -418,6 +419,7 @@ func ZoneTests(t *testing.T) {
 				Duration: 1000,
 				ZoneID:   id.String(),
 				Position: 0,
+				Source:   action.SourceSchedule,
 			},
 		)
 	})

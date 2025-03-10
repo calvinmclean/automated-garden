@@ -14,6 +14,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -322,7 +323,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionInteger",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":1000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000"}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":1000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000","source":"command"}`)).Return(nil)
 			},
 			`water.duration=1000`,
 			"{}",
@@ -331,7 +332,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionString",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":2000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000"}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":2000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000","source":"command"}`)).Return(nil)
 			},
 			`water.duration=2s`,
 			"{}",
@@ -1043,6 +1044,7 @@ func TestWaterHistory(t *testing.T) {
 						{
 							Duration:    pkg.Duration{Duration: 3 * time.Second},
 							Status:      pkg.WaterStatusCompleted,
+							Source:      string(action.SourceCommand),
 							SentAt:      recordTime,
 							StartedAt:   recordTime,
 							CompletedAt: recordTime,
@@ -1052,7 +1054,7 @@ func TestWaterHistory(t *testing.T) {
 				influxdbClient.On("Close")
 			},
 			"",
-			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
 			http.StatusOK,
 		},
 		{
@@ -1063,6 +1065,7 @@ func TestWaterHistory(t *testing.T) {
 						{
 							Duration: pkg.Duration{Duration: 3 * time.Second},
 							Status:   pkg.WaterStatusSent,
+							Source:   string(action.SourceCommand),
 							SentAt:   recordTime,
 							EventID:  "00000000000000000000",
 						},
@@ -1070,7 +1073,7 @@ func TestWaterHistory(t *testing.T) {
 				influxdbClient.On("Close")
 			},
 			"",
-			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"sent","sent_at":"2021-10-03T11:24:52.891386-07:00"}],"count":0,"average":"0s","total":"0s"}`,
+			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"sent","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00"}],"count":0,"average":"0s","total":"0s"}`,
 			http.StatusOK,
 		},
 		{
@@ -1081,6 +1084,7 @@ func TestWaterHistory(t *testing.T) {
 						{
 							Duration:    pkg.Duration{Duration: 3 * time.Second},
 							Status:      pkg.WaterStatusCompleted,
+							Source:      string(action.SourceCommand),
 							SentAt:      recordTime,
 							StartedAt:   recordTime,
 							CompletedAt: recordTime,
@@ -1090,7 +1094,7 @@ func TestWaterHistory(t *testing.T) {
 				influxdbClient.On("Close")
 			},
 			"?limit=1",
-			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
 			http.StatusOK,
 		},
 		{

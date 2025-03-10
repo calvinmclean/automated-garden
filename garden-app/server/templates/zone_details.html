@@ -68,6 +68,7 @@
             <thead>
                 <tr>
                     <th>Status</th>
+                    <th>Source</th>
                     <th>Duration</th>
                     <th>Sent</th>
                     <th>Started</th>
@@ -85,6 +86,7 @@
                 {{ range .History.History }}
                 <tr>
                     <td>{{ .Status }}</td>
+                    <td>{{ .Source }}</td>
                     <td>{{ .Duration }}</td>
                     <td>{{ FormatDateTime .SentAt }}</td>
                     <td>{{ FormatDateTime .StartedAt }}</td>

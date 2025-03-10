@@ -38,6 +38,7 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 		ZoneID:   z.GetID(),
 		Position: *z.Position,
 		EventID:  eventID,
+		Source:   input.Source,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %w", err)

@@ -30,7 +30,7 @@ waterCommands = from(bucket: "{{.Bucket}}")
   |> filter(fn: (r) => r._measurement == "water_command")
   |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/command/water")
   |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
-  |> keep(columns: ["_time","zone_id", "id", "_value"])
+  |> keep(columns: ["_time", "zone_id", "id", "_value", "source"])
   |> set(key: "command", value: "true")
 
 waterEvents = from(bucket: "garden")
@@ -38,7 +38,7 @@ waterEvents = from(bucket: "garden")
   |> filter(fn: (r) => r._measurement == "water")
   |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
   |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
-  |> keep(columns: ["_time","zone_id", "id", "status", "_value"])
+  |> keep(columns: ["_time", "zone_id", "id", "status", "_value"])
 
 union(tables: [waterCommands, waterEvents])
   |> group(columns: ["zone_id", "id"])
@@ -48,12 +48,13 @@ union(tables: [waterCommands, waterEvents])
         event_id: r.id,
         zone_id: r.zone_id,
         status: if exists r.status then r.status else "sent",
+        source: if exists r.source then r.source else accumulator.source,
         _value: if r.status == "start" then accumulator._value else r._value,
         sent_at: if exists r.command then r._time else accumulator.sent_at,
         started_at: if r.status == "start" then r._time else accumulator.started_at,
         completed_at: if r.status == "complete" then r._time else accumulator.completed_at,
       }),
-      identity: {event_id: "", zone_id: "", status: "", sent_at: time(v:0), started_at: time(v:0), completed_at: time(v:0), _value: 0.0}
+      identity: {event_id: "", zone_id: "", status: "", source: "", sent_at: time(v:0), started_at: time(v:0), completed_at: time(v:0), _value: 0.0}
     )
   {{- if .Limit }}
   |> limit(n: {{.Limit}})
