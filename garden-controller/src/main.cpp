@@ -56,6 +56,16 @@ void waterZoneTask(void* parameters) {
       // Copy ZoneID and EventID to re-use when sending the completed event
       char* zone_id = strdup(we.zone_id);
       char* event_id = strdup(we.id);
+
+      if (zone_id == nullptr) {
+          printf("memory allocation failed for zone_id\n");
+          return;
+      }
+      if (event_id == nullptr) {
+          printf("memory allocation failed for event_id\n");
+          return;
+      }
+
       free(we.zone_id);
       free(we.id);
 

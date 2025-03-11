@@ -60,8 +60,7 @@ void setupMQTT() {
 
     // Start MQTT tasks
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
-    // TODO: sometimes I have to set this to 0 for initial setup before config is saved to file?
-    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
+    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 0, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
     xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
 
@@ -80,9 +79,10 @@ void setupMQTT() {
 */
 void waterPublisherTask(void* parameters) {
     WaterEvent we;
+    char message[150];
+
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
-            char message[150];
             memset(message, '\0', sizeof(message));
             snprintf(message, sizeof(message), "water,status=%s,zone=%d,id=%s,zone_id=%s millis=%lu",
                      we.done ? "complete" : "start", we.position, we.id, we.zone_id, we.done ? we.duration : 0);
@@ -239,11 +239,23 @@ void handleConfigCommand(char* message) {
     - updateConfigCommandTopic: accepts Config JSON to update
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
+    if (length == 0) {
+        return;
+    }
+
     char* topic_c = strdup(topic);
+    if (topic_c == nullptr) {
+        printf("memory allocation failed for topic_c\n");
+        return;
+    }
+
     char* message_c = (char*)malloc(length + 1);
     if (message_c) {
         memcpy(message_c, message, length);
         message_c[length] = '\0';
+    } else {
+        free(topic_c);
+        return;
     }
 
     printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic_c, message_c);
