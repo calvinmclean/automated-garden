@@ -7,7 +7,11 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/rs/xid"
 )
+
+// CreateNewID can be overridden for mocking
+var CreateNewID = xid.New
 
 // ExecuteZoneAction will execute a ZoneAction
 func (w *Worker) ExecuteZoneAction(g *pkg.Garden, z *pkg.Zone, input *action.ZoneAction) error {
@@ -28,10 +32,13 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 		return nil
 	}
 
+	eventID := CreateNewID().String()
 	msg, err := json.Marshal(action.WaterMessage{
 		Duration: input.Duration.Duration.Milliseconds(),
 		ZoneID:   z.GetID(),
 		Position: *z.Position,
+		EventID:  eventID,
+		Source:   input.Source,
 	})
 	if err != nil {
 		return fmt.Errorf("unable to marshal WaterMessage to JSON: %w", err)
@@ -41,6 +48,8 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 	if err != nil {
 		return fmt.Errorf("unable to fill MQTT topic template: %w", err)
 	}
+
+	w.logger.Info("publishing WaterMessage", "event_id", eventID)
 
 	return w.mqttClient.Publish(topic, msg)
 }

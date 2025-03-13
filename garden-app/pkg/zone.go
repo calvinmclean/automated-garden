@@ -113,12 +113,6 @@ func (zd *ZoneDetails) Patch(newZoneDetails *ZoneDetails) {
 	}
 }
 
-// WaterHistory holds information about a WaterEvent that occurred in the past
-type WaterHistory struct {
-	Duration   string    `json:"duration"`
-	RecordTime time.Time `json:"record_time"`
-}
-
 // ZoneAndGarden allows grouping the Zone and Garden it belongs too and is useful in some cases
 // where both are needed in a return value
 type ZoneAndGarden struct {

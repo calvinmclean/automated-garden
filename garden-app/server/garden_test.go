@@ -70,10 +70,11 @@ func TestGetGarden(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
+			influxdbClient.On("Close")
 			storageClient := setupZoneAndGardenStorage(t)
 
 			gr := NewGardenAPI()
-			err := gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err := gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			gr.worker.StartAsync()
@@ -171,6 +172,7 @@ func TestCreateGarden(t *testing.T) {
 
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
+			influxdbClient.On("Close")
 			if tt.temperatureHumidityError {
 				influxdbClient.On("GetTemperatureAndHumidity", mock.Anything, "test-garden").Return(0.0, 0.0, errors.New("influxdb error"))
 			} else {
@@ -178,7 +180,7 @@ func TestCreateGarden(t *testing.T) {
 			}
 
 			gr := NewGardenAPI()
-			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(tt.body))
@@ -278,7 +280,7 @@ func TestUpdateGardenPUT(t *testing.T) {
 			}
 
 			gr := NewGardenAPI()
-			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
@@ -331,7 +333,7 @@ func TestGetAllGardens(t *testing.T) {
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 
 			gr := NewGardenAPI()
-			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest("GET", tt.targetURL, http.NoBody)
@@ -506,7 +508,7 @@ func TestUpdateGarden(t *testing.T) {
 			}
 
 			gr := NewGardenAPI()
-			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodPatch, "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))

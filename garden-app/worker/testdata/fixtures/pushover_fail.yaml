@@ -6,16 +6,16 @@ interactions:
         proto: HTTP/1.1
         proto_major: 1
         proto_minor: 1
-        content_length: 131
+        content_length: 150
         transfer_encoding: []
         trailer: {}
         host: api.pushover.net
         remote_addr: ""
         request_uri: ""
-        body: message=watered+for+6s&priority=0&title=+finished+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+        body: message=Watered+for+6s%0AGarden%3A+garden&priority=0&title=+finished+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         form:
             message:
-                - watered for 6s
+                - "Watered for 6s\nGarden: garden"
             priority:
                 - "0"
             title:

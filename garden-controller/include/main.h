@@ -9,7 +9,9 @@
 struct WaterEvent {
     int position;
     unsigned long duration;
-    const char* id;
+    char* zone_id;
+    char* id;
+    bool done;
 };
 
 struct LightEvent {

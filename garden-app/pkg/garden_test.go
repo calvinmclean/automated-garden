@@ -1,65 +1,13 @@
 package pkg
 
 import (
-	"context"
-	"errors"
 	"testing"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
-
-func TestHealth(t *testing.T) {
-	tests := []struct {
-		name            string
-		lastContactTime time.Time
-		err             error
-		expectedStatus  HealthStatus
-	}{
-		{
-			"GardenIsUp",
-			clock.Now(),
-			nil,
-			HealthStatusUp,
-		},
-		{
-			"GardenIsDown",
-			clock.Now().Add(-5 * time.Minute),
-			nil,
-			HealthStatusDown,
-		},
-		{
-			"InfluxDBError",
-			time.Time{},
-			errors.New("influxdb error"),
-			HealthStatusUnknown,
-		},
-		{
-			"ZeroTime",
-			time.Time{},
-			nil,
-			HealthStatusDown,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			influxdbClient := new(influxdb.MockClient)
-			influxdbClient.On("GetLastContact", mock.Anything, "garden").Return(tt.lastContactTime, tt.err)
-
-			g := Garden{TopicPrefix: "garden"}
-
-			gardenHealth := g.Health(context.Background(), influxdbClient)
-			if gardenHealth.Status != tt.expectedStatus {
-				t.Errorf("Unexpected GardenHealth.Status: expected = %s, actual = %s", tt.expectedStatus, gardenHealth.Status)
-			}
-		})
-	}
-}
 
 func TestGardenEndDated(t *testing.T) {
 	pastDate := clock.Now().Add(-1 * time.Minute)

@@ -60,8 +60,7 @@ void setupMQTT() {
 
     // Start MQTT tasks
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
-    // TODO: sometimes I have to set this to 0 for initial setup before config is saved to file?
-    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, &mqttLoopTaskHandle);
+    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 0, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
     xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
 
@@ -80,10 +79,14 @@ void setupMQTT() {
 */
 void waterPublisherTask(void* parameters) {
     WaterEvent we;
+    char message[150];
+
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
-            char message[50];
-            sprintf(message, "water,zone=%d millis=%lu", we.position, we.duration);
+            memset(message, '\0', sizeof(message));
+            snprintf(message, sizeof(message), "water,status=%s,zone=%d,id=%s,zone_id=%s millis=%lu",
+                     we.done ? "complete" : "start", we.position, we.id, we.zone_id, we.done ? we.duration : 0);
+
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
                 client.publish(waterDataTopic, message);
@@ -181,7 +184,7 @@ void mqttLoopTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
-void handleWaterCommand(byte* message) {
+void handleWaterCommand(char* message) {
     DynamicJsonDocument doc(1024);
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
@@ -191,13 +194,15 @@ void handleWaterCommand(byte* message) {
     WaterEvent we = {
         doc["position"] | -1,
         doc["duration"] | ZERO,
-        doc["id"] | "N/A"
+        strdup(doc["zone_id"] | "N/A"),
+        strdup(doc["id"] | "N/A"),
+        false
     };
-    printf("received command to water zone %d (%s) for %lu\n", we.position, we.id, we.duration);
+    printf("received command to water zone %d (%s) for %lu\n", we.position, we.zone_id, we.duration);
     waterZone(we);
 }
 
-void handleLightCommand(byte* message) {
+void handleLightCommand(char* message) {
     DynamicJsonDocument doc(1024);
     DeserializationError err = deserializeJson(doc, message);
     if (err) {
@@ -211,7 +216,7 @@ void handleLightCommand(byte* message) {
     changeLight(le);
 }
 
-void handleConfigCommand(byte* message) {
+void handleConfigCommand(char* message) {
     bool result = deserializeConfig((char*)message, config);
     if (!result) {
         printf("failed to deserialize config: %s\n", (char*)message);
@@ -234,21 +239,43 @@ void handleConfigCommand(byte* message) {
     - updateConfigCommandTopic: accepts Config JSON to update
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
-    printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic, (char*)message);
+    if (length == 0) {
+        return;
+    }
 
-    if (strcmp(topic, waterCommandTopic) == 0) {
-        handleWaterCommand(message);
-    } else if (strcmp(topic, stopCommandTopic) == 0) {
+    char* topic_c = strdup(topic);
+    if (topic_c == nullptr) {
+        printf("memory allocation failed for topic_c\n");
+        return;
+    }
+
+    char* message_c = (char*)malloc(length + 1);
+    if (message_c) {
+        memcpy(message_c, message, length);
+        message_c[length] = '\0';
+    } else {
+        free(topic_c);
+        return;
+    }
+
+    printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic_c, message_c);
+
+    if (strcmp(topic_c, waterCommandTopic) == 0) {
+        handleWaterCommand(message_c);
+    } else if (strcmp(topic_c, stopCommandTopic) == 0) {
         printf("received command to stop watering\n");
         stopWatering();
-    } else if (strcmp(topic, stopAllCommandTopic) == 0) {
+    } else if (strcmp(topic_c, stopAllCommandTopic) == 0) {
         printf("received command to stop ALL watering\n");
         stopAllWatering();
-    } else if (strcmp(topic, lightCommandTopic) == 0) {
-        handleLightCommand(message);
-    } else if (strcmp(topic, updateConfigCommandTopic) == 0) {
-        handleConfigCommand(message);
+    } else if (strcmp(topic_c, lightCommandTopic) == 0) {
+        handleLightCommand(message_c);
+    } else if (strcmp(topic_c, updateConfigCommandTopic) == 0) {
+        handleConfigCommand(message_c);
     } else {
-        printf("unexpected topic: %s\n", topic);
+        printf("unexpected topic: %s\n", topic_c);
     }
+
+    free(topic_c);
+    free(message_c);
 }

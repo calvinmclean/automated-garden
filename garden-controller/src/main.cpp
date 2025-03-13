@@ -53,14 +53,40 @@ void waterZoneTask(void* parameters) {
   WaterEvent we;
   while (true) {
     if (xQueueReceive(waterQueue, &we, 0)) {
+      // Copy ZoneID and EventID to re-use when sending the completed event
+      char* zone_id = strdup(we.zone_id);
+      char* event_id = strdup(we.id);
+
+      if (zone_id == nullptr) {
+          printf("memory allocation failed for zone_id\n");
+          return;
+      }
+      if (event_id == nullptr) {
+          printf("memory allocation failed for event_id\n");
+          return;
+      }
+
+      free(we.zone_id);
+      free(we.id);
+
+      WaterEvent event = {we.position, 0, zone_id, event_id, false};
+      // printf("DEBUG: waterZoneTask sends 1: zone_id=%s event_id=%s\n", zone_id, event_id);
+      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
+
       unsigned long start = millis();
       zoneOn(we.position);
       // Delay for specified watering time with option to interrupt
       xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
-      unsigned long stop = millis();
       zoneOff(we.position);
-      we.duration = stop - start;
-      xQueueSend(waterPublisherQueue, &we, portMAX_DELAY);
+      unsigned long stop = millis();
+
+      event.done = true;
+      event.duration = stop - start;
+      // printf("DEBUG: waterZoneTask sends 2: zone_id=%s event_id=%s\n", zone_id, event_id);
+      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
+
+      free(zone_id);
+      free(event_id);
     }
     vTaskDelay(5 / portTICK_PERIOD_MS);
   }
@@ -115,7 +141,7 @@ void waterZone(WaterEvent we) {
     printf("position %d is out of range, aborting request\n", we.position);
     return;
   }
-  printf("pushing WaterEvent to queue: id=%s, position=%d, time=%lu\n", we.id, we.position, we.duration);
+  printf("pushing WaterEvent to queue: zone_id=%s, position=%d, time=%lu\n", we.zone_id, we.position, we.duration);
   xQueueSend(waterQueue, &we, portMAX_DELAY);
 }
 

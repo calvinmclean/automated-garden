@@ -47,7 +47,7 @@ func TestIntegration(t *testing.T) {
 
 	go c.Start()
 	go func() {
-		serveErr := api.Serve(":8080")
+		serveErr := api.SetAddress(":8080").Serve()
 		if serveErr != nil {
 			panic(serveErr.Error())
 		}
@@ -332,6 +332,8 @@ func ZoneTests(t *testing.T) {
 	waterScheduleID := CreateWaterScheduleTest(t)
 	zoneID := CreateZoneTest(t, gardenID, waterScheduleID)
 
+	var sentAt time.Time
+
 	t.Run("ExecuteWaterAction", func(t *testing.T) {
 		status, err := makeRequest(
 			http.MethodPost,
@@ -341,10 +343,11 @@ func ZoneTests(t *testing.T) {
 			}},
 			&struct{}{},
 		)
+		sentAt = time.Now()
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusAccepted, status)
 
-		time.Sleep(100 * time.Millisecond)
+		time.Sleep(3500 * time.Millisecond)
 
 		id, err := xid.FromString(zoneID)
 		assert.NoError(t, err)
@@ -352,6 +355,7 @@ func ZoneTests(t *testing.T) {
 			Duration: 3000,
 			ZoneID:   id.String(),
 			Position: 0,
+			Source:   action.SourceCommand,
 		})
 	})
 	t.Run("CheckWateringHistory", func(t *testing.T) {
@@ -359,7 +363,8 @@ func ZoneTests(t *testing.T) {
 		retries := 0
 
 		var history server.ZoneWaterHistoryResponse
-		for retries < 10 && history.Count < 1 {
+		for retries < 100 && history.Count < 1 {
+			retries++
 			time.Sleep(300 * time.Millisecond)
 
 			status, err := makeRequest(
@@ -372,9 +377,16 @@ func ZoneTests(t *testing.T) {
 			assert.Equal(t, http.StatusOK, status)
 		}
 
-		assert.Equal(t, 1, history.Count)
-		assert.Equal(t, "3s", history.Average)
-		assert.Equal(t, "3s", history.Total)
+		require.Equal(t, 1, history.Count)
+		require.Equal(t, "3s", history.Average)
+		require.Equal(t, "3s", history.Total)
+
+		historyEvent := history.History[0]
+
+		assert.InDelta(t, 3*time.Second, historyEvent.Duration.Duration, float64(100*time.Millisecond))
+		assert.InDelta(t, sentAt.UnixMilli(), historyEvent.SentAt.UnixMilli(), 1000)
+		assert.InDelta(t, sentAt.UnixMilli(), historyEvent.StartedAt.UnixMilli(), 1000)
+		assert.InDelta(t, sentAt.Add(3*time.Second).UnixMilli(), historyEvent.CompletedAt.UnixMilli(), 1000)
 	})
 	t.Run("ChangeWaterScheduleStartTimeResetsWaterSchedule", func(t *testing.T) {
 		// Reschedule to Water in 2 second, for 1 second
@@ -407,6 +419,7 @@ func ZoneTests(t *testing.T) {
 				Duration: 1000,
 				ZoneID:   id.String(),
 				Position: 0,
+				Source:   action.SourceSchedule,
 			},
 		)
 	})

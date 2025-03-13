@@ -165,6 +165,9 @@ func (api *ZonesAPI) zoneAction(_ http.ResponseWriter, r *http.Request, zone *pk
 	}
 	logger.Info("zone action", "action", zoneAction)
 
+	if zoneAction.Water != nil {
+		zoneAction.Water.Source = action.SourceCommand
+	}
 	if err := api.worker.ExecuteZoneAction(garden, zone, zoneAction); err != nil {
 		logger.Error("unable to execute ZoneAction", "error", err)
 		return nil, babyapi.InternalServerError(err)
@@ -261,7 +264,7 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 func rangeQueryParam(r *http.Request) (time.Duration, error) {
 	timeRangeString := r.URL.Query().Get("range")
 	if len(timeRangeString) == 0 {
-		timeRangeString = "72h"
+		return 72 * time.Hour, nil
 	}
 
 	timeRange, err := time.ParseDuration(timeRangeString)
@@ -274,7 +277,7 @@ func rangeQueryParam(r *http.Request) (time.Duration, error) {
 func limitQueryParam(r *http.Request) (uint64, error) {
 	limitString := r.URL.Query().Get("limit")
 	if len(limitString) == 0 {
-		limitString = "0"
+		return 5, nil
 	}
 
 	limit, err := strconv.ParseUint(limitString, 0, 64)
@@ -331,21 +334,9 @@ func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone,
 }
 
 // getWaterHistory gets previous WaterEvents for this Zone from InfluxDB
-func (api *ZonesAPI) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) (result []pkg.WaterHistory, err error) {
+func (api *ZonesAPI) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) ([]pkg.WaterHistory, error) {
 	defer api.influxdbClient.Close()
-
-	history, err := api.influxdbClient.GetWaterHistory(ctx, *zone.Position, garden.TopicPrefix, timeRange, limit)
-	if err != nil {
-		return
-	}
-
-	for _, h := range history {
-		result = append(result, pkg.WaterHistory{
-			Duration:   (time.Duration(h["Duration"].(int)) * time.Millisecond).String(),
-			RecordTime: h["RecordTime"].(time.Time),
-		})
-	}
-	return
+	return api.influxdbClient.GetWaterHistory(ctx, zone.GetID(), garden.TopicPrefix, timeRange, limit)
 }
 
 func excludeWeatherData(r *http.Request) bool {

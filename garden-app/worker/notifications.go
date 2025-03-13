@@ -24,7 +24,7 @@ func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState
 }
 
 func (w *Worker) sendDownNotification(g *pkg.Garden, clientID, actionName string) {
-	health := g.Health(context.Background(), w.influxdbClient)
+	health := w.GetGardenHealth(context.Background(), g)
 	if health.Status != pkg.HealthStatusUp {
 		w.sendNotification(
 			clientID,

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -86,55 +85,22 @@ func (w *Worker) getGarden(topicPrefix string) (*pkg.Garden, error) {
 	return garden, nil
 }
 
-func (w *Worker) getZone(gardenID string, zonePosition int) (*pkg.Zone, error) {
-	zones, err := w.storageClient.Zones.GetAll(context.Background(), nil)
-	if err != nil {
-		return nil, fmt.Errorf("error getting all zones: %w", err)
-	}
-	var zone *pkg.Zone
-	for _, z := range zones {
-		if z.GardenID.String() == gardenID &&
-			z.Position != nil &&
-			//nolint:gosec
-			*z.Position == uint(zonePosition) {
-			zone = z
-			break
-		}
-	}
-	if zone == nil {
-		return nil, errors.New("no zone found")
-	}
-
-	return zone, nil
-}
-
 type parser struct {
 	data []byte
 	i    int
 }
 
-func (p *parser) readNextInt() (int, error) {
-	reading := false
+func (p *parser) readNextPair() (string, error) {
 	var n []byte
 	for ; p.i < len(p.data); p.i++ {
 		c := p.data[p.i]
-		if c == ' ' {
+		if c == ' ' || c == ',' {
 			p.i++
 			break
 		}
-		if reading {
-			n = append(n, c)
-			continue
-		}
-		if c == '=' {
-			reading = true
-			continue
-		}
+
+		n = append(n, c)
 	}
 
-	result, err := strconv.Atoi(string(n))
-	if err != nil {
-		return 0, fmt.Errorf("invalid integer: %w", err)
-	}
-	return result, nil
+	return string(n), nil
 }

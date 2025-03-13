@@ -18,6 +18,14 @@ import (
 )
 
 func TestExecuteScheduledWaterAction(t *testing.T) {
+	CreateNewID = func() xid.ID {
+		return xid.NilID()
+	}
+
+	defer func() {
+		CreateNewID = xid.New
+	}()
+
 	garden := &pkg.Garden{
 		ID:          babyapi.ID{ID: id},
 		Name:        "garden",
@@ -105,7 +113,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -131,7 +139,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -157,7 +165,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -183,7 +191,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -209,7 +217,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1250,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1250,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -235,7 +243,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1500,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -261,7 +269,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1500,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -287,7 +295,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":750,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":750,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -313,7 +321,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -339,7 +347,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -365,7 +373,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":1000,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -395,7 +403,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":625,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":625,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -426,7 +434,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 					},
 				})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":375,"id":"00000000000000000000","position":0}`)).Return(nil)
+				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":375,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},

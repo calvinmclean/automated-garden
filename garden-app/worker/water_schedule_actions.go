@@ -37,6 +37,7 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 
 	return w.ExecuteWaterAction(g, z, &action.WaterAction{
 		Duration: &pkg.Duration{Duration: duration},
+		Source:   action.SourceSchedule,
 	})
 }
 

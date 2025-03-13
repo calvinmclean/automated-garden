@@ -83,7 +83,7 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	g.Health = g.Garden.Health(ctx, g.api.influxdbClient)
+	g.Health = g.api.worker.GetGardenHealth(ctx, g.Garden)
 
 	if g.Garden.LightSchedule != nil {
 		nextOnTime := g.api.worker.GetNextLightTime(g.Garden, pkg.LightStateOn)

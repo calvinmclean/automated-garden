@@ -3,11 +3,14 @@ package influxdb
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"sync"
 	"text/template"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	influxdb2 "github.com/influxdata/influxdb-client-go/v2"
+	"github.com/mitchellh/mapstructure"
 	"github.com/prometheus/client_golang/prometheus"
 )
 
@@ -21,17 +24,42 @@ const (
 |> filter(fn: (r) => r["_value"] == "{{.TopicPrefix}}")
 |> drop(columns: ["host"])
 |> last()`
-	waterHistoryQueryTemplate = `from(bucket: "{{.Bucket}}")
-|> range(start: -{{.Start}})
-|> filter(fn: (r) => r["_measurement"] == "water")
-|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
-|> filter(fn: (r) => r["zone"] == "{{.ZonePosition}}")
-|> drop(columns: ["host"])
-|> sort(columns: ["_time"], desc: true)
-{{- if .Limit }}
-|> limit(n: {{.Limit}})
-{{- end }}
-|> yield(name: "last")`
+	waterHistoryQueryTemplate = `
+waterCommands = from(bucket: "{{.Bucket}}")
+  |> range(start: -{{.Start}})
+  |> filter(fn: (r) => r._measurement == "water_command")
+  |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/command/water")
+  |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
+  |> keep(columns: ["_time", "zone_id", "id", "_value", "source"])
+  |> set(key: "command", value: "true")
+
+waterEvents = from(bucket: "garden")
+  |> range(start: -{{.Start}})
+  |> filter(fn: (r) => r._measurement == "water")
+  |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
+  |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
+  |> keep(columns: ["_time", "zone_id", "id", "status", "_value"])
+
+union(tables: [waterCommands, waterEvents])
+  |> group(columns: ["zone_id", "id"])
+  |> sort(columns: ["_time"], desc: false)
+  |> reduce(
+      fn: (r, accumulator) => ({
+        event_id: r.id,
+        zone_id: r.zone_id,
+        status: if exists r.status then r.status else "sent",
+        source: if exists r.source then r.source else accumulator.source,
+        _value: if r.status == "start" then accumulator._value else r._value,
+        sent_at: if exists r.command then r._time else accumulator.sent_at,
+        started_at: if r.status == "start" then r._time else accumulator.started_at,
+        completed_at: if r.status == "complete" then r._time else accumulator.completed_at,
+      }),
+      identity: {event_id: "", zone_id: "", status: "", source: "", sent_at: time(v:0), started_at: time(v:0), completed_at: time(v:0), _value: 0.0}
+    )
+  {{- if .Limit }}
+  |> limit(n: {{.Limit}})
+  {{- end }}
+  |> yield(name: "waterHistory")`
 	temperatureAndHumidityQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
 |> filter(fn: (r) => r["_measurement"] == "temperature" or r["_measurement"] == "humidity")
@@ -56,10 +84,12 @@ var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
 	GetLastContact(context.Context, string) (time.Time, error)
-	GetWaterHistory(context.Context, uint, string, time.Duration, uint64) ([]map[string]interface{}, error)
+	GetWaterHistory(context.Context, string, string, time.Duration, uint64) ([]pkg.WaterHistory, error)
 	GetTemperatureAndHumidity(context.Context, string) (float64, float64, error)
 	influxdb2.Client
 }
+
+var _ Client = &client{}
 
 // Config holds configuration values for connecting the the InfluxDB server
 type Config struct {
@@ -71,11 +101,11 @@ type Config struct {
 
 // queryData is used to fill out any of the query templates
 type queryData struct {
-	Bucket       string
-	Start        time.Duration
-	ZonePosition uint
-	TopicPrefix  string
-	Limit        uint64
+	Bucket      string
+	Start       time.Duration
+	ZoneID      string
+	TopicPrefix string
+	Limit       uint64
 }
 
 // Render executes the specified template with the queryData to create a string
@@ -135,17 +165,17 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (t
 }
 
 // GetWaterHistory gets recent water events for a specific Zone
-func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, topicPrefix string, timeRange time.Duration, limit uint64) ([]map[string]interface{}, error) {
+func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicPrefix string, timeRange time.Duration, limit uint64) ([]pkg.WaterHistory, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetWaterHistory"))
 	defer timer.ObserveDuration()
 
 	// Prepare query
 	queryString, err := queryData{
-		Bucket:       client.config.Bucket,
-		Start:        timeRange,
-		TopicPrefix:  topicPrefix,
-		ZonePosition: zonePosition,
-		Limit:        limit,
+		Bucket:      client.config.Bucket,
+		Start:       timeRange,
+		TopicPrefix: topicPrefix,
+		ZoneID:      zoneID,
+		Limit:       limit,
 	}.Render(waterHistoryQueryTemplate)
 	if err != nil {
 		return nil, err
@@ -159,12 +189,36 @@ func (client *client) GetWaterHistory(ctx context.Context, zonePosition uint, to
 	}
 
 	// Read and return the result as slice of maps
-	result := []map[string]interface{}{}
+	result := []pkg.WaterHistory{}
 	for queryResult.Next() {
-		result = append(result, map[string]interface{}{
-			"Duration":   int(queryResult.Record().Value().(float64)),
-			"RecordTime": queryResult.Record().Time(),
-		})
+		h := pkg.WaterHistory{}
+
+		values := queryResult.Record().Values()
+		err = mapstructure.Decode(values, &h)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding values: %w", err)
+		}
+
+		// a "zero" or null Time from InfluxDB is different from Go's zero value
+		zeroTime := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
+		if h.SentAt == zeroTime {
+			h.SentAt = time.Time{}
+		}
+		if h.StartedAt == zeroTime {
+			h.StartedAt = time.Time{}
+		}
+		if h.CompletedAt == zeroTime {
+			h.CompletedAt = time.Time{}
+		}
+
+		value := queryResult.Record().Value()
+		millis, ok := value.(float64)
+		if !ok {
+			return nil, fmt.Errorf("unexpected type for duration value: %T", value)
+		}
+		h.Duration = pkg.Duration{Duration: time.Duration(millis) * time.Millisecond}
+
+		result = append(result, h)
 	}
 	return result, queryResult.Err()
 }

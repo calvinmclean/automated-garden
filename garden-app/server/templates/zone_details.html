@@ -67,8 +67,12 @@
             </colgroup>
             <thead>
                 <tr>
-                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Source</th>
                     <th>Duration</th>
+                    <th>Sent</th>
+                    <th>Started</th>
+                    <th>Completed</th>
                 </tr>
             </thead>
 
@@ -81,8 +85,12 @@
                 {{ end }}
                 {{ range .History.History }}
                 <tr>
+                    <td>{{ .Status }}</td>
+                    <td>{{ .Source }}</td>
                     <td>{{ .Duration }}</td>
-                    <td>{{ FormatDateTime .RecordTime }}</td>
+                    <td>{{ FormatDateTime .SentAt }}</td>
+                    <td>{{ FormatDateTime .StartedAt }}</td>
+                    <td>{{ FormatDateTime .CompletedAt }}</td>
                 </tr>
                 {{ end }}
             </tbody>

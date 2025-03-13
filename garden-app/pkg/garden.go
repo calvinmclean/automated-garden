@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -9,7 +8,6 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/babyapi"
 )
 
@@ -83,39 +81,6 @@ type GardenHealth struct {
 	Status      HealthStatus `json:"status,omitempty"`
 	Details     string       `json:"details,omitempty"`
 	LastContact *time.Time   `json:"last_contact,omitempty"`
-}
-
-// Health returns a GardenHealth struct after querying InfluxDB for the Garden controller's last contact time
-func (g *Garden) Health(ctx context.Context, influxdbClient influxdb.Client) *GardenHealth {
-	lastContact, err := influxdbClient.GetLastContact(ctx, g.TopicPrefix)
-	if err != nil {
-		return &GardenHealth{
-			Status:  "N/A",
-			Details: err.Error(),
-		}
-	}
-
-	if lastContact.IsZero() {
-		return &GardenHealth{
-			Status:  HealthStatusDown,
-			Details: "no last contact time available",
-		}
-	}
-
-	// Garden is considered "UP" if it's last contact was less than 5 minutes ago
-	between := time.Since(lastContact)
-	up := between < 5*time.Minute
-
-	status := HealthStatusUp
-	if !up {
-		status = HealthStatusDown
-	}
-
-	return &GardenHealth{
-		Status:      status,
-		LastContact: &lastContact,
-		Details:     fmt.Sprintf("last contact from Garden was %v ago", between.Truncate(time.Millisecond)),
-	}
 }
 
 // EndDated returns true if the Garden is end-dated

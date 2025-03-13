@@ -33,6 +33,10 @@ func Now() time.Time {
 	return DefaultClock.Clock.Now()
 }
 
+func Since(t time.Time) time.Duration {
+	return DefaultClock.Clock.Since(t)
+}
+
 // MockTime sets up the DefaultClock with a consistent time so it can be used across tests
 func MockTime() *clock.Mock {
 	mock := clock.NewMock()
