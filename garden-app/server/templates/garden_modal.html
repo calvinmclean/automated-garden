@@ -78,7 +78,7 @@ TODO: add UI for new downtime notifications
                                 Controller startup
                                 <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
                                 <div uk-dropdown="pos: right-center">
-                                    Enable notifications when the controller starts up and connects
+                                    Notify when the controller starts up and connects
                                 </div>
                             </div>
                         </label>
@@ -91,7 +91,33 @@ TODO: add UI for new downtime notifications
                                 Light schedule
                                 <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
                                 <div uk-dropdown="pos: right-center">
-                                    Enable notifications when the Garden's light is turned on or off by the schedule
+                                    Notify when the Garden's light is turned on or off by the schedule
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="uk-width-1-2@m">
+                        <label>
+                            <div class="uk-inline">
+                                <input class="uk-checkbox" type="checkbox" name="NotificationSettings.WateringStarted"
+                                    value="true" {{ if and .NotificationSettings .NotificationSettings.WateringStarted }}checked{{ end }}>
+                                Watering started
+                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                                <div uk-dropdown="pos: right-center">
+                                    Notify when a controller starts watering
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="uk-width-1-2@m">
+                        <label>
+                            <div class="uk-inline">
+                                <input class="uk-checkbox" type="checkbox" name="NotificationSettings.WateringComplete"
+                                    value="true" {{ if and .NotificationSettings .NotificationSettings.WateringComplete }}checked{{ end }}>
+                                Watering complete
+                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                                <div uk-dropdown="pos: right-center">
+                                    Notify when a controller completes watering
                                 </div>
                             </div>
                         </label>
@@ -102,7 +128,7 @@ TODO: add UI for new downtime notifications
                                 Downtime Notification
                                 <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
                                 <div uk-dropdown="pos: right-center">
-                                    Enable notifications when the controller fails to publish health checks for the specified duration
+                                    Notify when the controller fails to publish health checks for the specified duration
                                 </div>
                                 <input class="uk-input" type="text" name="NotificationSettings.Downtime"
                                     value="{{ if and .NotificationSettings .NotificationSettings.Downtime }}{{ .NotificationSettings.Downtime }}{{ end }}">
