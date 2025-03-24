@@ -27,12 +27,11 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	if err != nil {
 		return fmt.Errorf("error parsing message: %w", err)
 	}
-	logger = logger.With("event_id", waterMessage.EventID, "zone_id", waterMessage.ZoneID)
-
-	if waterMessage.Start {
-		logger.Info("skipping message since it is start of watering")
-		return nil
-	}
+	logger = logger.With(
+		"event_id", waterMessage.EventID,
+		"zone_id", waterMessage.ZoneID,
+		"start", waterMessage.Start,
+	)
 
 	garden, err := w.getGardenForTopic(topic)
 	if err != nil {
@@ -45,7 +44,17 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 		logger.Info("garden does not have notification client", "garden_id", garden.GetID())
 		return nil
 	}
+
 	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
+
+	if waterMessage.Start && !garden.GetNotificationSettings().WateringStarted {
+		logger.Info("skipping message since notification is not enabled for the start")
+		return nil
+	}
+	if !garden.GetNotificationSettings().WateringComplete {
+		logger.Info("skipping message since notification is not enabled")
+		return nil
+	}
 
 	zone, err := w.storageClient.Zones.Get(context.Background(), waterMessage.ZoneID)
 	if err != nil {
@@ -53,9 +62,16 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	}
 	logger.Info("found zone")
 
-	title := fmt.Sprintf("%s finished watering", zone.Name)
-	dur := time.Duration(waterMessage.Duration) * time.Millisecond
-	message := fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
+	var title, message string
+	if waterMessage.Start {
+		title = fmt.Sprintf("%s started watering", zone.Name)
+		message = fmt.Sprintf("Garden: %s", garden.Name)
+	} else {
+		title = fmt.Sprintf("%s finished watering", zone.Name)
+		dur := time.Duration(waterMessage.Duration) * time.Millisecond
+		message = fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
+	}
+
 	return w.sendNotificationForGarden(garden, title, message)
 }
 

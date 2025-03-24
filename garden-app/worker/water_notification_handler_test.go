@@ -163,6 +163,27 @@ func TestHandleMessage(t *testing.T) {
 		require.NoError(t, err)
 	})
 
+	t.Run("WateringStarted_NotificationNotEnabled", func(t *testing.T) {
+		msg := fmt.Sprintf("water,status=start,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		require.NoError(t, err)
+	})
+
+	t.Run("WateringComplete_NotificationNotEnabled", func(t *testing.T) {
+		msg := fmt.Sprintf("water,status=complete,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		require.NoError(t, err)
+	})
+
+	t.Run("EnableNotifications", func(t *testing.T) {
+		garden.NotificationSettings = &pkg.NotificationSettings{
+			WateringStarted:  true,
+			WateringComplete: true,
+		}
+		err = storageClient.Gardens.Set(context.Background(), garden)
+		require.NoError(t, err)
+	})
+
 	t.Run("ErrorGettingZone", func(t *testing.T) {
 		dneID := xid.New().String()
 		msg := []byte(fmt.Sprintf("water,zone=1 millis=6000 zone_id=%s id=eventID", dneID))
@@ -193,11 +214,11 @@ func TestHandleMessage(t *testing.T) {
 		require.Equal(t, "Errors:\napplication token is invalid, see https://pushover.net/api", err.Error())
 	})
 
-	t.Run("Success", func(t *testing.T) {
+	t.Run("WateringStarted_Success", func(t *testing.T) {
 		numMessages := 0
 
 		r, err := recorder.New(
-			"testdata/fixtures/pushover_success",
+			"testdata/fixtures/pushover_start_success",
 			recorder.WithHook(func(i *cassette.Interaction) error {
 				// Use hook to count number of message requests
 				if i.Request.URL == "https://api.pushover.net/1/messages.json" {
@@ -220,8 +241,43 @@ func TestHandleMessage(t *testing.T) {
 		// github.com/gregdel/pushover uses http.DefaultClient
 		http.DefaultClient = r.GetDefaultClient()
 
-		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
-		err = handler.doWaterCompleteMessage("garden/data/water", msg)
+		msg := fmt.Sprintf("water,status=start,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		require.NoError(t, err)
+
+		// ensure a message is sent by API
+		require.Equal(t, 1, numMessages)
+	})
+
+	t.Run("WateringComplete_Success", func(t *testing.T) {
+		numMessages := 0
+
+		r, err := recorder.New(
+			"testdata/fixtures/pushover_complete_success",
+			recorder.WithHook(func(i *cassette.Interaction) error {
+				// Use hook to count number of message requests
+				if i.Request.URL == "https://api.pushover.net/1/messages.json" {
+					numMessages++
+				}
+				return nil
+			}, recorder.BeforeResponseReplayHook),
+		)
+		if err != nil {
+			t.Fatal(err)
+		}
+		defer func() {
+			require.NoError(t, r.Stop())
+		}()
+
+		if r.Mode() != recorder.ModeRecordOnce {
+			t.Fatal("Recorder should be in ModeRecordOnce")
+		}
+
+		// github.com/gregdel/pushover uses http.DefaultClient
+		http.DefaultClient = r.GetDefaultClient()
+
+		msg := fmt.Sprintf("water,status=complete,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
 		require.NoError(t, err)
 
 		// ensure a message is sent by API

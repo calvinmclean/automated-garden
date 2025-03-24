@@ -6,20 +6,20 @@ interactions:
       proto: HTTP/1.1
       proto_major: 1
       proto_minor: 1
-      content_length: 150
+      content_length: 132
       transfer_encoding: []
       trailer: {}
       host: api.pushover.net
       remote_addr: ""
       request_uri: ""
-      body: message=Watered+for+6s%0AGarden%3A+garden&priority=0&title=+finished+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      body: message=Garden%3A+garden&priority=0&title=+started+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       form:
         message:
-          - "Watered for 6s\nGarden: garden"
+          - "Garden: garden"
         priority:
           - "0"
         title:
-          - " finished watering"
+          - " started watering"
         token:
           - aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
         user:
@@ -37,7 +37,7 @@ interactions:
       trailer: {}
       content_length: -1
       uncompressed: true
-      body: '{"status":1,"request":"2e1d184d-da34-414c-ae3c-05022dc4a2f9"}'
+      body: '{"status":1,"request":"c57e4eac-87d1-43d9-9efe-c73eba673374"}'
       headers:
         Access-Control-Allow-Headers:
           - X-Requested-With, X-Prototype-Version, Origin, Accept, Content-Type, X-CSRF-Token, X-Pushover-App, Authorization
@@ -52,13 +52,13 @@ interactions:
         Cf-Cache-Status:
           - DYNAMIC
         Cf-Ray:
-          - 8a47468bac122b54-LAX
+          - 924f823c2fb815dd-SJC
         Content-Type:
           - application/json; charset=utf-8
         Date:
-          - Wed, 17 Jul 2024 03:51:48 GMT
+          - Sun, 23 Mar 2025 17:04:35 GMT
         Etag:
-          - W/"fbf804824a9232da76ba211e79a0cd4a"
+          - W/"2b139fadb1ba012f742a932851f2b2e5"
         Referrer-Policy:
           - strict-origin-when-cross-origin
         Server:
@@ -75,19 +75,19 @@ interactions:
         X-Limit-App-Limit:
           - "10000"
         X-Limit-App-Remaining:
-          - "9937"
+          - "8939"
         X-Limit-App-Reset:
-          - "1722488400"
+          - "1743483600"
         X-Permitted-Cross-Domain-Policies:
           - none
         X-Po-H:
           - a
         X-Request-Id:
-          - 2e1d184d-da34-414c-ae3c-05022dc4a2f9
+          - c57e4eac-87d1-43d9-9efe-c73eba673374
         X-Runtime:
-          - "0.056145"
+          - "0.065639"
         X-Xss-Protection:
           - 1; mode=block
       status: 200 OK
       code: 200
-      duration: 416.0575ms
+      duration: 312.870875ms

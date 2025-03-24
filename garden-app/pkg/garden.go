@@ -41,6 +41,8 @@ type NotificationSettings struct {
 	ControllerStartup bool      `json:"controller_startup" yaml:"controller_startup"`
 	LightSchedule     bool      `json:"light_schedule" yaml:"light_schedule"`
 	Downtime          *Duration `json:"downtime" yaml:"downtime"`
+	WateringStarted   bool      `json:"watering_started" yaml:"watering_started"`
+	WateringComplete  bool      `json:"watering_complete" yaml:"watering_complete"`
 }
 
 func (g *Garden) GetVersion() uint {
@@ -147,6 +149,8 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 		g.NotificationSettings.ControllerStartup = newGarden.NotificationSettings.ControllerStartup
 		g.NotificationSettings.LightSchedule = newGarden.NotificationSettings.LightSchedule
 		g.NotificationSettings.Downtime = newGarden.NotificationSettings.Downtime
+		g.NotificationSettings.WateringStarted = newGarden.NotificationSettings.WateringStarted
+		g.NotificationSettings.WateringComplete = newGarden.NotificationSettings.WateringComplete
 	}
 
 	return nil
