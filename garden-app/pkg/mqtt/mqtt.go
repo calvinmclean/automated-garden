@@ -22,9 +22,9 @@ var mqttClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 
 // Config is used to read the necessary configuration values from a YAML file
 type Config struct {
-	ClientID string `mapstructure:"client_id"`
-	Broker   string `mapstructure:"broker"`
-	Port     int    `mapstructure:"port"`
+	ClientID string `mapstructure:"client_id" yaml:"client_id"`
+	Broker   string `mapstructure:"broker" yaml:"broker"`
+	Port     int    `mapstructure:"port" yaml:"port"`
 }
 
 // Client is an interface that allows access to MQTT functionality within the garden-app

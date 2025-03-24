@@ -5,3 +5,4 @@ wifi_config.h
 .task/
 vendor/
 deploy/configs/telegraf/.cache
+garden-app.so

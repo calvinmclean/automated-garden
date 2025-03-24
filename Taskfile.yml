@@ -62,6 +62,13 @@ tasks:
     cmds:
       - DEV_TEMPLATE=server/templates/* go run main.go serve --config config.yaml
 
+  goblin:
+    desc: Run backend Go app server with Goblin
+    dir: ./garden-app
+    cmds:
+      - goblin run -p garden-app.so
+      - go build -buildmode=plugin
+
   run-vcr:
     desc: Run backend Go app server with VCR enabled
     aliases: [vcr]

@@ -9,8 +9,8 @@ import (
 
 // LogConfig holds settings for logger
 type LogConfig struct {
-	Level  string `mapstructure:"level"`
-	Format string `mapstructure:"format"`
+	Level  string `mapstructure:"level" yaml:"level"`
+	Format string `mapstructure:"format" yaml:"format"`
 }
 
 // GetHandler returns a slog handler based on the input. Valid values are "json", otherwise default text is used

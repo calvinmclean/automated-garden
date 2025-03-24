@@ -93,10 +93,10 @@ var _ Client = &client{}
 
 // Config holds configuration values for connecting the the InfluxDB server
 type Config struct {
-	Address string `mapstructure:"address"`
-	Token   string `mapstructure:"token"`
-	Org     string `mapstructure:"org"`
-	Bucket  string `mapstructure:"bucket"`
+	Address string `mapstructure:"address" yaml:"address"`
+	Token   string `mapstructure:"token" yaml:"token"`
+	Org     string `mapstructure:"org" yaml:"org"`
+	Bucket  string `mapstructure:"bucket" yaml:"bucket"`
 }
 
 // queryData is used to fill out any of the query templates
