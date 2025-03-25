@@ -8,6 +8,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
@@ -187,6 +188,34 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 		if err := api.worker.ResetLightSchedule(garden); err != nil {
 			logger.Error("unable to update/reset LightSchedule", "light_schedule", garden.LightSchedule, "error", err)
 			return babyapi.InternalServerError(err)
+		}
+	}
+
+	if r.Method == http.MethodPost && r.URL.Query().Get("create_zones") == "true" {
+		err = api.createZonesForGarden(r.Context(), garden)
+		if err != nil {
+			logger.Error("create zones for new Garden", "error", err)
+			return babyapi.InternalServerError(err)
+		}
+	}
+
+	return nil
+}
+
+func (api *GardensAPI) createZonesForGarden(ctx context.Context, g *pkg.Garden) error {
+	for i := range *g.MaxZones {
+		position := i
+		now := clock.Now()
+		z := &pkg.Zone{
+			ID:        babyapi.NewID(),
+			Name:      fmt.Sprintf("Zone %d", i+1),
+			Position:  &position,
+			CreatedAt: &now,
+		}
+
+		err := api.storageClient.Zones.Set(ctx, z)
+		if err != nil {
+			return fmt.Errorf("error storing zone %d: %w", i, err)
 		}
 	}
 

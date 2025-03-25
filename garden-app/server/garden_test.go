@@ -3,11 +3,13 @@ package server
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -192,6 +194,64 @@ func TestCreateGarden(t *testing.T) {
 			assert.Regexp(t, tt.expectedRegexp, strings.TrimSpace(w.Body.String()))
 		})
 	}
+}
+
+func TestCreateGarden_AutoCreateZones(t *testing.T) {
+	mockClock := clock.MockTime()
+	now := mockClock.Now()
+	t.Cleanup(clock.Reset)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		Driver: "hashmap",
+	})
+	assert.NoError(t, err)
+
+	influxdbClient := new(influxdb.MockClient)
+	influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
+	influxdbClient.On("Close")
+
+	gr := NewGardenAPI()
+	err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+	assert.NoError(t, err)
+
+	var g pkg.Garden
+	t.Run("CreateGarden", func(t *testing.T) {
+		body := `{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 4, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`
+		r := httptest.NewRequest(http.MethodPost, "/gardens?create_zones=true", strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("X-TZ-Offset", "420")
+		w := babytest.TestRequest(t, gr.API, r)
+
+		assert.Equal(t, http.StatusCreated, w.Code)
+		err = json.Unmarshal(w.Body.Bytes(), &g)
+		assert.NoError(t, err)
+	})
+
+	t.Run("GetZonesForGarden", func(t *testing.T) {
+		zones, err := gr.storageClient.Zones.GetAll(context.Background(), nil)
+		assert.NoError(t, err)
+
+		assert.Len(t, zones, 4)
+
+		zoneNames := make([]string, 4)
+		slices.SortFunc(zones, func(a, b *pkg.Zone) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		for i, zone := range zones {
+			zoneNames[i] = zone.Name
+			assert.False(t, zone.EndDated())
+			assert.Equal(t, now, *zone.CreatedAt)
+			assert.EqualValues(t, i, *zone.Position)
+			assert.Equal(t, fmt.Sprintf("Zone %d", i+1), zone.Name)
+		}
+
+		assert.ElementsMatch(t, []string{
+			"Zone 1",
+			"Zone 2",
+			"Zone 3",
+			"Zone 4",
+		}, zoneNames)
+	})
 }
 
 func TestUpdateGardenPUT(t *testing.T) {
