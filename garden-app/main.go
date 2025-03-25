@@ -36,6 +36,6 @@ func Run(ctx context.Context, ipAddress string) error {
 		return fmt.Errorf("error setting up API: %w", err)
 	}
 
-	api.SetAddress(net.JoinHostPort(ipAddress, "8080"))
+	api.WithContext(ctx).SetAddress(net.JoinHostPort(ipAddress, "8080"))
 	return api.Serve()
 }
