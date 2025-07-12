@@ -18,13 +18,8 @@ import (
 )
 
 func TestExecuteScheduledWaterAction(t *testing.T) {
-	CreateNewID = func() xid.ID {
-		return xid.NilID()
-	}
-
-	defer func() {
-		CreateNewID = xid.New
-	}()
+	CreateNewID = func() xid.ID { return xid.NilID() }
+	defer func() { CreateNewID = xid.New }()
 
 	garden := &pkg.Garden{
 		ID:          babyapi.ID{ID: id},

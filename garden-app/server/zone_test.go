@@ -298,13 +298,8 @@ func TestZoneAction(t *testing.T) {
 }
 
 func TestZoneActionForm(t *testing.T) {
-	worker.CreateNewID = func() xid.ID {
-		return xid.NilID()
-	}
-
-	defer func() {
-		worker.CreateNewID = xid.New
-	}()
+	worker.CreateNewID = func() xid.ID { return xid.NilID() }
+	defer func() { worker.CreateNewID = xid.New }()
 
 	tests := []struct {
 		name      string

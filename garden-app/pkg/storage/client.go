@@ -27,6 +27,7 @@ type Client struct {
 	WaterSchedules            babyapi.Storage[*pkg.WaterSchedule]
 	WeatherClientConfigs      babyapi.Storage[*weather.Config]
 	NotificationClientConfigs babyapi.Storage[*notifications.Client]
+	WaterRoutines             babyapi.Storage[*pkg.WaterRoutine]
 }
 
 func NewClient(config Config) (*Client, error) {
@@ -41,6 +42,7 @@ func NewClient(config Config) (*Client, error) {
 		WaterSchedules:            babyapi.NewKVStorage[*pkg.WaterSchedule](db, "WaterSchedule"),
 		WeatherClientConfigs:      babyapi.NewKVStorage[*weather.Config](db, "WeatherClient"),
 		NotificationClientConfigs: babyapi.NewKVStorage[*notifications.Client](db, "NotificationClient"),
+		WaterRoutines:             babyapi.NewKVStorage[*pkg.WaterRoutine](db, "WaterRoutine"),
 	}, nil
 }
 

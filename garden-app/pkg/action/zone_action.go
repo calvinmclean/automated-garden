@@ -60,6 +60,7 @@ func (m *WaterMessage) String() string {
 type Source string
 
 const (
-	SourceSchedule Source = "schedule"
-	SourceCommand  Source = "command"
+	SourceSchedule     Source = "schedule"
+	SourceCommand      Source = "command"
+	SourceWaterRoutine Source = "water_routine"
 )
