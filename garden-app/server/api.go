@@ -32,6 +32,7 @@ type API struct {
 	weatherClients      *WeatherClientsAPI
 	notificationClients *NotificationClientsAPI
 	waterSchedules      *WaterSchedulesAPI
+	waterRoutines       *WaterRoutineAPI
 }
 
 // NewAPI intializes an API without any integrations or clients. Use api.Setup(...) before running
@@ -43,6 +44,7 @@ func NewAPI() *API {
 		weatherClients:      NewWeatherClientsAPI(),
 		notificationClients: NewNotificationClientsAPI(),
 		waterSchedules:      NewWaterSchedulesAPI(),
+		waterRoutines:       NewWaterRoutineAPI(),
 	}
 	api.gardens.AddNestedAPI(api.zones)
 
@@ -60,7 +62,8 @@ func NewAPI() *API {
 		AddNestedAPI(api.gardens).
 		AddNestedAPI(api.weatherClients).
 		AddNestedAPI(api.notificationClients).
-		AddNestedAPI(api.waterSchedules)
+		AddNestedAPI(api.waterSchedules).
+		AddNestedAPI(api.waterRoutines)
 
 	cassetteName := os.Getenv("VCR_CASSETTE")
 	if cassetteName != "" {
@@ -172,6 +175,7 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 	api.zones.setup(storageClient, influxdbClient, worker)
 	api.weatherClients.setup(storageClient)
 	api.notificationClients.setup(storageClient)
+	api.waterRoutines.setup(storageClient, worker)
 
 	return nil
 }
