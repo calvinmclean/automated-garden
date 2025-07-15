@@ -109,6 +109,8 @@ func NewGardenAPI() *GardensAPI {
 
 	api.ApplyExtension(extensions.HTMX[*pkg.Garden]{})
 
+	api.EnableMCP(babyapi.MCPPermRead)
+
 	return api
 }
 

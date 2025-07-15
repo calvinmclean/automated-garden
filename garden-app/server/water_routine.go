@@ -33,6 +33,8 @@ func NewWaterRoutineAPI() *WaterRoutineAPI {
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 	api.AddCustomIDRoute(http.MethodPost, "/run", api.GetRequestedResourceAndDo(api.runWatering))
 
+	api.EnableMCP(babyapi.MCPPermRead)
+
 	return api
 }
 

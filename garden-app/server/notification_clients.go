@@ -45,6 +45,8 @@ func NewNotificationClientsAPI() *NotificationClientsAPI {
 
 	api.AddCustomIDRoute(http.MethodPost, "/test", babyapi.Handler(api.testNotificationClient))
 
+	api.EnableMCP(babyapi.MCPPermRead)
+
 	return api
 }
 

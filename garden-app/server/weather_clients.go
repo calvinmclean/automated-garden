@@ -90,6 +90,8 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 		return nil
 	})
 
+	api.EnableMCP(babyapi.MCPPermRead)
+
 	return api
 }
 

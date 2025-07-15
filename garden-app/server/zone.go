@@ -94,6 +94,8 @@ func NewZonesAPI() *ZonesAPI {
 
 	api.ApplyExtension(extensions.HTMX[*pkg.Zone]{})
 
+	api.EnableMCP(babyapi.MCPPermRead)
+
 	return api
 }
 

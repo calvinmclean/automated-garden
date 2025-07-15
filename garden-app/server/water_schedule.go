@@ -104,6 +104,8 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 
 	api.ApplyExtension(extensions.HTMX[*pkg.WaterSchedule]{})
 
+	api.EnableMCP(babyapi.MCPPermRead)
+
 	return api
 }
 
