@@ -15,6 +15,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/server/vcr"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
+	"github.com/mark3labs/mcp-go/server"
 
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/html"
@@ -63,7 +64,19 @@ func NewAPI() *API {
 		AddNestedAPI(api.weatherClients).
 		AddNestedAPI(api.notificationClients).
 		AddNestedAPI(api.waterSchedules).
-		AddNestedAPI(api.waterRoutines)
+		AddNestedAPI(api.waterRoutines).
+		EnableMCP(babyapi.MCPPermNone).
+		AddMCPServerOptions(
+			server.WithInstructions(`
+This server is the cloud backend for remote irrigation controllers. It has the following resources:
+  - Gardens: these are different physical controllers with multiple Zones and optional lighting control for indoor setups
+  - Zones: these are actual watering zones and can have multiple WaterSchedules
+  - WaterSchedules: these schedules control watering frequency for Zones
+  - WaterRoutines: group multiple zones for easy on-demand watering
+  - NotificationClients: settings to enable notifications with an external provider
+`),
+			server.WithLogging(),
+		)
 
 	cassetteName := os.Getenv("VCR_CASSETTE")
 	if cassetteName != "" {
