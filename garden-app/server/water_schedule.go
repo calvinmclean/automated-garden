@@ -39,7 +39,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 	api.SetResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
 		return api.NewWaterScheduleResponse(ws)
 	})
-	api.SetGetAllResponseWrapper(func(waterSchedules []*pkg.WaterSchedule) render.Renderer {
+	api.SetSearchResponseWrapper(func(waterSchedules []*pkg.WaterSchedule) render.Renderer {
 		resp := AllWaterSchedulesResponse{ResourceList: babyapi.ResourceList[*WaterScheduleResponse]{}}
 
 		for _, w := range waterSchedules {
@@ -110,7 +110,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 }
 
 func (api *WaterSchedulesAPI) waterScheduleModalRenderer(ctx context.Context, ws *pkg.WaterSchedule) render.Renderer {
-	notificationClients, err := api.storageClient.NotificationClientConfigs.GetAll(ctx, nil)
+	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(ctx, "", nil)
 	if err != nil {
 		return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create water schedule modal: %w", err))
 	}
@@ -132,7 +132,7 @@ func (api *WaterSchedulesAPI) setup(storageClient *storage.Client, worker *worke
 	api.SetStorage(api.storageClient.WaterSchedules)
 
 	// Initialize WaterActions for each WaterSchedule from the storage client
-	allWaterSchedules, err := api.storageClient.WaterSchedules.GetAll(context.Background(), nil)
+	allWaterSchedules, err := api.storageClient.WaterSchedules.Search(context.Background(), "", nil)
 	if err != nil {
 		return fmt.Errorf("unable to get WaterSchedules: %v", err)
 	}

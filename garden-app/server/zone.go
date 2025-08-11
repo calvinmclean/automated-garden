@@ -44,7 +44,7 @@ func NewZonesAPI() *ZonesAPI {
 	api.SetResponseWrapper(func(z *pkg.Zone) render.Renderer {
 		return api.NewZoneResponse(z)
 	})
-	api.SetGetAllResponseWrapper(func(zones []*pkg.Zone) render.Renderer {
+	api.SetSearchResponseWrapper(func(zones []*pkg.Zone) render.Renderer {
 		resp := AllZonesResponse{ResourceList: babyapi.ResourceList[*ZoneResponse]{}, api: api.API}
 
 		for _, z := range zones {
@@ -87,11 +87,6 @@ func NewZonesAPI() *ZonesAPI {
 
 	api.AddCustomIDRoute(http.MethodGet, "/history", api.GetRequestedResourceAndDo(api.waterHistory))
 
-	api.SetGetAllFilter(func(r *http.Request) babyapi.FilterFunc[*pkg.Zone] {
-		gardenID := api.GetParentIDParam(r)
-		return filterZoneByGardenID(gardenID)
-	})
-
 	api.ApplyExtension(extensions.HTMX[*pkg.Zone]{})
 
 	api.EnableMCP(babyapi.MCPPermRead)
@@ -108,7 +103,7 @@ func (api *ZonesAPI) setup(storageClient *storage.Client, influxdbClient influxd
 }
 
 func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
-	waterSchedules, err := api.storageClient.WaterSchedules.GetAll(r.Context(), nil)
+	waterSchedules, err := api.storageClient.WaterSchedules.Search(r.Context(), "", nil)
 	if err != nil {
 		return nil, babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
 	}
@@ -218,7 +213,7 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 	}
 
 	zoneAlreadyExists := false
-	zonesForGarden, err := api.storageClient.Zones.GetAll(r.Context(), nil)
+	zonesForGarden, err := api.storageClient.Zones.Search(r.Context(), gardenID, nil)
 	if err != nil {
 		err = fmt.Errorf("error getting all zones for Garden %q: %w", gardenID, err)
 		logger.Error("unable to get all zones", "error", err)

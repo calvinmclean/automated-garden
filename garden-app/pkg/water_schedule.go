@@ -43,6 +43,10 @@ func (ws *WaterSchedule) GetID() string {
 	return ws.ID.String()
 }
 
+func (ws *WaterSchedule) ParentID() string {
+	return ""
+}
+
 // String...
 func (ws *WaterSchedule) String() string {
 	return fmt.Sprintf("%+v", *ws)

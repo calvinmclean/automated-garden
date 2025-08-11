@@ -195,7 +195,7 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types
 func validateAllStoredResources(storageClient *storage.Client) error {
-	gardens, err := storageClient.Gardens.GetAll(context.Background(), nil)
+	gardens, err := storageClient.Gardens.Search(context.Background(), "", nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all Gardens: %w", err)
 	}
@@ -208,24 +208,24 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		if err != nil {
 			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
 		}
-	}
 
-	zones, err := storageClient.Zones.GetAll(context.Background(), nil)
-	if err != nil {
-		return fmt.Errorf("unable to get all Zones: %w", err)
-	}
-
-	for _, z := range zones {
-		if z.ID.IsNil() {
-			return errors.New("invalid Zone: missing required field 'id'")
-		}
-		err = z.Bind(&http.Request{Method: http.MethodPut})
+		zones, err := storageClient.Zones.Search(context.Background(), g.GetID(), nil)
 		if err != nil {
-			return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
+			return fmt.Errorf("unable to get all Zones: %w", err)
+		}
+
+		for _, z := range zones {
+			if z.ID.IsNil() {
+				return errors.New("invalid Zone: missing required field 'id'")
+			}
+			err = z.Bind(&http.Request{Method: http.MethodPut})
+			if err != nil {
+				return fmt.Errorf("invalid Zone %q: %w", z.ID, err)
+			}
 		}
 	}
 
-	waterSchedules, err := storageClient.WaterSchedules.GetAll(context.Background(), nil)
+	waterSchedules, err := storageClient.WaterSchedules.Search(context.Background(), "", nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WaterSchedules: %w", err)
 	}
@@ -240,7 +240,7 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	weatherClients, err := storageClient.WeatherClientConfigs.GetAll(context.Background(), nil)
+	weatherClients, err := storageClient.WeatherClientConfigs.Search(context.Background(), "", nil)
 	if err != nil {
 		return fmt.Errorf("unable to get all WeatherClients: %w", err)
 	}

@@ -42,7 +42,7 @@ func NewGardenAPI() *GardensAPI {
 	api.SetResponseWrapper(func(g *pkg.Garden) render.Renderer {
 		return api.NewGardenResponse(g)
 	})
-	api.SetGetAllResponseWrapper(func(gardens []*pkg.Garden) render.Renderer {
+	api.SetSearchResponseWrapper(func(gardens []*pkg.Garden) render.Renderer {
 		resp := AllGardensResponse{ResourceList: babyapi.ResourceList[*GardenResponse]{}}
 
 		for _, g := range gardens {
@@ -115,7 +115,7 @@ func NewGardenAPI() *GardensAPI {
 }
 
 func (api *GardensAPI) gardenModalRenderer(ctx context.Context, g *pkg.Garden) render.Renderer {
-	notificationClients, err := api.storageClient.NotificationClientConfigs.GetAll(ctx, nil)
+	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(ctx, "", nil)
 	if err != nil {
 		return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create garden modal: %w", err))
 	}
@@ -139,7 +139,7 @@ func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influ
 	api.SetStorage(api.storageClient.Gardens)
 
 	// Initialize light schedules for all Gardens
-	allGardens, err := api.storageClient.Gardens.GetAll(context.Background(), nil)
+	allGardens, err := api.storageClient.Gardens.Search(context.Background(), "", nil)
 	if err != nil {
 		return err
 	}
@@ -210,6 +210,7 @@ func (api *GardensAPI) createZonesForGarden(ctx context.Context, g *pkg.Garden) 
 		now := clock.Now()
 		z := &pkg.Zone{
 			ID:        babyapi.NewID(),
+			GardenID:  g.ID.ID,
 			Name:      fmt.Sprintf("Zone %d", i+1),
 			Position:  &position,
 			CreatedAt: &now,

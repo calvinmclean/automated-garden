@@ -67,7 +67,7 @@ func (w *Worker) getGardenForTopic(topic string) (*pkg.Garden, error) {
 }
 
 func (w *Worker) getGarden(topicPrefix string) (*pkg.Garden, error) {
-	gardens, err := w.storageClient.Gardens.GetAll(context.Background(), nil)
+	gardens, err := w.storageClient.Gardens.Search(context.Background(), "", nil)
 	if err != nil {
 		return nil, fmt.Errorf("error getting all gardens: %w", err)
 	}

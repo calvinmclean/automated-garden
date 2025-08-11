@@ -218,12 +218,6 @@ func (resp ZoneWaterHistoryResponse) Render(_ http.ResponseWriter, _ *http.Reque
 	return nil
 }
 
-func filterZoneByGardenID(gardenID string) babyapi.FilterFunc[*pkg.Zone] {
-	return func(z *pkg.Zone) bool {
-		return z.GardenID.String() == gardenID
-	}
-}
-
 type ZoneActionResponse struct{}
 
 func (*ZoneActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {

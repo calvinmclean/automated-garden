@@ -43,6 +43,10 @@ func (z *Zone) GetID() string {
 	return z.ID.String()
 }
 
+func (z Zone) ParentID() string {
+	return z.GardenID.String()
+}
+
 // String...
 func (z *Zone) String() string {
 	return fmt.Sprintf("%+v", *z)

@@ -57,6 +57,10 @@ func (g *Garden) GetID() string {
 	return g.ID.String()
 }
 
+func (g *Garden) ParentID() string {
+	return ""
+}
+
 // String...
 func (g *Garden) String() string {
 	return fmt.Sprintf("%+v", *g)
