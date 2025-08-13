@@ -228,7 +228,7 @@ func TestCreateGarden_AutoCreateZones(t *testing.T) {
 	})
 
 	t.Run("GetZonesForGarden", func(t *testing.T) {
-		zones, err := gr.storageClient.Zones.GetAll(context.Background(), nil)
+		zones, err := gr.storageClient.Zones.Search(context.Background(), g.GetID(), nil)
 		assert.NoError(t, err)
 
 		assert.Len(t, zones, 4)

@@ -6,6 +6,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/require"
 )
 
@@ -15,23 +16,29 @@ func TestMigrations(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	gardenID := xid.New()
+
 	t.Run("StoreAllZones", func(t *testing.T) {
 		zones := []*pkg.Zone{
 			{
-				ID:   babyapi.NewID(),
-				Name: "Zone1",
+				ID:       babyapi.NewID(),
+				Name:     "Zone1",
+				GardenID: gardenID,
 			},
 			{
-				ID:   babyapi.NewID(),
-				Name: "Zone2",
+				ID:       babyapi.NewID(),
+				Name:     "Zone2",
+				GardenID: gardenID,
 			},
 			{
-				ID:   babyapi.NewID(),
-				Name: "Zone3",
+				ID:       babyapi.NewID(),
+				Name:     "Zone3",
+				GardenID: gardenID,
 			},
 			{
-				ID:   babyapi.NewID(),
-				Name: "Zone4",
+				ID:       babyapi.NewID(),
+				Name:     "Zone4",
+				GardenID: gardenID,
 			},
 		}
 
@@ -44,7 +51,7 @@ func TestMigrations(t *testing.T) {
 	t.Run("StoreAllGardens", func(t *testing.T) {
 		gardens := []*pkg.Garden{
 			{
-				ID:   babyapi.NewID(),
+				ID:   babyapi.ID{ID: gardenID},
 				Name: "Garden1",
 			},
 			{
@@ -100,7 +107,7 @@ func TestMigrations(t *testing.T) {
 	})
 
 	t.Run("CheckUpdatedZoneVersion", func(t *testing.T) {
-		allZones, err := client.Zones.GetAll(context.Background(), nil)
+		allZones, err := client.Zones.Search(context.Background(), gardenID.String(), nil)
 		require.NoError(t, err)
 		for _, z := range allZones {
 			require.Equal(t, uint(1), z.GetVersion())
@@ -108,7 +115,7 @@ func TestMigrations(t *testing.T) {
 	})
 
 	t.Run("CheckUpdatedGardenVersion", func(t *testing.T) {
-		allGardens, err := client.Gardens.GetAll(context.Background(), nil)
+		allGardens, err := client.Gardens.Search(context.Background(), "", nil)
 		require.NoError(t, err)
 		for _, g := range allGardens {
 			require.Equal(t, uint(2), g.GetVersion())
@@ -123,7 +130,7 @@ func TestMigrations(t *testing.T) {
 	})
 
 	t.Run("CheckUpdatedWaterScheduleVersion", func(t *testing.T) {
-		allWaterSchedules, err := client.WaterSchedules.GetAll(context.Background(), nil)
+		allWaterSchedules, err := client.WaterSchedules.Search(context.Background(), "", nil)
 		require.NoError(t, err)
 		for _, ws := range allWaterSchedules {
 			require.Equal(t, uint(1), ws.GetVersion())

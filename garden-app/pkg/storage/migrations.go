@@ -40,12 +40,7 @@ var (
 )
 
 func (c *Client) RunMigrations(ctx context.Context) error {
-	err := c.RunZoneMigrations(ctx)
-	if err != nil {
-		return fmt.Errorf("error running Zone migrations: %w", err)
-	}
-
-	err = c.RunGardenMigrations(ctx)
+	err := c.RunGardenAndZoneMigrations(ctx)
 	if err != nil {
 		return fmt.Errorf("error running Garden migrations: %w", err)
 	}
@@ -58,8 +53,8 @@ func (c *Client) RunMigrations(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) RunZoneMigrations(ctx context.Context) error {
-	zones, err := c.Zones.GetAll(ctx, babyapi.EndDatedQueryParam(true))
+func (c *Client) RunZoneMigrations(ctx context.Context, g *pkg.Garden) error {
+	zones, err := c.Zones.Search(ctx, g.GetID(), babyapi.EndDatedQueryParam(true))
 	if err != nil {
 		return fmt.Errorf("error getting all Zones: %w", err)
 	}
@@ -81,8 +76,8 @@ func (c *Client) RunZoneMigrations(ctx context.Context) error {
 	return nil
 }
 
-func (c *Client) RunGardenMigrations(ctx context.Context) error {
-	gardens, err := c.Gardens.GetAll(ctx, babyapi.EndDatedQueryParam(true))
+func (c *Client) RunGardenAndZoneMigrations(ctx context.Context) error {
+	gardens, err := c.Gardens.Search(ctx, "", babyapi.EndDatedQueryParam(true))
 	if err != nil {
 		return fmt.Errorf("error getting all Gardens: %w", err)
 	}
@@ -95,6 +90,11 @@ func (c *Client) RunGardenMigrations(ctx context.Context) error {
 			return fmt.Errorf("error migrating Garden: %w", err)
 		}
 
+		err := c.RunZoneMigrations(ctx, garden)
+		if err != nil {
+			return fmt.Errorf("error running Zone migrations: %w", err)
+		}
+
 		err = c.Gardens.Set(ctx, garden)
 		if err != nil {
 			return fmt.Errorf("error storing migrated Garden: %w", err)
@@ -105,7 +105,7 @@ func (c *Client) RunGardenMigrations(ctx context.Context) error {
 }
 
 func (c *Client) RunWaterScheduleMigrations(ctx context.Context) error {
-	waterSchedules, err := c.WaterSchedules.GetAll(ctx, babyapi.EndDatedQueryParam(true))
+	waterSchedules, err := c.WaterSchedules.Search(ctx, "", babyapi.EndDatedQueryParam(true))
 	if err != nil {
 		return fmt.Errorf("error getting all WaterSchedules: %w", err)
 	}

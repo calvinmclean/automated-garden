@@ -171,11 +171,10 @@ func (agr AllGardensResponse) HTML(_ http.ResponseWriter, r *http.Request) strin
 }
 
 func (api *GardensAPI) getAllZones(ctx context.Context, gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
-	zones, err := api.storageClient.Zones.GetAll(ctx, babyapi.EndDatedQueryParam(getEndDated))
+	zones, err := api.storageClient.Zones.Search(ctx, gardenID, babyapi.EndDatedQueryParam(getEndDated))
 	if err != nil {
 		return nil, fmt.Errorf("error getting Zones for Garden: %w", err)
 	}
-	zones = babyapi.FilterFunc[*pkg.Zone](filterZoneByGardenID(gardenID)).Filter(zones)
 
 	return zones, nil
 }

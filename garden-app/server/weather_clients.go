@@ -43,7 +43,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 	api.SetResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc}
 	})
-	api.SetGetAllResponseWrapper(func(wcs []*weather.Config) render.Renderer {
+	api.SetSearchResponseWrapper(func(wcs []*weather.Config) render.Renderer {
 		resp := AllWeatherClientsResponse{ResourceList: babyapi.ResourceList[*WeatherClientResponse]{}}
 
 		for _, wc := range wcs {

@@ -24,6 +24,10 @@ func (wr WaterRoutine) GetID() string {
 	return wr.ID.String()
 }
 
+func (wr WaterRoutine) ParentID() string {
+	return ""
+}
+
 func (wr *WaterRoutine) Bind(r *http.Request) error {
 	if wr == nil {
 		return errors.New("missing required WaterRoutine fields")

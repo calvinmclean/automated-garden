@@ -45,6 +45,10 @@ func (wc *Config) GetID() string {
 	return wc.ID.String()
 }
 
+func (wc *Config) ParentID() string {
+	return ""
+}
+
 func (wc *Config) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }

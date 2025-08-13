@@ -29,6 +29,10 @@ func (nc *Client) GetID() string {
 	return nc.ID.String()
 }
 
+func (nc *Client) ParentID() string {
+	return ""
+}
+
 func (nc *Client) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
