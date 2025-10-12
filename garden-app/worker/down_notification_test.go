@@ -137,9 +137,6 @@ func TestHandleHealthMessage(t *testing.T) {
 		w.Stop()
 
 		assert.Empty(t, fake.Messages())
-
-		logs := logBuffer.String()
-		assert.Contains(t, logs, `msg="reset timer" source=worker topic=garden/data/health`)
 	})
 
 	t.Run("GardenWithoutDowntime_NoNotification", func(t *testing.T) {
@@ -165,8 +162,5 @@ func TestHandleHealthMessage(t *testing.T) {
 		w.Stop()
 
 		assert.Empty(t, fake.Messages())
-
-		logs := logBuffer.String()
-		assert.Contains(t, logs, `msg="received message" source=worker topic=new-garden/data/health`)
 	})
 }

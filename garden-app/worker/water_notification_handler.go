@@ -21,7 +21,6 @@ func (w *Worker) handleWaterCompleteMessage(_ mqtt.Client, msg mqtt.Message) {
 
 func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	logger := w.logger.With("topic", topic)
-	logger.Info("received message", "message", string(payload))
 
 	waterMessage, err := parseWaterMessage(payload)
 	if err != nil {

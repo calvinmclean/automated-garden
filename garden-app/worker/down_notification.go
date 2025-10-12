@@ -20,7 +20,6 @@ func (w *Worker) handleHealthMessage(topic, payload string) {
 		logger.Warn("unexpected message from controller", "message", payload)
 		return
 	}
-	logger.Info("received message", "message", payload)
 
 	garden, err := w.getGardenForTopic(topic)
 	if err != nil {
@@ -40,7 +39,6 @@ func (w *Worker) handleHealthMessage(topic, payload string) {
 		logger.Info("created new timer")
 	} else {
 		timer.Reset(downtime.Duration)
-		logger.Info("reset timer")
 	}
 }
 

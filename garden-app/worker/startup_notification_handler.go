@@ -23,7 +23,6 @@ func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) er
 		logger.Warn("unexpected message from controller", "message", payload)
 		return nil
 	}
-	logger.Info("received message", "message", msg)
 
 	garden, err := w.getGardenForTopic(topic)
 	if err != nil {
