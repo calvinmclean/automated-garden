@@ -106,18 +106,24 @@ func (ls LightSchedule) NextChange(now time.Time) (time.Time, LightState) {
 	yesterdayOnTime := todayOnTime.AddDate(0, 0, -1)
 	yesterdayOffTime := todayOffTime.AddDate(0, 0, -1)
 
-	onFromYesterday := yesterdayOnTime.Before(now) && yesterdayOffTime.After(now)
-	if onFromYesterday {
-		return yesterdayOffTime, LightStateOff
-	}
-
-	onToday := todayOnTime.Before(now) && yesterdayOffTime.Before(now)
-	if onToday {
+	withinTodaysDuration := todayOnTime.Before(now) && todayOffTime.After(now)
+	if withinTodaysDuration {
 		return todayOffTime, LightStateOff
 	}
 
-	currentlyOff := todayOffTime.After(now) && yesterdayOffTime.Before(now)
-	if currentlyOff {
+	withinYesterdayDuration := yesterdayOnTime.Before(now) && yesterdayOffTime.After(now)
+	if withinYesterdayDuration {
+		return yesterdayOffTime, LightStateOff
+	}
+
+	alreadyOnAndOffToday := todayOffTime.Before(now)
+	if alreadyOnAndOffToday {
+		// turns on again tomorrow
+		return todayOnTime.AddDate(0, 0, 1), LightStateOn
+	}
+
+	notOnYetToday := todayOnTime.After(now)
+	if notOnYetToday {
 		return todayOnTime, LightStateOn
 	}
 

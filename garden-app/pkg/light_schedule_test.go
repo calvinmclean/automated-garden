@@ -180,6 +180,17 @@ func TestNextChange(t *testing.T) {
 			expectedTime:  time.Date(2025, time.November, 8, 8, 0, 0, 0, time.UTC),
 			expectedState: LightStateOff,
 		},
+		{
+			// Light turns on at 7AM and off at 7PM. It is currently 10PM, so it will turn on tomorrow morning
+			name: "TurnsOnAgainTomorrow",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 07, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2023, time.November, 8, 22, 0, 0, 0, time.UTC),
+			expectedTime:  time.Date(2023, time.November, 9, 07, 0, 0, 0, time.UTC),
+			expectedState: LightStateOn,
+		},
 	}
 
 	for _, tt := range tests {
@@ -224,6 +235,16 @@ func TestExpectedStateAtTime(t *testing.T) {
 			},
 			currentTime:   time.Date(2025, time.November, 8, 6, 0, 0, 0, time.UTC),
 			expectedState: LightStateOn,
+		},
+		{
+			// Light runs from 5PM to 5AM and it is currently 8AM
+			name: "CurrentlyOff",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 17, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 9, 8, 0, 0, 0, time.UTC),
+			expectedState: LightStateOff,
 		},
 	}
 
