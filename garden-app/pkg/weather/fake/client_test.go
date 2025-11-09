@@ -8,7 +8,7 @@ import (
 )
 
 func TestNewClientInvalidRainInterval(t *testing.T) {
-	_, err := NewClient(map[string]interface{}{
+	_, err := NewClient(map[string]any{
 		"rain_interval": "not a duration",
 	})
 	assert.Error(t, err)
@@ -76,7 +76,7 @@ func TestGetTotalRain(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			client, err := NewClient(map[string]interface{}{
+			client, err := NewClient(map[string]any{
 				"rain_mm":              tt.rainMM,
 				"rain_interval":        tt.rainInterval,
 				"avg_high_temperature": 10,

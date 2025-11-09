@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
 
@@ -86,31 +87,10 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	g.Health = g.api.worker.GetGardenHealth(ctx, g.Garden)
 
 	if g.Garden.LightSchedule != nil {
-		nextOnTime := g.api.worker.GetNextLightTime(g.Garden, pkg.LightStateOn)
-		nextOffTime := g.api.worker.GetNextLightTime(g.Garden, pkg.LightStateOff)
-		if nextOnTime != nil && nextOffTime != nil {
-			// If the nextOnTime is before the nextOffTime, that means the next light action will be the ON action
-			if nextOnTime.Before(*nextOffTime) {
-				g.NextLightAction = &NextLightAction{
-					Time:  nextOnTime,
-					State: pkg.LightStateOn,
-				}
-			} else {
-				g.NextLightAction = &NextLightAction{
-					Time:  nextOffTime,
-					State: pkg.LightStateOff,
-				}
-			}
-		} else if nextOnTime != nil {
-			g.NextLightAction = &NextLightAction{
-				Time:  nextOnTime,
-				State: pkg.LightStateOn,
-			}
-		} else if nextOffTime != nil {
-			g.NextLightAction = &NextLightAction{
-				Time:  nextOffTime,
-				State: pkg.LightStateOff,
-			}
+		nextLightTime, nextLightState := g.Garden.LightSchedule.NextChange(clock.Now())
+		g.NextLightAction = &NextLightAction{
+			Time:  &nextLightTime,
+			State: nextLightState,
 		}
 
 		var loc *time.Location

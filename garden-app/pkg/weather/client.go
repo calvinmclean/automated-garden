@@ -3,6 +3,7 @@ package weather
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"time"
 
@@ -36,9 +37,9 @@ type Client interface {
 
 // Config is used to identify and configure a client type
 type Config struct {
-	ID      babyapi.ID             `json:"id" yaml:"id"`
-	Type    string                 `json:"type" yaml:"type"`
-	Options map[string]interface{} `json:"options" yaml:"options"`
+	ID      babyapi.ID     `json:"id" yaml:"id"`
+	Type    string         `json:"type" yaml:"type"`
+	Options map[string]any `json:"options" yaml:"options"`
 }
 
 func (wc *Config) GetID() string {
@@ -78,7 +79,7 @@ func (wc *Config) Bind(r *http.Request) error {
 
 // NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
 // return a nil client rather than an error since Weather client is not required
-func NewClient(c *Config, storageCallback func(map[string]interface{}) error) (client Client, err error) {
+func NewClient(c *Config, storageCallback func(map[string]any) error) (client Client, err error) {
 	switch c.Type {
 	case "netatmo":
 		client, err = netatmo.NewClient(c.Options, storageCallback)
@@ -101,11 +102,9 @@ func (wc *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
 	}
 
 	if wc.Options == nil && newConfig.Options != nil {
-		wc.Options = map[string]interface{}{}
+		wc.Options = map[string]any{}
 	}
-	for k, v := range newConfig.Options {
-		wc.Options[k] = v
-	}
+	maps.Copy(wc.Options, newConfig.Options)
 
 	return nil
 }

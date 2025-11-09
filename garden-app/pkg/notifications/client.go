@@ -3,6 +3,7 @@ package notifications
 import (
 	"errors"
 	"fmt"
+	"maps"
 	"net/http"
 	"time"
 
@@ -75,9 +76,7 @@ func (nc *Client) Patch(newConfig *Client) *babyapi.ErrResponse {
 	if nc.Options == nil && newConfig.Options != nil {
 		nc.Options = map[string]any{}
 	}
-	for k, v := range newConfig.Options {
-		nc.Options[k] = v
-	}
+	maps.Copy(nc.Options, newConfig.Options)
 
 	return nil
 }

@@ -17,8 +17,8 @@ import (
 
 // Config is used to identify and configure a storage client
 type Config struct {
-	Driver  string                 `mapstructure:"driver" yaml:"driver"`
-	Options map[string]interface{} `mapstructure:"options" yaml:"options"`
+	Driver  string         `mapstructure:"driver" yaml:"driver"`
+	Options map[string]any `mapstructure:"options" yaml:"options"`
 }
 
 type Client struct {

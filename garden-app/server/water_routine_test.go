@@ -100,9 +100,9 @@ func TestWaterRoutine(t *testing.T) {
 	})
 
 	t.Run("RunRoutine", func(t *testing.T) {
-		mqttClient.On("Publish", "test-garden/command/water", []byte(fmt.Sprintf(`{"duration":1000,"zone_id":"%s","position":0,"id":"00000000000000000000","source":"water_routine"}`, zones[0].GetID()))).Return(nil)
-		mqttClient.On("Publish", "test-garden/command/water", []byte(fmt.Sprintf(`{"duration":1000,"zone_id":"%s","position":1,"id":"00000000000000000000","source":"water_routine"}`, zones[1].GetID()))).Return(nil)
-		mqttClient.On("Publish", "test-garden/command/water", []byte(fmt.Sprintf(`{"duration":1000,"zone_id":"%s","position":2,"id":"00000000000000000000","source":"water_routine"}`, zones[2].GetID()))).Return(nil)
+		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":0,"id":"00000000000000000000","source":"water_routine"}`, zones[0].GetID())).Return(nil)
+		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":1,"id":"00000000000000000000","source":"water_routine"}`, zones[1].GetID())).Return(nil)
+		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":2,"id":"00000000000000000000","source":"water_routine"}`, zones[2].GetID())).Return(nil)
 		mqttClient.On("Disconnect", uint(100)).Return()
 
 		r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/run", waterRoutineBasePath, wr.GetID()), http.NoBody)

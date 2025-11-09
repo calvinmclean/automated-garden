@@ -19,7 +19,7 @@ func TestConfigPatch(t *testing.T) {
 		},
 		{
 			"PatchOptions",
-			&Config{Options: map[string]interface{}{
+			&Config{Options: map[string]any{
 				"key": "value",
 			}},
 		},
@@ -36,7 +36,7 @@ func TestConfigPatch(t *testing.T) {
 }
 
 func TestNewWeatherClientInvalidType(t *testing.T) {
-	_, err := NewClient(&Config{Type: "DNE"}, func(m map[string]interface{}) error { return nil })
+	_, err := NewClient(&Config{Type: "DNE"}, func(m map[string]any) error { return nil })
 	assert.Error(t, err)
 	assert.Equal(t, "invalid type 'DNE'", err.Error())
 }
@@ -44,12 +44,12 @@ func TestNewWeatherClientInvalidType(t *testing.T) {
 func TestCachedWeatherClient(t *testing.T) {
 	client, err := NewClient(&Config{
 		Type: "fake",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"rain_mm":              25.4,
 			"rain_interval":        "24h",
 			"avg_high_temperature": 40,
 		},
-	}, func(m map[string]interface{}) error { return nil })
+	}, func(m map[string]any) error { return nil })
 	assert.NoError(t, err)
 	assert.NotNil(t, client)
 

@@ -203,7 +203,7 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"LightScheduleRange": func(ls *pkg.LightSchedule) map[int]string {
 			result := map[int]string{}
-			for i := 0; i < 24; i++ {
+			for i := range 24 {
 				selected := ""
 				if ls != nil && ls.Duration.Hours() == float64(i) {
 					selected = "selected"

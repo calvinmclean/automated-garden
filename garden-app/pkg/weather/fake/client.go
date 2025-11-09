@@ -26,7 +26,7 @@ type Client struct {
 // NewClient creates a new client that will return fake data based on configuration.
 // This is intended for testing purposes only and should be used in a staging environment
 // or integration tests, not as a mock in unit tests
-func NewClient(options map[string]interface{}) (*Client, error) {
+func NewClient(options map[string]any) (*Client, error) {
 	client := &Client{}
 
 	err := mapstructure.Decode(options, &client.Config)

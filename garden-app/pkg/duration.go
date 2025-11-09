@@ -39,7 +39,7 @@ func (d *Duration) MarshalJSON() ([]byte, error) {
 
 // UnmarshalJSON with allow reading a Duration as a string or integer into time.Duration
 func (d *Duration) UnmarshalJSON(data []byte) error {
-	var value interface{}
+	var value any
 	err := json.Unmarshal(data, &value)
 	if err != nil {
 		return err
@@ -104,7 +104,7 @@ func (d *Duration) UnmarshalYAML(value *yaml.Node) error {
 }
 
 // MarshalYAML will convert Duration into the string representation
-func (d *Duration) MarshalYAML() (interface{}, error) {
+func (d *Duration) MarshalYAML() (any, error) {
 	if d.Cron != "" {
 		return cronPrefix + d.Cron, nil
 	}

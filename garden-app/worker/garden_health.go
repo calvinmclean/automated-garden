@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 )
 
@@ -30,7 +31,7 @@ func (w *Worker) GetGardenHealth(ctx context.Context, g *pkg.Garden) *pkg.Garden
 	}
 
 	// Garden is considered "UP" if it's last contact was less than 5 minutes ago
-	between := time.Since(lastContact)
+	between := clock.Since(lastContact)
 	up := between < 5*time.Minute
 
 	status := pkg.HealthStatusUp

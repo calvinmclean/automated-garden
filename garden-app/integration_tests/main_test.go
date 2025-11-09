@@ -480,7 +480,7 @@ func ControllerStartupNotificationTest(t *testing.T) {
 	})
 }
 
-func makeRequest(method, path string, body, response interface{}) (int, error) {
+func makeRequest(method, path string, body, response any) (int, error) {
 	// TODO: Use babyapi Client
 	var reqBody io.Reader
 	switch v := body.(type) {

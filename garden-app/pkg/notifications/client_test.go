@@ -22,7 +22,7 @@ func TestConfigPatch(t *testing.T) {
 		},
 		{
 			"PatchOptions",
-			&Client{Options: map[string]interface{}{
+			&Client{Options: map[string]any{
 				"key": "value",
 			}},
 		},

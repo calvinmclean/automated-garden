@@ -76,7 +76,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_mm":       50,
 						"rain_interval": "24h",
 					},
@@ -102,7 +102,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_mm":       0,
 						"rain_interval": "24h",
 					},
@@ -128,7 +128,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval": "24h",
 						"error":         "weather client error",
 					},
@@ -154,7 +154,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_mm":       25,
 						"rain_interval": "24h",
 					},
@@ -180,7 +180,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"avg_high_temperature": 70,
 					},
@@ -206,7 +206,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"avg_high_temperature": 85,
 					},
@@ -232,7 +232,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"avg_high_temperature": 100,
 					},
@@ -258,7 +258,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"avg_high_temperature": 120,
 					},
@@ -284,7 +284,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"avg_high_temperature": 55,
 					},
@@ -310,7 +310,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"avg_high_temperature": 40,
 					},
@@ -336,7 +336,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"avg_high_temperature": 0,
 					},
@@ -362,7 +362,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval": "24h",
 						"error":         "weather client error",
 					},
@@ -391,7 +391,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"rain_mm":              25,
 						"avg_high_temperature": 85,
@@ -422,7 +422,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
 					Type: "fake",
-					Options: map[string]interface{}{
+					Options: map[string]any{
 						"rain_interval":        "24h",
 						"rain_mm":              25,
 						"avg_high_temperature": 55,

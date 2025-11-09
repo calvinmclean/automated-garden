@@ -50,7 +50,7 @@ type Client struct {
 	*Config
 	*http.Client
 	baseURL         *url.URL
-	storageCallback func(map[string]interface{}) error
+	storageCallback func(map[string]any) error
 }
 
 var DefaultClient = http.DefaultClient
@@ -59,7 +59,7 @@ var DefaultClient = http.DefaultClient
 // If StationID is not provided, StationName is used to get it from the API
 // If RainModuleID is not provided, RainModuleName is used to get it from the API
 // For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
-func NewClient(options map[string]interface{}, storageCallback func(map[string]interface{}) error) (*Client, error) {
+func NewClient(options map[string]any, storageCallback func(map[string]any) error) (*Client, error) {
 	client := &Client{Client: DefaultClient, storageCallback: storageCallback}
 
 	err := mapstructure.Decode(options, &client.Config)
@@ -235,14 +235,14 @@ func (c *Client) refreshToken() error {
 	c.Authentication.ExpirationDate = clock.Now().Add(time.Duration(c.Authentication.ExpiresIn) * time.Second).Format(time.RFC3339Nano)
 
 	// Use storage callback to save new authentication details
-	err = c.storageCallback(map[string]interface{}{
+	err = c.storageCallback(map[string]any{
 		"station_id":          c.Config.StationID,
 		"station_name":        c.Config.StationName,
 		"rain_module_id":      c.Config.RainModuleID,
 		"rain_module_name":    c.Config.RainModuleName,
 		"outdoor_module_id":   c.Config.OutdoorModuleID,
 		"outdoor_module_name": c.Config.OutdoorModuleName,
-		"authentication": map[string]interface{}{
+		"authentication": map[string]any{
 			"access_token":    c.Config.Authentication.AccessToken,
 			"refresh_token":   c.Config.Authentication.RefreshToken,
 			"expires_in":      c.Config.Authentication.ExpiresIn,
