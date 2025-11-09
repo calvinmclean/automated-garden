@@ -662,7 +662,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightAction",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON","for_duration":null}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
 			},
 			`light.state=on`,
 			"{}",
@@ -671,7 +671,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightActionWithQuote",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON","for_duration":null}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
 			},
 			`light.state="on"`,
 			"{}",
@@ -680,7 +680,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightActionOFF",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"OFF","for_duration":null}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
 			},
 			`light.state=off`,
 			"{}",
@@ -689,7 +689,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightActionOFFWithQuote",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"OFF","for_duration":null}`)).Return(nil)
+				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
 			},
 			`light.state="off"`,
 			"{}",

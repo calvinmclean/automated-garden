@@ -127,18 +127,8 @@ func TestLightActionExecute(t *testing.T) {
 			},
 		},
 		{
-			"SuccessfulWithDelay",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
-			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(nil)
-			},
-			func(err error, t *testing.T) {
-				assert.NoError(t, err)
-			},
-		},
-		{
 			"PublishError",
-			&action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: 30 * time.Second}},
+			&action.LightAction{State: pkg.LightStateOff},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
 				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(errors.New("publish error"))
 			},

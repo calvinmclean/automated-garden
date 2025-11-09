@@ -161,56 +161,6 @@ func GardenTests(t *testing.T) {
 			c.AssertLightActions(t, action.LightAction{State: state})
 		})
 	}
-	t.Run("ExecuteLightActionWithDelay", func(t *testing.T) {
-		// Create new Garden with LightOnTime in the near future, so LightDelay will assume the light is currently off,
-		// meaning adhoc action is going to be predictably delayed
-		maxZones := uint(1)
-		startTime := pkg.NewStartTime(clock.Now().In(time.Local).Add(1 * time.Second).Truncate(time.Second))
-		newGarden := &pkg.Garden{
-			Name:        "TestGarden",
-			TopicPrefix: "test",
-			MaxZones:    &maxZones,
-			LightSchedule: &pkg.LightSchedule{
-				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
-				StartTime: startTime,
-			},
-		}
-
-		var g server.GardenResponse
-		status, err := makeRequest(http.MethodPost, "/gardens", newGarden, &g)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusCreated, status)
-
-		// Execute light action with delay
-		status, err = makeRequest(
-			http.MethodPost,
-			fmt.Sprintf("/gardens/%s/action", g.ID.String()),
-			action.GardenAction{Light: &action.LightAction{
-				State:       pkg.LightStateOff,
-				ForDuration: &pkg.Duration{Duration: time.Second},
-			}},
-			&struct{}{},
-		)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusAccepted, status)
-
-		time.Sleep(100 * time.Millisecond)
-
-		// Make sure NextOnTime is correctly delayed
-		var getG server.GardenResponse
-		status, err = makeRequest(http.MethodGet, fmt.Sprintf("/gardens/%s", g.ID.String()), http.NoBody, &getG)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, status)
-		assert.Equal(t, startTime.Time.Add(1*time.Second), getG.NextLightAction.Time.Local())
-
-		time.Sleep(3 * time.Second)
-
-		// Check for light action turning it off, plus adhoc schedule to turn it back on
-		c.AssertLightActions(t,
-			action.LightAction{State: pkg.LightStateOff, ForDuration: &pkg.Duration{Duration: time.Second}},
-			action.LightAction{State: pkg.LightStateOn},
-		)
-	})
 	t.Run("ChangeLightScheduleStartTimeResetsLightSchedule", func(t *testing.T) {
 		// Reschedule Light to turn in in 2 second, for 1 second
 		newStartTimeDelay := 2 * time.Second

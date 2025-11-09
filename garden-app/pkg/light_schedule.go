@@ -66,9 +66,8 @@ func (l *LightState) unmarshal(data []byte) error {
 // LightSchedule allows the user to control when the Garden light is turned on and off
 // "Time" should be in the format of LightTimeFormat constant ("15:04:05-07:00")
 type LightSchedule struct {
-	Duration    *Duration  `json:"duration" yaml:"duration"`
-	StartTime   *StartTime `json:"start_time" yaml:"start_time"`
-	AdhocOnTime *time.Time `json:"adhoc_on_time,omitempty" yaml:"adhoc_on_time,omitempty"`
+	Duration  *Duration  `json:"duration" yaml:"duration"`
+	StartTime *StartTime `json:"start_time" yaml:"start_time"`
 }
 
 // String...
@@ -83,9 +82,6 @@ func (ls *LightSchedule) Patch(newLightSchedule *LightSchedule) {
 	}
 	if newLightSchedule.StartTime != nil {
 		ls.StartTime = newLightSchedule.StartTime
-	}
-	if newLightSchedule.AdhocOnTime == nil {
-		ls.AdhocOnTime = nil
 	}
 }
 
