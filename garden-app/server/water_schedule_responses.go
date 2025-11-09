@@ -66,7 +66,7 @@ func GetNextWaterDetails(r *http.Request, ws *pkg.WaterSchedule, worker *worker.
 type WaterScheduleResponse struct {
 	*pkg.WaterSchedule
 	WeatherData *WeatherData     `json:"weather_data,omitempty"`
-	NextWater   NextWaterDetails `json:"next_water,omitempty"`
+	NextWater   NextWaterDetails `json:"next_water,omitzero"`
 	Links       []Link           `json:"links,omitempty"`
 
 	api *WaterSchedulesAPI

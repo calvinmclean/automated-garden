@@ -113,7 +113,7 @@ func TestHandleMessage(t *testing.T) {
 
 	zoneID := babyapi.NewID()
 	t.Run("ErrorGettingGarden", func(t *testing.T) {
-		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
+		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
 		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, "error getting garden with topic-prefix \"garden\": no garden found", err.Error())
@@ -138,7 +138,7 @@ func TestHandleMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SuccessfulWithNoNotificationClients", func(t *testing.T) {
-		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
+		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
 		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.NoError(t, err)
 	})
@@ -186,7 +186,7 @@ func TestHandleMessage(t *testing.T) {
 
 	t.Run("ErrorGettingZone", func(t *testing.T) {
 		dneID := xid.New().String()
-		msg := []byte(fmt.Sprintf("water,zone=1 millis=6000 zone_id=%s id=eventID", dneID))
+		msg := fmt.Appendf(nil, "water,zone=1 millis=6000 zone_id=%s id=eventID", dneID)
 		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, fmt.Sprintf("error getting zone %s: resource not found", dneID), err.Error())
@@ -208,7 +208,7 @@ func TestHandleMessage(t *testing.T) {
 		// github.com/gregdel/pushover uses http.DefaultClient
 		http.DefaultClient = r.GetDefaultClient()
 
-		msg := []byte(fmt.Sprintf("water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String()))
+		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
 		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, "Errors:\napplication token is invalid, see https://pushover.net/api", err.Error())

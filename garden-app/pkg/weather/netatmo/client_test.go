@@ -38,7 +38,7 @@ func TestNewClientUsingDeviceName(t *testing.T) {
 		"rain_module_name":    "Smart Rain Gauge",
 		"station_name":        "Weather Station",
 	}
-	client, err := NewClient(opts, func(m map[string]interface{}) error {
+	client, err := NewClient(opts, func(m map[string]any) error {
 		return nil
 	})
 	require.NoError(t, err)
@@ -117,7 +117,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 				"rain_module_id":    "RAIN_MODULE_ID",
 				"station_id":        "STATION_ID",
 			}
-			client, err := NewClient(opts, func(newOpts map[string]interface{}) error { return nil })
+			client, err := NewClient(opts, func(newOpts map[string]any) error { return nil })
 			require.NoError(t, err)
 
 			r, err := recorder.New(

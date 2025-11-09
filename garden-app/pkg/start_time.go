@@ -70,11 +70,11 @@ func (st *StartTime) Validate() error {
 }
 
 func (st *StartTime) MarshalJSON() ([]byte, error) {
-	return []byte(fmt.Sprintf(`"%s"`, st.String())), nil
+	return fmt.Appendf(nil, `"%s"`, st.String()), nil
 }
 
 func (st *StartTime) UnmarshalJSON(data []byte) error {
-	var value interface{}
+	var value any
 	err := json.Unmarshal(data, &value)
 	if err != nil {
 		return err

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"sort"
 	"time"
 
@@ -282,13 +283,7 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 
 	logger.Debug("found light jobs and now checking to remove any adhoc jobs", "count", len(jobs))
 	for _, j := range jobs {
-		isAdhoc := false
-		for _, tag := range j.Tags() {
-			if tag == adhocTag {
-				isAdhoc = true
-				break
-			}
-		}
+		isAdhoc := slices.Contains(j.Tags(), adhocTag)
 		if !isAdhoc {
 			return j, nil
 		}

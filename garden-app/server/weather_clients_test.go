@@ -19,7 +19,7 @@ func createExampleWeatherClientConfig() *weather.Config {
 	return &weather.Config{
 		ID:   babyapi.ID{ID: id},
 		Type: "fake",
-		Options: map[string]interface{}{
+		Options: map[string]any{
 			"rain_mm":              25.4,
 			"rain_interval":        "24h",
 			"avg_high_temperature": 80.0,

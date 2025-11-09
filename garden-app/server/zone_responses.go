@@ -17,7 +17,7 @@ import (
 type ZoneResponse struct {
 	*pkg.Zone
 	WeatherData *WeatherData     `json:"weather_data,omitempty"`
-	NextWater   NextWaterDetails `json:"next_water,omitempty"`
+	NextWater   NextWaterDetails `json:"next_water,omitzero"`
 	Links       []Link           `json:"links,omitempty"`
 
 	// History is only used in HTML responses and is excluded from JSON

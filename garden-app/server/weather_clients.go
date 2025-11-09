@@ -32,7 +32,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 
 	api.SetOnCreateOrUpdate(func(_ http.ResponseWriter, _ *http.Request, wc *weather.Config) *babyapi.ErrResponse {
 		// make sure a valid WeatherClient can still be created
-		_, err := weather.NewClient(wc, func(map[string]interface{}) error { return nil })
+		_, err := weather.NewClient(wc, func(map[string]any) error { return nil })
 		if err != nil {
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
 		}
@@ -121,7 +121,7 @@ func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.R
 }
 
 func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient *weather.Config) (WeatherData, error) {
-	wc, err := weather.NewClient(weatherClient, func(weatherClientOptions map[string]interface{}) error {
+	wc, err := weather.NewClient(weatherClient, func(weatherClientOptions map[string]any) error {
 		weatherClient.Options = weatherClientOptions
 		return api.storageClient.WeatherClientConfigs.Set(ctx, weatherClient)
 	})

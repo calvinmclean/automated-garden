@@ -21,7 +21,7 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 		return nil, fmt.Errorf("weather client config not found")
 	}
 
-	return weather.NewClient(clientConfig, func(weatherClientOptions map[string]interface{}) error {
+	return weather.NewClient(clientConfig, func(weatherClientOptions map[string]any) error {
 		clientConfig.Options = weatherClientOptions
 		return c.WeatherClientConfigs.Set(context.Background(), clientConfig)
 	})

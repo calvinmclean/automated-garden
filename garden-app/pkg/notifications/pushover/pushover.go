@@ -18,7 +18,7 @@ type Client struct {
 	recipient *pushover.Recipient
 }
 
-func NewClient(options map[string]interface{}) (*Client, error) {
+func NewClient(options map[string]any) (*Client, error) {
 	client := &Client{}
 
 	err := mapstructure.Decode(options, &client.Config)
