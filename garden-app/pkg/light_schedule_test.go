@@ -184,11 +184,11 @@ func TestNextChange(t *testing.T) {
 			// Light turns on at 7AM and off at 7PM. It is currently 10PM, so it will turn on tomorrow morning
 			name: "TurnsOnAgainTomorrow",
 			ls: LightSchedule{
-				StartTime: &StartTime{Time: time.Date(0, 0, 0, 07, 0, 0, 0, time.UTC)},
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 0o7, 0, 0, 0, time.UTC)},
 				Duration:  &Duration{Duration: 12 * time.Hour},
 			},
 			currentTime:   time.Date(2023, time.November, 8, 22, 0, 0, 0, time.UTC),
-			expectedTime:  time.Date(2023, time.November, 9, 07, 0, 0, 0, time.UTC),
+			expectedTime:  time.Date(2023, time.November, 9, 0o7, 0, 0, 0, time.UTC),
 			expectedState: LightStateOn,
 		},
 	}
