@@ -88,3 +88,38 @@ func (ls *LightSchedule) Patch(newLightSchedule *LightSchedule) {
 		ls.AdhocOnTime = nil
 	}
 }
+
+// ExpectedStateAtTime returns the expected state for a LightSchedule at a specific time
+func (ls LightSchedule) ExpectedStateAtTime(now time.Time) LightState {
+	_, state := ls.NextChange(now)
+	return state ^ 1
+}
+
+// NextChange determines what the next LightState change will be and at what time. For example, consider a LightSchedule
+// that turns on at 8PM for 12 hours. At 7PM, this will return (8PM, ON). At 9PM, it returns (8AM, OFF).
+func (ls LightSchedule) NextChange(now time.Time) (time.Time, LightState) {
+	// LightSchedules operate on a 24-hour interval, so we have a time for today's schedule
+	todayOnTime := ls.StartTime.OnDate(now)
+	todayOffTime := todayOnTime.Add(ls.Duration.Duration)
+
+	// and one for yesterday's which could still be active
+	yesterdayOnTime := todayOnTime.AddDate(0, 0, -1)
+	yesterdayOffTime := todayOffTime.AddDate(0, 0, -1)
+
+	onFromYesterday := yesterdayOnTime.Before(now) && yesterdayOffTime.After(now)
+	if onFromYesterday {
+		return yesterdayOffTime, LightStateOff
+	}
+
+	onToday := todayOnTime.Before(now) && yesterdayOffTime.Before(now)
+	if onToday {
+		return todayOffTime, LightStateOff
+	}
+
+	currentlyOff := todayOffTime.After(now) && yesterdayOffTime.Before(now)
+	if currentlyOff {
+		return todayOnTime, LightStateOn
+	}
+
+	return time.Time{}, LightStateToggle
+}

@@ -39,6 +39,21 @@ func (st *StartTime) String() string {
 	return st.Time.Format(startTimeFormat)
 }
 
+// OnDate takes the StartTime hour/minute/second and applies to the date on the input
+func (st StartTime) OnDate(date time.Time) time.Time {
+	date = date.In(st.Time.Location())
+	return time.Date(
+		date.Year(),
+		date.Month(),
+		date.Day(),
+		st.Time.Hour(),
+		st.Time.Minute(),
+		st.Time.Second(),
+		0,
+		st.Time.Location(),
+	)
+}
+
 // Validate is used after parsing from HTML form so the time can be parsed
 func (st *StartTime) Validate() error {
 	if !st.Time.IsZero() {
