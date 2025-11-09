@@ -3,6 +3,9 @@ package pkg
 import (
 	"encoding/json"
 	"testing"
+	"time"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestLightStateString(t *testing.T) {
@@ -137,4 +140,118 @@ func TestLightStateMarshal(t *testing.T) {
 			t.Errorf("Expected empty string but got: %v", string(result))
 		}
 	})
+}
+
+func TestNextChange(t *testing.T) {
+	tests := []struct {
+		name          string
+		ls            LightSchedule
+		currentTime   time.Time
+		expectedTime  time.Time
+		expectedState LightState
+	}{
+		{
+			name: "OnInOneHour",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 13, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 8, 12, 0, 0, 0, time.UTC),
+			expectedTime:  time.Date(2025, time.November, 8, 13, 0, 0, 0, time.UTC),
+			expectedState: LightStateOn,
+		},
+		{
+			name: "OffInElevenHours",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 13, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 8, 14, 0, 0, 0, time.UTC),
+			expectedTime:  time.Date(2025, time.November, 9, 1, 0, 0, 0, time.UTC),
+			expectedState: LightStateOff,
+		},
+		{
+			name: "TurnedOnYesterdayAndTurnsOffLater",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 20, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 8, 6, 0, 0, 0, time.UTC),
+			expectedTime:  time.Date(2025, time.November, 8, 8, 0, 0, 0, time.UTC),
+			expectedState: LightStateOff,
+		},
+		{
+			// Light turns on at 7AM and off at 7PM. It is currently 10PM, so it will turn on tomorrow morning
+			name: "TurnsOnAgainTomorrow",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 0o7, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2023, time.November, 8, 22, 0, 0, 0, time.UTC),
+			expectedTime:  time.Date(2023, time.November, 9, 0o7, 0, 0, 0, time.UTC),
+			expectedState: LightStateOn,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nextTime, nextState := tt.ls.NextChange(tt.currentTime)
+			assert.Equal(t, tt.expectedTime, nextTime)
+			assert.Equal(t, tt.expectedState, nextState)
+		})
+	}
+}
+
+func TestExpectedStateAtTime(t *testing.T) {
+	tests := []struct {
+		name          string
+		ls            LightSchedule
+		currentTime   time.Time
+		expectedState LightState
+	}{
+		{
+			name: "OnInOneHour_CurrentlyOff",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 13, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 8, 12, 0, 0, 0, time.UTC),
+			expectedState: LightStateOff,
+		},
+		{
+			name: "OffInElevenHours_CurrentlyOn",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 13, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 8, 14, 0, 0, 0, time.UTC),
+			expectedState: LightStateOn,
+		},
+		{
+			name: "TurnedOnYesterdayAndTurnsOffLater_CurrentlyOn",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 20, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 8, 6, 0, 0, 0, time.UTC),
+			expectedState: LightStateOn,
+		},
+		{
+			// Light runs from 5PM to 5AM and it is currently 8AM
+			name: "CurrentlyOff",
+			ls: LightSchedule{
+				StartTime: &StartTime{Time: time.Date(0, 0, 0, 17, 0, 0, 0, time.UTC)},
+				Duration:  &Duration{Duration: 12 * time.Hour},
+			},
+			currentTime:   time.Date(2025, time.November, 9, 8, 0, 0, 0, time.UTC),
+			expectedState: LightStateOff,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			currentState := tt.ls.ExpectedStateAtTime(tt.currentTime)
+			assert.Equal(t, tt.expectedState, currentState)
+		})
+	}
 }

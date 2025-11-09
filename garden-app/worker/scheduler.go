@@ -42,12 +42,15 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, waterSchedule)
 	logger.Info("creating scheduled Job for WaterSchedule")
 
-	startTime := waterSchedule.StartTime.Time.UTC()
+	startDate := clock.Now()
+	if waterSchedule.StartDate != nil {
+		startDate = *waterSchedule.StartDate
+	}
 
 	// Schedule the WaterAction execution
 	scheduleJobsGauge.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
 	_, err := waterSchedule.Interval.SchedulerFunc(w.scheduler).
-		StartAt(timeAtDate(waterSchedule.StartDate, startTime)).
+		StartAt(waterSchedule.StartTime.OnDate(startDate).UTC()).
 		Tag("water_schedule").
 		Tag(waterSchedule.ID.String()).
 		Do(func(jobLogger *slog.Logger) {
@@ -187,10 +190,8 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Info("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
-	lightTime := g.LightSchedule.StartTime.Time.UTC()
-
 	now := clock.Now()
-	onStartDate := timeAtDate(&now, lightTime)
+	onStartDate := g.LightSchedule.StartTime.OnDate(now).UTC()
 	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
 
 	// Schedule the LightAction execution for ON and OFF
@@ -503,22 +504,4 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 	}
 
 	w.sendLightActionNotification(g, input.State, actionLogger)
-}
-
-func timeAtDate(date *time.Time, startTime time.Time) time.Time {
-	actualDate := clock.Now()
-	if date != nil {
-		actualDate = *date
-	}
-	actualDate = actualDate.In(startTime.Location())
-	return time.Date(
-		actualDate.Year(),
-		actualDate.Month(),
-		actualDate.Day(),
-		startTime.Hour(),
-		startTime.Minute(),
-		startTime.Second(),
-		0,
-		startTime.Location(),
-	)
 }
