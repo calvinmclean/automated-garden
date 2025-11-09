@@ -48,7 +48,7 @@ func TestGetGardenAndSendStartupMessage(t *testing.T) {
 	w := NewWorker(storageClient, nil, mqttClient, slog.Default())
 
 	t.Run("LightTurnsOn", func(t *testing.T) {
-		mqttClient.On("Publish", "garden/command/light", []byte(`{"state":"ON","for_duration":null}`)).Return(nil)
+		mqttClient.On("Publish", "garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
 		err = w.getGardenAndSendStartupMessage("garden/data/logs", "logs message=\"garden-controller setup complete\"")
 		require.NoError(t, err)
 		mqttClient.AssertExpectations(t)
@@ -59,7 +59,7 @@ func TestGetGardenAndSendStartupMessage(t *testing.T) {
 		fmt.Println("LightTime", garden.LightSchedule.StartTime.Time)
 		fmt.Println("Now", clock.Now())
 		fmt.Println(garden.LightSchedule.NextChange(c.Now()))
-		mqttClient.On("Publish", "garden/command/light", []byte(`{"state":"OFF","for_duration":null}`)).Return(nil)
+		mqttClient.On("Publish", "garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
 		err = w.getGardenAndSendStartupMessage("garden/data/logs", "logs message=\"garden-controller setup complete\"")
 		require.NoError(t, err)
 		mqttClient.AssertExpectations(t)

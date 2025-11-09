@@ -28,12 +28,6 @@ func (action *GardenAction) Bind(_ *http.Request) error {
 		return errors.New("missing required action fields")
 	}
 
-	if action.Light != nil && action.Light.ForDuration != nil {
-		if action.Light.ForDuration.Duration < 0 {
-			return errors.New("delay duration must be greater than 0")
-		}
-	}
-
 	if action.Update != nil {
 		if !action.Update.Config {
 			return errors.New("update action must have config=true")
@@ -45,8 +39,7 @@ func (action *GardenAction) Bind(_ *http.Request) error {
 // LightAction is an action for turning on or off a light for the Garden. The State field is optional and it will just toggle
 // the current state if left empty.
 type LightAction struct {
-	State       pkg.LightState `json:"state" form:"state"`
-	ForDuration *pkg.Duration  `json:"for_duration" form:"for_duration"`
+	State pkg.LightState `json:"state" form:"state"`
 }
 
 // StopAction is an action for stopping watering of a Zone. It doesn't stop watering a specific Zone, only what is

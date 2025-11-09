@@ -71,12 +71,6 @@ func TestGardenPatch(t *testing.T) {
 			}},
 		},
 		{
-			"PatchLightSchedule.AdhocOnTime",
-			&Garden{LightSchedule: &LightSchedule{
-				AdhocOnTime: nil,
-			}},
-		},
-		{
 			"PatchTemperatureHumiditySensorTrue",
 			&Garden{TemperatureHumiditySensor: &trueBool},
 		},
