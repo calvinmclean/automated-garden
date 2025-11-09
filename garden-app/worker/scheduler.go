@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"slices"
 	"sort"
 	"time"
 
@@ -17,7 +16,6 @@ import (
 
 const (
 	lightInterval = 24 * time.Hour
-	adhocTag      = "ADHOC"
 )
 
 // sortableJobs is a type that makes a slice of gocron Jobs sortable
@@ -240,7 +238,7 @@ func (w *Worker) GetNextLightTime(g *pkg.Garden, state pkg.LightState) *time.Tim
 	logger := w.contextLogger(g, nil, nil)
 	logger.Debug("getting next light time for state", "state", state.String())
 
-	nextJob, err := w.getNextLightJob(g, state, true)
+	nextJob, err := w.getNextLightJob(g, state)
 	if err != nil {
 		return nil
 	}
@@ -264,11 +262,10 @@ func (w *Worker) RemoveJobsByID(id string) error {
 	return nil
 }
 
-// getNextLightJob returns the next Job tagged with the gardenID and state. If allowAdhoc is true, return whichever job is soonest,
-// otherwise return the first non-adhoc Job
-func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc bool) (*gocron.Job, error) {
+// getNextLightJob returns the next Job tagged with the gardenID and state
+func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState) (*gocron.Job, error) {
 	logger := w.contextLogger(g, nil, nil)
-	logger.Debug("getting next light Job for state", "state", state, "allow_ad_hoc", allowAdhoc)
+	logger.Debug("getting next light Job for state", "state", state)
 
 	jobs, err := w.scheduler.FindJobsByTag(g.ID.String(), state.String())
 	if err != nil {
@@ -276,19 +273,11 @@ func (w *Worker) getNextLightJob(g *pkg.Garden, state pkg.LightState, allowAdhoc
 	}
 	sort.Sort(sortableJobs(jobs))
 
-	if allowAdhoc {
-		logger.Debug("found light jobs, returning the first one", "count", len(jobs))
-		return jobs[0], nil
+	if len(jobs) == 0 {
+		return nil, fmt.Errorf("unable to find next %s Job for Garden %s", state.String(), g.ID.String())
 	}
 
-	logger.Debug("found light jobs and now checking to remove any adhoc jobs", "count", len(jobs))
-	for _, j := range jobs {
-		isAdhoc := slices.Contains(j.Tags(), adhocTag)
-		if !isAdhoc {
-			return j, nil
-		}
-	}
-	return nil, fmt.Errorf("unable to find next %s Job for Garden %s", state.String(), g.ID.String())
+	return jobs[0], nil
 }
 
 func (w *Worker) contextLogger(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) *slog.Logger {
