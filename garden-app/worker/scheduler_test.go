@@ -70,7 +70,10 @@ func createExampleWaterSchedule() *pkg.WaterSchedule {
 
 func TestScheduleWaterActionStorageError(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	assert.NoError(t, err)
 
@@ -110,7 +113,10 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 
 func TestScheduleWaterAction(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	assert.NoError(t, err)
 	defer weather.ResetCache()
@@ -206,7 +212,10 @@ func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
 			fake.Reset()
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 			defer weather.ResetCache()
@@ -285,7 +294,10 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 			fake.Reset()
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 			defer weather.ResetCache()
@@ -349,7 +361,10 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 
 func TestResetNextWaterTime(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	assert.NoError(t, err)
 	defer weather.ResetCache()
@@ -414,7 +429,10 @@ func TestGetNextWaterTime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 			defer weather.ResetCache()
@@ -477,7 +495,10 @@ func TestGetNextWaterTimeWithInterval(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 			defer weather.ResetCache()
@@ -585,7 +606,10 @@ func TestScheduleLightActions(t *testing.T) {
 				fake.Reset()
 
 				storageClient, err := storage.NewClient(storage.Config{
-					Driver: "hashmap",
+					Driver: "sqlite",
+					Options: map[string]any{
+						"data_source_name": ":memory:",
+					},
 				})
 				assert.NoError(t, err)
 
@@ -669,7 +693,10 @@ func TestScheduleLightActions(t *testing.T) {
 				fake.Reset()
 
 				storageClient, err := storage.NewClient(storage.Config{
-					Driver: "hashmap",
+					Driver: "sqlite",
+					Options: map[string]any{
+						"data_source_name": ":memory:",
+					},
 				})
 				assert.NoError(t, err)
 
@@ -718,7 +745,10 @@ func TestScheduleLightActions(t *testing.T) {
 
 func TestRemoveJobsByID(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	assert.NoError(t, err)
 	defer weather.ResetCache()

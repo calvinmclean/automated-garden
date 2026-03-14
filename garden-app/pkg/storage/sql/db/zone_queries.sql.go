@@ -83,12 +83,51 @@ func (q *Queries) GetZone(ctx context.Context, id string) (Zone, error) {
 	return i, err
 }
 
-const listZones = `-- name: ListZones :many
+const listActiveZones = `-- name: ListActiveZones :many
+SELECT id, name, garden_id, details_description, details_notes, position, skip_count, created_at, end_date, water_schedule_ids FROM zones WHERE garden_id = ? AND
+    end_date IS NULL OR end_date > DATETIME('now')
+`
+
+func (q *Queries) ListActiveZones(ctx context.Context, gardenID string) ([]Zone, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveZones, gardenID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Zone
+	for rows.Next() {
+		var i Zone
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.GardenID,
+			&i.DetailsDescription,
+			&i.DetailsNotes,
+			&i.Position,
+			&i.SkipCount,
+			&i.CreatedAt,
+			&i.EndDate,
+			&i.WaterScheduleIds,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllZones = `-- name: ListAllZones :many
 SELECT id, name, garden_id, details_description, details_notes, position, skip_count, created_at, end_date, water_schedule_ids FROM zones WHERE garden_id = ?
 `
 
-func (q *Queries) ListZones(ctx context.Context, gardenID string) ([]Zone, error) {
-	rows, err := q.db.QueryContext(ctx, listZones, gardenID)
+func (q *Queries) ListAllZones(ctx context.Context, gardenID string) ([]Zone, error) {
+	rows, err := q.db.QueryContext(ctx, listAllZones, gardenID)
 	if err != nil {
 		return nil, err
 	}
@@ -161,10 +200,10 @@ type UpsertZoneParams struct {
 	ID                 string
 	Name               string
 	GardenID           string
-	DetailsDescription string
-	DetailsNotes       string
-	Position           interface{}
-	SkipCount          interface{}
+	DetailsDescription sql.NullString
+	DetailsNotes       sql.NullString
+	Position           sql.NullInt64
+	SkipCount          sql.NullInt64
 	CreatedAt          time.Time
 	EndDate            sql.NullTime
 	WaterScheduleIds   sql.NullString

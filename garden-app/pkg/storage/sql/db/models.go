@@ -14,14 +14,14 @@ type Garden struct {
 	ID                   string
 	Name                 string
 	TopicPrefix          string
-	MaxZones             interface{}
+	MaxZones             int64
 	TempHumidSensor      bool
 	CreatedAt            time.Time
 	EndDate              sql.NullTime
 	NotificationClientID sql.NullString
-	NotificationSettings json.RawMessage
-	ControllerConfig     json.RawMessage
-	LightSchedule        json.RawMessage
+	NotificationSettings sql.NullString
+	ControllerConfig     sql.NullString
+	LightSchedule        sql.NullString
 }
 
 type NotificationClient struct {
@@ -41,14 +41,14 @@ type WaterSchedule struct {
 	ID                     string
 	Name                   sql.NullString
 	Description            sql.NullString
-	Duration               interface{}
-	Interval               interface{}
+	Duration               int64
+	Interval               int64
 	StartDate              time.Time
 	StartTime              string
 	EndDate                sql.NullTime
 	ActivePeriodStartMonth sql.NullString
 	ActivePeriodEndMonth   sql.NullString
-	WeatherControl         json.RawMessage
+	WeatherControl         sql.NullString
 	NotificationClientID   sql.NullString
 }
 
@@ -62,10 +62,10 @@ type Zone struct {
 	ID                 string
 	Name               string
 	GardenID           string
-	DetailsDescription string
-	DetailsNotes       string
-	Position           interface{}
-	SkipCount          interface{}
+	DetailsDescription sql.NullString
+	DetailsNotes       sql.NullString
+	Position           sql.NullInt64
+	SkipCount          sql.NullInt64
 	CreatedAt          time.Time
 	EndDate            sql.NullTime
 	WaterScheduleIds   sql.NullString

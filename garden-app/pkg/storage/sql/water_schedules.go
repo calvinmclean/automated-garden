@@ -42,8 +42,15 @@ func (s *WaterScheduleStorage) Get(ctx context.Context, id string) (*pkg.WaterSc
 }
 
 // Search returns all WaterSchedules from storage
-func (s *WaterScheduleStorage) Search(ctx context.Context, _ string, _ url.Values) ([]*pkg.WaterSchedule, error) {
-	dbWaterSchedules, err := s.q.ListWaterSchedules(ctx)
+func (s *WaterScheduleStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.WaterSchedule, error) {
+	getEndDated := q.Get("end_dated") == "true"
+
+	listWaterSchedules := s.q.ListActiveWaterSchedules
+	if getEndDated {
+		listWaterSchedules = s.q.ListAllWaterSchedules
+	}
+
+	dbWaterSchedules, err := listWaterSchedules(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error listing water schedules: %w", err)
 	}
@@ -71,14 +78,6 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		description = sql.NullString{String: waterSchedule.Description, Valid: true}
 	}
 
-	var duration, interval interface{}
-	if waterSchedule.Duration != nil {
-		duration = int64(waterSchedule.Duration.Duration)
-	}
-	if waterSchedule.Interval != nil {
-		interval = int64(waterSchedule.Interval.Duration)
-	}
-
 	var startTime string
 	if waterSchedule.StartTime != nil {
 		startTime = waterSchedule.StartTime.String()
@@ -95,12 +94,15 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		activePeriodEndMonth = sql.NullString{String: waterSchedule.ActivePeriod.EndMonth, Valid: true}
 	}
 
-	var weatherControl json.RawMessage
+	var weatherControl sql.NullString
 	if waterSchedule.WeatherControl != nil {
-		var err error
-		weatherControl, err = json.Marshal(waterSchedule.WeatherControl)
+		weatherControlStr, err := json.Marshal(waterSchedule.WeatherControl)
 		if err != nil {
 			return fmt.Errorf("error marshaling weather control: %w", err)
+		}
+		weatherControl = sql.NullString{
+			String: string(weatherControlStr),
+			Valid:  true,
 		}
 	}
 
@@ -109,13 +111,26 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		notificationClientID = sql.NullString{String: *waterSchedule.NotificationClientID, Valid: true}
 	}
 
+	startDate := time.Now()
+	if waterSchedule.StartDate != nil {
+		startDate = *waterSchedule.StartDate
+	}
+
+	var duration, interval int64
+	if waterSchedule.Duration != nil {
+		duration = int64(waterSchedule.Duration.Duration)
+	}
+	if waterSchedule.Interval != nil {
+		interval = int64(waterSchedule.Interval.Duration)
+	}
+
 	return s.q.UpsertWaterSchedule(ctx, db.UpsertWaterScheduleParams{
 		ID:                     waterSchedule.ID.String(),
 		Name:                   name,
 		Description:            description,
 		Duration:               duration,
 		Interval:               interval,
-		StartDate:              *waterSchedule.StartDate,
+		StartDate:              startDate,
 		StartTime:              startTime,
 		EndDate:                endDate,
 		ActivePeriodStartMonth: activePeriodStartMonth,
@@ -137,8 +152,11 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 	}
 
 	waterSchedule := &pkg.WaterSchedule{
-		ID:        waterScheduleID,
-		StartDate: &dbWaterSchedule.StartDate,
+		ID: waterScheduleID,
+	}
+
+	if !dbWaterSchedule.StartDate.IsZero() {
+		waterSchedule.StartDate = &dbWaterSchedule.StartDate
 	}
 
 	if dbWaterSchedule.Name.Valid {
@@ -149,15 +167,11 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 		waterSchedule.Description = dbWaterSchedule.Description.String
 	}
 
-	if dur, ok := dbWaterSchedule.Duration.(int64); ok {
-		duration := pkg.Duration{Duration: time.Duration(dur)}
-		waterSchedule.Duration = &duration
-	}
+	duration := pkg.Duration{Duration: time.Duration(dbWaterSchedule.Duration)}
+	waterSchedule.Duration = &duration
 
-	if intvl, ok := dbWaterSchedule.Interval.(int64); ok {
-		interval := pkg.Duration{Duration: time.Duration(intvl)}
-		waterSchedule.Interval = &interval
-	}
+	interval := pkg.Duration{Duration: time.Duration(dbWaterSchedule.Interval)}
+	waterSchedule.Interval = &interval
 
 	if dbWaterSchedule.StartTime != "" {
 		startTime, err := pkg.StartTimeFromString(dbWaterSchedule.StartTime)
@@ -178,9 +192,9 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 		}
 	}
 
-	if len(dbWaterSchedule.WeatherControl) > 0 {
+	if dbWaterSchedule.WeatherControl.Valid && len(dbWaterSchedule.WeatherControl.String) > 0 {
 		var weatherControl weather.Control
-		err := json.Unmarshal(dbWaterSchedule.WeatherControl, &weatherControl)
+		err := json.Unmarshal([]byte(dbWaterSchedule.WeatherControl.String), &weatherControl)
 		if err != nil {
 			return nil, fmt.Errorf("error unmarshaling weather control: %w", err)
 		}

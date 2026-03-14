@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"time"
 )
 
@@ -45,12 +44,52 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (Garden, error) {
 	return i, err
 }
 
-const listGardens = `-- name: ListGardens :many
+const listActiveGardens = `-- name: ListActiveGardens :many
+SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens WHERE end_date IS NULL
+   OR end_date > DATETIME('now')
+`
+
+func (q *Queries) ListActiveGardens(ctx context.Context) ([]Garden, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveGardens)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []Garden
+	for rows.Next() {
+		var i Garden
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.TopicPrefix,
+			&i.MaxZones,
+			&i.TempHumidSensor,
+			&i.CreatedAt,
+			&i.EndDate,
+			&i.NotificationClientID,
+			&i.NotificationSettings,
+			&i.ControllerConfig,
+			&i.LightSchedule,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllGardens = `-- name: ListAllGardens :many
 SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
 `
 
-func (q *Queries) ListGardens(ctx context.Context) ([]Garden, error) {
-	rows, err := q.db.QueryContext(ctx, listGardens)
+func (q *Queries) ListAllGardens(ctx context.Context) ([]Garden, error) {
+	rows, err := q.db.QueryContext(ctx, listAllGardens)
 	if err != nil {
 		return nil, err
 	}
@@ -126,14 +165,14 @@ type UpsertGardenParams struct {
 	ID                   string
 	Name                 string
 	TopicPrefix          string
-	MaxZones             interface{}
+	MaxZones             int64
 	TempHumidSensor      bool
 	CreatedAt            time.Time
 	EndDate              sql.NullTime
 	NotificationClientID sql.NullString
-	NotificationSettings json.RawMessage
-	ControllerConfig     json.RawMessage
-	LightSchedule        json.RawMessage
+	NotificationSettings sql.NullString
+	ControllerConfig     sql.NullString
+	LightSchedule        sql.NullString
 }
 
 func (q *Queries) UpsertGarden(ctx context.Context, arg UpsertGardenParams) error {

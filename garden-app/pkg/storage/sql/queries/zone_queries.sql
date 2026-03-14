@@ -2,8 +2,12 @@
 SELECT * FROM zones
 WHERE id = ? LIMIT 1;
 
--- name: ListZones :many
+-- name: ListAllZones :many
 SELECT * FROM zones WHERE garden_id = ?;
+
+-- name: ListActiveZones :many
+SELECT * FROM zones WHERE garden_id = ? AND
+    end_date IS NULL OR end_date > DATETIME('now');
 
 -- name: UpsertZone :exec
 INSERT INTO zones (

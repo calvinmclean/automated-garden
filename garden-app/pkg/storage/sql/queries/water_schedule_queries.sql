@@ -2,8 +2,12 @@
 SELECT * FROM water_schedules
 WHERE id = ? LIMIT 1;
 
--- name: ListWaterSchedules :many
+-- name: ListAllWaterSchedules :many
 SELECT * FROM water_schedules;
+
+-- name: ListActiveWaterSchedules :many
+SELECT * FROM water_schedules WHERE end_date IS NULL
+   OR end_date > DATETIME('now');
 
 -- name: UpsertWaterSchedule :exec
 INSERT INTO water_schedules (

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"strings"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql/db"
@@ -38,12 +39,12 @@ func (s *ZoneStorage) Set(ctx context.Context, zone *pkg.Zone) error {
 		waterScheduleIDs = strings.Join(strIDs, ",")
 	}
 
-	var position, skipCount any
+	var position, skipCount sql.NullInt64
 	if zone.Position != nil {
-		position = int64(*zone.Position)
+		position = sql.NullInt64{Int64: int64(*zone.Position), Valid: true}
 	}
 	if zone.SkipCount != nil {
-		skipCount = int64(*zone.SkipCount)
+		skipCount = sql.NullInt64{Int64: int64(*zone.SkipCount), Valid: true}
 	}
 
 	var endDate sql.NullTime
@@ -56,15 +57,20 @@ func (s *ZoneStorage) Set(ctx context.Context, zone *pkg.Zone) error {
 		details = *zone.Details
 	}
 
+	createdAt := time.Now()
+	if zone.CreatedAt != nil {
+		createdAt = *zone.CreatedAt
+	}
+
 	return s.q.UpsertZone(ctx, db.UpsertZoneParams{
 		ID:                 zone.ID.String(),
 		Name:               zone.Name,
 		GardenID:           zone.GardenID.String(),
-		DetailsDescription: details.Description,
-		DetailsNotes:       details.Notes,
+		DetailsDescription: sql.NullString{String: details.Description, Valid: details.Description != ""},
+		DetailsNotes:       sql.NullString{String: details.Notes, Valid: details.Notes != ""},
 		Position:           position,
 		SkipCount:          skipCount,
-		CreatedAt:          *zone.CreatedAt,
+		CreatedAt:          createdAt,
 		EndDate:            endDate,
 		WaterScheduleIds:   sql.NullString{String: waterScheduleIDs, Valid: len(waterScheduleIDs) > 0},
 	})
@@ -84,8 +90,15 @@ func (s *ZoneStorage) Get(ctx context.Context, id string) (*pkg.Zone, error) {
 }
 
 // List returns all Zones from storage
-func (s *ZoneStorage) Search(ctx context.Context, gardenID string, _ url.Values) ([]*pkg.Zone, error) {
-	dbZones, err := s.q.ListZones(ctx, gardenID)
+func (s *ZoneStorage) Search(ctx context.Context, gardenID string, q url.Values) ([]*pkg.Zone, error) {
+	getEndDated := q.Get("end_dated") == "true"
+
+	listZones := s.q.ListActiveZones
+	if getEndDated {
+		listZones = s.q.ListAllZones
+	}
+
+	dbZones, err := listZones(ctx, gardenID)
 	if err != nil {
 		return nil, fmt.Errorf("error listing zones: %w", err)
 	}
@@ -134,23 +147,29 @@ func dbZoneToZone(dbZone db.Zone) (*pkg.Zone, error) {
 	}
 
 	zone := &pkg.Zone{
-		ID:       zoneID,
-		Name:     dbZone.Name,
-		GardenID: gardenID,
-		Details: &pkg.ZoneDetails{
-			Description: dbZone.DetailsDescription,
-			Notes:       dbZone.DetailsNotes,
-		},
+		ID:        zoneID,
+		Name:      dbZone.Name,
+		GardenID:  gardenID,
 		CreatedAt: &dbZone.CreatedAt,
 	}
 
-	if pos, ok := dbZone.Position.(int64); ok {
-		position := uint(pos)
+	if dbZone.DetailsDescription.Valid || dbZone.DetailsNotes.Valid {
+		zone.Details = &pkg.ZoneDetails{}
+		if dbZone.DetailsDescription.Valid {
+			zone.Details.Description = dbZone.DetailsDescription.String
+		}
+		if dbZone.DetailsNotes.Valid {
+			zone.Details.Notes = dbZone.DetailsNotes.String
+		}
+	}
+
+	if dbZone.Position.Valid {
+		position := uint(dbZone.Position.Int64)
 		zone.Position = &position
 	}
 
-	if skip, ok := dbZone.SkipCount.(int64); ok {
-		skipCount := uint(skip)
+	if dbZone.SkipCount.Valid {
+		skipCount := uint(dbZone.SkipCount.Int64)
 		zone.SkipCount = &skipCount
 	}
 

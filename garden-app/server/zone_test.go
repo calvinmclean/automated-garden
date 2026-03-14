@@ -52,7 +52,10 @@ func setupWaterScheduleStorage(t *testing.T) *storage.Client {
 	ws := createExampleWaterSchedule()
 
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	assert.NoError(t, err)
 
@@ -69,7 +72,10 @@ func setupStorage(t *testing.T, garden *pkg.Garden) *storage.Client {
 	zone.GardenID = garden.ID.ID
 
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	assert.NoError(t, err)
 
@@ -89,7 +95,10 @@ func setupZoneAndGardenStorage(t *testing.T) *storage.Client {
 	zone := createExampleZone()
 
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	assert.NoError(t, err)
 
@@ -191,7 +200,10 @@ func TestGetZone(t *testing.T) {
 			influxdbClient.On("Close")
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -266,7 +278,10 @@ func TestZoneAction(t *testing.T) {
 			mqttClient.On("Disconnect", uint(100)).Return()
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -342,7 +357,10 @@ func TestZoneActionForm(t *testing.T) {
 			mqttClient.On("Disconnect", uint(100)).Return()
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -1111,7 +1129,10 @@ func TestWaterHistory(t *testing.T) {
 			tt.setupMock(influxdbClient)
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -1168,7 +1189,10 @@ func TestGetNextWaterTime(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 

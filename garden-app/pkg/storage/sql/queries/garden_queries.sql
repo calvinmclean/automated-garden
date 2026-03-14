@@ -2,8 +2,12 @@
 SELECT * FROM gardens
 WHERE id = ? LIMIT 1;
 
--- name: ListGardens :many
+-- name: ListAllGardens :many
 SELECT * FROM gardens;
+
+-- name: ListActiveGardens :many
+SELECT * FROM gardens WHERE end_date IS NULL
+   OR end_date > DATETIME('now');
 
 -- name: UpsertGarden :exec
 INSERT INTO gardens (

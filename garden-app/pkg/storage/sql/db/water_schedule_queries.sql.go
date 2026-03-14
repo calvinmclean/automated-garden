@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"encoding/json"
 	"time"
 )
 
@@ -46,12 +45,53 @@ func (q *Queries) GetWaterSchedule(ctx context.Context, id string) (WaterSchedul
 	return i, err
 }
 
-const listWaterSchedules = `-- name: ListWaterSchedules :many
+const listActiveWaterSchedules = `-- name: ListActiveWaterSchedules :many
+SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules WHERE end_date IS NULL
+   OR end_date > DATETIME('now')
+`
+
+func (q *Queries) ListActiveWaterSchedules(ctx context.Context) ([]WaterSchedule, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveWaterSchedules)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WaterSchedule
+	for rows.Next() {
+		var i WaterSchedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Duration,
+			&i.Interval,
+			&i.StartDate,
+			&i.StartTime,
+			&i.EndDate,
+			&i.ActivePeriodStartMonth,
+			&i.ActivePeriodEndMonth,
+			&i.WeatherControl,
+			&i.NotificationClientID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
+const listAllWaterSchedules = `-- name: ListAllWaterSchedules :many
 SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules
 `
 
-func (q *Queries) ListWaterSchedules(ctx context.Context) ([]WaterSchedule, error) {
-	rows, err := q.db.QueryContext(ctx, listWaterSchedules)
+func (q *Queries) ListAllWaterSchedules(ctx context.Context) ([]WaterSchedule, error) {
+	rows, err := q.db.QueryContext(ctx, listAllWaterSchedules)
 	if err != nil {
 		return nil, err
 	}
@@ -132,14 +172,14 @@ type UpsertWaterScheduleParams struct {
 	ID                     string
 	Name                   sql.NullString
 	Description            sql.NullString
-	Duration               interface{}
-	Interval               interface{}
+	Duration               int64
+	Interval               int64
 	StartDate              time.Time
 	StartTime              string
 	EndDate                sql.NullTime
 	ActivePeriodStartMonth sql.NullString
 	ActivePeriodEndMonth   sql.NullString
-	WeatherControl         json.RawMessage
+	WeatherControl         sql.NullString
 	NotificationClientID   sql.NullString
 }
 

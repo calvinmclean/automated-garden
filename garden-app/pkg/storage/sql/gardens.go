@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql/db"
@@ -40,8 +41,15 @@ func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error)
 }
 
 // Search returns all Gardens from storage
-func (s *GardenStorage) Search(ctx context.Context, _ string, _ url.Values) ([]*pkg.Garden, error) {
-	dbGardens, err := s.q.ListGardens(ctx)
+func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.Garden, error) {
+	getEndDated := q.Get("end_dated") == "true"
+
+	listGardens := s.q.ListActiveGardens
+	if getEndDated {
+		listGardens = s.q.ListAllGardens
+	}
+
+	dbGardens, err := listGardens(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error listing gardens: %w", err)
 	}
@@ -71,34 +79,43 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		notificationClientID = sql.NullString{String: *garden.NotificationClientID, Valid: true}
 	}
 
-	var notificationSettings json.RawMessage
+	var notificationSettings sql.NullString
 	if garden.NotificationSettings != nil {
-		var err error
-		notificationSettings, err = json.Marshal(garden.NotificationSettings)
+		notificationSettingsStr, err := json.Marshal(garden.NotificationSettings)
 		if err != nil {
 			return fmt.Errorf("error marshaling notification settings: %w", err)
 		}
+		notificationSettings = sql.NullString{
+			String: string(notificationSettingsStr),
+			Valid:  true,
+		}
 	}
 
-	var controllerConfig json.RawMessage
+	var controllerConfig sql.NullString
 	if garden.ControllerConfig != nil {
-		var err error
-		controllerConfig, err = json.Marshal(garden.ControllerConfig)
+		controllerConfigStr, err := json.Marshal(garden.ControllerConfig)
 		if err != nil {
 			return fmt.Errorf("error marshaling controller config: %w", err)
 		}
-	}
-
-	var lightSchedule json.RawMessage
-	if garden.LightSchedule != nil {
-		var err error
-		lightSchedule, err = json.Marshal(garden.LightSchedule)
-		if err != nil {
-			return fmt.Errorf("error marshaling light schedule: %w", err)
+		controllerConfig = sql.NullString{
+			String: string(controllerConfigStr),
+			Valid:  true,
 		}
 	}
 
-	var maxZones interface{}
+	var lightSchedule sql.NullString
+	if garden.LightSchedule != nil {
+		lightScheduleStr, err := json.Marshal(garden.LightSchedule)
+		if err != nil {
+			return fmt.Errorf("error marshaling light schedule: %w", err)
+		}
+		lightSchedule = sql.NullString{
+			String: string(lightScheduleStr),
+			Valid:  true,
+		}
+	}
+
+	var maxZones int64
 	if garden.MaxZones != nil {
 		maxZones = int64(*garden.MaxZones)
 	}
@@ -108,13 +125,18 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		tempHumidSensor = *garden.TemperatureHumiditySensor
 	}
 
+	createdAt := time.Now()
+	if garden.CreatedAt != nil {
+		createdAt = *garden.CreatedAt
+	}
+
 	return s.q.UpsertGarden(ctx, db.UpsertGardenParams{
 		ID:                   garden.ID.String(),
 		Name:                 garden.Name,
 		TopicPrefix:          garden.TopicPrefix,
 		MaxZones:             maxZones,
 		TempHumidSensor:      tempHumidSensor,
-		CreatedAt:            *garden.CreatedAt,
+		CreatedAt:            createdAt,
 		EndDate:              endDate,
 		NotificationClientID: notificationClientID,
 		NotificationSettings: notificationSettings,
@@ -141,10 +163,8 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 		CreatedAt:   &dbGarden.CreatedAt,
 	}
 
-	if maxZones, ok := dbGarden.MaxZones.(int64); ok {
-		mz := uint(maxZones)
-		garden.MaxZones = &mz
-	}
+	mz := uint(dbGarden.MaxZones)
+	garden.MaxZones = &mz
 
 	garden.TemperatureHumiditySensor = &dbGarden.TempHumidSensor
 
@@ -156,27 +176,27 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 		garden.NotificationClientID = &dbGarden.NotificationClientID.String
 	}
 
-	if len(dbGarden.NotificationSettings) > 0 {
+	if dbGarden.NotificationSettings.Valid && len(dbGarden.NotificationSettings.String) > 0 {
 		var notificationSettings pkg.NotificationSettings
-		err := json.Unmarshal(dbGarden.NotificationSettings, &notificationSettings)
+		err := json.Unmarshal([]byte(dbGarden.NotificationSettings.String), &notificationSettings)
 		if err != nil {
 			return nil, fmt.Errorf("error unmarshaling notification settings: %w", err)
 		}
 		garden.NotificationSettings = &notificationSettings
 	}
 
-	if len(dbGarden.ControllerConfig) > 0 {
+	if dbGarden.ControllerConfig.Valid && len(dbGarden.ControllerConfig.String) > 0 {
 		var controllerConfig pkg.ControllerConfig
-		err := json.Unmarshal(dbGarden.ControllerConfig, &controllerConfig)
+		err := json.Unmarshal([]byte(dbGarden.ControllerConfig.String), &controllerConfig)
 		if err != nil {
 			return nil, fmt.Errorf("error unmarshaling controller config: %w", err)
 		}
 		garden.ControllerConfig = &controllerConfig
 	}
 
-	if len(dbGarden.LightSchedule) > 0 {
+	if dbGarden.LightSchedule.Valid && len(dbGarden.LightSchedule.String) > 0 {
 		var lightSchedule pkg.LightSchedule
-		err := json.Unmarshal(dbGarden.LightSchedule, &lightSchedule)
+		err := json.Unmarshal([]byte(dbGarden.LightSchedule.String), &lightSchedule)
 		if err != nil {
 			return nil, fmt.Errorf("error unmarshaling light schedule: %w", err)
 		}

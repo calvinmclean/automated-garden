@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"testing"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -64,9 +65,13 @@ func TestValidateAllStoredResources(t *testing.T) {
 			func(s *storage.Client) error {
 				return s.WaterSchedules.Set(context.Background(), &pkg.WaterSchedule{
 					ID: babyapi.ID{ID: id},
+					StartTime: &pkg.StartTime{
+						Time: time.Time{},
+					},
+					Duration: &pkg.Duration{Duration: 2 * time.Hour},
 				})
 			},
-			"invalid WaterSchedule \"c5cvhpcbcv45e8bp16dg\": missing required interval field",
+			"invalid WaterSchedule \"c5cvhpcbcv45e8bp16dg\": interval must not be 0",
 		},
 		{
 			"InvalidWeatherClientMissingID",
@@ -89,7 +94,10 @@ func TestValidateAllStoredResources(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
