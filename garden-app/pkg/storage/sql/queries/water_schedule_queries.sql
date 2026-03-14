@@ -9,6 +9,13 @@ SELECT * FROM water_schedules;
 SELECT * FROM water_schedules WHERE end_date IS NULL
    OR end_date > DATETIME('now');
 
+-- name: FindWaterSchedulesByWeatherClientID :many
+SELECT * FROM water_schedules
+WHERE weather_control IS NOT NULL AND (
+    json_extract(weather_control, '$.rain_control.client_id') = ?
+    OR json_extract(weather_control, '$.temperature_control.client_id') = ?
+);
+
 -- name: UpsertWaterSchedule :exec
 INSERT INTO water_schedules (
   id, name, description,

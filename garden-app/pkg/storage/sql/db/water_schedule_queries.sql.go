@@ -20,6 +20,55 @@ func (q *Queries) DeleteWaterSchedule(ctx context.Context, id string) error {
 	return err
 }
 
+const findWaterSchedulesByWeatherClientID = `-- name: FindWaterSchedulesByWeatherClientID :many
+SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules
+WHERE weather_control IS NOT NULL AND (
+    json_extract(weather_control, '$.rain_control.client_id') = ?
+    OR json_extract(weather_control, '$.temperature_control.client_id') = ?
+)
+`
+
+type FindWaterSchedulesByWeatherClientIDParams struct {
+	WeatherControl   sql.NullString
+	WeatherControl_2 sql.NullString
+}
+
+func (q *Queries) FindWaterSchedulesByWeatherClientID(ctx context.Context, arg FindWaterSchedulesByWeatherClientIDParams) ([]WaterSchedule, error) {
+	rows, err := q.db.QueryContext(ctx, findWaterSchedulesByWeatherClientID, arg.WeatherControl, arg.WeatherControl_2)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []WaterSchedule
+	for rows.Next() {
+		var i WaterSchedule
+		if err := rows.Scan(
+			&i.ID,
+			&i.Name,
+			&i.Description,
+			&i.Duration,
+			&i.Interval,
+			&i.StartDate,
+			&i.StartTime,
+			&i.EndDate,
+			&i.ActivePeriodStartMonth,
+			&i.ActivePeriodEndMonth,
+			&i.WeatherControl,
+			&i.NotificationClientID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getWaterSchedule = `-- name: GetWaterSchedule :one
 SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules
 WHERE id = ? LIMIT 1
