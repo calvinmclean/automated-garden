@@ -3,7 +3,7 @@ package sql
 import (
 	"crypto/rand"
 	"database/sql"
-	_ "embed"
+	"embed"
 	"encoding/hex"
 	"fmt"
 
@@ -11,17 +11,21 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
 	_ "modernc.org/sqlite"
 )
 
 //go:generate sqlc generate
 
-//go:embed schema.sql
-var schema string
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
 
 // Config holds configuration for the SQL backend
 type Config struct {
-	DataSourceName string `mapstructure:"data_source_name" yaml:"data_source_name"`
+	DataSourceName    string `mapstructure:"data_source_name" yaml:"data_source_name"`
+	DisableMigrations bool   `mapstructure:"disable_migrations" yaml:"disable_migrations"`
 }
 
 type Client struct {
@@ -56,9 +60,11 @@ func NewClient(config Config) (*Client, error) {
 		return nil, fmt.Errorf("error opening sqlite database: %w", err)
 	}
 
-	// Initialize schema
-	if _, err := db.Exec(schema); err != nil {
-		return nil, fmt.Errorf("error initializing database schema: %w", err)
+	if !config.DisableMigrations {
+		err := runMigrations(db)
+		if err != nil {
+			return nil, fmt.Errorf("error running migrations: %w", err)
+		}
 	}
 
 	return &Client{
@@ -70,4 +76,28 @@ func NewClient(config Config) (*Client, error) {
 		WaterRoutines:             NewWaterRoutineStorage(db),
 		AdditionalQueries:         NewAdditionalQueries(db),
 	}, nil
+}
+
+// runMigrations executes all pending database migrations
+func runMigrations(db *sql.DB) error {
+	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		return fmt.Errorf("error creating migration driver: %w", err)
+	}
+
+	migrations, err := iofs.New(migrationsFS, "migrations")
+	if err != nil {
+		return fmt.Errorf("error creating migration source: %w", err)
+	}
+
+	m, err := migrate.NewWithInstance("iofs", migrations, "sqlite3", driver)
+	if err != nil {
+		return fmt.Errorf("error creating migration instance: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("error running migrations: %w", err)
+	}
+
+	return nil
 }

@@ -2,8 +2,11 @@ version: "2"
 sql:
   - engine: "sqlite"
     queries: "queries/"
-    schema: "schema.sql"
+    schema: "migrations/"
     gen:
       go:
         package: "db"
         out: "db"
+# TODO:
+# - Setup migration to move between storage types: maybe move ALL of old implementation into cmd/storage_migrate/main.go
+# - Delete old implementation and remove Versions
