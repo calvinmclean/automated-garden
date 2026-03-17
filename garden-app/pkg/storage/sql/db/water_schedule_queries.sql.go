@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const deleteWaterSchedule = `-- name: DeleteWaterSchedule :exec
@@ -96,11 +95,11 @@ func (q *Queries) GetWaterSchedule(ctx context.Context, id string) (WaterSchedul
 
 const listActiveWaterSchedules = `-- name: ListActiveWaterSchedules :many
 SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules WHERE end_date IS NULL
-   OR end_date > DATETIME('now')
+   OR end_date > ?
 `
 
-func (q *Queries) ListActiveWaterSchedules(ctx context.Context) ([]WaterSchedule, error) {
-	rows, err := q.db.QueryContext(ctx, listActiveWaterSchedules)
+func (q *Queries) ListActiveWaterSchedules(ctx context.Context, endDate sql.NullString) ([]WaterSchedule, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveWaterSchedules, endDate)
 	if err != nil {
 		return nil, err
 	}
@@ -182,7 +181,7 @@ WHERE id = ?
 `
 
 type SetWaterScheduleEndDateParams struct {
-	EndDate sql.NullTime
+	EndDate sql.NullString
 	ID      string
 }
 
@@ -223,9 +222,9 @@ type UpsertWaterScheduleParams struct {
 	Description            sql.NullString
 	Duration               int64
 	Interval               int64
-	StartDate              time.Time
+	StartDate              string
 	StartTime              string
-	EndDate                sql.NullTime
+	EndDate                sql.NullString
 	ActivePeriodStartMonth sql.NullString
 	ActivePeriodEndMonth   sql.NullString
 	WeatherControl         sql.NullString

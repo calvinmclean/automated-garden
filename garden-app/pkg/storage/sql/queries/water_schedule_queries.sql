@@ -7,7 +7,7 @@ SELECT * FROM water_schedules;
 
 -- name: ListActiveWaterSchedules :many
 SELECT * FROM water_schedules WHERE end_date IS NULL
-   OR end_date > DATETIME('now');
+   OR end_date > ?;
 
 -- name: FindWaterSchedulesByWeatherClientID :many
 SELECT * FROM water_schedules

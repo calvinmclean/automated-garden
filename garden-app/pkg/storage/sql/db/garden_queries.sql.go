@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const deleteGarden = `-- name: DeleteGarden :exec
@@ -49,7 +48,7 @@ SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_dat
    OR end_date > ?
 `
 
-func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullTime) ([]Garden, error) {
+func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString) ([]Garden, error) {
 	rows, err := q.db.QueryContext(ctx, listActiveGardens, endDate)
 	if err != nil {
 		return nil, err
@@ -130,7 +129,7 @@ WHERE id = ?
 `
 
 type SetGardenEndDateParams struct {
-	EndDate sql.NullTime
+	EndDate sql.NullString
 	ID      string
 }
 
@@ -167,8 +166,8 @@ type UpsertGardenParams struct {
 	TopicPrefix          string
 	MaxZones             int64
 	TempHumidSensor      bool
-	CreatedAt            time.Time
-	EndDate              sql.NullTime
+	CreatedAt            string
+	EndDate              sql.NullString
 	NotificationClientID sql.NullString
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString

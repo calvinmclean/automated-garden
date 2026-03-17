@@ -7,7 +7,6 @@ package db
 import (
 	"database/sql"
 	"encoding/json"
-	"time"
 )
 
 type Garden struct {
@@ -16,8 +15,8 @@ type Garden struct {
 	TopicPrefix          string
 	MaxZones             int64
 	TempHumidSensor      bool
-	CreatedAt            time.Time
-	EndDate              sql.NullTime
+	CreatedAt            string
+	EndDate              sql.NullString
 	NotificationClientID sql.NullString
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
@@ -43,9 +42,9 @@ type WaterSchedule struct {
 	Description            sql.NullString
 	Duration               int64
 	Interval               int64
-	StartDate              time.Time
+	StartDate              string
 	StartTime              string
-	EndDate                sql.NullTime
+	EndDate                sql.NullString
 	ActivePeriodStartMonth sql.NullString
 	ActivePeriodEndMonth   sql.NullString
 	WeatherControl         sql.NullString
@@ -66,7 +65,7 @@ type Zone struct {
 	DetailsNotes       sql.NullString
 	Position           sql.NullInt64
 	SkipCount          sql.NullInt64
-	CreatedAt          time.Time
-	EndDate            sql.NullTime
+	CreatedAt          string
+	EndDate            sql.NullString
 	WaterScheduleIds   sql.NullString
 }

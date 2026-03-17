@@ -45,9 +45,11 @@ func (s *WaterScheduleStorage) Get(ctx context.Context, id string) (*pkg.WaterSc
 func (s *WaterScheduleStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.WaterSchedule, error) {
 	getEndDated := q.Get("end_dated") == "true"
 
-	listWaterSchedules := s.q.ListActiveWaterSchedules
-	if getEndDated {
-		listWaterSchedules = s.q.ListAllWaterSchedules
+	listWaterSchedules := s.q.ListAllWaterSchedules
+	if !getEndDated {
+		listWaterSchedules = func(ctx context.Context) ([]db.WaterSchedule, error) {
+			return s.q.ListActiveWaterSchedules(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+		}
 	}
 
 	dbWaterSchedules, err := listWaterSchedules(ctx)
@@ -83,9 +85,9 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		startTime = waterSchedule.StartTime.String()
 	}
 
-	var endDate sql.NullTime
+	var endDate sql.NullString
 	if waterSchedule.EndDate != nil {
-		endDate = sql.NullTime{Time: *waterSchedule.EndDate, Valid: true}
+		endDate = sql.NullString{String: waterSchedule.EndDate.Format(time.RFC3339), Valid: true}
 	}
 
 	var activePeriodStartMonth, activePeriodEndMonth sql.NullString
@@ -111,9 +113,9 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		notificationClientID = sql.NullString{String: *waterSchedule.NotificationClientID, Valid: true}
 	}
 
-	startDate := time.Now()
+	startDate := time.Now().Format(time.RFC3339)
 	if waterSchedule.StartDate != nil {
-		startDate = *waterSchedule.StartDate
+		startDate = waterSchedule.StartDate.Format(time.RFC3339)
 	}
 
 	var duration, interval int64
@@ -155,8 +157,12 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 		ID: waterScheduleID,
 	}
 
-	if !dbWaterSchedule.StartDate.IsZero() {
-		waterSchedule.StartDate = &dbWaterSchedule.StartDate
+	if dbWaterSchedule.StartDate != "" {
+		startDate, err := time.Parse(time.RFC3339, dbWaterSchedule.StartDate)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing start_date: %w", err)
+		}
+		waterSchedule.StartDate = &startDate
 	}
 
 	if dbWaterSchedule.Name.Valid {
@@ -182,7 +188,11 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 	}
 
 	if dbWaterSchedule.EndDate.Valid {
-		waterSchedule.EndDate = &dbWaterSchedule.EndDate.Time
+		endDate, err := time.Parse(time.RFC3339, dbWaterSchedule.EndDate.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end_date: %w", err)
+		}
+		waterSchedule.EndDate = &endDate
 	}
 
 	if dbWaterSchedule.ActivePeriodStartMonth.Valid && dbWaterSchedule.ActivePeriodEndMonth.Valid {

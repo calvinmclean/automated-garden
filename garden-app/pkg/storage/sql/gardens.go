@@ -47,7 +47,7 @@ func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) ([]*
 	listGardens := s.q.ListAllGardens
 	if !getEndDated {
 		listGardens = func(ctx context.Context) ([]db.Garden, error) {
-			return s.q.ListActiveGardens(ctx, sql.NullTime{Time: time.Now(), Valid: true})
+			return s.q.ListActiveGardens(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
 		}
 	}
 
@@ -71,9 +71,9 @@ func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) ([]*
 
 // Set saves a Garden to storage (creates or updates)
 func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
-	var endDate sql.NullTime
+	var endDate sql.NullString
 	if garden.EndDate != nil {
-		endDate = sql.NullTime{Time: *garden.EndDate, Valid: true}
+		endDate = sql.NullString{String: garden.EndDate.Format(time.RFC3339), Valid: true}
 	}
 
 	var notificationClientID sql.NullString
@@ -131,9 +131,9 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		tempHumidSensor = *garden.TemperatureHumiditySensor
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().Format(time.RFC3339)
 	if garden.CreatedAt != nil {
-		createdAt = *garden.CreatedAt
+		createdAt = garden.CreatedAt.Format(time.RFC3339)
 	}
 
 	return s.q.UpsertGarden(ctx, db.UpsertGardenParams{
@@ -162,11 +162,16 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 		return nil, fmt.Errorf("invalid garden ID: %w", err)
 	}
 
+	createdAt, err := time.Parse(time.RFC3339, dbGarden.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("invalid created_at: %w", err)
+	}
+
 	garden := &pkg.Garden{
 		ID:          gardenID,
 		Name:        dbGarden.Name,
 		TopicPrefix: dbGarden.TopicPrefix,
-		CreatedAt:   &dbGarden.CreatedAt,
+		CreatedAt:   &createdAt,
 	}
 
 	mz, err := safeInt64ToUint(dbGarden.MaxZones)
@@ -178,7 +183,11 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 	garden.TemperatureHumiditySensor = &dbGarden.TempHumidSensor
 
 	if dbGarden.EndDate.Valid {
-		garden.EndDate = &dbGarden.EndDate.Time
+		endDate, err := time.Parse(time.RFC3339, dbGarden.EndDate.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end_date: %w", err)
+		}
+		garden.EndDate = &endDate
 	}
 
 	if dbGarden.NotificationClientID.Valid {

@@ -8,7 +8,6 @@ package db
 import (
 	"context"
 	"database/sql"
-	"time"
 )
 
 const deleteZone = `-- name: DeleteZone :exec
@@ -85,11 +84,16 @@ func (q *Queries) GetZone(ctx context.Context, id string) (Zone, error) {
 
 const listActiveZones = `-- name: ListActiveZones :many
 SELECT id, name, garden_id, details_description, details_notes, position, skip_count, created_at, end_date, water_schedule_ids FROM zones WHERE garden_id = ? AND
-    end_date IS NULL OR end_date > DATETIME('now')
+    end_date IS NULL OR end_date > ?
 `
 
-func (q *Queries) ListActiveZones(ctx context.Context, gardenID string) ([]Zone, error) {
-	rows, err := q.db.QueryContext(ctx, listActiveZones, gardenID)
+type ListActiveZonesParams struct {
+	GardenID string
+	EndDate  sql.NullString
+}
+
+func (q *Queries) ListActiveZones(ctx context.Context, arg ListActiveZonesParams) ([]Zone, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveZones, arg.GardenID, arg.EndDate)
 	if err != nil {
 		return nil, err
 	}
@@ -167,7 +171,7 @@ WHERE id = ?
 `
 
 type SetZoneEndDateParams struct {
-	EndDate sql.NullTime
+	EndDate sql.NullString
 	ID      string
 }
 
@@ -204,8 +208,8 @@ type UpsertZoneParams struct {
 	DetailsNotes       sql.NullString
 	Position           sql.NullInt64
 	SkipCount          sql.NullInt64
-	CreatedAt          time.Time
-	EndDate            sql.NullTime
+	CreatedAt          string
+	EndDate            sql.NullString
 	WaterScheduleIds   sql.NullString
 }
 

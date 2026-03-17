@@ -7,3 +7,9 @@ sql:
       go:
         package: "db"
         out: "db"
+        overrides:
+          - db_type: "DATETIME"
+            go_type: "string"
+          - db_type: "DATETIME"
+            nullable: true
+            go_type: "database/sql.NullString"

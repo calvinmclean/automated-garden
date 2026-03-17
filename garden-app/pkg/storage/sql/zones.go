@@ -57,9 +57,9 @@ func (s *ZoneStorage) Set(ctx context.Context, zone *pkg.Zone) error {
 		skipCount = sql.NullInt64{Int64: int64(skipInt), Valid: true}
 	}
 
-	var endDate sql.NullTime
+	var endDate sql.NullString
 	if zone.EndDate != nil {
-		endDate = sql.NullTime{Time: *zone.EndDate, Valid: true}
+		endDate = sql.NullString{String: zone.EndDate.Format(time.RFC3339), Valid: true}
 	}
 
 	var details pkg.ZoneDetails
@@ -67,9 +67,9 @@ func (s *ZoneStorage) Set(ctx context.Context, zone *pkg.Zone) error {
 		details = *zone.Details
 	}
 
-	createdAt := time.Now()
+	createdAt := time.Now().Format(time.RFC3339)
 	if zone.CreatedAt != nil {
-		createdAt = *zone.CreatedAt
+		createdAt = zone.CreatedAt.Format(time.RFC3339)
 	}
 
 	return s.q.UpsertZone(ctx, db.UpsertZoneParams{
@@ -103,9 +103,14 @@ func (s *ZoneStorage) Get(ctx context.Context, id string) (*pkg.Zone, error) {
 func (s *ZoneStorage) Search(ctx context.Context, gardenID string, q url.Values) ([]*pkg.Zone, error) {
 	getEndDated := q.Get("end_dated") == "true"
 
-	listZones := s.q.ListActiveZones
-	if getEndDated {
-		listZones = s.q.ListAllZones
+	listZones := s.q.ListAllZones
+	if !getEndDated {
+		listZones = func(ctx context.Context, gardenID string) ([]db.Zone, error) {
+			return s.q.ListActiveZones(ctx, db.ListActiveZonesParams{
+				GardenID: gardenID,
+				EndDate:  sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true},
+			})
+		}
 	}
 
 	dbZones, err := listZones(ctx, gardenID)
@@ -163,11 +168,16 @@ func dbZoneToZone(dbZone db.Zone) (*pkg.Zone, error) {
 		return nil, fmt.Errorf("invalid garden ID: %w", err)
 	}
 
+	createdAt, err := time.Parse(time.RFC3339, dbZone.CreatedAt)
+	if err != nil {
+		return nil, fmt.Errorf("invalid created_at: %w", err)
+	}
+
 	zone := &pkg.Zone{
 		ID:        zoneID,
 		Name:      dbZone.Name,
 		GardenID:  gardenID,
-		CreatedAt: &dbZone.CreatedAt,
+		CreatedAt: &createdAt,
 	}
 
 	if dbZone.DetailsDescription.Valid || dbZone.DetailsNotes.Valid {
@@ -197,7 +207,11 @@ func dbZoneToZone(dbZone db.Zone) (*pkg.Zone, error) {
 	}
 
 	if dbZone.EndDate.Valid {
-		zone.EndDate = &dbZone.EndDate.Time
+		endDate, err := time.Parse(time.RFC3339, dbZone.EndDate.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end_date: %w", err)
+		}
+		zone.EndDate = &endDate
 	}
 
 	if dbZone.WaterScheduleIds.Valid && dbZone.WaterScheduleIds.String != "" {
