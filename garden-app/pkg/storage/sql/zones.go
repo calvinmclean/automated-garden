@@ -3,7 +3,9 @@ package sql
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -41,10 +43,18 @@ func (s *ZoneStorage) Set(ctx context.Context, zone *pkg.Zone) error {
 
 	var position, skipCount sql.NullInt64
 	if zone.Position != nil {
-		position = sql.NullInt64{Int64: int64(*zone.Position), Valid: true}
+		posInt, err := safeUintToInt64(*zone.Position)
+		if err != nil {
+			return fmt.Errorf("invalid Position: %w", err)
+		}
+		position = sql.NullInt64{Int64: posInt, Valid: true}
 	}
 	if zone.SkipCount != nil {
-		skipCount = sql.NullInt64{Int64: int64(*zone.SkipCount), Valid: true}
+		skipInt, err := safeUintToInt64(*zone.SkipCount)
+		if err != nil {
+			return fmt.Errorf("invalid SkipCount: %w", err)
+		}
+		skipCount = sql.NullInt64{Int64: int64(skipInt), Valid: true}
 	}
 
 	var endDate sql.NullTime
@@ -128,9 +138,16 @@ func (s *ZoneStorage) FindByWaterScheduleID(ctx context.Context, waterScheduleID
 		return nil, fmt.Errorf("error finding zones by water schedule ID: %w", err)
 	}
 
+	var conversionErrs []error
 	zones := make([]*pkg.Zone, len(dbZones))
 	for i, dbZone := range dbZones {
 		zones[i], err = dbZoneToZone(dbZone)
+		if err != nil {
+			conversionErrs = append(conversionErrs, err)
+		}
+	}
+	if len(conversionErrs) > 0 {
+		return nil, fmt.Errorf("one or more conversion error occurred: %w", errors.Join(conversionErrs...))
 	}
 
 	return zones, nil
@@ -164,12 +181,18 @@ func dbZoneToZone(dbZone db.Zone) (*pkg.Zone, error) {
 	}
 
 	if dbZone.Position.Valid {
-		position := uint(dbZone.Position.Int64)
+		position, err := safeInt64ToUint(dbZone.Position.Int64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid Position: %w", err)
+		}
 		zone.Position = &position
 	}
 
 	if dbZone.SkipCount.Valid {
-		skipCount := uint(dbZone.SkipCount.Int64)
+		skipCount, err := safeInt64ToUint(dbZone.SkipCount.Int64)
+		if err != nil {
+			return nil, fmt.Errorf("invalid SkipCount: %w", err)
+		}
 		zone.SkipCount = &skipCount
 	}
 
@@ -190,4 +213,18 @@ func dbZoneToZone(dbZone db.Zone) (*pkg.Zone, error) {
 	}
 
 	return zone, nil
+}
+
+func safeInt64ToUint(n int64) (uint, error) {
+	if n < 0 {
+		return 0, fmt.Errorf("negative value %d cannot be converted to uint", n)
+	}
+	return uint(n), nil
+}
+
+func safeUintToInt64(n uint) (int64, error) {
+	if n > math.MaxInt64 {
+		return 0, fmt.Errorf("value %d overflows int64", n)
+	}
+	return int64(n), nil
 }

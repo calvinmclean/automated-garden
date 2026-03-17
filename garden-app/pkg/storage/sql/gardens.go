@@ -117,7 +117,11 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 
 	var maxZones int64
 	if garden.MaxZones != nil {
-		maxZones = int64(*garden.MaxZones)
+		var err error
+		maxZones, err = safeUintToInt64(*garden.MaxZones)
+		if err != nil {
+			return fmt.Errorf("invalid MaxZones: %w", err)
+		}
 	}
 
 	var tempHumidSensor bool
@@ -163,7 +167,10 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 		CreatedAt:   &dbGarden.CreatedAt,
 	}
 
-	mz := uint(dbGarden.MaxZones)
+	mz, err := safeInt64ToUint(dbGarden.MaxZones)
+	if err != nil {
+		return nil, fmt.Errorf("invalid MaxZones: %w", err)
+	}
 	garden.MaxZones = &mz
 
 	garden.TemperatureHumiditySensor = &dbGarden.TempHumidSensor
