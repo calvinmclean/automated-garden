@@ -7,7 +7,7 @@ SELECT * FROM gardens;
 
 -- name: ListActiveGardens :many
 SELECT * FROM gardens WHERE end_date IS NULL
-   OR end_date > DATETIME('now');
+   OR end_date > ?;
 
 -- name: UpsertGarden :exec
 INSERT INTO gardens (

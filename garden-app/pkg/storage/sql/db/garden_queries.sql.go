@@ -46,11 +46,11 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (Garden, error) {
 
 const listActiveGardens = `-- name: ListActiveGardens :many
 SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens WHERE end_date IS NULL
-   OR end_date > DATETIME('now')
+   OR end_date > ?
 `
 
-func (q *Queries) ListActiveGardens(ctx context.Context) ([]Garden, error) {
-	rows, err := q.db.QueryContext(ctx, listActiveGardens)
+func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullTime) ([]Garden, error) {
+	rows, err := q.db.QueryContext(ctx, listActiveGardens, endDate)
 	if err != nil {
 		return nil, err
 	}

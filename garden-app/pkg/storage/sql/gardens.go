@@ -44,9 +44,11 @@ func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error)
 func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.Garden, error) {
 	getEndDated := q.Get("end_dated") == "true"
 
-	listGardens := s.q.ListActiveGardens
-	if getEndDated {
-		listGardens = s.q.ListAllGardens
+	listGardens := s.q.ListAllGardens
+	if !getEndDated {
+		listGardens = func(ctx context.Context) ([]db.Garden, error) {
+			return s.q.ListActiveGardens(ctx, sql.NullTime{Time: time.Now(), Valid: true})
+		}
 	}
 
 	dbGardens, err := listGardens(ctx)
