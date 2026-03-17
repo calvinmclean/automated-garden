@@ -19,6 +19,19 @@ tasks:
     cmds:
       - go test -short -race -covermode=atomic -coverprofile=coverage.out -coverpkg=./... {{.CLI_ARGS}} ./...
 
+  unit-test-docker:
+    aliases: ["utd"]
+    desc: Run unit tests for Go app in Ubuntu Docker container
+    dir: ./garden-app
+    cmds:
+      - |
+        docker run --rm \
+          -v $(pwd):/workspace \
+          -v go-mod-cache:/go/pkg/mod \
+          -w /workspace \
+          golang:latest \
+          go test -short -race -covermode=atomic -coverprofile=coverage.out -coverpkg=./... {{.CLI_ARGS}} ./...
+
   lint:
     desc: Run linting for Go app
     dir: ./garden-app

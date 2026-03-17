@@ -18,7 +18,10 @@ import (
 
 func TestNotificationClientAPI(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "hashmap",
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
 	})
 	require.NoError(t, err)
 

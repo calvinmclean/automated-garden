@@ -6,3 +6,4 @@ coverage.out
 integration_coverage.out
 cover.html
 gardens_kv.yaml
+garden.db

@@ -50,7 +50,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			"Successful",
 			false,
 			createExampleWaterSchedule(),
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","start_time":"11:24:52\-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52\-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52\-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52\-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureData",
@@ -76,7 +76,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":25.4,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":1.5}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":25.4,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":1.5}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureDataButWeatherDataExcluded",
@@ -102,7 +102,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorRainWeatherClientDNE",
@@ -122,7 +122,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
@@ -142,13 +142,16 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 	}
 
 	t.Run("ErrNotFound", func(t *testing.T) {
 		storageClient, err := storage.NewClient(storage.Config{
-			Driver: "hashmap",
+			Driver: "sqlite",
+			Options: map[string]any{
+				"data_source_name": ":memory:",
+			},
 		})
 		assert.NoError(t, err)
 
@@ -178,7 +181,10 @@ func TestGetWaterSchedule(t *testing.T) {
 			influxdbClient.On("Close")
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -225,7 +231,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 		{
 			"Successful",
 			`{"duration":"1h"}`,
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -257,7 +263,10 @@ func TestUpdateWaterSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -327,7 +336,10 @@ func TestEndDateWaterSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -385,7 +397,10 @@ func TestGetAllWaterSchedules(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 			err = storageClient.WaterSchedules.Set(context.Background(), waterSchedule)
@@ -430,7 +445,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 		{
 			"Successful",
 			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00"}`,
-			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d\.\d+(-07:00|Z)","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
+			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -480,7 +495,10 @@ func TestCreateWaterSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 
@@ -550,7 +568,10 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "hashmap",
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
 			})
 			assert.NoError(t, err)
 

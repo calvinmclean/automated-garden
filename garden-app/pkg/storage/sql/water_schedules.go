@@ -1,0 +1,219 @@
+package sql
+
+import (
+	"context"
+	"database/sql"
+	"encoding/json"
+	"fmt"
+	"net/url"
+	"time"
+
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql/db"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/calvinmclean/babyapi"
+)
+
+// WaterScheduleStorage implements babyapi.Storage interface for WaterSchedules using SQL
+type WaterScheduleStorage struct {
+	q *db.Queries
+}
+
+var _ babyapi.Storage[*pkg.WaterSchedule] = &WaterScheduleStorage{}
+
+// NewWaterScheduleStorage creates a new WaterScheduleStorage instance
+func NewWaterScheduleStorage(sqlDB *sql.DB) *WaterScheduleStorage {
+	return &WaterScheduleStorage{
+		q: db.New(sqlDB),
+	}
+}
+
+// Get retrieves a WaterSchedule from storage by ID
+func (s *WaterScheduleStorage) Get(ctx context.Context, id string) (*pkg.WaterSchedule, error) {
+	dbWaterSchedule, err := s.q.GetWaterSchedule(ctx, id)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, babyapi.ErrNotFound
+		}
+		return nil, fmt.Errorf("error getting water schedule: %w", err)
+	}
+
+	return dbWaterScheduleToWaterSchedule(dbWaterSchedule)
+}
+
+// Search returns all WaterSchedules from storage
+func (s *WaterScheduleStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.WaterSchedule, error) {
+	getEndDated := q.Get("end_dated") == "true"
+
+	listWaterSchedules := s.q.ListAllWaterSchedules
+	if !getEndDated {
+		listWaterSchedules = func(ctx context.Context) ([]db.WaterSchedule, error) {
+			return s.q.ListActiveWaterSchedules(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+		}
+	}
+
+	dbWaterSchedules, err := listWaterSchedules(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("error listing water schedules: %w", err)
+	}
+
+	waterSchedules := make([]*pkg.WaterSchedule, len(dbWaterSchedules))
+	for i, dbWaterSchedule := range dbWaterSchedules {
+		waterSchedule, err := dbWaterScheduleToWaterSchedule(dbWaterSchedule)
+		if err != nil {
+			return nil, fmt.Errorf("invalid water schedule: %w", err)
+		}
+
+		waterSchedules[i] = waterSchedule
+	}
+
+	return waterSchedules, nil
+}
+
+// Set saves a WaterSchedule to storage (creates or updates)
+func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.WaterSchedule) error {
+	var name, description sql.NullString
+	if waterSchedule.Name != "" {
+		name = sql.NullString{String: waterSchedule.Name, Valid: true}
+	}
+	if waterSchedule.Description != "" {
+		description = sql.NullString{String: waterSchedule.Description, Valid: true}
+	}
+
+	var startTime string
+	if waterSchedule.StartTime != nil {
+		startTime = waterSchedule.StartTime.String()
+	}
+
+	var endDate sql.NullString
+	if waterSchedule.EndDate != nil {
+		endDate = sql.NullString{String: waterSchedule.EndDate.Format(time.RFC3339), Valid: true}
+	}
+
+	var activePeriodStartMonth, activePeriodEndMonth sql.NullString
+	if waterSchedule.ActivePeriod != nil {
+		activePeriodStartMonth = sql.NullString{String: waterSchedule.ActivePeriod.StartMonth, Valid: true}
+		activePeriodEndMonth = sql.NullString{String: waterSchedule.ActivePeriod.EndMonth, Valid: true}
+	}
+
+	var weatherControl sql.NullString
+	if waterSchedule.WeatherControl != nil {
+		weatherControlStr, err := json.Marshal(waterSchedule.WeatherControl)
+		if err != nil {
+			return fmt.Errorf("error marshaling weather control: %w", err)
+		}
+		weatherControl = sql.NullString{
+			String: string(weatherControlStr),
+			Valid:  true,
+		}
+	}
+
+	var notificationClientID sql.NullString
+	if waterSchedule.NotificationClientID != nil {
+		notificationClientID = sql.NullString{String: *waterSchedule.NotificationClientID, Valid: true}
+	}
+
+	startDate := time.Now().Format(time.RFC3339)
+	if waterSchedule.StartDate != nil {
+		startDate = waterSchedule.StartDate.Format(time.RFC3339)
+	}
+
+	var duration, interval int64
+	if waterSchedule.Duration != nil {
+		duration = int64(waterSchedule.Duration.Duration)
+	}
+	if waterSchedule.Interval != nil {
+		interval = int64(waterSchedule.Interval.Duration)
+	}
+
+	return s.q.UpsertWaterSchedule(ctx, db.UpsertWaterScheduleParams{
+		ID:                     waterSchedule.ID.String(),
+		Name:                   name,
+		Description:            description,
+		Duration:               duration,
+		Interval:               interval,
+		StartDate:              startDate,
+		StartTime:              startTime,
+		EndDate:                endDate,
+		ActivePeriodStartMonth: activePeriodStartMonth,
+		ActivePeriodEndMonth:   activePeriodEndMonth,
+		WeatherControl:         weatherControl,
+		NotificationClientID:   notificationClientID,
+	})
+}
+
+// Delete removes a WaterSchedule from storage
+func (s *WaterScheduleStorage) Delete(ctx context.Context, id string) error {
+	return s.q.DeleteWaterSchedule(ctx, id)
+}
+
+func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.WaterSchedule, error) {
+	waterScheduleID, err := parseID(dbWaterSchedule.ID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid water schedule ID: %w", err)
+	}
+
+	waterSchedule := &pkg.WaterSchedule{
+		ID: waterScheduleID,
+	}
+
+	if dbWaterSchedule.StartDate != "" {
+		startDate, err := time.Parse(time.RFC3339, dbWaterSchedule.StartDate)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing start_date: %w", err)
+		}
+		waterSchedule.StartDate = &startDate
+	}
+
+	if dbWaterSchedule.Name.Valid {
+		waterSchedule.Name = dbWaterSchedule.Name.String
+	}
+
+	if dbWaterSchedule.Description.Valid {
+		waterSchedule.Description = dbWaterSchedule.Description.String
+	}
+
+	duration := pkg.Duration{Duration: time.Duration(dbWaterSchedule.Duration)}
+	waterSchedule.Duration = &duration
+
+	interval := pkg.Duration{Duration: time.Duration(dbWaterSchedule.Interval)}
+	waterSchedule.Interval = &interval
+
+	if dbWaterSchedule.StartTime != "" {
+		startTime, err := pkg.StartTimeFromString(dbWaterSchedule.StartTime)
+		if err != nil {
+			return nil, fmt.Errorf("error parsing start time: %w", err)
+		}
+		waterSchedule.StartTime = startTime
+	}
+
+	if dbWaterSchedule.EndDate.Valid {
+		endDate, err := time.Parse(time.RFC3339, dbWaterSchedule.EndDate.String)
+		if err != nil {
+			return nil, fmt.Errorf("invalid end_date: %w", err)
+		}
+		waterSchedule.EndDate = &endDate
+	}
+
+	if dbWaterSchedule.ActivePeriodStartMonth.Valid && dbWaterSchedule.ActivePeriodEndMonth.Valid {
+		waterSchedule.ActivePeriod = &pkg.ActivePeriod{
+			StartMonth: dbWaterSchedule.ActivePeriodStartMonth.String,
+			EndMonth:   dbWaterSchedule.ActivePeriodEndMonth.String,
+		}
+	}
+
+	if dbWaterSchedule.WeatherControl.Valid && len(dbWaterSchedule.WeatherControl.String) > 0 {
+		var weatherControl weather.Control
+		err := json.Unmarshal([]byte(dbWaterSchedule.WeatherControl.String), &weatherControl)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshaling weather control: %w", err)
+		}
+		waterSchedule.WeatherControl = &weatherControl
+	}
+
+	if dbWaterSchedule.NotificationClientID.Valid {
+		waterSchedule.NotificationClientID = &dbWaterSchedule.NotificationClientID.String
+	}
+
+	return waterSchedule, nil
+}
