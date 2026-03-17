@@ -99,14 +99,6 @@ services:
     profiles:
       - demo
 
-  redis:
-    image: redis
-    ports:
-      - "6379:6379"
-    profiles:
-      - test
-      - run-local
-
 volumes:
   influxdb:
   grafana:

@@ -10,9 +10,9 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  driver: redis
+  driver: sqlite
   options:
-    server: "localhost:6379"
+    data_source_name: "file:mem-integration-test?mode=memory&cache=shared"
 
 controller:
   topic_prefix: "test"
