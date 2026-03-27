@@ -35,6 +35,9 @@ const (
 	weatherClientsPageTemplate       html.Template = "WeatherClientsPage"
 	weatherClientsTemplate           html.Template = "WeatherClients"
 	weatherClientModalTemplate       html.Template = "WeatherClientModal"
+	waterRoutinesPageTemplate        html.Template = "WaterRoutinesPage"
+	waterRoutinesTemplate            html.Template = "WaterRoutines"
+	waterRoutineModalTemplate        html.Template = "WaterRoutineModal"
 )
 
 func templateFuncs(r *http.Request) map[string]any {
@@ -52,6 +55,9 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 
 			return result
+		},
+		"add": func(a, b int) int {
+			return a + b
 		},
 		"ToLower": strings.ToLower,
 		"FormatUpcomingDate": func(date *time.Time) string {

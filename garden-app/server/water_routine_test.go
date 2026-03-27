@@ -102,6 +102,19 @@ func TestWaterRoutine(t *testing.T) {
 `, w.Body.String())
 	})
 
+	t.Run("CreateWaterRoutine_ErrorZeroDuration", func(t *testing.T) {
+		newID := babyapi.NewID().String()
+		body := fmt.Sprintf(`{"id": "%s", "steps": [{"zone_id": "%s", "duration": "0s"}]}`, newID, zones[0].GetID())
+
+		r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", waterRoutineBasePath, newID), strings.NewReader(body))
+		r.Header.Set("Content-Type", "application/json")
+		r.Header.Set("X-TZ-Offset", "420")
+		w := babytest.TestRequest(t, api.API, r)
+
+		assert.Equal(t, http.StatusBadRequest, w.Code)
+		assert.Contains(t, w.Body.String(), "duration must be greater than 0")
+	})
+
 	t.Run("RunRoutine", func(t *testing.T) {
 		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":0,"id":"00000000000000000000","source":"water_routine"}`, zones[0].GetID())).Return(nil)
 		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":1,"id":"00000000000000000000","source":"water_routine"}`, zones[1].GetID())).Return(nil)

@@ -1,0 +1,98 @@
+{{ define "WaterRoutinesPage" }}
+{{ template "start" }}
+{{ template "WaterRoutines" . }}
+{{ template "end" }}
+{{ end }}
+
+{{ define "WaterRoutines" }}
+<div hx-swap="outerHTML" hx-get="/water_routines?refresh=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="newWaterRoutine from:body" uk-grid>
+    {{ range .Items }}
+    {{ template "WaterRoutineCard" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "WaterRoutineCard" }}
+<div class="uk-width-1-2@m" id="water-routine-card-{{ .ID }}">
+    <div id="edit-modal-here"></div>
+    <div id="run-modal-here-{{ .ID }}"></div>
+    <div class="uk-card uk-card-default" style="margin: 5%;">
+        <div class="uk-card-header uk-text-center">
+            <h3 class="uk-card-title uk-margin-remove-bottom">
+                {{ .Name }}
+            </h3>
+            {{ template "cardEditButton" (print "/water_routines/" .ID "/components?type=edit_modal") }}
+        </div>
+        <div class="uk-card-body">
+            <span class="uk-label">
+                {{ len .Steps }} Steps <i class="bi-list-task"></i>
+            </span>
+
+            <div class="uk-margin-small-top">
+                {{ range $index, $step := .Steps }}
+                <div class="uk-text-small uk-text-muted">
+                    <span uk-icon="icon: location; ratio: 0.75"></span>
+                    Zone {{ $step.ZoneID }} - {{ FormatDuration $step.Duration }}
+                </div>
+                {{ end }}
+            </div>
+        </div>
+        <div class="uk-card-footer">
+            <div class="uk-clearfix">
+                <div class="uk-float-left">
+                    {{ template "waterRoutineActionButton" . }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ define "waterRoutineActionButton" }}
+<div class="uk-inline">
+    <button class="uk-button uk-button-default" type="button">Actions</button>
+    <div uk-dropdown>
+        <ul class="uk-nav uk-dropdown-nav">
+            <li>
+                <a href="#run-confirm-{{ .ID }}" uk-toggle>
+                    <span uk-icon="play"></span> Run Routine
+                </a>
+            </li>
+        </ul>
+    </div>
+</div>
+
+{{ template "runConfirmationModal" . }}
+{{ end }}
+
+{{ define "runConfirmationModal" }}
+<div id="run-confirm-{{ .ID }}" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">Confirm Run</h3>
+        <p>Are you sure you want to run <strong>{{ .Name }}</strong>?</p>
+        <p class="uk-text-meta">This will water {{ len .Steps }} zone(s) sequentially.</p>
+
+        <div class="uk-margin">
+            <h5>Steps:</h5>
+            {{ range $index, $step := .Steps }}
+            <div class="uk-text-small">
+                <span uk-icon="icon: location; ratio: 0.75"></span>
+                Step {{ add $index 1 }}: Zone {{ $step.ZoneID }} - {{ FormatDuration $step.Duration }}
+            </div>
+            {{ end }}
+        </div>
+
+        <p class="uk-text-right">
+            <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
+            <button class="uk-button uk-button-primary" type="button"
+                hx-post="/water_routines/{{ .ID }}/run"
+                hx-swap="none"
+                {{ template "actionFeedback" "primary" }}
+                onclick="UIkit.modal('#run-confirm-{{ .ID }}').hide()">
+                <span uk-icon="play"></span> Run Now
+            </button>
+        </p>
+    </div>
+</div>
+{{ end }}
