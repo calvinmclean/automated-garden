@@ -61,6 +61,22 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 			return weatherClientModalTemplate.Renderer(&weather.Config{
 				ID: NewID(),
 			})
+		case "config_form":
+			weatherType := r.URL.Query().Get("Type")
+			switch weatherType {
+			case "netatmo":
+				return weatherClientNetatmoConfigTemplate.Renderer(&weather.Config{
+					Type:    "netatmo",
+					Options: map[string]any{},
+				})
+			case "fake":
+				return weatherClientFakeConfigTemplate.Renderer(&weather.Config{
+					Type:    "fake",
+					Options: map[string]any{},
+				})
+			default:
+				return babyapi.ErrInvalidRequest(fmt.Errorf("invalid Type: %s", weatherType))
+			}
 		default:
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}

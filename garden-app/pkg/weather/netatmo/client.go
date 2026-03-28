@@ -66,7 +66,7 @@ func NewClient(options map[string]any, storageCallback func(map[string]any) erro
 		Config:          &Config{},
 	}
 
-	err := mapstructure.Decode(options, &client.Config)
+	err := mapstructure.WeakDecode(options, &client.Config)
 	if err != nil {
 		return nil, err
 	}

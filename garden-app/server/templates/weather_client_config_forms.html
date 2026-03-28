@@ -1,0 +1,53 @@
+{{ define "WeatherClientNetatmoConfig" }}
+<div class="uk-margin">
+    <label class="uk-form-label" for="station-id">Station ID</label>
+    <input id="station-id" class="uk-input" value="{{ .Options.station_id }}" placeholder="Station ID" name="Options.station_id">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="station-name">Station Name</label>
+    <input id="station-name" class="uk-input" value="{{ .Options.station_name }}" placeholder="Station Name" name="Options.station_name">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="rain-module-id">Rain Module ID</label>
+    <input id="rain-module-id" class="uk-input" value="{{ .Options.rain_module_id }}" placeholder="Rain Module ID" name="Options.rain_module_id">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="rain-module-name">Rain Module Name</label>
+    <input id="rain-module-name" class="uk-input" value="{{ .Options.rain_module_name }}" placeholder="Rain Module Name" name="Options.rain_module_name">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="outdoor-module-id">Outdoor Module ID</label>
+    <input id="outdoor-module-id" class="uk-input" value="{{ .Options.outdoor_module_id }}" placeholder="Outdoor Module ID" name="Options.outdoor_module_id">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="outdoor-module-name">Outdoor Module Name</label>
+    <input id="outdoor-module-name" class="uk-input" value="{{ .Options.outdoor_module_name }}" placeholder="Outdoor Module Name" name="Options.outdoor_module_name">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="client-id">Client ID</label>
+    <input id="client-id" class="uk-input" value="{{ .Options.client_id }}" placeholder="Client ID" name="Options.client_id">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="client-secret">Client Secret</label>
+    <input id="client-secret" class="uk-input" type="password" value="{{ .Options.client_secret }}" placeholder="Client Secret" name="Options.client_secret">
+</div>
+{{ end }}
+
+{{ define "WeatherClientFakeConfig" }}
+<div class="uk-margin">
+    <label class="uk-form-label" for="rain-mm">Rain (mm)</label>
+    <input id="rain-mm" class="uk-input" type="number" step="0.1" value="{{ .Options.rain_mm }}" placeholder="Rain (mm)" name="Options.rain_mm">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="rain-interval">Rain Interval</label>
+    <input id="rain-interval" class="uk-input" value="{{ .Options.rain_interval }}" placeholder="e.g., 1h, 30m" name="Options.rain_interval">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="avg-high-temp">Average High Temperature (°C)</label>
+    <input id="avg-high-temp" class="uk-input" type="number" step="0.1" value="{{ .Options.avg_high_temperature }}" placeholder="Average High Temperature" name="Options.avg_high_temperature">
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="error">Error (optional)</label>
+    <input id="error" class="uk-input" value="{{ .Options.error }}" placeholder="Error message to simulate" name="Options.error">
+</div>
+{{ end }}
