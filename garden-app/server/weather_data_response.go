@@ -3,6 +3,8 @@ package server
 import (
 	"context"
 	"fmt"
+	"net/http"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -12,19 +14,19 @@ import (
 // WeatherData is used to represent the data used for WeatherControl to a user
 type WeatherData struct {
 	Rain        *RainData        `json:"rain,omitempty"`
-	Temperature *TemperatureData `json:"average_temperature,omitempty"`
+	Temperature *TemperatureData `json:"temperature,omitempty"`
 }
 
-// RainData shows the total rain in the last watering interval and the scaling factor it would result in
+// RainData shows the total rain in both metric and imperial units
 type RainData struct {
-	MM          float32 `json:"mm"`
-	ScaleFactor float32 `json:"scale_factor"`
+	MM     *float32 `json:"mm,omitempty"`
+	Inches *float32 `json:"inches,omitempty"`
 }
 
-// TemperatureData shows the average high temperatures in the last watering interval and the scaling factor it would result in
+// TemperatureData shows the average high temperatures in both Celsius and Fahrenheit
 type TemperatureData struct {
-	Celsius     float32 `json:"celsius"`
-	ScaleFactor float32 `json:"scale_factor"`
+	Celsius    float32 `json:"celsius,omitempty"`
+	Fahrenheit float32 `json:"fahrenheit,omitempty"`
 }
 
 func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) *WeatherData {
@@ -37,9 +39,10 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 		if err != nil || rainMM == nil {
 			logger.Warn("unable to get rain data for WaterSchedule", "error", err)
 		} else {
+			inches := *rainMM * 0.0393701
 			weatherData.Rain = &RainData{
-				MM:          *rainMM,
-				ScaleFactor: ws.WeatherControl.Rain.InvertedScaleDownOnly(*rainMM),
+				MM:     rainMM,
+				Inches: &inches,
 			}
 		}
 	}
@@ -51,8 +54,8 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 			logger.Warn("unable to get average high temperature from weather client", "error", err)
 		} else {
 			weatherData.Temperature = &TemperatureData{
-				Celsius:     *celsius,
-				ScaleFactor: ws.WeatherControl.Temperature.Scale(*celsius),
+				Celsius:    *celsius,
+				Fahrenheit: *celsius*1.8 + 32,
 			}
 		}
 	}
@@ -83,4 +86,24 @@ func getTemperatureData(ws *pkg.WaterSchedule, storageClient *storage.Client) (*
 		return nil, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
 	}
 	return &avgTemperature, nil
+}
+
+func getUnitsFromRequest(r *http.Request) string {
+	units := r.URL.Query().Get("units")
+	if units != "imperial" {
+		return "metric"
+	}
+	return units
+}
+
+func getDurationFromRequest(r *http.Request) time.Duration {
+	durationStr := r.URL.Query().Get("duration")
+	if durationStr == "" {
+		return 72 * time.Hour
+	}
+	duration, err := time.ParseDuration(durationStr)
+	if err != nil {
+		return 72 * time.Hour
+	}
+	return duration
 }

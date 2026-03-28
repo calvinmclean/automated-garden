@@ -29,7 +29,7 @@ type Client struct {
 func NewClient(options map[string]any) (*Client, error) {
 	client := &Client{}
 
-	err := mapstructure.Decode(options, &client.Config)
+	err := mapstructure.WeakDecode(options, &client.Config)
 	if err != nil {
 		return nil, err
 	}

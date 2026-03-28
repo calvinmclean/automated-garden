@@ -6,11 +6,34 @@
         <form _="on submit take .uk-open from #modal" hx-put="/weather_clients/{{ .ID }}"
             hx-headers='{"Accept": "text/html"}' hx-swap="none">
             <input type="hidden" value="{{ .ID }}" name="ID">
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ .Type }}" placeholder="Type" name="Type">
-            </div>
 
-            <!-- TODO: use select/dropdown for Type and use selection to render a form with relevant inputs -->
+            {{ if .Type }}
+            <input type="hidden" value="{{ .Type }}" name="Type">
+            <div class="uk-margin uk-text-left">
+                <label class="uk-form-label"><strong>Type:</strong> {{ .Type }}</label>
+            </div>
+            <div id="config-form-container">
+                {{ if eq .Type "netatmo" }}
+                {{ template "WeatherClientNetatmoConfig" . }}
+                {{ else if eq .Type "fake" }}
+                {{ template "WeatherClientFakeConfig" . }}
+                {{ end }}
+            </div>
+            {{ else }}
+            <div class="uk-margin">
+                <label class="uk-form-label" for="weather-client-type">Type</label>
+                <select id="weather-client-type" class="uk-select" name="Type"
+                    hx-get="/weather_clients/components?type=config_form"
+                    hx-target="#config-form-container"
+                    hx-trigger="change"
+                    hx-swap="innerHTML">
+                    <option value="" selected disabled>Select Type...</option>
+                    <option value="netatmo">Netatmo</option>
+                    <option value="fake">Fake</option>
+                </select>
+            </div>
+            <div id="config-form-container"></div>
+            {{ end }}
 
             {{ template "modalSubmitButton" }}
             {{ if .Type }}

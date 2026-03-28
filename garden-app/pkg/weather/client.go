@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"maps"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
@@ -80,7 +81,7 @@ func (wc *Config) Bind(r *http.Request) error {
 // NewClient will use the config to create and return the correct type of weather client. If no type is provided, this will
 // return a nil client rather than an error since Weather client is not required
 func NewClient(c *Config, storageCallback func(map[string]any) error) (client Client, err error) {
-	switch c.Type {
+	switch strings.ToLower(c.Type) {
 	case "netatmo":
 		client, err = netatmo.NewClient(c.Options, storageCallback)
 	case "fake":

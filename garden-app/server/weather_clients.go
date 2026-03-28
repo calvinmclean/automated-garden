@@ -41,13 +41,13 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 	})
 
 	api.SetResponseWrapper(func(wc *weather.Config) render.Renderer {
-		return &WeatherClientResponse{Config: wc}
+		return &WeatherClientResponse{Config: wc, api: api}
 	})
 	api.SetSearchResponseWrapper(func(wcs []*weather.Config) render.Renderer {
 		resp := AllWeatherClientsResponse{ResourceList: babyapi.ResourceList[*WeatherClientResponse]{}}
 
 		for _, wc := range wcs {
-			resp.ResourceList.Items = append(resp.ResourceList.Items, &WeatherClientResponse{Config: wc})
+			resp.ResourceList.Items = append(resp.ResourceList.Items, &WeatherClientResponse{Config: wc, api: api})
 		}
 
 		return resp
@@ -61,6 +61,22 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 			return weatherClientModalTemplate.Renderer(&weather.Config{
 				ID: NewID(),
 			})
+		case "config_form":
+			weatherType := r.URL.Query().Get("Type")
+			switch weatherType {
+			case "netatmo":
+				return weatherClientNetatmoConfigTemplate.Renderer(&weather.Config{
+					Type:    "netatmo",
+					Options: map[string]any{},
+				})
+			case "fake":
+				return weatherClientFakeConfigTemplate.Renderer(&weather.Config{
+					Type:    "fake",
+					Options: map[string]any{},
+				})
+			default:
+				return babyapi.ErrInvalidRequest(fmt.Errorf("invalid Type: %s", weatherType))
+			}
 		default:
 			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
@@ -111,7 +127,9 @@ func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.R
 		return httpErr
 	}
 
-	weatherData, err := api.getWeatherData(r.Context(), weatherClient)
+	units := getUnitsFromRequest(r)
+	duration := getDurationFromRequest(r)
+	weatherData, err := api.getWeatherData(r.Context(), weatherClient, units, duration)
 	if err != nil {
 		logger.Error("unable to get weather data", "error", err)
 		return InternalServerError(err)
@@ -120,7 +138,7 @@ func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.R
 	return &WeatherClientTestResponse{WeatherData: weatherData}
 }
 
-func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient *weather.Config) (WeatherData, error) {
+func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient *weather.Config, units string, duration time.Duration) (WeatherData, error) {
 	wc, err := weather.NewClient(weatherClient, func(weatherClientOptions map[string]any) error {
 		weatherClient.Options = weatherClientOptions
 		return api.storageClient.WeatherClientConfigs.Set(ctx, weatherClient)
@@ -129,22 +147,36 @@ func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient 
 		return WeatherData{}, fmt.Errorf("error getting weather client: %w", err)
 	}
 
-	rd, err := wc.GetTotalRain(72 * time.Hour)
+	rd, err := wc.GetTotalRain(duration)
 	if err != nil {
-		return WeatherData{}, fmt.Errorf("unable to get total rain in the last 72 hours: %w", err)
+		return WeatherData{}, fmt.Errorf("unable to get total rain in the last %v: %w", duration, err)
 	}
 
-	td, err := wc.GetAverageHighTemperature(72 * time.Hour)
+	td, err := wc.GetAverageHighTemperature(duration)
 	if err != nil {
-		return WeatherData{}, fmt.Errorf("unable to get average high temperature in the last 72 hours: %w", err)
+		return WeatherData{}, fmt.Errorf("unable to get average high temperature in the last %v: %w", duration, err)
 	}
 
-	return WeatherData{
-		Rain: &RainData{
-			MM: rd,
-		},
-		Temperature: &TemperatureData{
-			Celsius: td,
-		},
-	}, nil
+	result := WeatherData{
+		Temperature: &TemperatureData{},
+	}
+
+	if units == "imperial" {
+		result.Temperature.Fahrenheit = convertTempToF(td)
+		result.Rain = &RainData{Inches: convertRainToInches(rd)}
+	} else {
+		result.Temperature.Celsius = td
+		result.Rain = &RainData{MM: &rd}
+	}
+
+	return result, nil
+}
+
+func convertTempToF(celsius float32) float32 {
+	return celsius*1.8 + 32
+}
+
+func convertRainToInches(mm float32) *float32 {
+	inches := mm * (1 / 25.4)
+	return &inches
 }

@@ -20,24 +20,26 @@ import (
 var templates embed.FS
 
 const (
-	gardensPageTemplate              html.Template = "GardensPage"
-	gardensTemplate                  html.Template = "Gardens"
-	gardenModalTemplate              html.Template = "GardenModal"
-	zonesPageTemplate                html.Template = "ZonesPage"
-	zonesTemplate                    html.Template = "Zones"
-	zoneDetailsTemplate              html.Template = "ZoneDetails"
-	waterSchedulesPageTemplate       html.Template = "WaterSchedulesPage"
-	waterSchedulesTemplate           html.Template = "WaterSchedules"
-	waterScheduleModalTemplate       html.Template = "WaterScheduleModal"
-	waterScheduleDetailModalTemplate html.Template = "WaterScheduleDetailModal"
-	zoneModalTemplate                html.Template = "ZoneModal"
-	zoneActionModalTemplate          html.Template = "ZoneActionModal"
-	weatherClientsPageTemplate       html.Template = "WeatherClientsPage"
-	weatherClientsTemplate           html.Template = "WeatherClients"
-	weatherClientModalTemplate       html.Template = "WeatherClientModal"
-	waterRoutinesPageTemplate        html.Template = "WaterRoutinesPage"
-	waterRoutinesTemplate            html.Template = "WaterRoutines"
-	waterRoutineModalTemplate        html.Template = "WaterRoutineModal"
+	gardensPageTemplate                html.Template = "GardensPage"
+	gardensTemplate                    html.Template = "Gardens"
+	gardenModalTemplate                html.Template = "GardenModal"
+	zonesPageTemplate                  html.Template = "ZonesPage"
+	zonesTemplate                      html.Template = "Zones"
+	zoneDetailsTemplate                html.Template = "ZoneDetails"
+	waterSchedulesPageTemplate         html.Template = "WaterSchedulesPage"
+	waterSchedulesTemplate             html.Template = "WaterSchedules"
+	waterScheduleModalTemplate         html.Template = "WaterScheduleModal"
+	waterScheduleDetailModalTemplate   html.Template = "WaterScheduleDetailModal"
+	zoneModalTemplate                  html.Template = "ZoneModal"
+	zoneActionModalTemplate            html.Template = "ZoneActionModal"
+	weatherClientsPageTemplate         html.Template = "WeatherClientsPage"
+	weatherClientsTemplate             html.Template = "WeatherClients"
+	weatherClientModalTemplate         html.Template = "WeatherClientModal"
+	weatherClientNetatmoConfigTemplate html.Template = "WeatherClientNetatmoConfig"
+	weatherClientFakeConfigTemplate    html.Template = "WeatherClientFakeConfig"
+	waterRoutinesPageTemplate          html.Template = "WaterRoutinesPage"
+	waterRoutinesTemplate              html.Template = "WaterRoutines"
+	waterRoutineModalTemplate          html.Template = "WaterRoutineModal"
 )
 
 func templateFuncs(r *http.Request) map[string]any {
@@ -82,6 +84,15 @@ func templateFuncs(r *http.Request) map[string]any {
 		"Sprintf": fmt.Sprintf,
 		"CelsiusToFahrenheit": func(c float64) float64 {
 			return c*1.8 + 32
+		},
+		"IsMetric": func() bool {
+			return getUnitsFromRequest(r) == "metric"
+		},
+		"DerefFloat32": func(f *float32) float32 {
+			if f == nil {
+				return 0
+			}
+			return *f
 		},
 		"timeNow": func() time.Time {
 			return clock.Now()
