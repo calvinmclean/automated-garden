@@ -1,0 +1,171 @@
+{{ define "WaterRoutineModal" }}
+<div id="modal" class="uk-modal" style="display: block">
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">
+            {{ if .WaterRoutine.Name }}{{ .WaterRoutine.Name }}{{ else }}Create
+            Water Routine{{ end }}
+        </h3>
+
+        <form
+            _="on submit take .uk-open from #modal"
+            hx-put="/water_routines/{{ .WaterRoutine.ID }}"
+            hx-headers='{"Accept": "text/html"}'
+            hx-swap="none"
+        >
+            <input type="hidden" value="{{ .WaterRoutine.ID }}" name="ID" />
+            <div class="uk-margin">
+                <label class="uk-form-label" for="water-routine-name"
+                    >Name</label
+                >
+                <input
+                    id="water-routine-name"
+                    class="uk-input"
+                    value="{{ .WaterRoutine.Name }}"
+                    placeholder="Name"
+                    name="Name"
+                />
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label">Steps</label>
+                <div id="water-routine-steps">
+                    {{ range $index, $step := .WaterRoutine.Steps }}
+                    <div
+                        class="uk-grid-small uk-margin-small-bottom step-row"
+                        uk-grid
+                    >
+                        <div class="uk-width-1-2@s">
+                            <select
+                                class="uk-select"
+                                name="Steps.{{ $index }}.ZoneID"
+                            >
+                                {{ $selectedZone := $step.ZoneID.String }} {{
+                                range $gardenID, $gardenZones := $.GroupedZones
+                                }}
+                                <optgroup label="{{ $gardenZones.GardenName }}">
+                                    {{ range $gardenZones.Zones }}
+                                    <option
+                                        value="{{ .ID }}"
+                                        {{
+                                        if
+                                        eq
+                                        .GetID
+                                        $selectedZone
+                                        }}selected{{
+                                        end
+                                        }}
+                                    >
+                                        {{ .Name }}
+                                    </option>
+                                    {{ end }}
+                                </optgroup>
+                                {{ end }}
+                            </select>
+                        </div>
+                        <div class="uk-width-1-3@s">
+                            <input
+                                class="uk-input"
+                                type="text"
+                                placeholder="Duration (e.g., 5m)"
+                                name="Steps.{{ $index }}.Duration"
+                                value="{{ FormatDuration $step.Duration }}"
+                            />
+                        </div>
+                        <div class="uk-width-auto@s">
+                            <button
+                                type="button"
+                                class="uk-button uk-button-danger uk-button-small"
+                                onclick="this.closest('.step-row').remove()"
+                            >
+                                <span uk-icon="icon: trash; ratio: 0.75"></span>
+                            </button>
+                        </div>
+                    </div>
+                    {{ else }}
+                    <div
+                        class="uk-grid-small uk-margin-small-bottom step-row"
+                        uk-grid
+                    >
+                        <div class="uk-width-1-2@s">
+                            <select class="uk-select" name="Steps.0.ZoneID">
+                                {{ range $gardenID, $gardenZones :=
+                                $.GroupedZones }}
+                                <optgroup label="{{ $gardenZones.GardenName }}">
+                                    {{ range $gardenZones.Zones }}
+                                    <option value="{{ .ID }}">
+                                        {{ .Name }}
+                                    </option>
+                                    {{ end }}
+                                </optgroup>
+                                {{ end }}
+                            </select>
+                        </div>
+                        <div class="uk-width-1-3@s">
+                            <input
+                                class="uk-input"
+                                type="text"
+                                placeholder="Duration (e.g., 5m)"
+                                name="Steps.0.Duration"
+                            />
+                        </div>
+                        <div class="uk-width-auto@s">
+                            <button
+                                type="button"
+                                class="uk-button uk-button-danger uk-button-small"
+                                onclick="this.closest('.step-row').remove()"
+                            >
+                                <span uk-icon="icon: trash; ratio: 0.75"></span>
+                            </button>
+                        </div>
+                    </div>
+                    {{ end }}
+                </div>
+                <button
+                    type="button"
+                    class="uk-button uk-button-default uk-button-small"
+                    onclick="addStep()"
+                >
+                    <span uk-icon="icon: plus; ratio: 0.75"></span> Add Step
+                </button>
+            </div>
+
+            {{ template "modalSubmitButton" }} {{ if .WaterRoutine.Name }} {{
+            template "deleteButton" ( args "HXDelete" (print "/water_routines/"
+            .WaterRoutine.ID) "HXTarget" (print "#water-routine-card-"
+            .WaterRoutine.ID) ) }} {{ end }} {{ template "modalCloseButton" }}
+        </form>
+    </div>
+</div>
+
+<script>
+    function addStep() {
+        const container = document.getElementById("water-routine-steps");
+        const stepCount = container.querySelectorAll(".step-row").length;
+        const newStep = document.createElement("div");
+        newStep.className = "uk-grid-small uk-margin-small-bottom step-row";
+        newStep.setAttribute("uk-grid", "");
+        newStep.innerHTML = `
+            <div class="uk-width-1-2@s">
+                <select class="uk-select" name="Steps.${stepCount}.ZoneID">
+                    {{ range $gardenID, $gardenZones := .GroupedZones }}
+                    <optgroup label="{{ $gardenZones.GardenName }}">
+                        {{ range $gardenZones.Zones }}
+                        <option value="{{ .ID }}">{{ .Name }}</option>
+                        {{ end }}
+                    </optgroup>
+                    {{ end }}
+                </select>
+            </div>
+            <div class="uk-width-1-3@s">
+                <input class="uk-input" type="text" placeholder="Duration (e.g., 5m)" name="Steps.${stepCount}.Duration">
+            </div>
+            <div class="uk-width-auto@s">
+                <button type="button" class="uk-button uk-button-danger uk-button-small" onclick="this.closest('.step-row').remove()">
+                    <span uk-icon="icon: trash; ratio: 0.75"></span>
+                </button>
+            </div>
+        `;
+        container.appendChild(newStep);
+    }
+</script>
+{{ end }}
