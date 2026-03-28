@@ -37,7 +37,7 @@ func TestUpdateWeatherClient(t *testing.T) {
 		{
 			"Successful",
 			`{"options": {"avg_high_temperature": 81}}`,
-			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":81,"rain_interval":"24h","rain_mm":25.4},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":81,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2,"scale_factor":0},"average_temperature":{"celsius":81,"scale_factor":0}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
 			http.StatusOK,
 		},
 		{
@@ -99,7 +99,7 @@ func TestGetWeatherClient(t *testing.T) {
 			"Successful",
 			id.String(),
 			createExampleWeatherClientConfig(),
-			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2,"scale_factor":0},"average_temperature":{"celsius":81,"scale_factor":0}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
 			http.StatusOK,
 		},
 		{
@@ -230,7 +230,7 @@ func TestGetAllWeatherClients(t *testing.T) {
 	}{
 		{
 			"Successful",
-			`{"items":[{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}]}`,
+			`{"items":[{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2,"scale_factor":0},"average_temperature":{"celsius":81,"scale_factor":0}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}]}`,
 			http.StatusOK,
 		},
 	}
@@ -271,7 +271,7 @@ func TestCreateWeatherClient(t *testing.T) {
 		{
 			"Successful",
 			`{"type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
-			`{"id":"[0-9a-v]{20}","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"links":\[{"rel":"self","href":"/weather_clients/[0-9a-v]{20}"}\]}`,
+			`{"id":"[0-9a-v]{20}","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":\{"rain":\{"mm":[0-9.]+,"scale_factor":[0-9.]+\},"average_temperature":\{"celsius":[0-9.]+,"scale_factor":[0-9.]+\}\},"links":\[{"rel":"self","href":"/weather_clients/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -387,7 +387,7 @@ func TestTestWeatherClient(t *testing.T) {
 	}{
 		{
 			"Successful",
-			`{"rain":{"mm":76.2,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":0}}`,
+			`{"rain":{"mm":76.2,"scale_factor":0},"average_temperature":{"celsius":81,"scale_factor":0}}`,
 			http.StatusOK,
 		},
 	}

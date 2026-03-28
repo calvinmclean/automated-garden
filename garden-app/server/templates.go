@@ -83,6 +83,15 @@ func templateFuncs(r *http.Request) map[string]any {
 		"CelsiusToFahrenheit": func(c float64) float64 {
 			return c*1.8 + 32
 		},
+		"IsMetric": func() bool {
+			return getUnitsFromRequest(r) == "metric"
+		},
+		"DerefFloat32": func(f *float32) float32 {
+			if f == nil {
+				return 0
+			}
+			return *f
+		},
 		"timeNow": func() time.Time {
 			return clock.Now()
 		},

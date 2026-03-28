@@ -21,8 +21,11 @@ func (resp *WeatherClientTestResponse) Render(_ http.ResponseWriter, _ *http.Req
 
 type WeatherClientResponse struct {
 	*weather.Config
+	WeatherData *WeatherData `json:"weather_data,omitempty"`
 
 	Links []Link `json:"links,omitempty"`
+
+	api *WeatherClientsAPI
 }
 
 // Render ...
@@ -34,6 +37,15 @@ func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request
 				fmt.Sprintf("%s/%s", weatherClientsBasePath, resp.ID),
 			},
 		)
+	}
+
+	if resp.api != nil && resp.Config != nil {
+		units := getUnitsFromRequest(r)
+		duration := getDurationFromRequest(r)
+		weatherData, err := resp.api.getWeatherData(r.Context(), resp.Config, units, duration)
+		if err == nil {
+			resp.WeatherData = &weatherData
+		}
 	}
 
 	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
@@ -56,9 +68,17 @@ func (aws AllWeatherClientsResponse) HTML(_ http.ResponseWriter, r *http.Request
 		return strings.Compare(w.Type, x.Type)
 	})
 
-	if r.URL.Query().Get("refresh") == "true" {
-		return weatherClientsTemplate.Render(r, aws)
+	units := getUnitsFromRequest(r)
+	duration := getDurationFromRequest(r)
+	data := map[string]any{
+		"Items":    aws.Items,
+		"Units":    units,
+		"Duration": duration,
 	}
 
-	return weatherClientsPageTemplate.Render(r, aws)
+	if r.URL.Query().Get("refresh") == "true" {
+		return weatherClientsTemplate.Render(r, data)
+	}
+
+	return weatherClientsPageTemplate.Render(r, data)
 }

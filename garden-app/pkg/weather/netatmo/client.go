@@ -60,7 +60,11 @@ var DefaultClient = http.DefaultClient
 // If RainModuleID is not provided, RainModuleName is used to get it from the API
 // For Authentication, AccessToken, RefreshToken, ClientID and ClientSecret are required
 func NewClient(options map[string]any, storageCallback func(map[string]any) error) (*Client, error) {
-	client := &Client{Client: DefaultClient, storageCallback: storageCallback}
+	client := &Client{
+		Client:          DefaultClient,
+		storageCallback: storageCallback,
+		Config:          &Config{},
+	}
 
 	err := mapstructure.Decode(options, &client.Config)
 	if err != nil {
@@ -193,8 +197,11 @@ func (c *Client) setDeviceIDs() error {
 }
 
 func (c *Client) refreshToken() error {
-	// It's safe to ignore the time.Parse error because knowing the expiration is an optional early exit
-	expiry, _ := time.Parse(time.RFC3339Nano, c.Config.Authentication.ExpirationDate)
+	expiry := clock.Now().AddDate(0, 0, -1)
+	if c.Config.Authentication != nil {
+		// It's safe to ignore the time.Parse error because knowing the expiration is an optional early exit
+		expiry, _ = time.Parse(time.RFC3339Nano, c.Config.Authentication.ExpirationDate)
+	}
 
 	// Exit early if token is not expired
 	if clock.Now().Before(expiry) {
