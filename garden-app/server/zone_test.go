@@ -163,7 +163,7 @@ func TestGetZone(t *testing.T) {
 			func(influxdbClient *influxdb.MockClient) {
 				influxdbClient.On("Close")
 			},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"weather_data":{"rain":{"mm":25.4,"scale_factor":0},"average_temperature":{"celsius":80,"scale_factor":1.5}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"weather_data":{"rain":{"mm":25.4,"inches":1.0000006},"temperature":{"celsius":80,"fahrenheit":176}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureDataButWeatherDataExcluded",
