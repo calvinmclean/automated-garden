@@ -75,6 +75,9 @@ func (g *GardenResponse) getActiveWatering(ctx context.Context) {
 			continue
 		}
 
+		// Reverse history to match chronological order expected by CalculateWaterProgress
+		slices.Reverse(history)
+
 		progress := pkg.CalculateWaterProgress(history)
 
 		// Check if this zone is currently watering (progress between 0 and 1)
