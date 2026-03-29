@@ -15,6 +15,12 @@ import (
 	"github.com/go-chi/render"
 )
 
+// ActiveWatering contains information about a currently-watering zone
+type ActiveWatering struct {
+	ZoneName string
+	Progress pkg.WaterHistoryProgress
+}
+
 // GardenResponse is used to represent a Garden in the response body with additional data
 // and hypermedia Links fields
 type GardenResponse struct {
@@ -24,6 +30,8 @@ type GardenResponse struct {
 	TemperatureHumidityData *TemperatureHumidityData `json:"temperature_humidity_data,omitempty"`
 	NumZones                uint                     `json:"num_zones"`
 	Links                   []Link                   `json:"links,omitempty"`
+	ActiveWatering          *ActiveWatering          `json:"-"` // HTML only
+	WateringQueue           uint                     `json:"-"` // HTML only
 
 	api *GardensAPI
 }
@@ -47,6 +55,47 @@ func (api *GardensAPI) NewGardenResponse(garden *pkg.Garden, links ...Link) *Gar
 		Links:  links,
 
 		api: api,
+	}
+}
+
+// getActiveWatering calculates the active watering status for this garden
+func (g *GardenResponse) getActiveWatering(ctx context.Context) {
+	zones, err := g.api.getAllZones(ctx, g.ID.String(), false)
+	if err != nil {
+		return
+	}
+
+	var activeZone *pkg.Zone
+	var activeProgress pkg.WaterHistoryProgress
+	var totalQueue uint
+
+	for _, zone := range zones {
+		history, err := g.api.influxdbClient.GetWaterHistory(ctx, zone.GetID(), g.TopicPrefix, 72*time.Hour, 5)
+		if err != nil {
+			continue
+		}
+
+		progress := pkg.CalculateWaterProgress(history)
+
+		// Check if this zone is currently watering (progress between 0 and 1)
+		if progress.Progress > 0 && progress.Progress < 1.0 && activeZone == nil {
+			activeZone = zone
+			activeProgress = progress
+		}
+
+		// Accumulate queue count from all zones
+		totalQueue += progress.Queue
+	}
+
+	// Always set total queue count
+	g.WateringQueue = totalQueue
+
+	// Set ActiveWatering if we found an actively watering zone
+	if activeZone != nil {
+		g.ActiveWatering = &ActiveWatering{
+			ZoneName: activeZone.Name,
+			Progress: activeProgress,
+		}
 	}
 }
 
@@ -122,8 +171,13 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		}
 	}
 
-	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
-		w.Header().Add("HX-Trigger", "newGarden")
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
+		if r.Method == http.MethodPut {
+			w.Header().Add("HX-Trigger", "newGarden")
+		}
+
+		// Get active watering status for HTML responses
+		g.getActiveWatering(ctx)
 	}
 
 	return nil
