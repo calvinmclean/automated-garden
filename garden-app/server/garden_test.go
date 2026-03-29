@@ -1037,3 +1037,219 @@ func TestUpdateGardenRequest(t *testing.T) {
 		})
 	}
 }
+
+func TestGardenResponseGetActiveWatering(t *testing.T) {
+	mockClock := clock.MockTime()
+	t.Cleanup(clock.Reset)
+	now := mockClock.Now()
+
+	tests := []struct {
+		name             string
+		setupInfluxDB    func(*influxdb.MockClient, string, []*pkg.Zone)
+		expectedActive   bool
+		expectedQueue    uint
+		expectedZoneName string
+	}{
+		{
+			name: "NoWateringActivity",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				for _, zone := range zones {
+					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+						Return([]pkg.WaterHistory{}, nil)
+				}
+			},
+			expectedActive:   false,
+			expectedQueue:    0,
+			expectedZoneName: "",
+		},
+		{
+			name: "ActiveWateringInProgress",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// First zone is actively watering (started 30 seconds ago, duration 60 seconds)
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{
+							Status:    pkg.WaterStatusStarted,
+							StartedAt: now.Add(-30 * time.Second),
+							Duration:  pkg.Duration{Duration: 60 * time.Second},
+						},
+					}, nil)
+				// Second zone has no activity
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{}, nil)
+			},
+			expectedActive:   true,
+			expectedQueue:    0,
+			expectedZoneName: "Zone 1",
+		},
+		{
+			name: "MultipleZonesQueued",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// First zone has 2 queued items
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-5 * time.Minute)},
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-4 * time.Minute)},
+					}, nil)
+				// Second zone has 1 queued item
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-3 * time.Minute)},
+					}, nil)
+			},
+			expectedActive:   false,
+			expectedQueue:    3,
+			expectedZoneName: "",
+		},
+		{
+			name: "ActiveWateringWithQueue",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// First zone is actively watering with 2 queued items (events are processed in order)
+				// When Started is found first, queue=0 from that zone
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{
+							Status:    pkg.WaterStatusStarted,
+							StartedAt: now.Add(-10 * time.Second),
+							Duration:  pkg.Duration{Duration: 30 * time.Second},
+						},
+					}, nil)
+				// Second zone has 1 queued item
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-30 * time.Second)},
+					}, nil)
+			},
+			expectedActive:   true,
+			expectedQueue:    1,
+			expectedZoneName: "Zone 1",
+		},
+		{
+			name: "InfluxDBError",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				for _, zone := range zones {
+					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+						Return([]pkg.WaterHistory{}, errors.New("influxdb connection error"))
+				}
+			},
+			expectedActive:   false,
+			expectedQueue:    0,
+			expectedZoneName: "",
+		},
+		{
+			name: "FirstZoneActiveSecondZoneQueued",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// First zone is actively watering
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{
+							Status:    pkg.WaterStatusStarted,
+							StartedAt: now.Add(-15 * time.Second),
+							Duration:  pkg.Duration{Duration: 60 * time.Second},
+						},
+					}, nil)
+				// Second zone is queued
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-1 * time.Minute)},
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-2 * time.Minute)},
+					}, nil)
+			},
+			expectedActive:   true,
+			expectedQueue:    2,
+			expectedZoneName: "Zone 1",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			storageClient, err := storage.NewClient(storage.Config{
+				Driver: "sqlite",
+				Options: map[string]any{
+					"data_source_name": ":memory:",
+				},
+			})
+			assert.NoError(t, err)
+
+			// Create garden
+			garden := createExampleGarden()
+			err = storageClient.Gardens.Set(context.Background(), garden)
+			assert.NoError(t, err)
+
+			// Create zones for the garden
+			zones := []*pkg.Zone{
+				{
+					ID:       babyapi.NewID(),
+					GardenID: garden.ID.ID,
+					Name:     "Zone 1",
+					Position: func(i uint) *uint { return &i }(0),
+				},
+				{
+					ID:       babyapi.NewID(),
+					GardenID: garden.ID.ID,
+					Name:     "Zone 2",
+					Position: func(i uint) *uint { return &i }(1),
+				},
+			}
+			for _, zone := range zones {
+				err := storageClient.Zones.Set(context.Background(), zone)
+				assert.NoError(t, err)
+			}
+
+			// Setup InfluxDB mock
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupInfluxDB(influxdbClient, garden.TopicPrefix, zones)
+
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+			assert.NoError(t, err)
+
+			// Create GardenResponse and call getActiveWatering
+			resp := gr.NewGardenResponse(garden)
+			ctx := context.Background()
+			resp.getActiveWatering(ctx)
+
+			// Assertions
+			assert.Equal(t, tt.expectedQueue, resp.WateringQueue, "WateringQueue mismatch")
+			if tt.expectedActive {
+				assert.NotNil(t, resp.ActiveWatering, "ActiveWatering should not be nil")
+				assert.Equal(t, tt.expectedZoneName, resp.ActiveWatering.ZoneName, "ZoneName mismatch")
+			} else {
+				assert.Nil(t, resp.ActiveWatering, "ActiveWatering should be nil")
+			}
+
+			influxdbClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGardenResponseNoZones(t *testing.T) {
+	storageClient, err := storage.NewClient(storage.Config{
+		Driver: "sqlite",
+		Options: map[string]any{
+			"data_source_name": ":memory:",
+		},
+	})
+	assert.NoError(t, err)
+
+	// Create garden with no zones
+	garden := createExampleGarden()
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	assert.NoError(t, err)
+
+	influxdbClient := new(influxdb.MockClient)
+	// No zones, so GetWaterHistory should not be called
+
+	gr := NewGardenAPI()
+	err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+	assert.NoError(t, err)
+
+	// Create GardenResponse and call getActiveWatering
+	resp := gr.NewGardenResponse(garden)
+	ctx := context.Background()
+	resp.getActiveWatering(ctx)
+
+	// Assertions
+	assert.Equal(t, uint(0), resp.WateringQueue, "WateringQueue should be 0")
+	assert.Nil(t, resp.ActiveWatering, "ActiveWatering should be nil")
+}

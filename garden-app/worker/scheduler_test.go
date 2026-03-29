@@ -201,7 +201,7 @@ func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
 			[]fake.Message{
 				{
 					Title:   "test-garden: DOWN",
-					Message: `Attempting to execute Water Action, but last contact was \d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\nDetails: last contact from Garden was 10m1.\d+s ago`,
+					Message: `Attempting to execute Water Action, but last contact was \d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\nDetails: last contact from Garden was 10m\d.\d+s ago`,
 				},
 			},
 		},

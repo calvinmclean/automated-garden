@@ -32,6 +32,50 @@
                 {{ .NumZones }} Zones <i class="bi-grid"></i>
             </span>
 
+            {{ if or .ActiveWatering .WateringQueue }}
+            <div class="uk-margin-small-top">
+                {{ if .ActiveWatering }}
+                <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+                    Watering In Progress
+                    {{ if .ActiveWatering.Progress.Error }}
+                    <span class="uk-label uk-label-danger" uk-tooltip="{{ .ActiveWatering.Progress.Error }}">
+                        <span uk-icon="icon: warning; ratio: 0.75"></span>
+                    </span>
+                    {{ end }}
+                    {{ if .WateringQueue }}
+                    <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+                        {{ .WateringQueue }}
+                    </span>
+                    {{ end }}
+                </p>
+                <progress
+                    id="garden-{{ .ID }}-progressbar"
+                    class="uk-progress"
+                    value="{{ .ActiveWatering.Progress.Progress }}"
+                    max="1"
+                    uk-tooltip="{{ .ActiveWatering.ZoneName }}: Watered for {{ FormatDuration .ActiveWatering.Progress.Elapsed }} of {{ FormatDuration .ActiveWatering.Progress.Duration }} ({{ .ActiveWatering.Progress.Percent }})"></progress>
+                <script>
+                    UIkit.util.ready(function () {
+                        var bar = document.getElementById('garden-{{ .ID }}-progressbar');
+                        var oneSecValue = {{ .ActiveWatering.Progress.OneSecondProgress }};
+                        var animate = setInterval(function () {
+                            bar.value += oneSecValue;
+                            if (bar.value >= bar.max) {
+                                clearInterval(animate);
+                            }
+                        }, 1000);
+                    });
+                </script>
+                {{ else if .WateringQueue }}
+                <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+                    <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+                        {{ .WateringQueue }} Queued
+                    </span>
+                </p>
+                {{ end }}
+            </div>
+            {{ end }}
+
             {{ if .LightSchedule }}
             {{ template "lightScheduleDetails" . }}
             {{ end }}
