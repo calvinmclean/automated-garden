@@ -133,10 +133,33 @@
 {{ $zone := . }}
 {{ range (ZoneQuickWater .) }}
 <li>
-    <a hx-post="/gardens/{{ $zone.GardenID }}/zones/{{ $zone.ID }}/action" hx-include="this" hx-swap="none" {{
-        template "actionFeedback" "primary" }}>
-        <input type="hidden" name="water.duration" value="{{ . }}"> {{ . }}
+    <a href="#quick-water-confirm-{{ $zone.ID }}-{{ . }}" uk-toggle>
+        {{ . }}
     </a>
 </li>
+{{ template "quickWaterConfirmationModal" (args "Zone" $zone "Duration" .) }}
 {{ end }}
+{{ end }}
+
+{{ define "quickWaterConfirmationModal" }}
+{{ $zone := .Zone }}
+{{ $duration := .Duration }}
+<div id="quick-water-confirm-{{ $zone.ID }}-{{ $duration }}" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">Confirm Water</h3>
+        <p>Are you sure you want to water <strong>{{ $zone.Name }}</strong> for <strong>{{ $duration }}</strong>?</p>
+
+        <p class="uk-text-right">
+            <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
+            <button class="uk-button uk-button-primary" type="button"
+                hx-post="/gardens/{{ $zone.GardenID }}/zones/{{ $zone.ID }}/action"
+                hx-vals='{"water.duration": "{{ $duration }}"}'
+                hx-swap="none"
+                {{ template "actionFeedback" "primary" }}
+                onclick="UIkit.modal('#quick-water-confirm-{{ $zone.ID }}-{{ $duration }}').hide()">
+                <span uk-icon="play"></span> Water Now
+            </button>
+        </p>
+    </div>
+</div>
 {{ end }}

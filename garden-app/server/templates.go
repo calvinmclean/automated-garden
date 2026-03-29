@@ -52,7 +52,7 @@ func templateFuncs(r *http.Request) map[string]any {
 				return result
 			}
 
-			for i := 0; i+1 < len(input); i++ {
+			for i := 0; i+1 < len(input); i += 2 {
 				result[input[i].(string)] = input[i+1]
 			}
 
