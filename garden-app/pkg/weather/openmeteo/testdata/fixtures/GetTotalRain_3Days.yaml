@@ -1,0 +1,38 @@
+---
+version: 2
+interactions:
+  - id: 0
+    request:
+      proto: HTTP/1.1
+      proto_major: 1
+      proto_minor: 1
+      content_length: 0
+      transfer_encoding: []
+      trailer: {}
+      host: api.open-meteo.com
+      remote_addr: ""
+      request_uri: ""
+      body: ""
+      form: {}
+      headers:
+        Accept:
+          - application/json
+      url: https://api.open-meteo.com/v1/forecast?daily=precipitation_sum&latitude=37.774900&longitude=-122.419400&past_days=4&timezone=auto
+      method: GET
+    response:
+      proto: HTTP/1.1
+      proto_major: 1
+      proto_minor: 1
+      transfer_encoding: []
+      trailer: {}
+      content_length: -1
+      uncompressed: false
+      body: '{"latitude":37.7749,"longitude":-122.4194,"generationtime_ms":0.5,"utc_offset_seconds":-28800,"timezone":"America/Los_Angeles","timezone_abbreviation":"PST","elevation":30.0,"daily_units":{"time":"iso8601","precipitation_sum":"mm"},"daily":{"time":["2024-01-01","2024-01-02","2024-01-03","2024-01-04"],"precipitation_sum":[5.2,3.1,4.7,2.5]}}'
+      headers:
+        Content-Type:
+          - application/json; charset=utf-8
+        Date:
+          - Mon, 01 Jan 2024 12:00:00 GMT
+      status: 200 OK
+      code: 200
+      duration: 100ms

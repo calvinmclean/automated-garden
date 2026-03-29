@@ -51,3 +51,16 @@
     <input id="error" class="uk-input" value="{{ .Options.error }}" placeholder="Error message to simulate" name="Options.error">
 </div>
 {{ end }}
+
+{{ define "WeatherClientOpenMeteoConfig" }}
+<div class="uk-margin">
+    <label class="uk-form-label" for="latitude">Latitude</label>
+    <input id="latitude" class="uk-input" type="number" step="0.0001" value="{{ .Options.latitude }}" placeholder="e.g., 37.7749" name="Options.latitude" required>
+    <span class="uk-text-small uk-text-muted">Find your latitude using Google Maps or <a href="https://www.latlong.net/" target="_blank">latlong.net</a></span>
+</div>
+<div class="uk-margin">
+    <label class="uk-form-label" for="longitude">Longitude</label>
+    <input id="longitude" class="uk-input" type="number" step="0.0001" value="{{ .Options.longitude }}" placeholder="e.g., -122.4194" name="Options.longitude" required>
+    <span class="uk-text-small uk-text-muted">Find your longitude using Google Maps or <a href="https://www.latlong.net/" target="_blank">latlong.net</a></span>
+</div>
+{{ end }}

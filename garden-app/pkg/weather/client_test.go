@@ -41,6 +41,27 @@ func TestNewWeatherClientInvalidType(t *testing.T) {
 	assert.Equal(t, "invalid type 'DNE'", err.Error())
 }
 
+func TestNewWeatherClientOpenMeteo(t *testing.T) {
+	client, err := NewClient(&Config{
+		Type: "openmeteo",
+		Options: map[string]any{
+			"latitude":  37.7749,
+			"longitude": -122.4194,
+		},
+	}, func(m map[string]any) error { return nil })
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+}
+
+func TestNewWeatherClientOpenMeteoInvalidConfig(t *testing.T) {
+	_, err := NewClient(&Config{
+		Type:    "openmeteo",
+		Options: map[string]any{},
+	}, func(m map[string]any) error { return nil })
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "latitude and longitude must be provided")
+}
+
 func TestCachedWeatherClient(t *testing.T) {
 	client, err := NewClient(&Config{
 		Type: "fake",
