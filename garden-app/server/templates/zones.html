@@ -111,21 +111,24 @@
 
 {{ define "zoneActionButton" }}
 <div id="action-modal-here"></div>
-<div class="uk-inline">
-    <button class="uk-button uk-button-default" type="button">Quick Water</button>
-    <div uk-dropdown>
-        <ul class="uk-nav uk-dropdown-nav">
-            <li>
-                <a hx-get="/gardens/{{ .GardenID }}/zones/{{ .ID }}/components?type=action_modal"
-                    hx-headers='{"Accept": "text/html"}' hx-target="#action-modal-here"
-                    _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
-                    Custom
-                </a>
-            </li>
+<div class="uk-button-group">
+    <div class="uk-inline">
+        <button class="uk-button uk-button-default" type="button">Quick Water</button>
+        <div uk-dropdown>
+            <ul class="uk-nav uk-dropdown-nav">
+                <li>
+                    <a hx-get="/gardens/{{ .GardenID }}/zones/{{ .ID }}/components?type=action_modal"
+                        hx-headers='{"Accept": "text/html"}' hx-target="#action-modal-here"
+                        _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                        Custom
+                    </a>
+                </li>
 
-            {{ template "quickWaterLinks" . }}
-        </ul>
+                {{ template "quickWaterLinks" . }}
+            </ul>
+        </div>
     </div>
+    {{ template "skipWateringButton" (args "Target" (print "#zone-card-" .ID) "SkipCount" .SkipCount "ID" .ID "GardenID" .GardenID) }}
 </div>
 {{ end }}
 
@@ -162,4 +165,29 @@
         </p>
     </div>
 </div>
+{{ end }}
+
+{{ define "skipWateringButton" }}
+{{ $skipCount := DerefUint .SkipCount }}
+{{ $isSkipping := gt $skipCount 0 }}
+{{ $feedbackColor := "default" }}
+{{ if $isSkipping }}{{ $feedbackColor = "danger" }}{{ end }}
+{{ $newSkipCount := 1 }}
+{{ if $isSkipping }}{{ $newSkipCount = 0 }}{{ end }}
+{{ $target := .Target }}
+<button class="uk-button {{ if $isSkipping }}uk-button-danger{{ else }}uk-button-default{{ end }}"
+    hx-patch="/gardens/{{ .GardenID }}/zones/{{ .ID }}"
+    hx-vals='js:{"skip_count": {{ $newSkipCount }} }'
+    hx-ext="json-enc"
+    hx-headers='{"Accept": "text/html"}'
+    hx-swap="outerHTML"
+    hx-target="{{ $target }}"
+    {{ template "actionFeedback" $feedbackColor }}>
+    <span uk-icon="ban"></span>
+    {{ if $isSkipping }}
+    Skipping{{ if gt $skipCount 1 }} ({{ $skipCount }}){{ end }}
+    {{ else }}
+    Skip
+    {{ end }}
+</button>
 {{ end }}
