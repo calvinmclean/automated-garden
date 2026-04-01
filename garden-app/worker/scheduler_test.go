@@ -681,7 +681,7 @@ func TestScheduleLightActions(t *testing.T) {
 				[]fake.Message{
 					{
 						Title:   "test-garden: DOWN",
-						Message: `Attempting to execute Light Action, but last contact was \d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\nDetails: last contact from Garden was 10m1.\d+s ago`,
+						Message: `Attempting to execute Light Action, but last contact was \d\d\d\d-\d\d-\d\d \d\d:\d\d:\d\d.\nDetails: last contact from Garden was 10m\d.\d+s ago`,
 					},
 					{Title: "test-garden: Light ON", Message: "Successfully executed LightAction"},
 				},

@@ -25,7 +25,9 @@ const (
 	gardenModalTemplate                  html.Template = "GardenModal"
 	zonesPageTemplate                    html.Template = "ZonesPage"
 	zonesTemplate                        html.Template = "Zones"
+	zoneCardTemplate                     html.Template = "ZoneCard"
 	zoneDetailsTemplate                  html.Template = "ZoneDetails"
+	waterScheduleCardTemplate            html.Template = "WaterScheduleCard"
 	waterSchedulesPageTemplate           html.Template = "WaterSchedulesPage"
 	waterSchedulesTemplate               html.Template = "WaterSchedules"
 	waterScheduleModalTemplate           html.Template = "WaterScheduleModal"
@@ -239,6 +241,12 @@ func templateFuncs(r *http.Request) map[string]any {
 				result[i] = i
 			}
 			return result
+		},
+		"DerefUint": func(n *uint) uint {
+			if n == nil {
+				return 0
+			}
+			return *n
 		},
 	}
 }

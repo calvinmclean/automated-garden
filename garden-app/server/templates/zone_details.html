@@ -25,21 +25,7 @@
             </div>
         </div>
         <div>
-            <div id="detail-modal-here"></div>
-            <div class="uk-card uk-card-default uk-card-body uk-text-center">
-                <h3 class="uk-card-title">
-                    {{ if .NextWater.WaterScheduleID }}
-                    <a hx-get="/water_schedules/{{ .NextWater.WaterScheduleID }}/components?type=detail_modal"
-                        hx-headers='{"Accept": "text/html"}' hx-target="#detail-modal-here"
-                        _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
-                        Water Schedule
-                    </a>
-                    {{ else }}
-                    Water Schedule
-                    {{ end }}
-                </h3>
-                {{ template "nextWaterDetail" .NextWater }}
-            </div>
+            {{ template "WaterScheduleCard" . }}
         </div>
         <div>
             <div class="uk-card uk-card-default uk-card-body">
@@ -95,6 +81,29 @@
                 {{ end }}
             </tbody>
         </table>
+    </div>
+</div>
+{{ end }}
+
+{{ define "WaterScheduleCard" }}
+<div id="water-schedule-card-{{ .ID }}">
+    <div id="detail-modal-here"></div>
+    <div class="uk-card uk-card-default uk-card-body uk-text-center">
+        <h3 class="uk-card-title">
+            {{ if .NextWater.WaterScheduleID }}
+            <a hx-get="/water_schedules/{{ .NextWater.WaterScheduleID }}/components?type=detail_modal"
+                hx-headers='{"Accept": "text/html"}' hx-target="#detail-modal-here"
+                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                Water Schedule
+            </a>
+            {{ else }}
+            Water Schedule
+            {{ end }}
+        </h3>
+        {{ template "nextWaterDetail" .NextWater }}
+        <div class="uk-margin-top">
+            {{ template "skipWateringButton" (args "Target" (print "#water-schedule-card-" .ID) "SkipCount" .SkipCount "ID" .ID "GardenID" .GardenID) }}
+        </div>
     </div>
 </div>
 {{ end }}

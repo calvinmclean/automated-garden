@@ -39,6 +39,16 @@ func (api *ZonesAPI) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneRespons
 }
 
 func (zr *ZoneResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	if r.Header.Get("HX-Request") == "true" && !strings.Contains(r.URL.Path, "/action") {
+		referer := r.Header.Get("Referer")
+		if strings.Contains(referer, "/zones/") && !strings.HasSuffix(referer, "/zones") {
+			// We're on the zone details page, return just the WaterScheduleCard
+			return waterScheduleCardTemplate.Render(r, zr)
+		}
+		// We're on the zones list page, return the ZoneCard
+		return zoneCardTemplate.Render(r, zr)
+	}
+
 	// ignoring errors here since this can only be reached for a valid request
 	timeRange, _ := rangeQueryParam(r)
 	limit, _ := limitQueryParam(r)
