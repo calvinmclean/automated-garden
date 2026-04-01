@@ -11,6 +11,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/netatmo"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/openmeteo"
 	"github.com/calvinmclean/babyapi"
 	"github.com/patrickmn/go-cache"
 	"github.com/prometheus/client_golang/prometheus"
@@ -84,6 +85,8 @@ func NewClient(c *Config, storageCallback func(map[string]any) error) (client Cl
 	switch strings.ToLower(c.Type) {
 	case "netatmo":
 		client, err = netatmo.NewClient(c.Options, storageCallback)
+	case "openmeteo":
+		client, err = openmeteo.NewClient(c.Options)
 	case "fake":
 		client, err = fake.NewClient(c.Options)
 	default:

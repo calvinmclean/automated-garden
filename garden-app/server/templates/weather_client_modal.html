@@ -17,6 +17,8 @@
                 {{ template "WeatherClientNetatmoConfig" . }}
                 {{ else if eq .Type "fake" }}
                 {{ template "WeatherClientFakeConfig" . }}
+                {{ else if eq .Type "openmeteo" }}
+                {{ template "WeatherClientOpenMeteoConfig" . }}
                 {{ end }}
             </div>
             {{ else }}
@@ -28,8 +30,9 @@
                     hx-trigger="change"
                     hx-swap="innerHTML">
                     <option value="" selected disabled>Select Type...</option>
-                    <option value="netatmo">Netatmo</option>
-                    <option value="fake">Fake</option>
+                    <option value="openmeteo">OpenMeteo (Free, no API key)</option>
+                    <option value="netatmo">Netatmo (Weather Station)</option>
+                    <option value="fake">Fake (For Testing)</option>
                 </select>
             </div>
             <div id="config-form-container"></div>

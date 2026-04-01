@@ -64,6 +64,11 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 		case "config_form":
 			weatherType := r.URL.Query().Get("Type")
 			switch weatherType {
+			case "openmeteo":
+				return weatherClientOpenMeteoConfigTemplate.Renderer(&weather.Config{
+					Type:    "openmeteo",
+					Options: map[string]any{},
+				})
 			case "netatmo":
 				return weatherClientNetatmoConfigTemplate.Renderer(&weather.Config{
 					Type:    "netatmo",

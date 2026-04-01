@@ -65,7 +65,23 @@ The `pkg/storage` package defines a `Client` interface and multiple implementati
 This setup will allow for easily adding more storage clients in the future.
 
 ### Weather Client
-`pkg/weather` defines a `Client` interface. Currently there is only an implementation for Netatmo weather stations which can be setup with a configuration like this:
+`pkg/weather` defines a `Client` interface. There are two implementations available:
+
+#### OpenMeteo (Recommended)
+[OpenMeteo](https://open-meteo.com) is a free, open-source weather API that requires no API key and no special hardware. This is the easiest option to get started with:
+
+```yaml
+weather:
+  type: "openmeteo"
+  options:
+    latitude: 37.7749
+    longitude: -122.4194
+```
+
+Simply provide your location's latitude and longitude coordinates. You can find these using Google Maps or any mapping service.
+
+#### Netatmo
+If you have a Netatmo weather station, you can use it for more accurate, location-specific weather data:
 
 ```yaml
 weather:
