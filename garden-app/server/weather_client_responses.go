@@ -65,7 +65,7 @@ func (aws AllWeatherClientsResponse) Render(w http.ResponseWriter, r *http.Reque
 
 func (aws AllWeatherClientsResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	slices.SortFunc(aws.Items, func(w *WeatherClientResponse, x *WeatherClientResponse) int {
-		return strings.Compare(w.Type, x.Type)
+		return strings.Compare(w.Name, x.Name)
 	})
 
 	units := getUnitsFromRequest(r)

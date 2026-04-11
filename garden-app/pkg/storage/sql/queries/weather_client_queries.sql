@@ -7,11 +7,12 @@ SELECT * FROM weather_clients;
 
 -- name: UpsertWeatherClient :exec
 INSERT INTO weather_clients (
-  id, type, options
+  id, name, type, options
 ) VALUES (
-  ?, ?, ?
+  ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
+  name = EXCLUDED.name,
   type = EXCLUDED.type,
   options = EXCLUDED.options;
 

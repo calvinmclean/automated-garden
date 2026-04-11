@@ -68,6 +68,7 @@ func (s *WeatherClientStorage) Set(ctx context.Context, weatherClient *weather.C
 
 	return s.q.UpsertWeatherClient(ctx, db.UpsertWeatherClientParams{
 		ID:      weatherClient.ID.String(),
+		Name:    weatherClient.Name,
 		Type:    weatherClient.Type,
 		Options: options,
 	})
@@ -86,6 +87,7 @@ func dbWeatherClientToWeatherClient(dbWeatherClient db.WeatherClient) (*weather.
 
 	weatherClient := &weather.Config{
 		ID:   weatherClientID,
+		Name: dbWeatherClient.Name,
 		Type: dbWeatherClient.Type,
 	}
 

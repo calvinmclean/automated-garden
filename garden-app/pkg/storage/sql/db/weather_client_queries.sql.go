@@ -20,19 +20,24 @@ func (q *Queries) DeleteWeatherClient(ctx context.Context, id string) error {
 }
 
 const getWeatherClient = `-- name: GetWeatherClient :one
-SELECT id, type, options FROM weather_clients
+SELECT id, type, options, name FROM weather_clients
 WHERE id = ? LIMIT 1
 `
 
 func (q *Queries) GetWeatherClient(ctx context.Context, id string) (WeatherClient, error) {
 	row := q.db.QueryRowContext(ctx, getWeatherClient, id)
 	var i WeatherClient
-	err := row.Scan(&i.ID, &i.Type, &i.Options)
+	err := row.Scan(
+		&i.ID,
+		&i.Type,
+		&i.Options,
+		&i.Name,
+	)
 	return i, err
 }
 
 const listWeatherClients = `-- name: ListWeatherClients :many
-SELECT id, type, options FROM weather_clients
+SELECT id, type, options, name FROM weather_clients
 `
 
 func (q *Queries) ListWeatherClients(ctx context.Context) ([]WeatherClient, error) {
@@ -44,7 +49,12 @@ func (q *Queries) ListWeatherClients(ctx context.Context) ([]WeatherClient, erro
 	var items []WeatherClient
 	for rows.Next() {
 		var i WeatherClient
-		if err := rows.Scan(&i.ID, &i.Type, &i.Options); err != nil {
+		if err := rows.Scan(
+			&i.ID,
+			&i.Type,
+			&i.Options,
+			&i.Name,
+		); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -60,22 +70,29 @@ func (q *Queries) ListWeatherClients(ctx context.Context) ([]WeatherClient, erro
 
 const upsertWeatherClient = `-- name: UpsertWeatherClient :exec
 INSERT INTO weather_clients (
-  id, type, options
+  id, name, type, options
 ) VALUES (
-  ?, ?, ?
+  ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
+  name = EXCLUDED.name,
   type = EXCLUDED.type,
   options = EXCLUDED.options
 `
 
 type UpsertWeatherClientParams struct {
 	ID      string
+	Name    string
 	Type    string
 	Options json.RawMessage
 }
 
 func (q *Queries) UpsertWeatherClient(ctx context.Context, arg UpsertWeatherClientParams) error {
-	_, err := q.db.ExecContext(ctx, upsertWeatherClient, arg.ID, arg.Type, arg.Options)
+	_, err := q.db.ExecContext(ctx, upsertWeatherClient,
+		arg.ID,
+		arg.Name,
+		arg.Type,
+		arg.Options,
+	)
 	return err
 }

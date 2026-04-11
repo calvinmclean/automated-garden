@@ -1,0 +1,1 @@
+ALTER TABLE weather_clients DROP COLUMN name;

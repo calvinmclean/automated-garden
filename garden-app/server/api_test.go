@@ -87,7 +87,7 @@ func TestValidateAllStoredResources(t *testing.T) {
 					ID: babyapi.ID{ID: id},
 				})
 			},
-			"invalid WeatherClient \"c5cvhpcbcv45e8bp16dg\": missing required type field",
+			"invalid WeatherClient \"c5cvhpcbcv45e8bp16dg\": missing required name field",
 		},
 	}
 
