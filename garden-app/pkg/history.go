@@ -50,9 +50,17 @@ func (p WaterHistoryProgress) Percent() string {
 	return fmt.Sprintf("%.0f%%", p.Progress*100)
 }
 
+// IsActive returns true if there is an active watering in progress (Progress > 0)
+func (p WaterHistoryProgress) IsActive() bool {
+	return p.Progress > 0
+}
+
 // OneSecondProgress is the amount that Progress will increase every second.
 // This is used for incrementing a dynamic progress bar in the UI
 func (p WaterHistoryProgress) OneSecondProgress() float32 {
+	if p.Duration.Duration == 0 {
+		return 0
+	}
 	return (1 / float32(p.Duration.Duration.Seconds()))
 }
 
@@ -95,12 +103,19 @@ func CalculateWaterProgress(history []WaterHistory) WaterHistoryProgress {
 		case WaterStatusCompleted:
 			elapsed := clock.Since(event.CompletedAt)
 
-			// WaterEvents completed over an hour ago are not relevant
+			// WaterEvents completed over an hour ago are not relevant on their own,
+			// but if there are queued events after this, we should show the queue
 			if elapsed > time.Hour {
+				// If we have queued events, return with queue count (not empty)
+				if queue > 0 {
+					return WaterHistoryProgress{
+						Queue: queue,
+					}
+				}
 				return WaterHistoryProgress{}
 			}
 
-			// If this is the first event, then nothing is in-progress
+			// If this is the first event and no queue, then nothing is in-progress
 			if queue == 0 {
 				return WaterHistoryProgress{}
 			}
