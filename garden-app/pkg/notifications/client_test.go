@@ -3,6 +3,7 @@ package notifications
 import (
 	"testing"
 
+	"github.com/containrrr/shoutrrr"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -13,18 +14,12 @@ func TestConfigPatch(t *testing.T) {
 		newConfig *Client
 	}{
 		{
-			"PatchType",
-			&Client{Type: "other_type"},
+			"PatchURL",
+			&Client{URL: "pushover://shoutrrr:test@user/"},
 		},
 		{
 			"PatchName",
 			&Client{Name: "NewName"},
-		},
-		{
-			"PatchOptions",
-			&Client{Options: map[string]any{
-				"key": "value",
-			}},
 		},
 	}
 
@@ -38,12 +33,39 @@ func TestConfigPatch(t *testing.T) {
 	}
 }
 
-func TestNewClientInvalidType(t *testing.T) {
-	_, err := newClient(&Client{Type: "DNE"})
+func TestNewClientInvalidURL(t *testing.T) {
+	_, err := shoutrrr.CreateSender("invalid://url")
 	assert.Error(t, err)
-	assert.Equal(t, "invalid type 'DNE'", err.Error())
 }
 
 func TestEndDated(t *testing.T) {
 	assert.False(t, (&Client{}).EndDated())
+}
+
+func TestTestCreateEmptyURL(t *testing.T) {
+	err := (&Client{}).TestCreate()
+	assert.Error(t, err)
+	assert.Equal(t, "missing required url field", err.Error())
+}
+
+func TestTestCreateFakeURL(t *testing.T) {
+	err := (&Client{URL: "fake://"}).TestCreate()
+	assert.NoError(t, err)
+}
+
+func TestTestCreateFakeURLError(t *testing.T) {
+	err := (&Client{URL: "fake://?create_error=fail"}).TestCreate()
+	assert.Error(t, err)
+}
+
+func TestSendMessageFakeURL(t *testing.T) {
+	client := &Client{URL: "fake://"}
+	err := client.SendMessage("title", "message")
+	assert.NoError(t, err)
+}
+
+func TestSendMessageFakeURLError(t *testing.T) {
+	client := &Client{URL: "fake://?send_message_error=fail"}
+	err := client.SendMessage("title", "message")
+	assert.Error(t, err)
 }

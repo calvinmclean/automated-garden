@@ -12,8 +12,10 @@ interactions:
       host: api.pushover.net
       remote_addr: ""
       request_uri: ""
-      body: message=Watered+for+6s%0AGarden%3A+garden&priority=0&title=+finished+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      body: device=&message=Watered+for+6s%0AGarden%3A+garden&priority=0&title=+finished+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       form:
+        device:
+          - ""
         message:
           - |-
             Watered for 6s

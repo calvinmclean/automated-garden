@@ -12,8 +12,10 @@ interactions:
       host: api.pushover.net
       remote_addr: ""
       request_uri: ""
-      body: message=Garden%3A+garden&priority=0&title=+started+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+      body: device=&message=Garden%3A+garden&priority=0&title=+started+watering&token=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa&user=aaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
       form:
+        device:
+          - ""
         message:
           - "Garden: garden"
         priority:
@@ -41,7 +43,7 @@ interactions:
       headers:
         Access-Control-Allow-Headers:
           - X-Requested-With, X-Prototype-Version, Origin, Accept, Content-Type, X-CSRF-Token, X-Pushover-App, Authorization
-        Access-Control-Allow-Methods:
+        Access-Control-Methods:
           - POST, OPTIONS
         Access-Control-Allow-Origin:
           - "*"

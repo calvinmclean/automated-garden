@@ -7,7 +7,6 @@ package db
 
 import (
 	"context"
-	"encoding/json"
 )
 
 const deleteNotificationClient = `-- name: DeleteNotificationClient :exec
@@ -20,7 +19,7 @@ func (q *Queries) DeleteNotificationClient(ctx context.Context, id string) error
 }
 
 const getNotificationClient = `-- name: GetNotificationClient :one
-SELECT id, name, type, options FROM notification_clients
+SELECT id, name, url FROM notification_clients
 WHERE id = ? LIMIT 1
 `
 
@@ -30,14 +29,13 @@ func (q *Queries) GetNotificationClient(ctx context.Context, id string) (Notific
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
-		&i.Type,
-		&i.Options,
+		&i.URL,
 	)
 	return i, err
 }
 
 const listNotificationClients = `-- name: ListNotificationClients :many
-SELECT id, name, type, options FROM notification_clients
+SELECT id, name, url FROM notification_clients
 `
 
 func (q *Queries) ListNotificationClients(ctx context.Context) ([]NotificationClient, error) {
@@ -52,8 +50,7 @@ func (q *Queries) ListNotificationClients(ctx context.Context) ([]NotificationCl
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
-			&i.Type,
-			&i.Options,
+			&i.URL,
 		); err != nil {
 			return nil, err
 		}
@@ -70,29 +67,26 @@ func (q *Queries) ListNotificationClients(ctx context.Context) ([]NotificationCl
 
 const upsertNotificationClient = `-- name: UpsertNotificationClient :exec
 INSERT INTO notification_clients (
-  id, name, type, options
+  id, name, url
 ) VALUES (
-  ?, ?, ?, ?
+  ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
-  type = EXCLUDED.type,
-  options = EXCLUDED.options
+  url = EXCLUDED.url
 `
 
 type UpsertNotificationClientParams struct {
-	ID      string
-	Name    string
-	Type    string
-	Options json.RawMessage
+	ID   string
+	Name string
+	URL  string
 }
 
 func (q *Queries) UpsertNotificationClient(ctx context.Context, arg UpsertNotificationClientParams) error {
 	_, err := q.db.ExecContext(ctx, upsertNotificationClient,
 		arg.ID,
 		arg.Name,
-		arg.Type,
-		arg.Options,
+		arg.URL,
 	)
 	return err
 }

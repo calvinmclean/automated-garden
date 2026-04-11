@@ -505,7 +505,7 @@ func TestUpdateGarden(t *testing.T) {
 	notificationClient := &notifications.Client{
 		ID:   babyapi.ID{ID: id},
 		Name: "TestClient",
-		Type: "fake",
+		URL:  "fake://",
 	}
 
 	tests := []struct {

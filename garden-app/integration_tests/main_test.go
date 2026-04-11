@@ -451,8 +451,7 @@ func ControllerStartupNotificationTest(t *testing.T) {
 	t.Run("CreateNotificationClient", func(t *testing.T) {
 		status, err := makeRequest(http.MethodPost, "/notification_clients", `{
 				"name": "fake client",
-				"type": "fake",
-				"options": {}
+				"url": "fake://"
 			}`, &nc)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, status)

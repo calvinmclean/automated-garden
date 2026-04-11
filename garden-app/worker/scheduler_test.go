@@ -224,10 +224,9 @@ func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
 			zone := createExampleZone()
 
 			notificationClient := &notifications.Client{
-				ID:      babyapi.NewID(),
-				Name:    "TestClient",
-				Type:    "fake",
-				Options: map[string]any{},
+				ID:   babyapi.NewID(),
+				Name: "TestClient",
+				URL:  "fake://",
 			}
 			err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
 			assert.NoError(t, err)
@@ -306,10 +305,9 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 			zone := createExampleZone()
 
 			notificationClient := &notifications.Client{
-				ID:      babyapi.NewID(),
-				Name:    "TestClient",
-				Type:    "fake",
-				Options: map[string]any{},
+				ID:   babyapi.NewID(),
+				Name: "TestClient",
+				URL:  "fake://",
 			}
 			err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
 			assert.NoError(t, err)
@@ -547,7 +545,7 @@ func TestScheduleLightActions(t *testing.T) {
 	t.Run("ScheduledLightActionCreatesNotification", func(t *testing.T) {
 		tests := []struct {
 			name               string
-			opts               map[string]any
+			url                string
 			off                bool
 			enableNotification bool
 			mqttPublishError   error
@@ -556,7 +554,7 @@ func TestScheduleLightActions(t *testing.T) {
 		}{
 			{
 				"SuccessfulOnAndOff",
-				map[string]any{},
+				"fake://",
 				true,
 				true,
 				nil,
@@ -565,7 +563,7 @@ func TestScheduleLightActions(t *testing.T) {
 			},
 			{
 				"NoNotificationWhenDisabledSuccessfulOnAndOff",
-				map[string]any{},
+				"fake://",
 				true,
 				false,
 				nil,
@@ -574,7 +572,7 @@ func TestScheduleLightActions(t *testing.T) {
 			},
 			{
 				"ErrorCreatingClient",
-				map[string]any{"create_error": "error"},
+				"fake://?create_error=error",
 				false,
 				true,
 				nil,
@@ -583,7 +581,7 @@ func TestScheduleLightActions(t *testing.T) {
 			},
 			{
 				"ErrorSendingMessage",
-				map[string]any{"send_message_error": "error"},
+				"fake://?send_message_error=error",
 				false,
 				true,
 				nil,
@@ -592,7 +590,7 @@ func TestScheduleLightActions(t *testing.T) {
 			},
 			{
 				"ErrorNotification",
-				map[string]any{},
+				"fake://",
 				false,
 				true,
 				errors.New("publish error"),
@@ -622,10 +620,9 @@ func TestScheduleLightActions(t *testing.T) {
 				influxdbClient.On("Close").Return()
 
 				notificationClient := &notifications.Client{
-					ID:      babyapi.NewID(),
-					Name:    "TestClient",
-					Type:    "fake",
-					Options: tt.opts,
+					ID:   babyapi.NewID(),
+					Name: "TestClient",
+					URL:  tt.url,
 				}
 				err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
 				assert.NoError(t, err)
@@ -709,10 +706,9 @@ func TestScheduleLightActions(t *testing.T) {
 				influxdbClient.On("Close").Return()
 
 				notificationClient := &notifications.Client{
-					ID:      babyapi.NewID(),
-					Name:    "TestClient",
-					Type:    "fake",
-					Options: map[string]any{},
+					ID:   babyapi.NewID(),
+					Name: "TestClient",
+					URL:  "fake://",
 				}
 				err = storageClient.NotificationClientConfigs.Set(context.Background(), notificationClient)
 				assert.NoError(t, err)
