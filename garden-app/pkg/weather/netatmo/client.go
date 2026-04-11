@@ -197,6 +197,10 @@ func (c *Client) setDeviceIDs() error {
 }
 
 func (c *Client) refreshToken() error {
+	if c.Authentication == nil {
+		return errors.New("authentication is required but not configured")
+	}
+
 	expiry := clock.Now().AddDate(0, 0, -1)
 	if c.Config.Authentication != nil {
 		// It's safe to ignore the time.Parse error because knowing the expiration is an optional early exit

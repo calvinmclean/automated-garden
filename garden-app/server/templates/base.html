@@ -24,6 +24,7 @@
 
 <body>
     <div id="create-modal-here"></div>
+    <div id="settings-modal-here"></div>
     <nav class="uk-navbar-container">
         <div class="uk-container">
             <div uk-navbar>
@@ -41,9 +42,16 @@
                         </li>
                     </ul>
                 </div>
-                {{ if IncludePlusButton }}
                 <div class="uk-navbar-right">
                     <ul class="uk-navbar-nav">
+                        <li>
+                            <a hx-get="/notification_clients/components?type=settings_modal" hx-headers='{"Accept": "text/html"}'
+                                hx-target="#settings-modal-here"
+                                _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                                <span uk-icon="icon: cog; ratio: 1.0"></span>
+                            </a>
+                        </li>
+                        {{ if IncludePlusButton }}
                         <li>
                             <a hx-get="{{ URLPath }}/components?type=create_modal" hx-headers='{"Accept": "text/html"}'
                                 hx-target="#create-modal-here"
@@ -51,9 +59,9 @@
                                 <span uk-icon="icon: plus-circle; ratio: 1.25"></span>
                             </a>
                         </li>
+                        {{ end }}
                     </ul>
                 </div>
-                {{ end }}
             </div>
         </div>
     </nav>
