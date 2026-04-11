@@ -80,9 +80,8 @@ func TestHandleHealthMessage(t *testing.T) {
 
 	t.Run("CreateNotificationClient", func(t *testing.T) {
 		nc := &notifications.Client{
-			ID:      babyapi.NewID(),
-			Type:    "fake",
-			Options: map[string]any{},
+			ID:  babyapi.NewID(),
+			URL: "fake://",
 		}
 
 		err := storageClient.NotificationClientConfigs.Set(context.Background(), nc)

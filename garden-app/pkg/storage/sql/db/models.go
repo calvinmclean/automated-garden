@@ -24,10 +24,9 @@ type Garden struct {
 }
 
 type NotificationClient struct {
-	ID      string
-	Name    string
-	Type    string
-	Options json.RawMessage
+	ID   string
+	Name string
+	URL  string
 }
 
 type WaterRoutine struct {

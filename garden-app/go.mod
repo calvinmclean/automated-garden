@@ -9,11 +9,11 @@ require (
 	github.com/ajg/form v1.5.1
 	github.com/benbjohnson/clock v1.3.5
 	github.com/calvinmclean/babyapi v0.30.0
+	github.com/containrrr/shoutrrr v0.8.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-chi/render v1.0.3
 	github.com/go-co-op/gocron v1.35.2
 	github.com/golang-migrate/migrate/v4 v4.19.1
-	github.com/gregdel/pushover v1.3.0
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
 	github.com/mark3labs/mcp-go v0.33.0
 	github.com/mitchellh/mapstructure v1.5.0
@@ -54,6 +54,7 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/deepmap/oapi-codegen v1.15.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
+	github.com/fatih/color v1.15.0 // indirect
 	github.com/fatih/structs v1.1.0 // indirect
 	github.com/flosch/pongo2/v4 v4.0.2 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

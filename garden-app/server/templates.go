@@ -43,6 +43,14 @@ const (
 	waterRoutinesPageTemplate            html.Template = "WaterRoutinesPage"
 	waterRoutinesTemplate                html.Template = "WaterRoutines"
 	waterRoutineModalTemplate            html.Template = "WaterRoutineModal"
+
+	// Settings modal templates for notification clients
+	settingsModalTemplate             html.Template = "SettingsModal"
+	settingsListTemplate              html.Template = "SettingsList"
+	notificationClientRowTemplate     html.Template = "NotificationClientRow"
+	notificationClientEditRowTemplate html.Template = "NotificationClientEditRow"
+	notificationClientAddRowTemplate  html.Template = "NotificationClientAddRow"
+	removeAddRowTemplate              html.Template = "RemoveAddRow"
 )
 
 func templateFuncs(r *http.Request) map[string]any {

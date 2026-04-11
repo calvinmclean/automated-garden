@@ -33,11 +33,11 @@ func TestNotificationClientAPI(t *testing.T) {
 			Name: "CreateFakeClient",
 			Test: babytest.RequestTest[*babyapi.AnyResource]{
 				Method: http.MethodPost,
-				Body:   `{"name": "fake client", "type": "fake", "options": {}}`,
+				Body:   `{"name": "fake client", "url": "fake://"}`,
 			},
 			ExpectedResponse: babytest.ExpectedResponse{
 				Status:     http.StatusCreated,
-				BodyRegexp: `{"id":"[0-9a-v]{20}","name":"fake client","type":"fake","options":{},"links":\[{"rel":"self","href":"/notification_clients/[0-9a-v]{20}"}\]}`,
+				BodyRegexp: `{"id":"[0-9a-v]{20}","name":"fake client","url":"fake://","links":\[{"rel":"self","href":"/notification_clients/[0-9a-v]{20}"}\]}`,
 			},
 		},
 		{
@@ -50,14 +50,14 @@ func TestNotificationClientAPI(t *testing.T) {
 			},
 			ExpectedResponse: babytest.ExpectedResponse{
 				Status:     http.StatusOK,
-				BodyRegexp: `{"id":"[0-9a-v]{20}","name":"fake client","type":"fake","options":{},"links":\[{"rel":"self","href":"/notification_clients/[0-9a-v]{20}"}\]}`,
+				BodyRegexp: `{"id":"[0-9a-v]{20}","name":"fake client","url":"fake://","links":\[{"rel":"self","href":"/notification_clients/[0-9a-v]{20}"}\]}`,
 			},
 		},
 		{
 			Name: "ErrorCreateFakeClient",
 			Test: babytest.RequestTest[*babyapi.AnyResource]{
 				Method: http.MethodPost,
-				Body:   `{"name": "fake client", "type": "fake", "options": {"create_error": "fail!"}}`,
+				Body:   `{"name": "fake client", "url": "fake://?create_error=fail!"}`,
 			},
 			ExpectedResponse: babytest.ExpectedResponse{
 				Status: http.StatusBadRequest,
@@ -69,7 +69,7 @@ func TestNotificationClientAPI(t *testing.T) {
 			Name: "CreateClientErrorNoName",
 			Test: babytest.RequestTest[*babyapi.AnyResource]{
 				Method: http.MethodPost,
-				Body:   `{"type": "fake", "options": {}}`,
+				Body:   `{"url": "fake://"}`,
 			},
 			ExpectedResponse: babytest.ExpectedResponse{
 				Status: http.StatusBadRequest,
@@ -78,27 +78,15 @@ func TestNotificationClientAPI(t *testing.T) {
 			},
 		},
 		{
-			Name: "CreateClientErrorNoType",
+			Name: "CreateClientErrorNoURL",
 			Test: babytest.RequestTest[*babyapi.AnyResource]{
 				Method: http.MethodPost,
-				Body:   `{"name": "fake client", "options": {}}`,
+				Body:   `{"name": "fake client"}`,
 			},
 			ExpectedResponse: babytest.ExpectedResponse{
 				Status: http.StatusBadRequest,
 				Error:  `error posting resource: unexpected response with text: Invalid request.`,
-				Body:   `{"status":"Invalid request.","error":"missing required type field"}`,
-			},
-		},
-		{
-			Name: "CreateClientErrorNoOptions",
-			Test: babytest.RequestTest[*babyapi.AnyResource]{
-				Method: http.MethodPost,
-				Body:   `{"name": "fake client", "type": "fake"}`,
-			},
-			ExpectedResponse: babytest.ExpectedResponse{
-				Status: http.StatusBadRequest,
-				Error:  `error posting resource: unexpected response with text: Invalid request.`,
-				Body:   `{"status":"Invalid request.","error":"missing required options field"}`,
+				Body:   `{"status":"Invalid request.","error":"missing required url field"}`,
 			},
 		},
 	})
@@ -109,7 +97,7 @@ func TestNotificationClientAPI(t *testing.T) {
 			r := httptest.NewRequest(
 				http.MethodPost,
 				"/notification_clients",
-				strings.NewReader(`{"name": "fake client", "type": "fake", "options": {}}`),
+				strings.NewReader(`{"name": "fake client", "url": "fake://"}`),
 			)
 			r.Header.Add("Content-Type", "application/json")
 			w := babytest.TestRequest(t, api.API, r)
@@ -135,7 +123,7 @@ func TestNotificationClientAPI(t *testing.T) {
 			r := httptest.NewRequest(
 				http.MethodPost,
 				"/notification_clients",
-				strings.NewReader(`{"name": "fake client", "type": "fake", "options": {"send_message_error": "fail!"}}`),
+				strings.NewReader(`{"name": "fake client", "url": "fake://?send_message_error=fail!"}`),
 			)
 			r.Header.Add("Content-Type", "application/json")
 			w := babytest.TestRequest(t, api.API, r)

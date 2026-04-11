@@ -3,26 +3,36 @@ package notifications
 import (
 	"errors"
 	"fmt"
-	"maps"
 	"net/http"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications/fake"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications/pushover"
 	"github.com/calvinmclean/babyapi"
+	"github.com/containrrr/shoutrrr"
+	shoutrrrTypes "github.com/containrrr/shoutrrr/pkg/types"
 )
 
-// Client is used to interact with an external notification API. It has generic options to allow multiple Client implementations
+const fakeScheme = "fake"
+
 type Client struct {
-	ID      babyapi.ID     `json:"id" yaml:"id"`
-	Name    string         `json:"name" yaml:"name"`
-	Type    string         `json:"type" yaml:"type"`
-	Options map[string]any `json:"options" yaml:"options"`
+	ID   babyapi.ID `json:"id" yaml:"id"`
+	Name string     `json:"name" yaml:"name"`
+	URL  string     `json:"url" yaml:"url"`
 }
 
-// TestCreate will call the Client implementation's initialization function to make sure it is valid and able to connect
 func (nc *Client) TestCreate() error {
-	_, err := newClient(nc)
+	if nc.URL == "" {
+		return errors.New("missing required url field")
+	}
+
+	if strings.HasPrefix(nc.URL, fakeScheme+"://") {
+		_, err := newFakeClient(nc.URL)
+		return err
+	}
+
+	_, err := shoutrrr.CreateSender(nc.URL)
 	return err
 }
 
@@ -53,68 +63,84 @@ func (nc *Client) Bind(r *http.Request) error {
 		if nc.Name == "" {
 			return errors.New("missing required name field")
 		}
-		if nc.Type == "" {
-			return errors.New("missing required type field")
-		}
-		if nc.Options == nil {
-			return errors.New("missing required options field")
+		if nc.URL == "" {
+			return errors.New("missing required url field")
 		}
 	}
 
 	return nil
 }
 
-// Patch allows modifying an existing Config with fields from a new one
 func (nc *Client) Patch(newConfig *Client) *babyapi.ErrResponse {
 	if newConfig.Name != "" {
 		nc.Name = newConfig.Name
 	}
-	if newConfig.Type != "" {
-		nc.Type = newConfig.Type
+	if newConfig.URL != "" {
+		nc.URL = newConfig.URL
 	}
-
-	if nc.Options == nil && newConfig.Options != nil {
-		nc.Options = map[string]any{}
-	}
-	maps.Copy(nc.Options, newConfig.Options)
 
 	return nil
 }
 
-// EndDated allows this to satisfy an interface even though the resources does not have end-dates
 func (*Client) EndDated() bool {
 	return false
 }
 
 func (*Client) SetEndDate(_ time.Time) {}
 
-// SendMessage will send a notification using the client created from this config
 func (nc *Client) SendMessage(title, message string) error {
-	client, err := newClient(nc)
+	if strings.HasPrefix(nc.URL, fakeScheme+"://") {
+		fc, err := newFakeClient(nc.URL)
+		if err != nil {
+			return fmt.Errorf("error initializing fake client: %w", err)
+		}
+		return fc.SendMessage(title, message)
+	}
+
+	sender, err := shoutrrr.CreateSender(nc.URL)
 	if err != nil {
-		return fmt.Errorf("error initializing client: %w", err)
+		return fmt.Errorf("error initializing shoutrrr sender: %w", err)
 	}
 
-	return client.SendMessage(title, message)
-}
-
-// client is an interface defining the possible methods used to interact with the notification APIs
-type client interface {
-	SendMessage(title, message string) error
-}
-
-// newClient will use the config to create and return the correct type of notification client
-func newClient(c *Client) (client, error) {
-	var client client
-	var err error
-	switch c.Type {
-	case "pushover":
-		client, err = pushover.NewClient(c.Options)
-	case "fake":
-		client, err = fake.NewClient(c.Options)
-	default:
-		err = fmt.Errorf("invalid type '%s'", c.Type)
+	errs := sender.Send(message, &shoutrrrTypes.Params{"title": title})
+	var actualErrs []error
+	for _, e := range errs {
+		if e != nil {
+			actualErrs = append(actualErrs, e)
+		}
+	}
+	if len(actualErrs) > 0 {
+		return fmt.Errorf("error sending notification: %v", actualErrs)
 	}
 
-	return client, err
+	return nil
+}
+
+func newFakeClient(urlStr string) (*fake.Client, error) {
+	options, err := parseFakeURL(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	return fake.NewClient(options)
+}
+
+func parseFakeURL(urlStr string) (map[string]any, error) {
+	if !strings.HasPrefix(urlStr, fakeScheme+"://") {
+		return nil, errors.New("invalid fake URL scheme")
+	}
+
+	result := make(map[string]any)
+	u, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing fake URL: %w", err)
+	}
+
+	for key, values := range u.Query() {
+		if len(values) > 0 {
+			result[key] = values[0]
+		}
+	}
+
+	return result, nil
 }
