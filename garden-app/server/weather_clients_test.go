@@ -18,6 +18,7 @@ import (
 func createExampleWeatherClientConfig() *weather.Config {
 	return &weather.Config{
 		ID:   babyapi.ID{ID: id},
+		Name: "Example Weather Client",
 		Type: "fake",
 		Options: map[string]any{
 			"rain_mm":              25.4,
@@ -37,7 +38,7 @@ func TestUpdateWeatherClient(t *testing.T) {
 		{
 			"Successful",
 			`{"options": {"avg_high_temperature": 81}}`,
-			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":81,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2},"temperature":{"celsius":81}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"Example Weather Client","type":"fake","options":{"avg_high_temperature":81,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2},"temperature":{"celsius":81}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
 			http.StatusOK,
 		},
 		{
@@ -99,7 +100,7 @@ func TestGetWeatherClient(t *testing.T) {
 			"Successful",
 			id.String(),
 			createExampleWeatherClientConfig(),
-			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2},"temperature":{"celsius":81}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"Example Weather Client","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2},"temperature":{"celsius":81}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}`,
 			http.StatusOK,
 		},
 		{
@@ -230,7 +231,7 @@ func TestGetAllWeatherClients(t *testing.T) {
 	}{
 		{
 			"Successful",
-			`{"items":[{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2},"temperature":{"celsius":81}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}]}`,
+			`{"items":[{"id":"c5cvhpcbcv45e8bp16dg","name":"Example Weather Client","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":{"rain":{"mm":76.2},"temperature":{"celsius":81}},"links":[{"rel":"self","href":"/weather_clients/c5cvhpcbcv45e8bp16dg"}]}]}`,
 			http.StatusOK,
 		},
 	}
@@ -270,13 +271,13 @@ func TestCreateWeatherClient(t *testing.T) {
 	}{
 		{
 			"Successful",
-			`{"type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
-			`{"id":"[0-9a-v]{20}","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":\{"rain":\{"mm":[0-9.]+\},"temperature":\{"celsius":[0-9.]+\}\},"links":\[{"rel":"self","href":"/weather_clients/[0-9a-v]{20}"}\]}`,
+			`{"name":"Test Client","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"id":"[0-9a-v]{20}","name":"Test Client","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4},"weather_data":\{"rain":\{"mm":[0-9.]+\},"temperature":\{"celsius":[0-9.]+\}\},"links":\[{"rel":"self","href":"/weather_clients/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"ErrorInvalid",
-			`{"type": "fake", "options":{"key": "value"}}`,
+			`{"name": "Test", "type": "fake", "options":{"key": "value"}}`,
 			`{"status":"Invalid request.","error":"invalid request to update WeatherClient: time: invalid duration \\"\\""}`,
 			http.StatusBadRequest,
 		},
@@ -288,7 +289,7 @@ func TestCreateWeatherClient(t *testing.T) {
 		},
 		{
 			"ErrorCannotSetID",
-			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"Example Weather Client","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
 			`{"status":"Invalid request.","error":"unable to manually set ID"}`,
 			http.StatusBadRequest,
 		},
@@ -327,7 +328,7 @@ func TestUpdateWeatherClientPUT(t *testing.T) {
 	}{
 		{
 			"Successful",
-			`{"id":"c5cvhpcbcv45e8bp16dg","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","name":"Example Weather Client","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
 			``,
 			http.StatusOK,
 		},
@@ -339,13 +340,13 @@ func TestUpdateWeatherClientPUT(t *testing.T) {
 		},
 		{
 			"ErrorMissingID",
-			`{"type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"name":"Test","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
 			`{"status":"Invalid request.","error":"missing required id field"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorWrongID",
-			`{"id":"chkodpg3lcj13q82mq40","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
+			`{"id":"chkodpg3lcj13q82mq40","name":"Test","type":"fake","options":{"avg_high_temperature":80,"rain_interval":"24h","rain_mm":25.4}}`,
 			`{"status":"Invalid request.","error":"id must match URL path"}`,
 			http.StatusBadRequest,
 		},
@@ -434,15 +435,26 @@ func TestWeatherClientRequest(t *testing.T) {
 		},
 		{
 			"EmptyTypeError",
-			&weather.Config{},
+			&weather.Config{
+				Name: "test",
+			},
 			"missing required type field",
 		},
 		{
 			"EmptyOptionsError",
 			&weather.Config{
+				Name: "test",
 				Type: "fake",
 			},
 			"missing required options field",
+		},
+		{
+			"EmptyNameError",
+			&weather.Config{
+				Type:    "fake",
+				Options: map[string]any{},
+			},
+			"missing required name field",
 		},
 	}
 

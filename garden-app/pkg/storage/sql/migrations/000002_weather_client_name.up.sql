@@ -1,0 +1,1 @@
+ALTER TABLE weather_clients ADD COLUMN name TEXT NOT NULL DEFAULT 'N/A';

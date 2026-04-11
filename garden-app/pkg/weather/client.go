@@ -40,6 +40,7 @@ type Client interface {
 // Config is used to identify and configure a client type
 type Config struct {
 	ID      babyapi.ID     `json:"id" yaml:"id"`
+	Name    string         `json:"name" yaml:"name"`
 	Type    string         `json:"type" yaml:"type"`
 	Options map[string]any `json:"options" yaml:"options"`
 }
@@ -68,6 +69,9 @@ func (wc *Config) Bind(r *http.Request) error {
 
 	switch r.Method {
 	case http.MethodPut, http.MethodPost:
+		if wc.Name == "" {
+			return errors.New("missing required name field")
+		}
 		if wc.Type == "" {
 			return errors.New("missing required type field")
 		}
@@ -101,6 +105,9 @@ func NewClient(c *Config, storageCallback func(map[string]any) error) (client Cl
 
 // Patch allows modifying an existing Config with fields from a new one
 func (wc *Config) Patch(newConfig *Config) *babyapi.ErrResponse {
+	if newConfig.Name != "" {
+		wc.Name = newConfig.Name
+	}
 	if newConfig.Type != "" {
 		wc.Type = newConfig.Type
 	}

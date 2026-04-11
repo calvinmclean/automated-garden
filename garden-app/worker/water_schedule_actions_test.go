@@ -75,6 +75,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_mm":       50,
@@ -101,6 +102,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_mm":       0,
@@ -127,6 +129,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval": "24h",
@@ -153,6 +156,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_mm":       25,
@@ -179,6 +183,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -205,6 +210,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -231,6 +237,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -257,6 +264,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -283,6 +291,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -309,6 +318,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -335,6 +345,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -361,6 +372,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval": "24h",
@@ -390,6 +402,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",
@@ -421,6 +434,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
 				err := sc.WeatherClientConfigs.Set(context.Background(), &weather.Config{
 					ID:   babyapi.ID{ID: weatherClientID},
+					Name: "test",
 					Type: "fake",
 					Options: map[string]any{
 						"rain_interval":        "24h",

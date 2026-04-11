@@ -14,6 +14,10 @@ func TestConfigPatch(t *testing.T) {
 		newConfig *Config
 	}{
 		{
+			"PatchName",
+			&Config{Name: "new_name"},
+		},
+		{
 			"PatchType",
 			&Config{Type: "other_type"},
 		},
@@ -36,13 +40,14 @@ func TestConfigPatch(t *testing.T) {
 }
 
 func TestNewWeatherClientInvalidType(t *testing.T) {
-	_, err := NewClient(&Config{Type: "DNE"}, func(m map[string]any) error { return nil })
+	_, err := NewClient(&Config{Name: "test", Type: "DNE"}, func(m map[string]any) error { return nil })
 	assert.Error(t, err)
 	assert.Equal(t, "invalid type 'DNE'", err.Error())
 }
 
 func TestNewWeatherClientOpenMeteo(t *testing.T) {
 	client, err := NewClient(&Config{
+		Name: "test",
 		Type: "openmeteo",
 		Options: map[string]any{
 			"latitude":  37.7749,
@@ -55,6 +60,7 @@ func TestNewWeatherClientOpenMeteo(t *testing.T) {
 
 func TestNewWeatherClientOpenMeteoInvalidConfig(t *testing.T) {
 	_, err := NewClient(&Config{
+		Name:    "test",
 		Type:    "openmeteo",
 		Options: map[string]any{},
 	}, func(m map[string]any) error { return nil })
@@ -64,6 +70,7 @@ func TestNewWeatherClientOpenMeteoInvalidConfig(t *testing.T) {
 
 func TestCachedWeatherClient(t *testing.T) {
 	client, err := NewClient(&Config{
+		Name: "test",
 		Type: "fake",
 		Options: map[string]any{
 			"rain_mm":              25.4,

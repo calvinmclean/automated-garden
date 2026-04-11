@@ -55,6 +55,7 @@ type WeatherClient struct {
 	ID      string
 	Type    string
 	Options json.RawMessage
+	Name    string
 }
 
 type Zone struct {

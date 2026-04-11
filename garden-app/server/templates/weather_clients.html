@@ -46,8 +46,9 @@
             <div class="uk-card uk-card-default" style="margin: 5%;">
                 <div class="uk-card-header uk-text-center">
                     <h3 class="uk-card-title uk-margin-remove-bottom">
-                        {{ .Type }}
+                        {{ .Name }}
                     </h3>
+                    <p class="uk-text-meta uk-margin-remove-top uk-margin-small-top">{{ .Type }}</p>
                     {{ template "cardEditButton" (print "/weather_clients/" .ID "/components?type=edit_modal") }}
                 </div>
                 <div class="uk-card-body">

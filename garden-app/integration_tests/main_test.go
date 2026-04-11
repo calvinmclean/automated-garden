@@ -262,6 +262,7 @@ func CreateWeatherClientTest(t *testing.T, opts fake.Config) xid.ID {
 
 	t.Run("CreateWeatherClient", func(t *testing.T) {
 		status, err := makeRequest(http.MethodPost, "/weather_clients", fmt.Sprintf(`{
+			"name": "test-weather-client",
 			"type": "fake",
 			"options": {
 				"avg_high_temperature": %f,

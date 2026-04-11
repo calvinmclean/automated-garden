@@ -1,17 +1,21 @@
 {{ define "WeatherClientModal" }}
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body uk-text-center">
-        <h3 class="uk-modal-title">{{ if .Type }}{{ .Type }}{{ else }}Create Weather Client{{ end }}</h3>
+        <h3 class="uk-modal-title uk-margin-remove-bottom">
+            {{ if .Name }}{{ .Name }}{{ else }}Create Weather Client{{ end }}
+        </h3>
+        {{ if .Type }}<p class="uk-text-meta uk-margin-remove-top uk-margin-small-top">{{ .Type }}</p>{{ end }}
 
         <form _="on submit take .uk-open from #modal" hx-put="/weather_clients/{{ .ID }}"
             hx-headers='{"Accept": "text/html"}' hx-swap="none">
             <input type="hidden" value="{{ .ID }}" name="ID">
 
             {{ if .Type }}
-            <input type="hidden" value="{{ .Type }}" name="Type">
-            <div class="uk-margin uk-text-left">
-                <label class="uk-form-label"><strong>Type:</strong> {{ .Type }}</label>
+            <div class="uk-margin">
+                <label class="uk-form-label" for="weather-client-name">Name</label>
+                <input class="uk-input" id="weather-client-name" type="text" name="Name" value="{{ .Name }}">
             </div>
+            <input type="hidden" value="{{ .Type }}" name="Type">
             <div id="config-form-container">
                 {{ if eq .Type "netatmo" }}
                 {{ template "WeatherClientNetatmoConfig" . }}
@@ -22,6 +26,10 @@
                 {{ end }}
             </div>
             {{ else }}
+            <div class="uk-margin">
+                <label class="uk-form-label" for="weather-client-name">Name</label>
+                <input class="uk-input" id="weather-client-name" type="text" name="Name" placeholder="My Weather Client">
+            </div>
             <div class="uk-margin">
                 <label class="uk-form-label" for="weather-client-type">Type</label>
                 <select id="weather-client-type" class="uk-select" name="Type"
