@@ -47,7 +47,7 @@ func (resp AllNotificationClientsResponse) Render(w http.ResponseWriter, r *http
 }
 
 // HTML renders the settings list for HTMX requests
-func (resp AllNotificationClientsResponse) HTML(w http.ResponseWriter, r *http.Request) string {
+func (resp AllNotificationClientsResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	return settingsListTemplate.Render(r, map[string]any{
 		"Items": resp.Items,
 	})

@@ -108,7 +108,7 @@ func (api *NotificationClientsAPI) handleIDComponents(_ http.ResponseWriter, r *
 }
 
 // settingsModalRenderer returns the full settings modal with notification clients list
-func (api *NotificationClientsAPI) settingsModalRenderer(ctx context.Context) render.Renderer {
+func (api *NotificationClientsAPI) settingsModalRenderer(_ context.Context) render.Renderer {
 	return settingsModalTemplate.Renderer(nil)
 }
 
