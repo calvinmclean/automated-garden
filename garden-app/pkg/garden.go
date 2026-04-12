@@ -17,8 +17,6 @@ const (
 	HealthStatusDown    HealthStatus = "DOWN"
 	HealthStatusUp      HealthStatus = "UP"
 	HealthStatusUnknown HealthStatus = "N/A"
-
-	currentGardenVersion = uint(2)
 )
 
 // Garden is the representation of a single garden-controller device
@@ -34,7 +32,6 @@ type Garden struct {
 	NotificationClientID      *string               `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
 	NotificationSettings      *NotificationSettings `json:"notification_settings,omitempty" yaml:"notification_settings,omitempty"`
 	ControllerConfig          *ControllerConfig     `json:"controller_config,omitempty" yaml:"controller_config,omitempty"`
-	Version                   uint                  `json:"version,omitempty" yaml:"version"`
 }
 
 type NotificationSettings struct {
@@ -43,14 +40,6 @@ type NotificationSettings struct {
 	Downtime          *Duration `json:"downtime" yaml:"downtime"`
 	WateringStarted   bool      `json:"watering_started" yaml:"watering_started"`
 	WateringComplete  bool      `json:"watering_complete" yaml:"watering_complete"`
-}
-
-func (g *Garden) GetVersion() uint {
-	return g.Version
-}
-
-func (g *Garden) SetVersion(v uint) {
-	g.Version = v
 }
 
 func (g *Garden) GetID() string {
@@ -181,9 +170,6 @@ func (g *Garden) Bind(r *http.Request) error {
 		g.CreatedAt = &now
 		fallthrough
 	case http.MethodPut:
-		if g.Version == 0 {
-			g.Version = currentGardenVersion
-		}
 		if g.CreatedAt == nil || g.CreatedAt.IsZero() {
 			g.CreatedAt = &now
 		}
@@ -267,7 +253,5 @@ func (g *Garden) Bind(r *http.Request) error {
 }
 
 func (g *Garden) Render(_ http.ResponseWriter, _ *http.Request) error {
-	// Version is excluded from responses because it's not important external information
-	g.Version = 0
 	return nil
 }

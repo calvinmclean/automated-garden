@@ -25,10 +25,6 @@ func Execute() {
 
 	command.AddCommand(controllerCommand)
 
-	command.AddCommand(migrateCommand)
-
-	command.AddCommand(storageMigrateCommand)
-
 	viper.SetEnvPrefix("GARDEN_APP")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
 	viper.AutomaticEnv()
