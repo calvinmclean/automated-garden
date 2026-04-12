@@ -37,6 +37,7 @@ const (
 	zoneActionModalTemplate              html.Template = "ZoneActionModal"
 	weatherClientsPageTemplate           html.Template = "WeatherClientsPage"
 	weatherClientsTemplate               html.Template = "WeatherClients"
+	weatherClientCardTemplate            html.Template = "WeatherClientCard"
 	weatherClientModalTemplate           html.Template = "WeatherClientModal"
 	weatherClientNetatmoConfigTemplate   html.Template = "WeatherClientNetatmoConfig"
 	weatherClientFakeConfigTemplate      html.Template = "WeatherClientFakeConfig"
@@ -221,6 +222,9 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"GetFullData": func() bool {
 			return r.URL.Query().Get("get_full") == "true"
+		},
+		"IncludeWeatherData": func() bool {
+			return r.URL.Query().Get("include_weather_data") == "true"
 		},
 		"NotRefresh": func() bool {
 			return r.URL.Query().Get("refresh") != "true"

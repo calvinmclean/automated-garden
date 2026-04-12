@@ -96,6 +96,11 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 		}
 	}))
 
+	// Endpoint to return just a single weather client card for lazy loading
+	api.AddCustomIDRoute(http.MethodGet, "/card", api.GetRequestedResourceAndDo(func(_ http.ResponseWriter, r *http.Request, wc *weather.Config) (render.Renderer, *babyapi.ErrResponse) {
+		return &WeatherClientResponse{Config: wc, api: api}, nil
+	}))
+
 	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		id := api.GetIDParam(r)
 
