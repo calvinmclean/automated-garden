@@ -7,10 +7,12 @@ import (
 	"net/http"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/cache"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -33,10 +35,14 @@ type GardensAPI struct {
 	influxdbClient influxdb.Client
 	worker         *worker.Worker
 	config         Config
+	healthCache    *cache.Cache[*pkg.GardenHealth]
 }
 
 func NewGardenAPI() *GardensAPI {
 	api := &GardensAPI{}
+
+	// Initialize health cache with 2-minute TTL
+	api.healthCache = cache.New[*pkg.GardenHealth](2 * time.Minute)
 
 	api.API = babyapi.NewAPI("Gardens", gardenBasePath, func() *pkg.Garden { return &pkg.Garden{} })
 	api.SetResponseWrapper(func(g *pkg.Garden) render.Renderer {

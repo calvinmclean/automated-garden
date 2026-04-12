@@ -1183,7 +1183,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 			// Create GardenResponse and call getActiveWatering
 			resp := gr.NewGardenResponse(garden)
 			ctx := context.Background()
-			resp.getActiveWatering(ctx)
+			resp.getActiveWatering(ctx, slog.Default())
 
 			// Assertions
 			assert.Equal(t, tt.expectedQueue, resp.WateringQueue, "WateringQueue mismatch")
@@ -1220,7 +1220,7 @@ func TestGardenResponseNoZones(t *testing.T) {
 	// Create GardenResponse and call getActiveWatering
 	resp := gr.NewGardenResponse(garden)
 	ctx := context.Background()
-	resp.getActiveWatering(ctx)
+	resp.getActiveWatering(ctx, slog.Default())
 
 	// Assertions
 	assert.Equal(t, uint(0), resp.WateringQueue, "WateringQueue should be 0")
