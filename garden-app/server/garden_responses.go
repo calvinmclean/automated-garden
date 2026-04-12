@@ -172,14 +172,26 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 
 	logger := babyapi.GetLoggerFromContext(ctx)
 
-	// Determine if we need to fetch active watering data
-	needsActiveWatering := render.GetAcceptedContentType(r) == render.ContentTypeHTML
+	// By default, skip InfluxDB data fetching for fast page loads (lazy loading)
+	// Set get_full=true to fetch all InfluxDB data in a single request
+	getFullData := r.URL.Query().Get("get_full") == "true"
+
+	// Determine if we need to fetch InfluxDB data
+	// For HTML: skip by default (lazy loading), fetch when get_full=true
+	// For JSON: always fetch health and sensor data, but not active watering
+	isHTML := render.GetAcceptedContentType(r) == render.ContentTypeHTML
+	needsInfluxData := !isHTML || (isHTML && getFullData)
 
 	// Fetch all InfluxDB-dependent data concurrently at the top level
 	// This avoids nested concurrent execution and allows for a single timeout
-	g.fetchInfluxDBData(ctx, logger, needsActiveWatering)
+	if needsInfluxData {
+		// Only fetch active watering for HTML responses (where zones are displayed)
+		// JSON API responses don't include active watering status
+		fetchActiveWatering := isHTML && getFullData
+		g.fetchInfluxDBData(ctx, logger, fetchActiveWatering)
+	}
 
-	if needsActiveWatering && r.Method == http.MethodPut {
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
 		w.Header().Add("HX-Trigger", "newGarden")
 	}
 
@@ -358,6 +370,10 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 	}
 
 	return nil
+}
+
+func (g *GardenResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	return gardenCardTemplate.Render(r, g)
 }
 
 func (agr AllGardensResponse) HTML(_ http.ResponseWriter, r *http.Request) string {

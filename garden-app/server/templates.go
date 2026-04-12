@@ -22,6 +22,7 @@ var templates embed.FS
 const (
 	gardensPageTemplate                  html.Template = "GardensPage"
 	gardensTemplate                      html.Template = "Gardens"
+	gardenCardTemplate                   html.Template = "GardenCard"
 	gardenModalTemplate                  html.Template = "GardenModal"
 	zonesPageTemplate                    html.Template = "ZonesPage"
 	zonesTemplate                        html.Template = "Zones"
@@ -217,6 +218,9 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"ExcludeWeatherData": func() bool {
 			return excludeWeatherData(r)
+		},
+		"GetFullData": func() bool {
+			return r.URL.Query().Get("get_full") == "true"
 		},
 		"NotRefresh": func() bool {
 			return r.URL.Query().Get("refresh") != "true"
