@@ -25,15 +25,19 @@ func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState
 
 func (w *Worker) sendDownNotification(g *pkg.Garden, clientID, actionName string) {
 	health := w.GetGardenHealth(context.Background(), g)
-	if health.Status != pkg.HealthStatusUp {
-		w.sendNotification(
-			clientID,
-			fmt.Sprintf("%s: %s", g.Name, health.Status),
-			fmt.Sprintf(`Attempting to execute %s Action, but last contact was %s.
-Details: %s`, actionName, health.LastContact.Format(time.DateTime), health.Details),
-			w.logger,
-		)
+	if health == nil || health.LastContact == nil {
+		return
 	}
+	if health.Status == pkg.HealthStatusUp {
+		return
+	}
+	w.sendNotification(
+		clientID,
+		fmt.Sprintf("%s: %s", g.Name, health.Status),
+		fmt.Sprintf(`Attempting to execute %s Action, but last contact was %s.
+Details: %s`, actionName, health.LastContact.Format(time.DateTime), health.Details),
+		w.logger,
+	)
 }
 
 func (w *Worker) sendNotification(clientID, title, msg string, logger *slog.Logger) {
