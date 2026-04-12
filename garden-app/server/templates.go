@@ -37,7 +37,7 @@ const (
 	zoneActionModalTemplate              html.Template = "ZoneActionModal"
 	weatherClientsPageTemplate           html.Template = "WeatherClientsPage"
 	weatherClientsTemplate               html.Template = "WeatherClients"
-	weatherClientCardTemplate            html.Template = "WeatherClientCard"
+	weatherClientDataOnlyTemplate        html.Template = "WeatherClientDataOnly"
 	weatherClientModalTemplate           html.Template = "WeatherClientModal"
 	weatherClientNetatmoConfigTemplate   html.Template = "WeatherClientNetatmoConfig"
 	weatherClientFakeConfigTemplate      html.Template = "WeatherClientFakeConfig"

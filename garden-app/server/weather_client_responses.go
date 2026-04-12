@@ -71,8 +71,9 @@ func (resp *WeatherClientResponse) HTML(_ http.ResponseWriter, r *http.Request) 
 		"WeatherData": resp.WeatherData,
 		"Units":       units,
 		"Duration":    duration,
+		"IsMetric":    units == "metric",
 	}
-	return weatherClientCardTemplate.Render(r, data)
+	return weatherClientDataOnlyTemplate.Render(r, data)
 }
 
 type AllWeatherClientsResponse struct {

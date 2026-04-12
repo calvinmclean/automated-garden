@@ -69,7 +69,7 @@
 {{ define "WeatherClientDataSection" }}
 {{ if IncludeWeatherData }}
 {{ if .WeatherData }}
-<div class="uk-flex uk-flex-center uk-flex-middle uk-grid-small" uk-grid>
+<div id="weather-data-{{ .Config.ID }}" class="uk-flex uk-flex-center uk-flex-middle uk-grid-small" uk-grid>
     {{ if .WeatherData.Temperature }}
     <div class="uk-flex uk-flex-middle">
         <span uk-icon="thermometer" class="uk-margin-small-right" style="color: #faa05a;"></span>
@@ -93,7 +93,7 @@
 </div>
 {{ end }}
 {{ else }}
-<div class="uk-text-center">
+<div id="weather-data-{{ .Config.ID }}" class="uk-text-center">
     <div uk-spinner="ratio: 0.75"></div>
     <span class="uk-text-muted uk-text-small">Loading weather data...</span>
 </div>
@@ -102,9 +102,34 @@
 {{ end }}
 
 {{ define "WeatherClientLazyLoadTrigger" }}
-<div hx-get="/weather_clients/{{ .Config.ID }}/card?include_weather_data=true"
+<div hx-get="/weather_clients/{{ .Config.ID }}?include_weather_data=true"
      hx-headers='{"Accept": "text/html"}'
      hx-vals="js:{units: new URLSearchParams(window.location.search).get('units')}"
-     hx-trigger="load" hx-swap="outerHTML" hx-target="#weather-client-card-{{ .Config.ID }}">
+     hx-trigger="load" hx-swap="innerHTML" hx-target="#weather-data-{{ .Config.ID }}">
+</div>
+{{ end }}
+
+{{ define "WeatherClientDataOnly" }}
+<div class="uk-flex uk-flex-center uk-flex-middle uk-grid-small" uk-grid>
+    {{ if .WeatherData.Temperature }}
+    <div class="uk-flex uk-flex-middle">
+        <span uk-icon="thermometer" class="uk-margin-small-right" style="color: #faa05a;"></span>
+        {{ if .IsMetric }}
+        <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°C" .WeatherData.Temperature.Celsius }}</span>
+        {{ else }}
+        <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°F" .WeatherData.Temperature.Fahrenheit }}</span>
+        {{ end }}
+    </div>
+    {{ end }}
+    {{ if .WeatherData.Rain }}
+    <div class="uk-flex uk-flex-middle">
+        <span uk-icon="cloud-rain" class="uk-margin-small-right uk-text-primary"></span>
+        {{ if .IsMetric }}
+        <span class="uk-text-bold uk-text-primary">{{ printf "%.1f mm" (DerefFloat32 .WeatherData.Rain.MM) }}</span>
+        {{ else }}
+        <span class="uk-text-bold uk-text-primary">{{ printf "%.2f in" (DerefFloat32 .WeatherData.Rain.Inches) }}</span>
+        {{ end }}
+    </div>
+    {{ end }}
 </div>
 {{ end }}
