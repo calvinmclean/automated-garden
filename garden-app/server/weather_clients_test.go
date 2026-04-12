@@ -137,8 +137,8 @@ func TestDeleteWeatherClient(t *testing.T) {
 	weatherClient := createExampleWeatherClientConfig()
 
 	storageClient, err := storage.NewClient(storage.Config{
-				ConnectionString: ":memory:",
-			})
+		ConnectionString: ":memory:",
+	})
 	assert.NoError(t, err)
 
 	weatherClientWithWS := createExampleWeatherClientConfig()

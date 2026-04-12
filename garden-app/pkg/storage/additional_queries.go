@@ -1,4 +1,4 @@
-package sql
+package storage
 
 import (
 	"context"
@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql/db"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/db"
 )
 
 // AdditionalQueries implements AdditionalQueries interface for SQL storage

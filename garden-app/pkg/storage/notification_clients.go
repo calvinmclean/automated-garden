@@ -1,4 +1,4 @@
-package sql
+package storage
 
 import (
 	"context"
@@ -7,7 +7,7 @@ import (
 	"net/url"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql/db"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/db"
 	"github.com/calvinmclean/babyapi"
 )
 
