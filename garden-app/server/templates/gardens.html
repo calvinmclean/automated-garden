@@ -55,7 +55,7 @@
 {{ end }}
 
 {{ define "gardenHealthSection" }}
-{{ if GetFullData }}
+{{ if IncludeData }}
 {{ template "healthBadge" . }}
 {{ else }}
 <div class="uk-margin-small-bottom">
@@ -68,7 +68,7 @@
 {{ end }}
 
 {{ define "gardenWateringSection" }}
-{{ if GetFullData }}
+{{ if IncludeData }}
 {{ if or .ActiveWatering .WateringQueue }}
 <div class="uk-margin-small-top">
     {{ if .ActiveWatering }}
@@ -120,7 +120,7 @@
 {{ end }}
 
 {{ define "gardenTemperatureSection" }}
-{{ if GetFullData }}
+{{ if IncludeData }}
 {{ if .TemperatureHumidityData }}
 {{ template "temperatureHumidityDetails" .TemperatureHumidityData }}
 {{ end }}
@@ -136,7 +136,7 @@
 {{ end }}
 
 {{ define "gardenLazyLoadTrigger" }}
-<div hx-get="/gardens/{{ .ID }}/card?get_full=true" hx-headers='{"Accept": "text/html"}'
+<div hx-get="/gardens/{{ .ID }}/card?include_data=true" hx-headers='{"Accept": "text/html"}'
     hx-trigger="load" hx-swap="outerHTML" hx-target="#garden-card-{{ .ID }}">
 </div>
 {{ end }}

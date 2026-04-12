@@ -220,8 +220,8 @@ func templateFuncs(r *http.Request) map[string]any {
 		"ExcludeWeatherData": func() bool {
 			return excludeWeatherData(r)
 		},
-		"GetFullData": func() bool {
-			return r.URL.Query().Get("get_full") == "true"
+		"IncludeData": func() bool {
+			return r.URL.Query().Get("include_data") == "true"
 		},
 		"IncludeWeatherData": func() bool {
 			return r.URL.Query().Get("include_weather_data") == "true"

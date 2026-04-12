@@ -173,21 +173,21 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	logger := babyapi.GetLoggerFromContext(ctx)
 
 	// By default, skip InfluxDB data fetching for fast page loads (lazy loading)
-	// Set get_full=true to fetch all InfluxDB data in a single request
-	getFullData := r.URL.Query().Get("get_full") == "true"
+	// Set include_data=true to fetch all InfluxDB data in a single request
+	includeData := r.URL.Query().Get("include_data") == "true"
 
 	// Determine if we need to fetch InfluxDB data
-	// For HTML: skip by default (lazy loading), fetch when get_full=true
+	// For HTML: skip by default (lazy loading), fetch when include_data=true
 	// For JSON: always fetch health and sensor data, but not active watering
 	isHTML := render.GetAcceptedContentType(r) == render.ContentTypeHTML
-	needsInfluxData := !isHTML || (isHTML && getFullData)
+	needsInfluxData := !isHTML || (isHTML && includeData)
 
 	// Fetch all InfluxDB-dependent data concurrently at the top level
 	// This avoids nested concurrent execution and allows for a single timeout
 	if needsInfluxData {
 		// Only fetch active watering for HTML responses (where zones are displayed)
 		// JSON API responses don't include active watering status
-		fetchActiveWatering := isHTML && getFullData
+		fetchActiveWatering := isHTML && includeData
 		g.fetchInfluxDBData(ctx, logger, fetchActiveWatering)
 	}
 
