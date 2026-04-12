@@ -10,6 +10,4 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  driver: "sqlite"
-  options:
-    data_source_name: "garden.db"
+  connection_string: "garden.db"

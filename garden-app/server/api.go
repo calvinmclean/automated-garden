@@ -115,7 +115,7 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 	}
 
 	// Initialize Storage Client
-	logger.Info("initializing storage client", "driver", cfg.StorageConfig.Driver)
+	logger.Info("initializing storage client", "driver", "sqlite")
 	storageClient, err := storage.NewClient(cfg.StorageConfig)
 	if err != nil {
 		return fmt.Errorf("unable to initialize storage client: %v", err)

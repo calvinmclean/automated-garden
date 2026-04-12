@@ -25,10 +25,7 @@ func TestGetGardenAndSendStartupMessage(t *testing.T) {
 	now := c.Now()
 
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "sqlite",
-		Options: map[string]any{
-			"data_source_name": ":memory:",
-		},
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 

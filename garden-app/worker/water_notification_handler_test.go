@@ -104,10 +104,7 @@ func TestParseWaterMessage(t *testing.T) {
 
 func TestHandleMessage(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "sqlite",
-		Options: map[string]any{
-			"data_source_name": ":memory:",
-		},
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 
@@ -288,10 +285,7 @@ func TestHandleMessage(t *testing.T) {
 
 func TestHandleMessageFake(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "sqlite",
-		Options: map[string]any{
-			"data_source_name": ":memory:",
-		},
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 

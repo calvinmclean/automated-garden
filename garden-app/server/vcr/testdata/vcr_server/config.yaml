@@ -11,6 +11,4 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  driver: "sqlite"
-  options:
-    data_source_name: "./server/vcr/testdata/vcr_server/garden.db"
+  connection_string: "./server/vcr/testdata/vcr_server/garden.db"

@@ -9,13 +9,11 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 
 	"github.com/calvinmclean/babyapi"
-	"github.com/mitchellh/mapstructure"
 )
 
-// Config is used to identify and configure a storage client
+// Config is used to configure the SQLite storage client
 type Config struct {
-	Driver  string         `mapstructure:"driver" yaml:"driver"`
-	Options map[string]any `mapstructure:"options" yaml:"options"`
+	ConnectionString string `mapstructure:"connection_string" yaml:"connection_string"`
 }
 
 // AdditionalQueries are queries that are implemented outside of the base babyapi implementations
@@ -36,17 +34,9 @@ type Client struct {
 }
 
 func NewClient(config Config) (*Client, error) {
-	if config.Driver != "sqlite" {
-		return nil, fmt.Errorf("invalid driver: %q (only sqlite is supported)", config.Driver)
-	}
-
-	var sqlConfig sql.Config
-	err := mapstructure.Decode(config.Options, &sqlConfig)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding SQL config: %w", err)
-	}
-
-	sqlClient, err := sql.NewClient(sqlConfig)
+	sqlClient, err := sql.NewClient(sql.Config{
+		DataSourceName: config.ConnectionString,
+	})
 	if err != nil {
 		return nil, fmt.Errorf("error creating SQL client: %w", err)
 	}
