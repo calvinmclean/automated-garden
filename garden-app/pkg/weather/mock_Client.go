@@ -3,6 +3,7 @@
 package weather
 
 import (
+	context "context"
 	time "time"
 
 	mock "github.com/stretchr/testify/mock"
@@ -13,9 +14,9 @@ type MockClient struct {
 	mock.Mock
 }
 
-// GetAverageHighTemperature provides a mock function with given fields: since
-func (_m *MockClient) GetAverageHighTemperature(since time.Duration) (float32, error) {
-	ret := _m.Called(since)
+// GetAverageHighTemperature provides a mock function with given fields: ctx, since
+func (_m *MockClient) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
+	ret := _m.Called(ctx, since)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAverageHighTemperature")
@@ -23,17 +24,17 @@ func (_m *MockClient) GetAverageHighTemperature(since time.Duration) (float32, e
 
 	var r0 float32
 	var r1 error
-	if rf, ok := ret.Get(0).(func(time.Duration) (float32, error)); ok {
-		return rf(since)
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) (float32, error)); ok {
+		return rf(ctx, since)
 	}
-	if rf, ok := ret.Get(0).(func(time.Duration) float32); ok {
-		r0 = rf(since)
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) float32); ok {
+		r0 = rf(ctx, since)
 	} else {
 		r0 = ret.Get(0).(float32)
 	}
 
-	if rf, ok := ret.Get(1).(func(time.Duration) error); ok {
-		r1 = rf(since)
+	if rf, ok := ret.Get(1).(func(context.Context, time.Duration) error); ok {
+		r1 = rf(ctx, since)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -41,9 +42,9 @@ func (_m *MockClient) GetAverageHighTemperature(since time.Duration) (float32, e
 	return r0, r1
 }
 
-// GetTotalRain provides a mock function with given fields: since
-func (_m *MockClient) GetTotalRain(since time.Duration) (float32, error) {
-	ret := _m.Called(since)
+// GetTotalRain provides a mock function with given fields: ctx, since
+func (_m *MockClient) GetTotalRain(ctx context.Context, since time.Duration) (float32, error) {
+	ret := _m.Called(ctx, since)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTotalRain")
@@ -51,17 +52,17 @@ func (_m *MockClient) GetTotalRain(since time.Duration) (float32, error) {
 
 	var r0 float32
 	var r1 error
-	if rf, ok := ret.Get(0).(func(time.Duration) (float32, error)); ok {
-		return rf(since)
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) (float32, error)); ok {
+		return rf(ctx, since)
 	}
-	if rf, ok := ret.Get(0).(func(time.Duration) float32); ok {
-		r0 = rf(since)
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) float32); ok {
+		r0 = rf(ctx, since)
 	} else {
 		r0 = ret.Get(0).(float32)
 	}
 
-	if rf, ok := ret.Get(1).(func(time.Duration) error); ok {
-		r1 = rf(since)
+	if rf, ok := ret.Get(1).(func(context.Context, time.Duration) error); ok {
+		r1 = rf(ctx, since)
 	} else {
 		r1 = ret.Error(1)
 	}

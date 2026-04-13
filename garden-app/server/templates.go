@@ -22,6 +22,8 @@ var templates embed.FS
 const (
 	gardensPageTemplate                  html.Template = "GardensPage"
 	gardensTemplate                      html.Template = "Gardens"
+	gardenCardTemplate                   html.Template = "GardenCard"
+	gardenDataSectionTemplate            html.Template = "gardenDataSection"
 	gardenModalTemplate                  html.Template = "GardenModal"
 	zonesPageTemplate                    html.Template = "ZonesPage"
 	zonesTemplate                        html.Template = "Zones"
@@ -36,6 +38,7 @@ const (
 	zoneActionModalTemplate              html.Template = "ZoneActionModal"
 	weatherClientsPageTemplate           html.Template = "WeatherClientsPage"
 	weatherClientsTemplate               html.Template = "WeatherClients"
+	weatherClientDataOnlyTemplate        html.Template = "WeatherClientDataOnly"
 	weatherClientModalTemplate           html.Template = "WeatherClientModal"
 	weatherClientNetatmoConfigTemplate   html.Template = "WeatherClientNetatmoConfig"
 	weatherClientFakeConfigTemplate      html.Template = "WeatherClientFakeConfig"
@@ -217,6 +220,12 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"ExcludeWeatherData": func() bool {
 			return excludeWeatherData(r)
+		},
+		"IncludeData": func() bool {
+			return r.URL.Query().Get("swap_data") == "true"
+		},
+		"IncludeWeatherData": func() bool {
+			return r.URL.Query().Get("swap_data") == "true"
 		},
 		"NotRefresh": func() bool {
 			return r.URL.Query().Get("refresh") != "true"

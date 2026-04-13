@@ -204,7 +204,7 @@ func TestGetZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()), nil)
 			zr.worker.StartAsync()
 
 			for _, ws := range tt.waterSchedules {
@@ -271,7 +271,7 @@ func TestZoneAction(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()), nil)
 
 			zr.worker.StartAsync()
 
@@ -347,7 +347,7 @@ func TestZoneActionForm(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()), nil)
 
 			zr.worker.StartAsync()
 
@@ -414,7 +414,7 @@ func TestUpdateZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 
 			garden := createExampleGarden()
 			zone := createExampleZone()
@@ -463,7 +463,7 @@ func TestEndDateZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 
 			garden := createExampleGarden()
 			zone := createExampleZone()
@@ -481,7 +481,7 @@ func TestGetAllZones(t *testing.T) {
 	storageClient := setupWaterScheduleStorage(t)
 
 	zr := NewZonesAPI()
-	zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+	zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 
 	garden := createExampleGarden()
 	zone := createExampleZone()
@@ -662,7 +662,7 @@ func TestCreateZone(t *testing.T) {
 			}
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 
 			for _, ws := range tt.waterSchedules {
 				err := zr.worker.ScheduleWaterAction(ws)
@@ -816,7 +816,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			}
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 
 			for _, ws := range tt.waterSchedules {
 				err := zr.worker.ScheduleWaterAction(ws)
@@ -978,7 +978,7 @@ func TestCreateZonePUT(t *testing.T) {
 			}
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 
 			for _, ws := range tt.waterSchedules {
 				err := zr.worker.ScheduleWaterAction(ws)
@@ -1025,7 +1025,6 @@ func TestWaterHistory(t *testing.T) {
 			"SuccessfulWaterHistoryEmpty",
 			func(influxdbClient *influxdb.MockClient) {
 				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(5)).Return([]pkg.WaterHistory{}, nil)
-				influxdbClient.On("Close")
 			},
 			"",
 			`{"history":[],"count":0,"average":"0s","total":"0s"}`,
@@ -1046,7 +1045,6 @@ func TestWaterHistory(t *testing.T) {
 							EventID:     "00000000000000000000",
 						},
 					}, nil)
-				influxdbClient.On("Close")
 			},
 			"",
 			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
@@ -1065,7 +1063,6 @@ func TestWaterHistory(t *testing.T) {
 							EventID:  "00000000000000000000",
 						},
 					}, nil)
-				influxdbClient.On("Close")
 			},
 			"",
 			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"sent","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00"}],"count":0,"average":"0s","total":"0s"}`,
@@ -1086,7 +1083,6 @@ func TestWaterHistory(t *testing.T) {
 							EventID:     "00000000000000000000",
 						},
 					}, nil)
-				influxdbClient.On("Close")
 			},
 			"?limit=1",
 			`{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
@@ -1097,7 +1093,6 @@ func TestWaterHistory(t *testing.T) {
 			func(influxdbClient *influxdb.MockClient) {
 				influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(5)).
 					Return([]pkg.WaterHistory{}, errors.New("influxdb error"))
-				influxdbClient.On("Close")
 			},
 			"",
 			`{"status":"Server Error.","error":"influxdb error"}`,
@@ -1123,7 +1118,6 @@ func TestWaterHistory(t *testing.T) {
 					EventID:     "00000000000000000000",
 				},
 			}, nil)
-		influxdbClient.On("Close")
 
 		storageClient, err := storage.NewClient(storage.Config{
 			ConnectionString: ":memory:",
@@ -1131,7 +1125,7 @@ func TestWaterHistory(t *testing.T) {
 		assert.NoError(t, err)
 
 		zr := NewZonesAPI()
-		zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+		zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()), nil)
 
 		garden := createExampleGarden()
 		zone := createExampleZone()
@@ -1165,7 +1159,7 @@ func TestWaterHistory(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()), nil)
 
 			garden := createExampleGarden()
 			zone := createExampleZone()

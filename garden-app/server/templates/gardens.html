@@ -25,54 +25,15 @@
         </div>
         <div class="uk-card-body">
             {{ if not .EndDated }}
-            {{ template "healthBadge" . }}
-            {{ end }}
+            <div id="garden-data-{{ .ID }}">
+                {{ template "gardenHealthSection" . }}
 
-            <span class="uk-label">
-                {{ .NumZones }} Zones <i class="bi-grid"></i>
-            </span>
+                <span class="uk-label">
+                    {{ .NumZones }} Zones <i class="bi-grid"></i>
+                </span>
 
-            {{ if or .ActiveWatering .WateringQueue }}
-            <div class="uk-margin-small-top">
-                {{ if .ActiveWatering }}
-                <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
-                    Watering In Progress
-                    {{ if .ActiveWatering.Progress.Error }}
-                    <span class="uk-label uk-label-danger" uk-tooltip="{{ .ActiveWatering.Progress.Error }}">
-                        <span uk-icon="icon: warning; ratio: 0.75"></span>
-                    </span>
-                    {{ end }}
-                    {{ if .WateringQueue }}
-                    <span class="uk-label uk-label-warning" uk-tooltip="Queue">
-                        {{ .WateringQueue }}
-                    </span>
-                    {{ end }}
-                </p>
-                <progress
-                    id="garden-{{ .ID }}-progressbar"
-                    class="uk-progress"
-                    value="{{ .ActiveWatering.Progress.Progress }}"
-                    max="1"
-                    uk-tooltip="{{ .ActiveWatering.ZoneName }}: Watered for {{ FormatDuration .ActiveWatering.Progress.Elapsed }} of {{ FormatDuration .ActiveWatering.Progress.Duration }} ({{ .ActiveWatering.Progress.Percent }})"></progress>
-                <script>
-                    UIkit.util.ready(function () {
-                        var bar = document.getElementById('garden-{{ .ID }}-progressbar');
-                        var oneSecValue = {{ .ActiveWatering.Progress.OneSecondProgress }};
-                        var animate = setInterval(function () {
-                            bar.value += oneSecValue;
-                            if (bar.value >= bar.max) {
-                                clearInterval(animate);
-                            }
-                        }, 1000);
-                    });
-                </script>
-                {{ else if .WateringQueue }}
-                <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
-                    <span class="uk-label uk-label-warning" uk-tooltip="Queue">
-                        {{ .WateringQueue }} Queued
-                    </span>
-                </p>
-                {{ end }}
+                {{ template "gardenWateringSection" . }}
+                {{ template "gardenLazyLoadTrigger" . }}
             </div>
             {{ end }}
 
@@ -80,9 +41,7 @@
             {{ template "lightScheduleDetails" . }}
             {{ end }}
 
-            {{ if .TemperatureHumidityData }}
-            {{ template "temperatureHumidityDetails" .TemperatureHumidityData }}
-            {{ end }}
+            {{ template "gardenTemperatureSection" . }}
         </div>
         <div class="uk-card-footer">
             <div class="uk-clearfix">
@@ -95,6 +54,93 @@
             </div>
         </div>
     </div>
+</div>
+{{ end }}
+
+{{ define "gardenHealthSection" }}
+{{ if IncludeData }}
+{{ template "healthBadge" . }}
+{{ else }}
+<span class="uk-margin-small-right">
+    <span uk-spinner="ratio: 0.5"></span>
+</span>
+{{ end }}
+{{ end }}
+
+{{ define "gardenWateringSection" }}
+{{ if IncludeData }}
+{{ if or .ActiveWatering .WateringQueue }}
+<div class="uk-margin-small-top">
+    {{ if .ActiveWatering }}
+    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+        Watering In Progress
+        {{ if .ActiveWatering.Progress.Error }}
+        <span class="uk-label uk-label-danger" uk-tooltip="{{ .ActiveWatering.Progress.Error }}">
+            <span uk-icon="icon: warning; ratio: 0.75"></span>
+        </span>
+        {{ end }}
+        {{ if .WateringQueue }}
+        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+            {{ .WateringQueue }}
+        </span>
+        {{ end }}
+    </p>
+    <progress
+        id="garden-{{ .ID }}-progressbar"
+        class="uk-progress"
+        value="{{ .ActiveWatering.Progress.Progress }}"
+        max="1"
+        uk-tooltip="{{ .ActiveWatering.ZoneName }}: Watered for {{ FormatDuration .ActiveWatering.Progress.Elapsed }} of {{ FormatDuration .ActiveWatering.Progress.Duration }} ({{ .ActiveWatering.Progress.Percent }})"></progress>
+    <script>
+        UIkit.util.ready(function () {
+            var bar = document.getElementById('garden-{{ .ID }}-progressbar');
+            var oneSecValue = {{ .ActiveWatering.Progress.OneSecondProgress }};
+            var animate = setInterval(function () {
+                bar.value += oneSecValue;
+                if (bar.value >= bar.max) {
+                    clearInterval(animate);
+                }
+            }, 1000);
+        });
+    </script>
+    {{ else if .WateringQueue }}
+    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+            {{ .WateringQueue }} Queued
+        </span>
+    </p>
+    {{ end }}
+</div>
+{{ end }}
+{{ end }}
+{{ end }}
+
+{{ define "gardenTemperatureSection" }}
+{{ if IncludeData }}
+{{ if .TemperatureHumidityData }}
+{{ template "temperatureHumidityDetails" .TemperatureHumidityData }}
+{{ end }}
+{{ else }}
+{{ if .Garden.HasTemperatureHumiditySensor }}
+<div id="garden-temp-{{ .ID }}" class="uk-margin-small-top">
+    <div class="uk-text-center">
+        <div uk-spinner="ratio: 0.5"></div>
+    </div>
+</div>
+{{ template "gardenTemperatureLazyLoadTrigger" . }}
+{{ end }}
+{{ end }}
+{{ end }}
+
+{{ define "gardenLazyLoadTrigger" }}
+<div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="load" hx-swap="innerHTML" hx-target="#garden-data-{{ .ID }}">
+</div>
+{{ end }}
+
+{{ define "gardenTemperatureLazyLoadTrigger" }}
+<div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="load" hx-swap="innerHTML" hx-target="#garden-temp-{{ .ID }}">
 </div>
 {{ end }}
 
@@ -203,4 +249,85 @@
 <div uk-dropdown="pos: right-center">
     <p>{{ .Health.Details }}</p>
 </div>
+{{ end }}
+
+{{ define "healthBadgeOnly" }}
+{{ $labelColor := "warning" }}
+{{ if eq .Health.Status "UP" }}
+{{ $labelColor = "success" }}
+{{ else if eq .Health.Status "DOWN" }}
+{{ $labelColor = "danger" }}
+{{ end }}
+<span class="uk-label uk-label-{{ $labelColor }}">
+    {{ .Health.Status }}
+</span>
+<div uk-dropdown="pos: right-center">
+    <p>{{ .Health.Details }}</p>
+</div>
+{{ end }}
+
+{{ define "gardenDataSection" }}
+{{ template "healthBadge" . }}
+
+<span class="uk-label">
+    {{ .NumZones }} Zones <i class="bi-grid"></i>
+</span>
+
+{{ if or .ActiveWatering .WateringQueue }}
+<div class="uk-margin-small-top">
+    {{ if .ActiveWatering }}
+    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+        Watering In Progress
+        {{ if .ActiveWatering.Progress.Error }}
+        <span class="uk-label uk-label-danger" uk-tooltip="{{ .ActiveWatering.Progress.Error }}">
+            <span uk-icon="icon: warning; ratio: 0.75"></span>
+        </span>
+        {{ end }}
+        {{ if .WateringQueue }}
+        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+            {{ .WateringQueue }}
+        </span>
+        {{ end }}
+    </p>
+    <progress
+        id="garden-{{ .ID }}-progressbar"
+        class="uk-progress"
+        value="{{ .ActiveWatering.Progress.Progress }}"
+        max="1"
+        uk-tooltip="{{ .ActiveWatering.ZoneName }}: Watered for {{ FormatDuration .ActiveWatering.Progress.Elapsed }} of {{ FormatDuration .ActiveWatering.Progress.Duration }} ({{ .ActiveWatering.Progress.Percent }})"></progress>
+    <script>
+        UIkit.util.ready(function () {
+            var bar = document.getElementById('garden-{{ .ID }}-progressbar');
+            var oneSecValue = {{ .ActiveWatering.Progress.OneSecondProgress }};
+            var animate = setInterval(function () {
+                bar.value += oneSecValue;
+                if (bar.value >= bar.max) {
+                    clearInterval(animate);
+                }
+            }, 1000);
+        });
+    </script>
+    {{ else if .WateringQueue }}
+    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+            {{ .WateringQueue }} Queued
+        </span>
+    </p>
+    {{ end }}
+</div>
+{{ end }}
+{{ end }}
+
+{{ define "temperatureHumidityDetailsOnly" }}
+<p>
+    <span>
+        Temperature: {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
+        {{ Sprintf "%.2f" $tempF }}°F
+        <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
+    </span>
+    <span>
+        Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%
+        <progress class="uk-progress" value="{{ .HumidityPercentage }}" max="100"></progress>
+    </span>
+</p>
 {{ end }}

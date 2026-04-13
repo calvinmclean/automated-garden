@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
@@ -10,9 +11,15 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/concurrent"
 	"github.com/calvinmclean/babyapi"
 
 	"github.com/go-chi/render"
+)
+
+const (
+	// influxDBTimeout is the timeout for InfluxDB queries.
+	influxDBTimeout = 3 * time.Second
 )
 
 // ActiveWatering contains information about a currently-watering zone
@@ -53,52 +60,7 @@ func (api *GardensAPI) NewGardenResponse(garden *pkg.Garden, links ...Link) *Gar
 	return &GardenResponse{
 		Garden: garden,
 		Links:  links,
-
-		api: api,
-	}
-}
-
-// getActiveWatering calculates the active watering status for this garden
-func (g *GardenResponse) getActiveWatering(ctx context.Context) {
-	zones, err := g.api.getAllZones(ctx, g.ID.String(), false)
-	if err != nil {
-		return
-	}
-
-	var activeZone *pkg.Zone
-	var activeProgress pkg.WaterHistoryProgress
-	var totalQueue uint
-
-	for _, zone := range zones {
-		history, err := g.api.influxdbClient.GetWaterHistory(ctx, zone.GetID(), g.TopicPrefix, 72*time.Hour, 5)
-		if err != nil {
-			continue
-		}
-
-		// Reverse history to match chronological order expected by CalculateWaterProgress
-		slices.Reverse(history)
-
-		progress := pkg.CalculateWaterProgress(history)
-
-		// Check if this zone is currently watering (progress between 0 and 1)
-		if progress.Progress > 0 && progress.Progress < 1.0 && activeZone == nil {
-			activeZone = zone
-			activeProgress = progress
-		}
-
-		// Accumulate queue count from all zones
-		totalQueue += progress.Queue
-	}
-
-	// Always set total queue count
-	g.WateringQueue = totalQueue
-
-	// Set ActiveWatering if we found an actively watering zone
-	if activeZone != nil {
-		g.ActiveWatering = &ActiveWatering{
-			ZoneName: activeZone.Name,
-			Progress: activeProgress,
-		}
+		api:    api,
 	}
 }
 
@@ -136,7 +98,30 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	g.Health = g.api.worker.GetGardenHealth(ctx, g.Garden)
+	logger := babyapi.GetLoggerFromContext(ctx)
+
+	// By default, skip InfluxDB data fetching for fast page loads (lazy loading)
+	// Set swap_data=true to fetch all InfluxDB data in a single request
+	swapData := r.URL.Query().Get("swap_data") == "true"
+
+	// Determine if we need to fetch InfluxDB data
+	// For HTML: skip by default (lazy loading), fetch when swap_data=true
+	// For JSON: always fetch health and sensor data, but not active watering
+	isHTML := render.GetAcceptedContentType(r) == render.ContentTypeHTML
+	needsInfluxData := !isHTML || (isHTML && swapData)
+
+	// Fetch all InfluxDB-dependent data concurrently at the top level
+	// This avoids nested concurrent execution and allows for a single timeout
+	if needsInfluxData {
+		// Only fetch active watering for HTML responses (where zones are displayed)
+		// JSON API responses don't include active watering status
+		fetchActiveWatering := isHTML && swapData
+		g.fetchInfluxDBData(ctx, logger, fetchActiveWatering)
+	}
+
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
+		w.Header().Add("HX-Trigger", "newGarden")
+	}
 
 	if g.Garden.LightSchedule != nil {
 		nextLightTime, nextLightState := g.Garden.LightSchedule.NextChange(clock.Now())
@@ -154,29 +139,131 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		g.NextLightAction.Time = &offsetTime
 	}
 
-	if g.Garden.HasTemperatureHumiditySensor() {
-		t, h, err := g.api.influxdbClient.GetTemperatureAndHumidity(ctx, g.Garden.TopicPrefix)
-		if err != nil {
-			logger := babyapi.GetLoggerFromContext(r.Context())
-			logger.Error("error getting temperature and humidity data", "error", err)
-			return nil
-		}
-		g.TemperatureHumidityData = &TemperatureHumidityData{
-			TemperatureCelsius: t,
-			HumidityPercentage: h,
-		}
-	}
-
-	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
-		if r.Method == http.MethodPut {
-			w.Header().Add("HX-Trigger", "newGarden")
-		}
-
-		// Get active watering status for HTML responses
-		g.getActiveWatering(ctx)
-	}
-
 	return nil
+}
+
+// fetchInfluxDBData fetches all InfluxDB-dependent data for a garden concurrently.
+// This includes health, temperature/humidity, and active watering status for all zones.
+// All operations are run in a single concurrent batch.
+func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Logger, includeActiveWatering bool) {
+	// First, check cache for health data
+	if g.api.healthCache != nil {
+		cacheKey := g.Garden.GetID()
+		if cachedHealth, found := g.api.healthCache.Get(cacheKey); found {
+			g.Health = cachedHealth
+		}
+	}
+
+	// Get zones first (this is from SQLite, not InfluxDB, so it's fast)
+	var zones []*pkg.Zone
+	if includeActiveWatering {
+		var err error
+		zones, err = g.api.getAllZones(ctx, g.ID.String(), false)
+		if err != nil {
+			logger.Warn("error getting zones for active watering check", "error", err)
+			zones = nil
+		}
+	}
+
+	// Build a single list of all InfluxDB tasks
+	tasks := []concurrent.TaskFunc{
+		{
+			Name: "health",
+			Fn: func(taskCtx context.Context) error {
+				health := g.api.worker.GetGardenHealth(taskCtx, g.Garden)
+				if health != nil {
+					g.Health = health
+					// Cache the health data
+					if g.api.healthCache != nil {
+						g.api.healthCache.Set(g.Garden.GetID(), health)
+					}
+				}
+				return nil
+			},
+		},
+	}
+
+	// Add temperature/humidity task only if sensor is enabled
+	if g.Garden.HasTemperatureHumiditySensor() {
+		tasks = append(tasks, concurrent.TaskFunc{
+			Name: "temperature-humidity",
+			Fn: func(taskCtx context.Context) error {
+				t, h, err := g.api.influxdbClient.GetTemperatureAndHumidity(taskCtx, g.Garden.TopicPrefix)
+				if err != nil {
+					return err
+				}
+				g.TemperatureHumidityData = &TemperatureHumidityData{
+					TemperatureCelsius: t,
+					HumidityPercentage: h,
+				}
+				return nil
+			},
+		})
+	}
+
+	// Add zone water history tasks to the same batch
+	// Use a slice to collect results
+	type zoneResult struct {
+		zone     *pkg.Zone
+		progress pkg.WaterHistoryProgress
+	}
+	results := make([]zoneResult, len(zones))
+
+	for i, zone := range zones {
+		i, zone := i, zone // capture loop variables
+		tasks = append(tasks, concurrent.TaskFunc{
+			Name: "zone-water-history-" + zone.GetID(),
+			Fn: func(taskCtx context.Context) error {
+				history, err := g.api.influxdbClient.GetWaterHistory(taskCtx, zone.GetID(), g.TopicPrefix, 72*time.Hour, 5)
+				if err != nil {
+					return err
+				}
+				slices.Reverse(history)
+				results[i] = zoneResult{zone: zone, progress: pkg.CalculateWaterProgress(history)}
+				return nil
+			},
+		})
+	}
+
+	// Execute ALL tasks concurrently with timeout (single level of concurrency)
+	errors := concurrent.RunFuncs(ctx, influxDBTimeout, tasks)
+	for taskName, err := range errors {
+		logger.Warn("failed to fetch garden data", "task", taskName, "error", err)
+	}
+
+	// Process zone results after all tasks complete
+	if includeActiveWatering {
+		var activeZone *pkg.Zone
+		var activeProgress pkg.WaterHistoryProgress
+		var totalQueue uint
+
+		for _, result := range results {
+			if result.zone == nil {
+				continue // skipped or errored
+			}
+			progress := result.progress
+
+			// Check if this zone is currently watering (progress between 0 and 1)
+			if progress.Progress > 0 && progress.Progress < 1.0 && activeZone == nil {
+				activeZone = result.zone
+				activeProgress = progress
+			}
+
+			// Accumulate queue count from all zones
+			totalQueue += progress.Queue
+		}
+
+		// Always set total queue count
+		g.WateringQueue = totalQueue
+
+		// Set ActiveWatering if we found an actively watering zone
+		if activeZone != nil {
+			g.ActiveWatering = &ActiveWatering{
+				ZoneName: activeZone.Name,
+				Progress: activeProgress,
+			}
+		}
+	}
 }
 
 // AllGardensResponse is a simple struct being used to render and return a list of all Gardens
@@ -185,7 +272,39 @@ type AllGardensResponse struct {
 }
 
 func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	return agr.ResourceList.Render(w, r)
+	// Process all GardenResponse renders concurrently for better performance
+	// This is especially important when each garden fetches data from InfluxDB
+	ctx := r.Context()
+	logger := babyapi.GetLoggerFromContext(ctx)
+
+	tasks := make([]concurrent.TaskFunc, 0, len(agr.Items))
+	for i := range agr.Items {
+		item := agr.Items[i] // capture loop variable
+		tasks = append(tasks, concurrent.TaskFunc{
+			Name: "garden-" + item.GetID(),
+			Fn: func(_ context.Context) error {
+				// Use the original request context for rendering
+				return item.Render(w, r)
+			},
+		})
+	}
+
+	// Execute all renders concurrently with a reasonable timeout
+	// Using a longer timeout since this encompasses all garden data fetching
+	errors := concurrent.RunFuncs(ctx, 10*time.Second, tasks)
+	for taskName, err := range errors {
+		logger.Warn("failed to render garden", "garden", taskName, "error", err)
+	}
+
+	return nil
+}
+
+func (g *GardenResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	// For swap_data, return just the data section (health, zones, watering) for lazy loading
+	if r.URL.Query().Get("swap_data") == "true" {
+		return gardenDataSectionTemplate.Render(r, g)
+	}
+	return gardenCardTemplate.Render(r, g)
 }
 
 func (agr AllGardensResponse) HTML(_ http.ResponseWriter, r *http.Request) string {

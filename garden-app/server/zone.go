@@ -13,6 +13,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/cache"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
@@ -34,6 +35,7 @@ type ZonesAPI struct {
 	storageClient  *storage.Client
 	influxdbClient influxdb.Client
 	worker         *worker.Worker
+	weatherCache   *cache.Cache[*WeatherData]
 }
 
 func NewZonesAPI() *ZonesAPI {
@@ -94,10 +96,11 @@ func NewZonesAPI() *ZonesAPI {
 	return api
 }
 
-func (api *ZonesAPI) setup(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) {
+func (api *ZonesAPI) setup(storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker, weatherCache *cache.Cache[*WeatherData]) {
 	api.storageClient = storageClient
 	api.influxdbClient = influxdbClient
 	api.worker = worker
+	api.weatherCache = weatherCache
 
 	api.SetStorage(api.storageClient.Zones)
 }
@@ -320,7 +323,7 @@ func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone,
 	logger.Debug("using limit", "limit", limit)
 
 	logger.Debug("getting water history from InfluxDB")
-	history, err := api.getWaterHistory(r.Context(), zone, garden, timeRange, limit)
+	history, err := api.influxdbClient.GetWaterHistory(r.Context(), zone.GetID(), garden.TopicPrefix, timeRange, limit)
 	if err != nil {
 		logger.Error("unable to get water history from InfluxDB", "error", err)
 		return nil, babyapi.InternalServerError(err)
@@ -330,13 +333,35 @@ func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone,
 	return history, nil
 }
 
-// getWaterHistory gets previous WaterEvents for this Zone from InfluxDB
-func (api *ZonesAPI) getWaterHistory(ctx context.Context, zone *pkg.Zone, garden *pkg.Garden, timeRange time.Duration, limit uint64) ([]pkg.WaterHistory, error) {
-	defer api.influxdbClient.Close()
-	return api.influxdbClient.GetWaterHistory(ctx, zone.GetID(), garden.TopicPrefix, timeRange, limit)
-}
-
 func excludeWeatherData(r *http.Request) bool {
 	result := r.URL.Query().Get("exclude_weather_data") == "true"
 	return result
+}
+
+// getCachedWeatherData retrieves weather data from cache or fetches it from the API
+// Cache key is based on water schedule ID and interval duration
+func (api *ZonesAPI) getCachedWeatherData(ctx context.Context, ws *pkg.WaterSchedule, logger *slog.Logger) *WeatherData {
+	if api.weatherCache == nil {
+		return getWeatherData(ctx, ws, api.storageClient, logger)
+	}
+
+	// Create cache key based on water schedule ID and interval
+	cacheKey := fmt.Sprintf("%s-%s", ws.ID.String(), ws.Interval.Duration.String())
+
+	// Check cache first
+	if cached, found := api.weatherCache.Get(cacheKey); found {
+		logger.Debug("using cached weather data", "water_schedule_id", ws.ID.String())
+		return cached
+	}
+
+	// Fetch fresh data
+	logger.Debug("fetching fresh weather data", "water_schedule_id", ws.ID.String())
+	weatherData := getWeatherData(ctx, ws, api.storageClient, logger)
+
+	// Store in cache if we got valid data
+	if weatherData != nil && (weatherData.Rain != nil || weatherData.Temperature != nil) {
+		api.weatherCache.Set(cacheKey, weatherData)
+	}
+
+	return weatherData
 }

@@ -1,6 +1,7 @@
 package netatmo
 
 import (
+	"context"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
@@ -10,7 +11,7 @@ const minTemperatureInterval = 72 * time.Hour
 
 // GetAverageHighTemperature returns the average daily high temperature between the given time and the end of
 // yesterday (since daily high can be misleading if queried mid-day)
-func (c *Client) GetAverageHighTemperature(since time.Duration) (float32, error) {
+func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
 	// Time to check since must always be at least 3 days
 	if since < minTemperatureInterval {
 		since = minTemperatureInterval
@@ -22,7 +23,7 @@ func (c *Client) GetAverageHighTemperature(since time.Duration) (float32, error)
 	// Since we are looking at daily max temp, get time all the way to very end of yesterday
 	endDate := time.Date(now.Year(), now.Month(), now.Day()-1, 23, 59, 59, 0, time.Local)
 
-	temperatureData, err := c.getMeasure("max_temp", "1day", beginDate, &endDate)
+	temperatureData, err := c.getMeasure(ctx, "max_temp", "1day", beginDate, &endDate)
 	if err != nil {
 		return 0, err
 	}

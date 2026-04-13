@@ -1032,6 +1032,8 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 		{
 			name: "NoWateringActivity",
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				for _, zone := range zones {
 					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5)).
 						Return([]pkg.WaterHistory{}, nil)
@@ -1044,6 +1046,8 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 		{
 			name: "ActiveWateringInProgress",
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone is actively watering (started 30 seconds ago, duration 60 seconds)
 				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
 					Return([]pkg.WaterHistory{
@@ -1064,6 +1068,8 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 		{
 			name: "MultipleZonesQueued",
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone has 2 queued items
 				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
 					Return([]pkg.WaterHistory{
@@ -1083,6 +1089,8 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 		{
 			name: "ActiveWateringWithQueue",
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone is actively watering with 2 queued items (events are processed in order)
 				// When Started is found first, queue=0 from that zone
 				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
@@ -1106,6 +1114,8 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 		{
 			name: "InfluxDBError",
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				for _, zone := range zones {
 					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5)).
 						Return([]pkg.WaterHistory{}, errors.New("influxdb connection error"))
@@ -1118,6 +1128,8 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 		{
 			name: "FirstZoneActiveSecondZoneQueued",
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone is actively watering
 				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
 					Return([]pkg.WaterHistory{
@@ -1180,10 +1192,10 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
 
-			// Create GardenResponse and call getActiveWatering
+			// Create GardenResponse and call fetchInfluxDBData with includeActiveWatering=true
 			resp := gr.NewGardenResponse(garden)
 			ctx := context.Background()
-			resp.getActiveWatering(ctx)
+			resp.fetchInfluxDBData(ctx, slog.Default(), true)
 
 			// Assertions
 			assert.Equal(t, tt.expectedQueue, resp.WateringQueue, "WateringQueue mismatch")
@@ -1212,17 +1224,21 @@ func TestGardenResponseNoZones(t *testing.T) {
 
 	influxdbClient := new(influxdb.MockClient)
 	// No zones, so GetWaterHistory should not be called
+	// Mock health check
+	influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(clock.Now(), nil)
 
 	gr := NewGardenAPI()
 	err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 	assert.NoError(t, err)
 
-	// Create GardenResponse and call getActiveWatering
+	// Create GardenResponse and call fetchInfluxDBData with includeActiveWatering=true
 	resp := gr.NewGardenResponse(garden)
 	ctx := context.Background()
-	resp.getActiveWatering(ctx)
+	resp.fetchInfluxDBData(ctx, slog.Default(), true)
 
 	// Assertions
 	assert.Equal(t, uint(0), resp.WateringQueue, "WateringQueue should be 0")
 	assert.Nil(t, resp.ActiveWatering, "ActiveWatering should be nil")
+
+	influxdbClient.AssertExpectations(t)
 }

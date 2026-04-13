@@ -1,13 +1,16 @@
 package server
 
 import (
+	"context"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/concurrent"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
 )
@@ -68,15 +71,8 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 
 	logger := babyapi.GetLoggerFromContext(r.Context())
 
-	ws := []*pkg.WaterSchedule{}
-	for _, id := range zr.Zone.WaterScheduleIDs {
-		result, err := zr.api.storageClient.WaterSchedules.Get(ctx, id.String())
-		if err != nil {
-			return fmt.Errorf("unable to get WaterSchedule for ZoneResponse: %w", err)
-		}
-
-		ws = append(ws, result)
-	}
+	// Fetch water schedules concurrently
+	ws := zr.fetchWaterSchedules(ctx, logger)
 
 	garden, httpErr := zr.api.getGardenFromRequest(r)
 	if httpErr != nil {
@@ -111,25 +107,44 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
+	// Prepare tasks for concurrent execution
+	var tasks []concurrent.TaskFunc
+
+	// Add water history task for HTML responses
 	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
-		history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
-		if apiErr != nil {
-			logger.Error("error getting water history", "error", apiErr)
-			zr.HistoryError = apiErr.ErrorText
-		}
-		zr.History = NewZoneWaterHistoryResponse(history, getLocationFromRequest(r))
+		tasks = append(tasks, concurrent.TaskFunc{
+			Name: "water-history",
+			Fn: func(_ context.Context) error {
+				history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
+				if apiErr != nil {
+					logger.Error("error getting water history", "error", apiErr)
+					zr.HistoryError = apiErr.ErrorText
+					return nil // Don't fail the whole request for history errors
+				}
+				zr.History = NewZoneWaterHistoryResponse(history, getLocationFromRequest(r))
 
-		// Reverse history for better presentation in UI
-		slices.Reverse(zr.History.History)
+				// Reverse history for better presentation in UI
+				slices.Reverse(zr.History.History)
 
-		progress := pkg.CalculateWaterProgress(zr.History.History)
-		if progress != (pkg.WaterHistoryProgress{}) {
-			zr.Progress = &progress
-		}
+				progress := pkg.CalculateWaterProgress(zr.History.History)
+				if progress != (pkg.WaterHistoryProgress{}) {
+					zr.Progress = &progress
+				}
+				return nil
+			},
+		})
+	}
 
-		if r.Method == http.MethodPut {
-			w.Header().Add("HX-Trigger", "newZone")
+	// Execute all tasks concurrently with timeout
+	if len(tasks) > 0 {
+		errors := concurrent.RunFuncs(ctx, influxDBTimeout, tasks)
+		for taskName, err := range errors {
+			logger.Warn("failed to execute task", "task", taskName, "error", err)
 		}
+	}
+
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
+		w.Header().Add("HX-Trigger", "newZone")
 	}
 
 	nextWaterSchedule := zr.api.worker.GetNextActiveWaterSchedule(ws)
@@ -152,10 +167,43 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
-		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.api.storageClient)
+		zr.WeatherData = zr.api.getCachedWeatherData(ctx, nextWaterSchedule, logger)
 	}
 
 	return nil
+}
+
+// fetchWaterSchedules fetches water schedules concurrently and returns them.
+// It uses a timeout to prevent slow storage operations from blocking the response.
+func (zr *ZoneResponse) fetchWaterSchedules(ctx context.Context, logger *slog.Logger) []*pkg.WaterSchedule {
+	if len(zr.Zone.WaterScheduleIDs) == 0 {
+		return nil
+	}
+
+	tasks := make([]concurrent.Task[*pkg.WaterSchedule], 0, len(zr.Zone.WaterScheduleIDs))
+	for _, id := range zr.Zone.WaterScheduleIDs {
+		scheduleID := id // capture loop variable
+		tasks = append(tasks, concurrent.Task[*pkg.WaterSchedule]{
+			Name: "water-schedule-" + scheduleID.String(),
+			Fn: func(taskCtx context.Context) (*pkg.WaterSchedule, error) {
+				return zr.api.storageClient.WaterSchedules.Get(taskCtx, scheduleID.String())
+			},
+		})
+	}
+
+	// Use a longer timeout for storage operations (they're typically fast but can vary)
+	results := concurrent.Run(ctx, 5*time.Second, tasks)
+
+	var schedules []*pkg.WaterSchedule
+	for _, result := range results {
+		if result.Error != nil {
+			logger.Error("failed to get water schedule", "schedule", result.Name, "error", result.Error)
+			continue
+		}
+		schedules = append(schedules, result.Value)
+	}
+
+	return schedules
 }
 
 type AllZonesResponse struct {

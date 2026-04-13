@@ -62,7 +62,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 			hadError = true
 			w.logger.Warn("error getting WeatherClient for TemperatureControl", "error", err)
 		} else {
-			avgHighTemp, err := weatherClient.GetAverageHighTemperature(ws.Interval.Duration)
+			avgHighTemp, err := weatherClient.GetAverageHighTemperature(context.Background(), ws.Interval.Duration)
 			if err != nil {
 				hadError = true
 				w.logger.Warn("error getting average high temperatures", "error", err)
@@ -83,7 +83,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 			hadError = true
 			w.logger.Warn("error getting WeatherClient for RainControl", "error", err)
 		} else {
-			totalRain, err := weatherClient.GetTotalRain(ws.Interval.Duration)
+			totalRain, err := weatherClient.GetTotalRain(context.Background(), ws.Interval.Duration)
 			if err != nil {
 				hadError = true
 				w.logger.Warn("error getting rain data", "error", err)

@@ -1,6 +1,7 @@
 package weather
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"maps"
@@ -33,8 +34,8 @@ func init() {
 
 // Client is an interface defining the possible methods used to interact with the weather client APIs
 type Client interface {
-	GetTotalRain(since time.Duration) (float32, error)
-	GetAverageHighTemperature(since time.Duration) (float32, error)
+	GetTotalRain(ctx context.Context, since time.Duration) (float32, error)
+	GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error)
 }
 
 // Config is used to identify and configure a client type
@@ -141,7 +142,7 @@ func newMetricsWrapperClient(client Client, config *Config) Client {
 }
 
 // GetTotalRain ...
-func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
+func (c *clientWrapper) GetTotalRain(ctx context.Context, since time.Duration) (float32, error) {
 	now := clock.Now()
 	cached := false
 	defer func() {
@@ -155,7 +156,7 @@ func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
 		return cachedData.(float32), nil
 	}
 
-	totalRain, err := c.Client.GetTotalRain(since)
+	totalRain, err := c.Client.GetTotalRain(ctx, since)
 	if err != nil {
 		return 0, err
 	}
@@ -165,7 +166,7 @@ func (c *clientWrapper) GetTotalRain(since time.Duration) (float32, error) {
 }
 
 // GetAverageHighTemperature ...
-func (c *clientWrapper) GetAverageHighTemperature(since time.Duration) (float32, error) {
+func (c *clientWrapper) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
 	now := clock.Now()
 	cached := false
 	defer func() {
@@ -179,7 +180,7 @@ func (c *clientWrapper) GetAverageHighTemperature(since time.Duration) (float32,
 		return cachedData.(float32), nil
 	}
 
-	avgTemp, err := c.Client.GetAverageHighTemperature(since)
+	avgTemp, err := c.Client.GetAverageHighTemperature(ctx, since)
 	if err != nil {
 		return 0, err
 	}

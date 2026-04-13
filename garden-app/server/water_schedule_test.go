@@ -153,7 +153,7 @@ func TestGetWaterSchedule(t *testing.T) {
 		assert.NoError(t, err)
 
 		wsr := NewWaterSchedulesAPI()
-		err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+		err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 		require.NoError(t, err)
 		wsr.worker.StartAsync()
 
@@ -189,7 +189,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			assert.NoError(t, err)
 
 			wsr := NewWaterSchedulesAPI()
-			err = wsr.setup(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+			err = wsr.setup(storageClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()), nil)
 			require.NoError(t, err)
 			wsr.worker.StartAsync()
 
@@ -268,7 +268,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 			assert.NoError(t, err)
 
 			wsr := NewWaterSchedulesAPI()
-			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 			require.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -342,7 +342,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 			assert.NoError(t, err)
 
 			wsr := NewWaterSchedulesAPI()
-			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 			require.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -394,7 +394,7 @@ func TestGetAllWaterSchedules(t *testing.T) {
 			assert.NoError(t, err)
 
 			wsr := NewWaterSchedulesAPI()
-			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 			require.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -485,7 +485,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 			assert.NoError(t, err)
 
 			wsr := NewWaterSchedulesAPI()
-			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 			require.NoError(t, err)
 
 			wsr.worker.StartAsync()
@@ -559,7 +559,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 			assert.NoError(t, err)
 
 			wsr := NewWaterSchedulesAPI()
-			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()))
+			err = wsr.setup(storageClient, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
 			require.NoError(t, err)
 
 			wsr.worker.StartAsync()

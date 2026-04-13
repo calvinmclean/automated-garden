@@ -39,7 +39,14 @@ func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request
 		)
 	}
 
-	if resp.api != nil && resp.Config != nil {
+	// Check if we should fetch weather data
+	// For HTML: skip by default for lazy loading, fetch when swap_data=true
+	// For JSON: always fetch weather data to maintain API compatibility
+	isHTML := render.GetAcceptedContentType(r) == render.ContentTypeHTML
+	swapData := r.URL.Query().Get("swap_data") == "true"
+	shouldFetchWeather := !isHTML || swapData
+
+	if resp.api != nil && resp.Config != nil && shouldFetchWeather {
 		units := getUnitsFromRequest(r)
 		duration := getDurationFromRequest(r)
 		weatherData, err := resp.api.getWeatherData(r.Context(), resp.Config, units, duration)
@@ -48,11 +55,25 @@ func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request
 		}
 	}
 
-	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
+	if isHTML && r.Method == http.MethodPut {
 		w.Header().Add("HX-Trigger", "newWeatherClient")
 	}
 
 	return nil
+}
+
+// HTML renders the weather client card for HTMX lazy loading
+func (resp *WeatherClientResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	units := getUnitsFromRequest(r)
+	duration := getDurationFromRequest(r)
+	data := map[string]any{
+		"Config":      resp.Config,
+		"WeatherData": resp.WeatherData,
+		"Units":       units,
+		"Duration":    duration,
+		"IsMetric":    units == "metric",
+	}
+	return weatherClientDataOnlyTemplate.Render(r, data)
 }
 
 type AllWeatherClientsResponse struct {
