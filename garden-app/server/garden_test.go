@@ -171,10 +171,7 @@ func TestCreateGarden(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -208,10 +205,7 @@ func TestCreateGarden_AutoCreateZones(t *testing.T) {
 	t.Cleanup(clock.Reset)
 
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "sqlite",
-		Options: map[string]any{
-			"data_source_name": ":memory:",
-		},
+		ConnectionString: ":memory:",
 	})
 	assert.NoError(t, err)
 
@@ -332,10 +326,7 @@ func TestUpdateGardenPUT(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -392,10 +383,7 @@ func TestGetAllGardens(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -462,10 +450,7 @@ func TestEndDateGarden(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -642,10 +627,7 @@ func TestGardenAction(t *testing.T) {
 			tt.setupMock(mqttClient)
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -743,10 +725,7 @@ func TestGardenActionForm(t *testing.T) {
 			tt.setupMock(mqttClient)
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -1164,10 +1143,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -1225,10 +1201,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 
 func TestGardenResponseNoZones(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "sqlite",
-		Options: map[string]any{
-			"data_source_name": ":memory:",
-		},
+		ConnectionString: ":memory:",
 	})
 	assert.NoError(t, err)
 

@@ -1,4 +1,4 @@
-package sql
+package storage
 
 import (
 	"context"
@@ -15,7 +15,7 @@ func TestGardenStorageSearchWithEndDated(t *testing.T) {
 	ctx := context.Background()
 
 	sqlClient, err := NewClient(Config{
-		DataSourceName: ":memory:",
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 
@@ -69,7 +69,7 @@ func TestZoneStorageSearchWithEndDated(t *testing.T) {
 	ctx := context.Background()
 
 	sqlClient, err := NewClient(Config{
-		DataSourceName: ":memory:",
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 
@@ -134,7 +134,7 @@ func TestWaterScheduleStorageSearchWithEndDated(t *testing.T) {
 	ctx := context.Background()
 
 	sqlClient, err := NewClient(Config{
-		DataSourceName: ":memory:",
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 
@@ -194,7 +194,7 @@ func TestSearchEndDatedWithRFC3339Format(t *testing.T) {
 	ctx := context.Background()
 
 	sqlClient, err := NewClient(Config{
-		DataSourceName: ":memory:",
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 

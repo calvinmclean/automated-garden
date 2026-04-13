@@ -1,4 +1,4 @@
-package sql
+package storage
 
 import (
 	"context"
@@ -98,7 +98,7 @@ func TestNotificationClientStorage(t *testing.T) {
 	ctx := context.Background()
 
 	sqlClient, err := NewClient(Config{
-		DataSourceName: ":memory:",
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 

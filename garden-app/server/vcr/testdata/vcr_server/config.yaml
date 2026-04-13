@@ -11,6 +11,4 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  driver: "hashmap"
-  # options:
-  #   filename: "./server/vcr/testdata/vcr_server/gardens.yaml"
+  connection_string: "./server/vcr/testdata/vcr_server/garden.db"

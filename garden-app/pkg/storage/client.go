@@ -1,31 +1,34 @@
 package storage
 
 import (
+	"context"
+	"crypto/rand"
+	"database/sql"
+	"embed"
+	"encoding/hex"
 	"fmt"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
-
 	"github.com/calvinmclean/babyapi"
-	"github.com/calvinmclean/babyapi/storage/kv"
-	"github.com/mitchellh/mapstructure"
-	"github.com/tarmac-project/hord"
-	"github.com/tarmac-project/hord/drivers/hashmap"
-	"github.com/tarmac-project/hord/drivers/redis"
+	"github.com/golang-migrate/migrate/v4"
+	"github.com/golang-migrate/migrate/v4/database/sqlite3"
+	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/rs/xid"
+
+	// sqlite driver import
+	_ "modernc.org/sqlite"
 )
 
-// Config is used to identify and configure a storage client
-type Config struct {
-	Driver  string         `mapstructure:"driver" yaml:"driver"`
-	Options map[string]any `mapstructure:"options" yaml:"options"`
-}
+//go:generate sqlc generate
 
-// AdditionalQueries are queries that are implemented outside of the base babyapi implementations
-type AdditionalQueries interface {
-	GetZonesUsingWaterSchedule(id string) ([]*pkg.ZoneAndGarden, error)
-	GetWaterSchedulesUsingWeatherClient(id string) ([]*pkg.WaterSchedule, error)
+//go:embed migrations/*.sql
+var migrationsFS embed.FS
+
+// Config holds configuration for the storage backend
+type Config struct {
+	ConnectionString string `mapstructure:"connection_string" yaml:"connection_string"`
 }
 
 type Client struct {
@@ -36,88 +39,83 @@ type Client struct {
 	NotificationClientConfigs babyapi.Storage[*notifications.Client]
 	WaterRoutines             babyapi.Storage[*pkg.WaterRoutine]
 
-	AdditionalQueries
+	*AdditionalQueries
 }
 
+// NewClient creates a new storage.Client using SQL backend.
+// It initializes the database connection using the provided config.
 func NewClient(config Config) (*Client, error) {
-	switch config.Driver {
-	case "sqlite":
-		return newSQLiteClient(config)
-	case "hashmap", "redis":
-		return newKVClient(config)
-	default:
-		return nil, fmt.Errorf("invalid driver: %q", config.Driver)
-	}
-}
-
-func newSQLiteClient(config Config) (*Client, error) {
-	var sqlConfig sql.Config
-	err := mapstructure.Decode(config.Options, &sqlConfig)
-	if err != nil {
-		return nil, fmt.Errorf("error decoding SQL config: %w", err)
+	connectionString := config.ConnectionString
+	// Use shared cache for in-memory databases to allow multiple connections to share the same database
+	// Generate a unique database name for each client so tests don't interfere with each other
+	if connectionString == ":memory:" {
+		// Generate a random identifier for the database name
+		randomBytes := make([]byte, 8)
+		if _, err := rand.Read(randomBytes); err != nil {
+			return nil, fmt.Errorf("error generating random database name: %w", err)
+		}
+		randomName := hex.EncodeToString(randomBytes)
+		connectionString = fmt.Sprintf("file:mem%s?mode=memory&cache=shared", randomName)
 	}
 
-	sqlClient, err := sql.NewClient(sqlConfig)
+	db, err := sql.Open("sqlite", connectionString)
 	if err != nil {
-		return nil, fmt.Errorf("error creating SQL client: %w", err)
+		return nil, fmt.Errorf("error opening sqlite database: %w", err)
+	}
+
+	err = runMigrations(db)
+	if err != nil {
+		return nil, fmt.Errorf("error running migrations: %w", err)
 	}
 
 	return &Client{
-		Gardens:                   sqlClient.Gardens,
-		Zones:                     sqlClient.Zones,
-		WaterSchedules:            sqlClient.WaterSchedules,
-		WeatherClientConfigs:      sqlClient.WeatherClientConfigs,
-		NotificationClientConfigs: sqlClient.NotificationClientConfigs,
-		WaterRoutines:             sqlClient.WaterRoutines,
-		AdditionalQueries:         sqlClient.AdditionalQueries,
+		Gardens:                   NewGardenStorage(db),
+		Zones:                     NewZoneStorage(db),
+		WaterSchedules:            NewWaterScheduleStorage(db),
+		WeatherClientConfigs:      NewWeatherClientStorage(db),
+		NotificationClientConfigs: NewNotificationClientStorage(db),
+		WaterRoutines:             NewWaterRoutineStorage(db),
+		AdditionalQueries:         NewAdditionalQueries(db),
 	}, nil
 }
 
-func newKVClient(config Config) (*Client, error) {
-	db, err := newHordDB(config)
+// GetWeatherClient retrieves a WeatherClient by ID and initializes it
+func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
+	clientConfig, err := c.WeatherClientConfigs.Get(context.Background(), id.String())
 	if err != nil {
-		return nil, fmt.Errorf("error creating base client: %w", err)
+		return nil, fmt.Errorf("error getting weather client config: %w", err)
 	}
 
-	gardens := babyapi.NewKVStorage[*pkg.Garden](db, "Garden")
-	zones := babyapi.NewKVStorage[*pkg.Zone](db, "Zone")
-	waterSchedules := babyapi.NewKVStorage[*pkg.WaterSchedule](db, "WaterSchedule")
+	if clientConfig == nil {
+		return nil, fmt.Errorf("weather client config not found")
+	}
 
-	return &Client{
-		Gardens:                   gardens,
-		Zones:                     zones,
-		WaterSchedules:            waterSchedules,
-		WeatherClientConfigs:      babyapi.NewKVStorage[*weather.Config](db, "WeatherClient"),
-		NotificationClientConfigs: babyapi.NewKVStorage[*notifications.Client](db, "NotificationClient"),
-		WaterRoutines:             babyapi.NewKVStorage[*pkg.WaterRoutine](db, "WaterRoutine"),
-		AdditionalQueries: &KVAdditionalQueries{
-			Gardens:        gardens,
-			Zones:          zones,
-			WaterSchedules: waterSchedules,
-		},
-	}, nil
+	return weather.NewClient(clientConfig, func(weatherClientOptions map[string]any) error {
+		clientConfig.Options = weatherClientOptions
+		return c.WeatherClientConfigs.Set(context.Background(), clientConfig)
+	})
 }
 
-// newHordDB will create a new DB connection for one of the supported hord backends:
-//   - hashmap
-//   - redis
-func newHordDB(config Config) (hord.Database, error) {
-	switch config.Driver {
-	case "hashmap":
-		var cfg hashmap.Config
-		err := mapstructure.Decode(config.Options, &cfg)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding config: %w", err)
-		}
-		return kv.NewFileDB(cfg)
-	case "redis":
-		var cfg redis.Config
-		err := mapstructure.Decode(config.Options, &cfg)
-		if err != nil {
-			return nil, fmt.Errorf("error decoding config: %w", err)
-		}
-		return kv.NewRedisDB(cfg)
-	default:
-		return nil, fmt.Errorf("invalid KV driver: %q", config.Driver)
+// runMigrations executes all pending database migrations
+func runMigrations(db *sql.DB) error {
+	driver, err := sqlite3.WithInstance(db, &sqlite3.Config{})
+	if err != nil {
+		return fmt.Errorf("error creating migration driver: %w", err)
 	}
+
+	migrations, err := iofs.New(migrationsFS, "migrations")
+	if err != nil {
+		return fmt.Errorf("error creating migration source: %w", err)
+	}
+
+	m, err := migrate.NewWithInstance("iofs", migrations, "sqlite3", driver)
+	if err != nil {
+		return fmt.Errorf("error creating migration instance: %w", err)
+	}
+
+	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+		return fmt.Errorf("error running migrations: %w", err)
+	}
+
+	return nil
 }

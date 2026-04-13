@@ -148,10 +148,7 @@ func TestGetWaterSchedule(t *testing.T) {
 
 	t.Run("ErrNotFound", func(t *testing.T) {
 		storageClient, err := storage.NewClient(storage.Config{
-			Driver: "sqlite",
-			Options: map[string]any{
-				"data_source_name": ":memory:",
-			},
+			ConnectionString: ":memory:",
 		})
 		assert.NoError(t, err)
 
@@ -181,10 +178,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			influxdbClient.On("Close")
 
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -263,10 +257,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -336,10 +327,7 @@ func TestEndDateWaterSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -397,10 +385,7 @@ func TestGetAllWaterSchedules(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 			err = storageClient.WaterSchedules.Set(context.Background(), waterSchedule)
@@ -495,10 +480,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 
@@ -568,10 +550,7 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			storageClient, err := storage.NewClient(storage.Config{
-				Driver: "sqlite",
-				Options: map[string]any{
-					"data_source_name": ":memory:",
-				},
+				ConnectionString: ":memory:",
 			})
 			assert.NoError(t, err)
 

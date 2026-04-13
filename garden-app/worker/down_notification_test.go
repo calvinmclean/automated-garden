@@ -56,10 +56,7 @@ func TestCheckHealthMessage(t *testing.T) {
 
 func TestHandleHealthMessage(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "sqlite",
-		Options: map[string]any{
-			"data_source_name": ":memory:",
-		},
+		ConnectionString: ":memory:",
 	})
 	require.NoError(t, err)
 

@@ -1,4 +1,4 @@
-package sql
+package storage
 
 import (
 	"context"
@@ -9,7 +9,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/sql/db"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/db"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 )

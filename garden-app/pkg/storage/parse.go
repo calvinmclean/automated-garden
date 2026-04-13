@@ -1,4 +1,4 @@
-package sql
+package storage
 
 import (
 	"github.com/calvinmclean/babyapi"

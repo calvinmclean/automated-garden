@@ -28,10 +28,7 @@ func TestWaterRoutine(t *testing.T) {
 	defer func() { worker.CreateNewID = xid.New }()
 
 	storageClient, err := storage.NewClient(storage.Config{
-		Driver: "sqlite",
-		Options: map[string]any{
-			"data_source_name": ":memory:",
-		},
+		ConnectionString: ":memory:",
 	})
 	assert.NoError(t, err)
 

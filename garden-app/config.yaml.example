@@ -10,12 +10,4 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  driver: "hashmap"
-  options:
-    filename: "gardens.yaml"
-# or use redis storage:
-# storage:
-#   type: "KV"
-#   options:
-#     driver: "redis"
-#     Server: "localhost:6379"
+  connection_string: "garden.db"
