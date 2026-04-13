@@ -355,7 +355,7 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 		item := agr.Items[i] // capture loop variable
 		tasks = append(tasks, concurrent.TaskFunc{
 			Name: "garden-" + item.GetID(),
-			Fn: func(taskCtx context.Context) error {
+			Fn: func(_ context.Context) error {
 				// Use the original request context for rendering
 				return item.Render(w, r)
 			},

@@ -114,7 +114,7 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
 		tasks = append(tasks, concurrent.TaskFunc{
 			Name: "water-history",
-			Fn: func(taskCtx context.Context) error {
+			Fn: func(_ context.Context) error {
 				history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
 				if apiErr != nil {
 					logger.Error("error getting water history", "error", apiErr)
