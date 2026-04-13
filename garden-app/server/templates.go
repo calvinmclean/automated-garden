@@ -23,6 +23,7 @@ const (
 	gardensPageTemplate                  html.Template = "GardensPage"
 	gardensTemplate                      html.Template = "Gardens"
 	gardenCardTemplate                   html.Template = "GardenCard"
+	gardenDataSectionTemplate            html.Template = "gardenDataSection"
 	gardenModalTemplate                  html.Template = "GardenModal"
 	zonesPageTemplate                    html.Template = "ZonesPage"
 	zonesTemplate                        html.Template = "Zones"

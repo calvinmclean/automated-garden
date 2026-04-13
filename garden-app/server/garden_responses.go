@@ -373,6 +373,10 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 }
 
 func (g *GardenResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	// For /card endpoint with include_data, return just the data section (health, zones, watering)
+	if r.URL.Query().Get("include_data") == "true" {
+		return gardenDataSectionTemplate.Render(r, g)
+	}
 	return gardenCardTemplate.Render(r, g)
 }
 
