@@ -30,15 +30,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 
 	api.API = babyapi.NewAPI("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 
-	api.SetOnCreateOrUpdate(func(_ http.ResponseWriter, _ *http.Request, wc *weather.Config) *babyapi.ErrResponse {
-		// make sure a valid WeatherClient can still be created
-		_, err := weather.NewClient(wc, func(map[string]any) error { return nil })
-		if err != nil {
-			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
-		}
-
-		return nil
-	})
+	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
 	api.SetResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc, api: api}
@@ -120,6 +112,39 @@ func (api *WeatherClientsAPI) setup(storageClient *storage.Client) {
 	api.storageClient = storageClient
 
 	api.SetStorage(api.storageClient.WeatherClientConfigs)
+}
+
+func (api *WeatherClientsAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, wc *weather.Config) *babyapi.ErrResponse {
+	logger := babyapi.GetLoggerFromContext(r.Context())
+
+	// If this is an update (PUT), preserve the authentication field
+	if r.Method == http.MethodPut {
+		existing, httpErr := api.GetRequestedResource(r)
+		if httpErr != nil {
+			logger.Error("error getting existing weather client", "error", httpErr.Error())
+			return httpErr
+		}
+
+		_, newHasAuth := wc.Options["authentication"]
+		auth, existingHasAuth := existing.Options["authentication"]
+
+		// Preserve authentication if it exists in the current config and not in new
+		if existingHasAuth && !newHasAuth {
+			if wc.Options == nil {
+				wc.Options = map[string]any{}
+			}
+			wc.Options["authentication"] = auth
+			logger.Info("preserved authentication for WeatherClient", "id", wc.GetID())
+		}
+	}
+
+	// make sure a valid WeatherClient can still be created
+	_, err := weather.NewClient(wc, func(map[string]any) error { return nil })
+	if err != nil {
+		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
+	}
+
+	return nil
 }
 
 func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.Request) render.Renderer {
