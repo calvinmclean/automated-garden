@@ -152,12 +152,12 @@ func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient 
 		return WeatherData{}, fmt.Errorf("error getting weather client: %w", err)
 	}
 
-	rd, err := wc.GetTotalRain(duration)
+	rd, err := wc.GetTotalRain(ctx, duration)
 	if err != nil {
 		return WeatherData{}, fmt.Errorf("unable to get total rain in the last %v: %w", duration, err)
 	}
 
-	td, err := wc.GetAverageHighTemperature(duration)
+	td, err := wc.GetAverageHighTemperature(ctx, duration)
 	if err != nil {
 		return WeatherData{}, fmt.Errorf("unable to get average high temperature in the last %v: %w", duration, err)
 	}

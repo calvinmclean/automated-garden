@@ -1,6 +1,7 @@
 package netatmo
 
 import (
+	"context"
 	"net/http"
 	"testing"
 	"time"
@@ -75,7 +76,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 			"testdata/fixtures/GetTotalRain_NoRefresh",
 			clock.Now().Add(1 * time.Minute),
 			func(t *testing.T, client *Client) {
-				rain, err := client.GetTotalRain(72 * time.Hour)
+				rain, err := client.GetTotalRain(context.Background(), 72*time.Hour)
 				require.NoError(t, err)
 				require.Equal(t, float32(0), rain)
 			},
@@ -85,7 +86,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 			"testdata/fixtures/GetTotalRain_Refresh",
 			clock.Now().Add(-1 * time.Minute),
 			func(t *testing.T, client *Client) {
-				rain, err := client.GetTotalRain(72 * time.Hour)
+				rain, err := client.GetTotalRain(context.Background(), 72*time.Hour)
 				require.NoError(t, err)
 				require.Equal(t, float32(0), rain)
 				require.Equal(t, "NEW_REFRESH_TOKEN", client.Config.Authentication.RefreshToken)
@@ -96,7 +97,7 @@ func TestWeatherRequestMethods(t *testing.T) {
 			"testdata/fixtures/GetAverageHighTemperature_NoRefresh",
 			clock.Now().Add(1 * time.Minute),
 			func(t *testing.T, client *Client) {
-				temp, err := client.GetAverageHighTemperature(72 * time.Hour)
+				temp, err := client.GetAverageHighTemperature(context.Background(), 72*time.Hour)
 				require.NoError(t, err)
 				require.Equal(t, float32(48.066666), temp)
 			},

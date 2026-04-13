@@ -1,6 +1,7 @@
 package weather
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -82,20 +83,20 @@ func TestCachedWeatherClient(t *testing.T) {
 	assert.NotNil(t, client)
 
 	t.Run("GetTotalRain", func(t *testing.T) {
-		rain, err := client.GetTotalRain(24 * time.Hour)
+		rain, err := client.GetTotalRain(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
 
-		rainFromCache, err := client.GetTotalRain(24 * time.Hour)
+		rainFromCache, err := client.GetTotalRain(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
 
 		assert.Equal(t, rain, rainFromCache)
 	})
 
 	t.Run("GetAverageHighTemperature", func(t *testing.T) {
-		temp, err := client.GetAverageHighTemperature(24 * time.Hour)
+		temp, err := client.GetAverageHighTemperature(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
 
-		tempFromCache, err := client.GetAverageHighTemperature(24 * time.Hour)
+		tempFromCache, err := client.GetAverageHighTemperature(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
 
 		assert.Equal(t, temp, tempFromCache)

@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"context"
 	"errors"
 	"time"
 
@@ -43,7 +44,7 @@ func NewClient(options map[string]any) (*Client, error) {
 }
 
 // GetTotalRain calculates and returns the configured amount of rain for the given period
-func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
+func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (float32, error) {
 	if c.Error != "" {
 		return 0, errors.New(c.Error)
 	}
@@ -53,7 +54,7 @@ func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
 }
 
 // GetAverageHighTemperature returns the configured value
-func (c *Client) GetAverageHighTemperature(_ time.Duration) (float32, error) {
+func (c *Client) GetAverageHighTemperature(_ context.Context, _ time.Duration) (float32, error) {
 	if c.Error != "" {
 		return 0, errors.New(c.Error)
 	}

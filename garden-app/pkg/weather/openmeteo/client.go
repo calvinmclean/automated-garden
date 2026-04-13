@@ -1,6 +1,7 @@
 package openmeteo
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -117,7 +118,7 @@ func (c *Client) fetchData(pastDays int, dailyVars ...string) (*openMeteoRespons
 }
 
 // GetTotalRain returns the sum of all precipitation in millimeters in the given period
-func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
+func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (float32, error) {
 	// Time to check from must always be at least 24 hours to get valid data
 	if since < minRainInterval {
 		since = minRainInterval
@@ -146,7 +147,7 @@ func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
 
 // GetAverageHighTemperature returns the average daily high temperature between the given time and the end of
 // yesterday (since daily high can be misleading if queried mid-day)
-func (c *Client) GetAverageHighTemperature(since time.Duration) (float32, error) {
+func (c *Client) GetAverageHighTemperature(_ context.Context, since time.Duration) (float32, error) {
 	// Time to check since must always be at least 3 days
 	if since < minTemperatureInterval {
 		since = minTemperatureInterval

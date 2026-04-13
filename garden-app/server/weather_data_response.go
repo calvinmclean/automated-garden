@@ -90,26 +90,26 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 	return weatherData
 }
 
-func getRainData(_ context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
+func getRainData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
 	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Rain.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting WeatherClient for RainControl: %w", err)
 	}
 
-	totalRain, err := weatherClient.GetTotalRain(ws.Interval.Duration)
+	totalRain, err := weatherClient.GetTotalRain(ctx, ws.Interval.Duration)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get rain data from weather client: %w", err)
 	}
 	return &totalRain, nil
 }
 
-func getTemperatureData(_ context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
+func getTemperatureData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
 	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting WeatherClient for TemperatureControl: %w", err)
 	}
 
-	avgTemperature, err := weatherClient.GetAverageHighTemperature(ws.Interval.Duration)
+	avgTemperature, err := weatherClient.GetAverageHighTemperature(ctx, ws.Interval.Duration)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
 	}

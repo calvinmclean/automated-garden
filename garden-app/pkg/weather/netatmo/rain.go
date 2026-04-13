@@ -1,6 +1,7 @@
 package netatmo
 
 import (
+	"context"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
@@ -9,7 +10,7 @@ import (
 const minRainInterval = 24 * time.Hour
 
 // GetTotalRain returns the sum of all rainfall in millimeters in the given period
-func (c *Client) GetTotalRain(since time.Duration) (float32, error) {
+func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (float32, error) {
 	// Time to check from must always be at least 24 hours to get valid data
 	if since < minRainInterval {
 		since = minRainInterval

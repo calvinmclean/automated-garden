@@ -1,6 +1,7 @@
 package fake
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -83,10 +84,10 @@ func TestGetTotalRain(t *testing.T) {
 			})
 			assert.NoError(t, err)
 
-			totalRain, err := client.GetTotalRain(time.Duration(tt.inputHours) * time.Hour)
+			totalRain, err := client.GetTotalRain(context.Background(), time.Duration(tt.inputHours)*time.Hour)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedResult, totalRain)
-			avgHigh, err := client.GetAverageHighTemperature(time.Second)
+			avgHigh, err := client.GetAverageHighTemperature(context.Background(), time.Second)
 			assert.NoError(t, err)
 			assert.Equal(t, float32(10), avgHigh)
 		})
