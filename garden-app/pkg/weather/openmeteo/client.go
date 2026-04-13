@@ -68,7 +68,7 @@ func NewClientWithHTTPClient(options map[string]any, httpClient *http.Client) (*
 }
 
 // fetchData makes the API request to OpenMeteo and returns the parsed response
-func (c *Client) fetchData(pastDays int, dailyVars ...string) (*openMeteoResponse, error) {
+func (c *Client) fetchData(ctx context.Context, pastDays int, dailyVars ...string) (*openMeteoResponse, error) {
 	u, err := url.Parse(c.baseURL + "/v1/forecast")
 	if err != nil {
 		return nil, err
@@ -87,7 +87,7 @@ func (c *Client) fetchData(pastDays int, dailyVars ...string) (*openMeteoRespons
 
 	u.RawQuery = q.Encode()
 
-	req, err := http.NewRequest(http.MethodGet, u.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, err
 	}
@@ -118,7 +118,7 @@ func (c *Client) fetchData(pastDays int, dailyVars ...string) (*openMeteoRespons
 }
 
 // GetTotalRain returns the sum of all precipitation in millimeters in the given period
-func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (float32, error) {
+func (c *Client) GetTotalRain(ctx context.Context, since time.Duration) (float32, error) {
 	// Time to check from must always be at least 24 hours to get valid data
 	if since < minRainInterval {
 		since = minRainInterval
@@ -127,7 +127,7 @@ func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (float32, 
 	// Calculate past days needed (round up)
 	pastDays := int(since.Hours()/24) + 1
 
-	data, err := c.fetchData(pastDays, "precipitation_sum")
+	data, err := c.fetchData(ctx, pastDays, "precipitation_sum")
 	if err != nil {
 		return 0, fmt.Errorf("error fetching precipitation data: %w", err)
 	}
@@ -147,7 +147,7 @@ func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (float32, 
 
 // GetAverageHighTemperature returns the average daily high temperature between the given time and the end of
 // yesterday (since daily high can be misleading if queried mid-day)
-func (c *Client) GetAverageHighTemperature(_ context.Context, since time.Duration) (float32, error) {
+func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
 	// Time to check since must always be at least 3 days
 	if since < minTemperatureInterval {
 		since = minTemperatureInterval
@@ -156,7 +156,7 @@ func (c *Client) GetAverageHighTemperature(_ context.Context, since time.Duratio
 	// Calculate past days needed (round up)
 	pastDays := int(since.Hours()/24) + 1
 
-	data, err := c.fetchData(pastDays, "temperature_2m_max")
+	data, err := c.fetchData(ctx, pastDays, "temperature_2m_max")
 	if err != nil {
 		return 0, fmt.Errorf("error fetching temperature data: %w", err)
 	}

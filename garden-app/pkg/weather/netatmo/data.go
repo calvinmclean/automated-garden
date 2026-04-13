@@ -1,6 +1,7 @@
 package netatmo
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -54,7 +55,7 @@ func (d *weatherData) Average() float32 {
 	return d.Total() / float32(len(*d))
 }
 
-func (c *Client) getMeasure(dataType, scale string, beginDate time.Time, endDate *time.Time) (*weatherData, error) {
+func (c *Client) getMeasure(ctx context.Context, dataType, scale string, beginDate time.Time, endDate *time.Time) (*weatherData, error) {
 	err := c.refreshToken()
 	if err != nil {
 		return nil, err
@@ -81,7 +82,7 @@ func (c *Client) getMeasure(dataType, scale string, beginDate time.Time, endDate
 	}
 	measureURL.RawQuery = values.Encode()
 
-	req, err := http.NewRequest(http.MethodGet, measureURL.String(), nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, measureURL.String(), nil)
 	if err != nil {
 		return nil, err
 	}

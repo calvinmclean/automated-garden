@@ -64,78 +64,6 @@ func (api *GardensAPI) NewGardenResponse(garden *pkg.Garden, links ...Link) *Gar
 	}
 }
 
-// zoneWateringResult holds the result of checking a zone's watering status
-type zoneWateringResult struct {
-	zone     *pkg.Zone
-	progress pkg.WaterHistoryProgress
-}
-
-// getActiveWatering calculates the active watering status for this garden
-// It fetches water history for all zones concurrently with timeouts.
-func (g *GardenResponse) getActiveWatering(ctx context.Context, logger *slog.Logger) {
-	zones, err := g.api.getAllZones(ctx, g.ID.String(), false)
-	if err != nil {
-		return
-	}
-
-	// Create tasks for concurrent zone processing
-	tasks := make([]concurrent.Task[zoneWateringResult], 0, len(zones))
-	for _, zone := range zones {
-		z := zone // capture loop variable
-		tasks = append(tasks, concurrent.Task[zoneWateringResult]{
-			Name: "zone-" + z.GetID(),
-			Fn: func(taskCtx context.Context) (zoneWateringResult, error) {
-				history, err := g.api.influxdbClient.GetWaterHistory(taskCtx, z.GetID(), g.TopicPrefix, 72*time.Hour, 5)
-				if err != nil {
-					return zoneWateringResult{}, err
-				}
-
-				// Reverse history to match chronological order expected by CalculateWaterProgress
-				slices.Reverse(history)
-				progress := pkg.CalculateWaterProgress(history)
-
-				return zoneWateringResult{zone: z, progress: progress}, nil
-			},
-		})
-	}
-
-	// Execute all zone checks concurrently with timeout
-	results := concurrent.Run(ctx, influxDBTimeout, tasks)
-
-	var activeZone *pkg.Zone
-	var activeProgress pkg.WaterHistoryProgress
-	var totalQueue uint
-
-	for _, result := range results {
-		if result.Error != nil {
-			logger.Warn("error getting water history for zone", "zone", result.Name, "error", result.Error)
-			continue
-		}
-
-		progress := result.Value.progress
-
-		// Check if this zone is currently watering (progress between 0 and 1)
-		if progress.Progress > 0 && progress.Progress < 1.0 && activeZone == nil {
-			activeZone = result.Value.zone
-			activeProgress = progress
-		}
-
-		// Accumulate queue count from all zones
-		totalQueue += progress.Queue
-	}
-
-	// Always set total queue count
-	g.WateringQueue = totalQueue
-
-	// Set ActiveWatering if we found an actively watering zone
-	if activeZone != nil {
-		g.ActiveWatering = &ActiveWatering{
-			ZoneName: activeZone.Name,
-			Progress: activeProgress,
-		}
-	}
-}
-
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
 func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
@@ -262,7 +190,6 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 			Fn: func(taskCtx context.Context) error {
 				t, h, err := g.api.influxdbClient.GetTemperatureAndHumidity(taskCtx, g.Garden.TopicPrefix)
 				if err != nil {
-					logger.Error("error getting temperature and humidity data", "error", err)
 					return err
 				}
 				g.TemperatureHumidityData = &TemperatureHumidityData{
