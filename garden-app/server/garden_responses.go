@@ -145,14 +145,7 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 			State: nextLightState,
 		}
 
-		var loc *time.Location
-		tzHeader := r.Header.Get("X-TZ-Offset")
-		if tzHeader != "" {
-			loc, err = pkg.TimeLocationFromOffset(tzHeader)
-			if err != nil {
-				return fmt.Errorf("error parsing timezone from header: %w", err)
-			}
-		}
+		loc := getLocationFromRequest(r)
 		if loc == nil {
 			loc = g.LightSchedule.StartTime.Time.Location()
 		}
