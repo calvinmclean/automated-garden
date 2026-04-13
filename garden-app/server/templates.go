@@ -222,10 +222,10 @@ func templateFuncs(r *http.Request) map[string]any {
 			return excludeWeatherData(r)
 		},
 		"IncludeData": func() bool {
-			return r.URL.Query().Get("include_data") == "true"
+			return r.URL.Query().Get("swap_data") == "true"
 		},
 		"IncludeWeatherData": func() bool {
-			return r.URL.Query().Get("include_weather_data") == "true"
+			return r.URL.Query().Get("swap_data") == "true"
 		},
 		"NotRefresh": func() bool {
 			return r.URL.Query().Get("refresh") != "true"

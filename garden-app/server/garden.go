@@ -82,11 +82,6 @@ func NewGardenAPI() *GardensAPI {
 		}
 	}))
 
-	// Endpoint to return just a single garden card for lazy loading
-	api.AddCustomIDRoute(http.MethodGet, "/card", api.GetRequestedResourceAndDo(func(_ http.ResponseWriter, r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
-		return api.NewGardenResponse(g), nil
-	}))
-
 	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
 		logger := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)

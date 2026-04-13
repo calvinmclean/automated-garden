@@ -133,13 +133,13 @@
 {{ end }}
 
 {{ define "gardenLazyLoadTrigger" }}
-<div hx-get="/gardens/{{ .ID }}/card?include_data=true" hx-headers='{"Accept": "text/html"}'
+<div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
     hx-trigger="load" hx-swap="innerHTML" hx-target="#garden-data-{{ .ID }}">
 </div>
 {{ end }}
 
 {{ define "gardenTemperatureLazyLoadTrigger" }}
-<div hx-get="/gardens/{{ .ID }}/card?include_data=true" hx-headers='{"Accept": "text/html"}'
+<div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
     hx-trigger="load" hx-swap="innerHTML" hx-target="#garden-temp-{{ .ID }}">
 </div>
 {{ end }}

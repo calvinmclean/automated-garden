@@ -102,7 +102,7 @@
 {{ end }}
 
 {{ define "WeatherClientLazyLoadTrigger" }}
-<div hx-get="/weather_clients/{{ .Config.ID }}?include_weather_data=true"
+<div hx-get="/weather_clients/{{ .Config.ID }}?swap_data=true"
      hx-headers='{"Accept": "text/html"}'
      hx-vals="js:{units: new URLSearchParams(window.location.search).get('units')}"
      hx-trigger="load" hx-swap="innerHTML" hx-target="#weather-data-{{ .Config.ID }}">

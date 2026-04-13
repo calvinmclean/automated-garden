@@ -40,11 +40,11 @@ func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request
 	}
 
 	// Check if we should fetch weather data
-	// For HTML: skip by default for lazy loading, fetch when include_weather_data=true
+	// For HTML: skip by default for lazy loading, fetch when swap_data=true
 	// For JSON: always fetch weather data to maintain API compatibility
 	isHTML := render.GetAcceptedContentType(r) == render.ContentTypeHTML
-	includeWeatherData := r.URL.Query().Get("include_weather_data") == "true"
-	shouldFetchWeather := !isHTML || includeWeatherData
+	swapData := r.URL.Query().Get("swap_data") == "true"
+	shouldFetchWeather := !isHTML || swapData
 
 	if resp.api != nil && resp.Config != nil && shouldFetchWeather {
 		units := getUnitsFromRequest(r)
