@@ -1,36 +1,169 @@
 {{ define "WeatherClientNetatmoConfig" }}
-<div class="uk-margin">
-    <label class="uk-form-label" for="station-id">Station ID</label>
-    <input id="station-id" class="uk-input" value="{{ .Options.station_id }}" placeholder="Station ID" name="Options.station_id">
-</div>
-<div class="uk-margin">
-    <label class="uk-form-label" for="station-name">Station Name</label>
-    <input id="station-name" class="uk-input" value="{{ .Options.station_name }}" placeholder="Station Name" name="Options.station_name">
-</div>
-<div class="uk-margin">
-    <label class="uk-form-label" for="rain-module-id">Rain Module ID</label>
-    <input id="rain-module-id" class="uk-input" value="{{ .Options.rain_module_id }}" placeholder="Rain Module ID" name="Options.rain_module_id">
-</div>
-<div class="uk-margin">
-    <label class="uk-form-label" for="rain-module-name">Rain Module Name</label>
-    <input id="rain-module-name" class="uk-input" value="{{ .Options.rain_module_name }}" placeholder="Rain Module Name" name="Options.rain_module_name">
-</div>
-<div class="uk-margin">
-    <label class="uk-form-label" for="outdoor-module-id">Outdoor Module ID</label>
-    <input id="outdoor-module-id" class="uk-input" value="{{ .Options.outdoor_module_id }}" placeholder="Outdoor Module ID" name="Options.outdoor_module_id">
-</div>
-<div class="uk-margin">
-    <label class="uk-form-label" for="outdoor-module-name">Outdoor Module Name</label>
-    <input id="outdoor-module-name" class="uk-input" value="{{ .Options.outdoor_module_name }}" placeholder="Outdoor Module Name" name="Options.outdoor_module_name">
-</div>
+<!-- Client ID and Secret - Hidden when authenticated -->
+{{ if not .Options.authentication }}
 <div class="uk-margin">
     <label class="uk-form-label" for="client-id">Client ID</label>
-    <input id="client-id" class="uk-input" value="{{ .Options.client_id }}" placeholder="Client ID" name="Options.client_id">
+    {{ if .Options.client_id }}
+    <input id="client-id" class="uk-input" value="{{ .Options.client_id }}" disabled>
+    <input type="hidden" name="Options.client_id" value="{{ .Options.client_id }}">
+    {{ else }}
+    <input id="client-id" class="uk-input" value="{{ .Options.client_id }}" placeholder="Client ID" name="Options.client_id" required>
+    {{ end }}
 </div>
+
 <div class="uk-margin">
     <label class="uk-form-label" for="client-secret">Client Secret</label>
-    <input id="client-secret" class="uk-input" type="password" value="{{ .Options.client_secret }}" placeholder="Client Secret" name="Options.client_secret">
+    {{ if .Options.client_secret }}
+    <input id="client-secret" class="uk-input" value="••••••••••••••••" disabled>
+    <input type="hidden" name="Options.client_secret" value="{{ .Options.client_secret }}">
+    {{ else }}
+    <input id="client-secret" class="uk-input" type="password" placeholder="Client Secret" name="Options.client_secret" required>
+    {{ end }}
 </div>
+{{ else }}
+<!-- Hidden fields to preserve values when authenticated -->
+<input type="hidden" name="Options.client_id" value="{{ .Options.client_id }}">
+<input type="hidden" name="Options.client_secret" value="{{ .Options.client_secret }}">
+{{ end }}
+
+<!-- OAuth Connection Section -->
+{{ if .Options.authentication }}
+<div class="uk-alert uk-alert-success uk-flex uk-flex-between uk-flex-middle" style="margin-top: 20px;">
+    <span><span uk-icon="icon: check"></span> Connected to Netatmo</span>
+    <button type="button" class="uk-button uk-button-small uk-button-secondary"
+        hx-get="/weather_clients/{{ .ID }}/netatmo/oauth/start"
+        hx-headers='{"Accept": "text/html"}'
+        hx-swap="none">
+        Reconnect
+    </button>
+</div>
+
+<hr style="margin: 20px 0;">
+
+<!-- Station Selection (only shown after OAuth) -->
+<div class="uk-margin">
+    <label class="uk-form-label" for="station-select">Weather Station</label>
+    <select id="station-select" class="uk-select" name="Options.station_id"
+        hx-get="/weather_clients/{{ .ID }}/netatmo/modules"
+        hx-target="#module-selects"
+        hx-swap="innerHTML"
+        hx-trigger="change"
+        hx-headers='{"Accept": "text/html"}'
+        onchange="document.getElementById('station-name').value = this.options[this.selectedIndex].getAttribute('data-name') || '';">
+        {{ if .Options.station_id }}
+        <option value="{{ .Options.station_id }}" selected>{{ .Options.station_name }}</option>
+        {{ else }}
+        <option value="" disabled selected>Loading stations...</option>
+        {{ end }}
+    </select>
+    <input type="hidden" name="Options.station_name" id="station-name" value="{{ .Options.station_name }}">
+</div>
+
+<div id="module-selects">
+{{ if .Options.station_id }}
+    <div class="uk-margin">
+        <label class="uk-form-label" for="rain-module-select">Rain Module *</label>
+        <select id="rain-module-select" class="uk-select" name="Options.rain_module_id" required
+            onchange="document.getElementById('rain-module-name').value = this.options[this.selectedIndex].getAttribute('data-name') || '';">
+            {{ if .Options.rain_module_id }}
+            <option value="{{ .Options.rain_module_id }}" selected>{{ .Options.rain_module_name }}</option>
+            {{ else }}
+            <option value="" disabled selected>Loading modules...</option>
+            {{ end }}
+        </select>
+        <input type="hidden" name="Options.rain_module_name" id="rain-module-name" value="{{ .Options.rain_module_name }}">
+    </div>
+    <div class="uk-margin">
+        <label class="uk-form-label" for="outdoor-module-select">Outdoor Module *</label>
+        <select id="outdoor-module-select" class="uk-select" name="Options.outdoor_module_id" required
+            onchange="document.getElementById('outdoor-module-name').value = this.options[this.selectedIndex].getAttribute('data-name') || '';">
+            {{ if .Options.outdoor_module_id }}
+            <option value="{{ .Options.outdoor_module_id }}" selected>{{ .Options.outdoor_module_name }}</option>
+            {{ else }}
+            <option value="" disabled selected>Loading modules...</option>
+            {{ end }}
+        </select>
+        <input type="hidden" name="Options.outdoor_module_name" id="outdoor-module-name" value="{{ .Options.outdoor_module_name }}">
+    </div>
+    <p class="uk-text-small uk-text-muted">* Required fields</p>
+{{ end }}
+</div>
+
+<!-- Auto-load stations on modal open when authenticated but no station selected -->
+{{ if and .Options.authentication (not .Options.station_id) }}
+<script>
+    (function() {
+        // Fetch stations after a short delay to ensure modal is fully loaded
+        setTimeout(function() {
+            const stationSelect = document.getElementById('station-select');
+            if (stationSelect && stationSelect.options.length <= 1) {
+                fetch('/weather_clients/{{ .ID }}/netatmo/stations', {
+                    headers: { 'Accept': 'text/html' }
+                })
+                .then(response => response.text())
+                .then(html => {
+                    stationSelect.innerHTML = html;
+                })
+                .catch(err => {
+                    console.error('Failed to load stations:', err);
+                    stationSelect.innerHTML = '<option value="" disabled selected>Error loading stations</option>';
+                });
+            }
+        }, 100);
+    })();
+</script>
+{{ end }}
+
+{{ else }}
+<!-- Not connected yet - show Save & Connect button -->
+<div class="uk-margin" style="margin-top: 20px;">
+    <button type="button" class="uk-button uk-button-primary uk-width-1-1" 
+        id="save-and-connect-btn"
+        onclick="saveAndConnectToNetatmo()">
+        <span uk-icon="icon: sign-in"></span> Save & Connect to Netatmo
+    </button>
+    <p class="uk-text-small uk-text-muted uk-text-center">
+        Saves your configuration and authenticates with Netatmo
+    </p>
+</div>
+<script>
+    function saveAndConnectToNetatmo() {
+        // Get the form data
+        const form = document.querySelector('#modal form');
+        const formData = new FormData(form);
+        const wcID = document.getElementById('modal').dataset.weatherClientId;
+        
+        // First, save the form data
+        fetch('/weather_clients/' + wcID, {
+            method: 'PUT',
+            headers: {
+                'Accept': 'text/html',
+                'Content-Type': 'application/x-www-form-urlencoded'
+            },
+            body: new URLSearchParams(formData)
+        })
+        .then(response => {
+            if (response.ok) {
+                // Save successful, now trigger OAuth
+                // Use HTMX to trigger the OAuth start endpoint (swap: 'none' to prevent page replacement)
+                htmx.ajax('GET', '/weather_clients/' + wcID + '/netatmo/oauth/start', {
+                    headers: {'Accept': 'text/html'},
+                    swap: 'none'
+                });
+            } else {
+                UIkit.notification('Failed to save. Please check your input.', { status: 'danger' });
+            }
+        })
+        .catch(err => {
+            console.error('Error saving:', err);
+            UIkit.notification('Failed to save. Please try again.', { status: 'danger' });
+        });
+    }
+</script>
+{{ end }}
+
+<!-- OAuth Error Display -->
+<div id="oauth-error" class="uk-alert uk-alert-danger" style="display:none; margin-top: 10px;"></div>
 {{ end }}
 
 {{ define "WeatherClientFakeConfig" }}

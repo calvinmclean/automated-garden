@@ -362,6 +362,40 @@ func TestUpdateWeatherClientPUT(t *testing.T) {
 	}
 }
 
+func TestOAuthStart(t *testing.T) {
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+
+	// Create a netatmo weather client with client_id and client_secret
+	wc := createExampleWeatherClientConfig()
+	wc.Type = "netatmo"
+	wc.Options["client_id"] = "test_client_id"
+	wc.Options["client_secret"] = "test_client_secret"
+	wc.Options["rain_module_id"] = "test_rain_module"
+	wc.Options["outdoor_module_id"] = "test_outdoor_module"
+
+	err = storageClient.WeatherClientConfigs.Set(context.Background(), wc)
+	assert.NoError(t, err)
+
+	wcr := NewWeatherClientsAPI()
+	wcr.setup(storageClient)
+
+	// Test with HTML Accept header
+	r := httptest.NewRequest(http.MethodGet, "/weather_clients/"+wc.ID.String()+"/netatmo/oauth/start", nil)
+	r.Header.Add("Accept", "text/html")
+
+	w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
+
+	// Should return 200 OK
+	assert.Equal(t, http.StatusOK, w.Code)
+	// Should have HX-Trigger header with openOAuthPopup event
+	hxTrigger := w.Header().Get("HX-Trigger")
+	assert.Contains(t, hxTrigger, "openOAuthPopup")
+	assert.Contains(t, hxTrigger, "api.netatmo.com/oauth2/authorize")
+}
+
 func TestTestWeatherClient(t *testing.T) {
 	tests := []struct {
 		name           string

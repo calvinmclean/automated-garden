@@ -76,7 +76,8 @@ func NewClient(options map[string]any, storageCallback func(map[string]any) erro
 		return nil, err
 	}
 
-	if client.StationID == "" || client.RainModuleID == "" || client.OutdoorModuleID == "" {
+	// Only fetch device IDs if authentication is available and IDs are missing
+	if (client.StationID == "" || client.RainModuleID == "" || client.OutdoorModuleID == "") && client.Authentication != nil {
 		err = client.setDeviceIDs()
 		if err != nil {
 			return nil, err

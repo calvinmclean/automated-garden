@@ -47,6 +47,11 @@ const (
 	waterRoutinesTemplate                html.Template = "WaterRoutines"
 	waterRoutineModalTemplate            html.Template = "WaterRoutineModal"
 
+	// OAuth callback template
+	oauthCallbackTemplate   html.Template = "OAuthCallback"
+	netatmoStationsTemplate html.Template = "NetatmoStations"
+	netatmoModulesTemplate  html.Template = "NetatmoModules"
+
 	// Settings modal templates for notification clients
 	settingsModalTemplate             html.Template = "SettingsModal"
 	settingsListTemplate              html.Template = "SettingsList"

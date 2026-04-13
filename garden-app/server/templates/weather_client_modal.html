@@ -1,5 +1,5 @@
 {{ define "WeatherClientModal" }}
-<div id="modal" class="uk-modal" style="display:block;">
+<div id="modal" class="uk-modal" style="display:block;" data-weather-client-id="{{ .ID }}">
     <div class="uk-modal-dialog uk-modal-body uk-text-center">
         <h3 class="uk-modal-title uk-margin-remove-bottom">
             {{ if .Name }}{{ .Name }}{{ else }}Create Weather Client{{ end }}
