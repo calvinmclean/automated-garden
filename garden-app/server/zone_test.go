@@ -1118,7 +1118,6 @@ func TestWaterHistory(t *testing.T) {
 					EventID:     "00000000000000000000",
 				},
 			}, nil)
-		influxdbClient.On("Close")
 
 		storageClient, err := storage.NewClient(storage.Config{
 			ConnectionString: ":memory:",
