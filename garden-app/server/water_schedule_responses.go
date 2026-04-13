@@ -42,15 +42,7 @@ func GetNextWaterDetails(r *http.Request, ws *pkg.WaterSchedule, worker *worker.
 		return result
 	}
 
-	var loc *time.Location
-	tzHeader := r.Header.Get("X-TZ-Offset")
-	if tzHeader != "" {
-		var err error
-		loc, err = pkg.TimeLocationFromOffset(tzHeader)
-		if err != nil {
-			result.Message = fmt.Sprintf("error parsing timezone from header: %v", err)
-		}
-	}
+	loc := getLocationFromRequest(r)
 	if loc == nil {
 		loc = ws.StartTime.Time.Location()
 	}

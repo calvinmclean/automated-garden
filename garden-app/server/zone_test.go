@@ -1105,6 +1105,55 @@ func TestWaterHistory(t *testing.T) {
 		},
 	}
 
+	// Test timezone conversion separately since it requires different setup
+	t.Run("SuccessfulWaterHistoryWithTimezoneConversion", func(t *testing.T) {
+		// Use UTC time in mock data
+		utcTime, _ := time.Parse(time.RFC3339Nano, "2021-10-03T18:24:52.891386Z")
+
+		influxdbClient := new(influxdb.MockClient)
+		influxdbClient.On("GetWaterHistory", mock.Anything, id.String(), "test-garden", time.Hour*72, uint64(5)).
+			Return([]pkg.WaterHistory{
+				{
+					Duration:    pkg.Duration{Duration: 3 * time.Second},
+					Status:      pkg.WaterStatusCompleted,
+					Source:      string(action.SourceCommand),
+					SentAt:      utcTime,
+					StartedAt:   utcTime,
+					CompletedAt: utcTime,
+					EventID:     "00000000000000000000",
+				},
+			}, nil)
+		influxdbClient.On("Close")
+
+		storageClient, err := storage.NewClient(storage.Config{
+			ConnectionString: ":memory:",
+		})
+		assert.NoError(t, err)
+
+		zr := NewZonesAPI()
+		zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+
+		garden := createExampleGarden()
+		zone := createExampleZone()
+
+		err = storageClient.Gardens.Set(context.Background(), garden)
+		assert.NoError(t, err)
+		err = storageClient.Zones.Set(context.Background(), zone)
+		assert.NoError(t, err)
+
+		// Use X-TZ-Offset: 420 (UTC-7 / America/Phoenix) to convert from UTC to Phoenix time
+		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s/history", garden.ID, zone.ID), http.NoBody)
+		r.Header.Set("X-TZ-Offset", "420")
+		w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		// The UTC time should be converted to -07:00 offset (18:24:52 - 7 hours = 11:24:52 local time)
+		expected := `{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`
+		assert.Equal(t, expected, strings.TrimSpace(w.Body.String()))
+
+		influxdbClient.AssertExpectations(t)
+	})
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)

@@ -117,7 +117,7 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 			logger.Error("error getting water history", "error", apiErr)
 			zr.HistoryError = apiErr.ErrorText
 		}
-		zr.History = NewZoneWaterHistoryResponse(history)
+		zr.History = NewZoneWaterHistoryResponse(history, getLocationFromRequest(r))
 
 		// Reverse history for better presentation in UI
 		slices.Reverse(zr.History.History)
@@ -168,6 +168,18 @@ func (azr AllZonesResponse) Render(w http.ResponseWriter, r *http.Request) error
 	return azr.ResourceList.Render(w, r)
 }
 
+// getLocationFromRequest reads the X-TZ-Offset header and returns the corresponding time.Location
+func getLocationFromRequest(r *http.Request) *time.Location {
+	tzHeader := r.Header.Get("X-TZ-Offset")
+	if tzHeader != "" {
+		loc, err := pkg.TimeLocationFromOffset(tzHeader)
+		if err == nil {
+			return loc
+		}
+	}
+	return nil
+}
+
 func (azr AllZonesResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	slices.SortFunc(azr.Items, func(z *ZoneResponse, zz *ZoneResponse) int {
 		return strings.Compare(z.Name, zz.Name)
@@ -199,13 +211,20 @@ type ZoneWaterHistoryResponse struct {
 }
 
 // NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
-func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryResponse {
+// and converting times to the specified location
+func NewZoneWaterHistoryResponse(history []pkg.WaterHistory, loc *time.Location) ZoneWaterHistoryResponse {
 	total := time.Duration(0)
 	count := 0
-	for _, h := range history {
+	for i, h := range history {
 		if h.Status == pkg.WaterStatusCompleted {
 			total += h.Duration.Duration
 			count++
+		}
+		// Convert times to the target timezone
+		if loc != nil {
+			history[i].SentAt = h.SentAt.In(loc)
+			history[i].StartedAt = h.StartedAt.In(loc)
+			history[i].CompletedAt = h.CompletedAt.In(loc)
 		}
 	}
 
