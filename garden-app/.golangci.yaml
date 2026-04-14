@@ -41,4 +41,3 @@ output:
       path: stdout
       print-linter-name: true
       print-issued-lines: true
-  sort-results: true
