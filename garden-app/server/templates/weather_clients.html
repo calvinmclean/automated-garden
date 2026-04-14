@@ -111,7 +111,7 @@
 
 {{ define "WeatherClientDataOnly" }}
 <div class="uk-flex uk-flex-center uk-flex-middle uk-grid-small" uk-grid>
-    {{ if .WeatherData.Temperature }}
+    {{ if and .WeatherData .WeatherData.Temperature }}
     <div class="uk-flex uk-flex-middle">
         <span uk-icon="thermometer" class="uk-margin-small-right" style="color: #faa05a;"></span>
         {{ if .IsMetric }}
@@ -121,7 +121,7 @@
         {{ end }}
     </div>
     {{ end }}
-    {{ if .WeatherData.Rain }}
+    {{ if and .WeatherData .WeatherData.Rain }}
     <div class="uk-flex uk-flex-middle">
         <span uk-icon="cloud-rain" class="uk-margin-small-right uk-text-primary"></span>
         {{ if .IsMetric }}

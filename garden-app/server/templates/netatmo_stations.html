@@ -1,0 +1,36 @@
+{{ define "NetatmoStations" }}
+<option value="" disabled selected>Select Station...</option>
+{{ range .Stations }}
+<option value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }}</option>
+{{ end }}
+{{ end }}
+
+{{ define "NetatmoModules" }}
+{{ if .RainModules }}
+<div class="uk-margin">
+    <label class="uk-form-label" for="rain-module-select">Rain Module *</label>
+    <select id="rain-module-select" class="uk-select" name="Options.rain_module_id" required
+        onchange="document.getElementById('rain-module-name').value = this.options[this.selectedIndex].getAttribute('data-name') || '';">
+        <option value="" disabled selected>Select Rain Module...</option>
+        {{ range .RainModules }}
+        <option value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }}</option>
+        {{ end }}
+    </select>
+    <input type="hidden" name="Options.rain_module_name" id="rain-module-name" value="">
+</div>
+{{ end }}
+{{ if .OutdoorModules }}
+<div class="uk-margin">
+    <label class="uk-form-label" for="outdoor-module-select">Outdoor Module *</label>
+    <select id="outdoor-module-select" class="uk-select" name="Options.outdoor_module_id" required
+        onchange="document.getElementById('outdoor-module-name').value = this.options[this.selectedIndex].getAttribute('data-name') || '';">
+        <option value="" disabled selected>Select Outdoor Module...</option>
+        {{ range .OutdoorModules }}
+        <option value="{{ .ID }}" data-name="{{ .Name }}">{{ .Name }}</option>
+        {{ end }}
+    </select>
+    <input type="hidden" name="Options.outdoor_module_name" id="outdoor-module-name" value="">
+</div>
+{{ end }}
+<p class="uk-text-small uk-text-muted">* Required fields</p>
+{{ end }}

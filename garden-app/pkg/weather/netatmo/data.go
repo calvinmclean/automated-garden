@@ -56,6 +56,14 @@ func (d *weatherData) Average() float32 {
 }
 
 func (c *Client) getMeasure(ctx context.Context, dataType, scale string, beginDate time.Time, endDate *time.Time) (*weatherData, error) {
+	// Lazy initialization: fetch device IDs if not already set
+	if c.StationID == "" || c.RainModuleID == "" || c.OutdoorModuleID == "" {
+		err := c.setDeviceIDs()
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve device IDs: %w", err)
+		}
+	}
+
 	err := c.refreshToken()
 	if err != nil {
 		return nil, err

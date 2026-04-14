@@ -1,0 +1,99 @@
+{{ define "OAuthCallback" }}
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netatmo OAuth</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/uikit@3.17.11/dist/css/uikit.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/uikit@3.19.2/dist/js/uikit-icons.min.js"></script>
+</head>
+<body class="uk-background-muted">
+    <div class="uk-flex uk-flex-center uk-flex-middle" style="min-height: 100vh;">
+        <div class="uk-card uk-card-default uk-card-body uk-text-center uk-width-medium">
+            {{ if .Success }}
+            <div class="uk-alert uk-alert-success uk-flex uk-flex-middle uk-flex-center" style="margin: 0 0 20px 0;">
+                <span uk-icon="icon: check; ratio: 2"></span>
+            </div>
+            <h3 class="uk-card-title uk-text-success">Connected!</h3>
+            <p class="uk-text-muted">Your Netatmo account has been successfully connected.</p>
+            <p class="uk-text-small uk-text-muted" id="auto-close-msg">This window will close automatically...</p>
+            <div id="fallback-message" class="uk-alert uk-alert-warning" style="display: none; margin-top: 10px;">
+                <p class="uk-text-small">Unable to communicate with the parent window. Please close this window and return to the Garden App to continue.</p>
+            </div>
+            <button class="uk-button uk-button-default" onclick="window.close()">Close Window</button>
+            {{ else }}
+            <div class="uk-alert uk-alert-danger uk-flex uk-flex-middle uk-flex-center" style="margin: 0 0 20px 0;">
+                <span uk-icon="icon: close; ratio: 2"></span>
+            </div>
+            <h3 class="uk-card-title uk-text-danger">Connection Failed</h3>
+            <p class="uk-text-muted">{{ .Error }}</p>
+            <div id="fallback-message" class="uk-alert uk-alert-warning" style="display: none; margin-top: 10px;">
+                <p class="uk-text-small">Unable to communicate with the parent window. Please close this window and return to the Garden App to continue.</p>
+            </div>
+            <button class="uk-button uk-button-default" onclick="window.close()">Close Window</button>
+            {{ end }}
+        </div>
+    </div>
+
+    <script>
+        // Notify parent window of result (try multiple methods)
+        function notifyParent(success, error) {
+            let notified = false;
+
+            // Try postMessage first (most reliable when opener exists)
+            if (window.opener) {
+                try {
+                    if (success) {
+                        window.opener.postMessage('netatmo-oauth-success', '*');
+                    } else {
+                        window.opener.postMessage('netatmo-oauth-error:' + error, '*');
+                    }
+                    notified = true;
+                } catch (e) {
+                    console.log('postMessage failed:', e);
+                }
+            }
+
+            // Fallback to BroadcastChannel (works when opener is null but same origin)
+            if (typeof BroadcastChannel !== 'undefined') {
+                try {
+                    const bc = new BroadcastChannel('netatmo-oauth');
+                    if (success) {
+                        bc.postMessage({ type: 'netatmo-oauth-success' });
+                    } else {
+                        bc.postMessage({ type: 'netatmo-oauth-error', error: error });
+                    }
+                    bc.close();
+                    notified = true;
+                } catch (e) {
+                    console.log('BroadcastChannel failed:', e);
+                }
+            }
+
+            return notified;
+        }
+
+        {{ if .Success }}
+        const notified = notifyParent(true, null);
+        if (!notified) {
+            // Both methods failed - show fallback UI
+            document.getElementById('fallback-message').style.display = 'block';
+        } else {
+            // Auto-close after 3 seconds on success
+            setTimeout(function() {
+                window.close();
+            }, 3000);
+        }
+        {{ else }}
+        const notified = notifyParent(false, '{{ .Error }}');
+        if (!notified) {
+            // Both methods failed - show fallback UI
+            document.getElementById('fallback-message').style.display = 'block';
+        }
+        {{ end }}
+    </script>
+</body>
+</html>
+{{ end }}

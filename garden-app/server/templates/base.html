@@ -68,6 +68,117 @@
     {{ end }}
 
     {{ define "end" }}
+    
+    <!-- OAuth Popup Handler -->
+    <script>
+        // Global flag to prevent duplicate handling
+        window._netatmoOAuthHandling = false;
+
+        // BroadcastChannel for cross-tab communication (fallback when window.opener is lost)
+        const netatmoBroadcastChannel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel('netatmo-oauth') : null;
+
+        // Global message handler - listens for ANY OAuth completion
+        function handleNetatmoOAuthMessage(e) {
+            // Check if this is an OAuth message
+            let isSuccess = false;
+            let isError = false;
+            let errorMsg = '';
+
+            if (e.data === 'netatmo-oauth-success') {
+                isSuccess = true;
+            } else if (typeof e.data === 'string' && e.data.startsWith('netatmo-oauth-error:')) {
+                isError = true;
+                errorMsg = e.data.replace('netatmo-oauth-error:', '');
+            } else if (e.data && e.data.type === 'netatmo-oauth-success') {
+                isSuccess = true;
+            } else if (e.data && e.data.type === 'netatmo-oauth-error') {
+                isError = true;
+                errorMsg = e.data.error || 'Unknown error';
+            }
+
+            if (!isSuccess && !isError) return;
+
+            // Prevent duplicate handling
+            if (window._netatmoOAuthHandling) return;
+            window._netatmoOAuthHandling = true;
+
+            const modal = document.getElementById('modal');
+            const wcID = modal?.dataset?.weatherClientId;
+
+            if (isSuccess) {
+                UIkit.notification('Successfully connected to Netatmo', { status: 'success' });
+
+                if (wcID && modal) {
+                    // Refresh the form
+                    setTimeout(function() {
+                        htmx.ajax('GET', '/weather_clients/' + wcID + '/components?type=config_form', {
+                            headers: { 'Accept': 'text/html' },
+                            target: '#config-form-container',
+                            swap: 'innerHTML'
+                        }).then(function() {
+                            // Trigger station loading
+                            setTimeout(function() {
+                                const stationSelect = document.getElementById('station-select');
+                                if (stationSelect && stationSelect.options.length <= 1) {
+                                    fetch('/weather_clients/' + wcID + '/netatmo/stations', {
+                                        headers: { 'Accept': 'text/html' }
+                                    })
+                                    .then(response => response.text())
+                                    .then(html => { stationSelect.innerHTML = html; })
+                                    .catch(err => {
+                                        console.error('Failed to load stations:', err);
+                                        stationSelect.innerHTML = '<option value="" disabled selected>Error loading stations</option>';
+                                    });
+                                }
+                            }, 100);
+                        });
+                    }, 500);
+                } else {
+                    window.location.reload();
+                }
+            } else if (isError) {
+                UIkit.notification('Failed to connect to Netatmo: ' + errorMsg, { status: 'danger' });
+                if (modal) {
+                    UIkit.modal(modal).hide();
+                }
+            }
+
+            // Reset flag after a delay
+            setTimeout(function() {
+                window._netatmoOAuthHandling = false;
+            }, 5000);
+        }
+
+        // Listen for messages from popup
+        window.addEventListener('message', handleNetatmoOAuthMessage);
+
+        // Listen via BroadcastChannel
+        if (netatmoBroadcastChannel) {
+            netatmoBroadcastChannel.addEventListener('message', handleNetatmoOAuthMessage);
+        }
+
+        // Listen for HTMX trigger events to open OAuth popup
+        document.body.addEventListener('openOAuthPopup', function(evt) {
+            const authURL = evt.detail.value || evt.detail;
+
+            const width = 500;
+            const height = 600;
+            const left = (window.screen.width - width) / 2;
+            const top = (window.screen.height - height) / 2;
+
+            // Open the OAuth popup
+            const popup = window.open(
+                authURL,
+                'netatmo-oauth',
+                `width=${width},height=${height},left=${left},top=${top},resizable=yes,scrollbars=yes`
+            );
+
+            if (!popup || popup.closed || typeof popup.closed === 'undefined') {
+                // Popup was blocked
+                UIkit.notification('Please allow popups to authenticate with Netatmo', { status: 'warning' });
+            }
+        });
+    </script>
 </body>
 
 </html>

@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"time"
@@ -22,7 +23,8 @@ const (
 type WeatherClientsAPI struct {
 	*babyapi.API[*weather.Config]
 
-	storageClient *storage.Client
+	storageClient   *storage.Client
+	oauthStateCache *OAuthStateCache
 }
 
 func NewWeatherClientsAPI() *WeatherClientsAPI {
@@ -30,15 +32,7 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 
 	api.API = babyapi.NewAPI("WeatherClients", weatherClientsBasePath, func() *weather.Config { return &weather.Config{} })
 
-	api.SetOnCreateOrUpdate(func(_ http.ResponseWriter, _ *http.Request, wc *weather.Config) *babyapi.ErrResponse {
-		// make sure a valid WeatherClient can still be created
-		_, err := weather.NewClient(wc, func(map[string]any) error { return nil })
-		if err != nil {
-			return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
-		}
-
-		return nil
-	})
+	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
 	api.SetResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc, api: api}
@@ -54,6 +48,14 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 	})
 
 	api.AddCustomIDRoute(http.MethodGet, "/test", babyapi.Handler(api.testWeatherClient))
+
+	// OAuth routes for Netatmo
+	api.AddCustomIDRoute(http.MethodGet, "/netatmo/oauth/start", api.GetRequestedResourceAndDo(api.startOAuth))
+	api.AddCustomIDRoute(http.MethodGet, "/netatmo/oauth/callback", babyapi.Handler(api.handleOAuthCallback))
+
+	// Netatmo station/module selection endpoints
+	api.AddCustomIDRoute(http.MethodGet, "/netatmo/stations", api.GetRequestedResourceAndDo(api.getNetatmoStations))
+	api.AddCustomIDRoute(http.MethodGet, "/netatmo/modules", api.GetRequestedResourceAndDo(api.getNetatmoModules))
 
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
@@ -91,6 +93,18 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
 			return weatherClientModalTemplate.Renderer(wc), nil
+		case "config_form":
+			// Return just the config form for the weather client's type
+			switch wc.Type {
+			case "netatmo":
+				return weatherClientNetatmoConfigTemplate.Renderer(wc), nil
+			case "fake":
+				return weatherClientFakeConfigTemplate.Renderer(wc), nil
+			case "openmeteo":
+				return weatherClientOpenMeteoConfigTemplate.Renderer(wc), nil
+			default:
+				return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid Type: %s", wc.Type))
+			}
 		default:
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
@@ -118,8 +132,84 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 
 func (api *WeatherClientsAPI) setup(storageClient *storage.Client) {
 	api.storageClient = storageClient
+	api.oauthStateCache = NewOAuthStateCache()
 
 	api.SetStorage(api.storageClient.WeatherClientConfigs)
+}
+
+// getBaseURL determines the base URL from the request
+func (api *WeatherClientsAPI) getBaseURL(r *http.Request) string {
+	scheme := "http"
+	if r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+
+	host := r.Header.Get("X-Forwarded-Host")
+	if host == "" {
+		host = r.Host
+	}
+
+	return fmt.Sprintf("%s://%s", scheme, host)
+}
+
+func (api *WeatherClientsAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, wc *weather.Config) *babyapi.ErrResponse {
+	logger := babyapi.GetLoggerFromContext(r.Context())
+
+	// If this is an update (PUT), preserve the authentication field
+	if r.Method == http.MethodPut {
+		existing, httpErr := api.GetRequestedResource(r)
+		if httpErr != nil {
+			// Ignore NotFound errors - resource might not exist yet
+			if httpErr.HTTPStatusCode != http.StatusNotFound {
+				logger.Error("error getting existing weather client", "error", httpErr.Error())
+				return httpErr
+			}
+			logger.Debug("weather client not found, skipping authentication preservation", "id", wc.GetID())
+		} else {
+			_, newHasAuth := wc.Options["authentication"]
+			auth, existingHasAuth := existing.Options["authentication"]
+
+			// Preserve authentication if it exists in the current config and not in new
+			if existingHasAuth && !newHasAuth {
+				if wc.Options == nil {
+					wc.Options = map[string]any{}
+				}
+				wc.Options["authentication"] = auth
+				logger.Info("preserved authentication for WeatherClient", "id", wc.GetID())
+			}
+		}
+	}
+
+	// Check if authentication exists (either in new config or existing)
+	hasAuth := wc.Options["authentication"] != nil
+	if r.Method == http.MethodPut {
+		existing, _ := api.GetRequestedResource(r)
+		if existing != nil && existing.Options["authentication"] != nil {
+			hasAuth = true
+		}
+	}
+
+	// Only validate station/module IDs if authentication is present
+	// This allows creating a Netatmo client without auth, then doing OAuth later
+	if hasAuth {
+		if wc.Options["station_id"] == "" && wc.Options["station_name"] == "" {
+			return babyapi.ErrInvalidRequest(errors.New("station_id or station_name is required after OAuth authentication"))
+		}
+		if wc.Options["rain_module_id"] == "" && wc.Options["rain_module_name"] == "" {
+			return babyapi.ErrInvalidRequest(errors.New("rain_module_id or rain_module_name is required after OAuth authentication"))
+		}
+		if wc.Options["outdoor_module_id"] == "" && wc.Options["outdoor_module_name"] == "" {
+			return babyapi.ErrInvalidRequest(errors.New("outdoor_module_id or outdoor_module_name is required after OAuth authentication"))
+		}
+	}
+
+	// make sure a valid WeatherClient can still be created
+	_, err := weather.NewClient(wc, func(map[string]any) error { return nil })
+	if err != nil {
+		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid request to update WeatherClient: %w", err))
+	}
+
+	return nil
 }
 
 func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.Request) render.Renderer {
