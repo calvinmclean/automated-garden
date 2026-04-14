@@ -13,6 +13,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/cache"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/extensions"
@@ -122,10 +123,20 @@ func (api *WaterSchedulesAPI) waterScheduleModalRenderer(ctx context.Context, ws
 		return strings.Compare(nc1.Name, nc2.Name)
 	})
 
+	weatherClients, err := api.storageClient.WeatherClientConfigs.Search(ctx, "", nil)
+	if err != nil {
+		return babyapi.InternalServerError(fmt.Errorf("error getting all weather clients to create water schedule modal: %w", err))
+	}
+
+	slices.SortFunc(weatherClients, func(wc1 *weather.Config, wc2 *weather.Config) int {
+		return strings.Compare(wc1.Name, wc2.Name)
+	})
+
 	return waterScheduleModalTemplate.Renderer(struct {
 		*pkg.WaterSchedule
 		NotificationClients []*notifications.Client
-	}{ws, notificationClients})
+		WeatherClients      []*weather.Config
+	}{ws, notificationClients, weatherClients})
 }
 
 func (api *WaterSchedulesAPI) setup(storageClient *storage.Client, worker *worker.Worker, weatherCache *cache.Cache[*WeatherData]) error {

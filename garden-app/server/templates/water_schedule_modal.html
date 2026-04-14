@@ -64,6 +64,94 @@
                 </select>
             </div>
 
+            <!-- Rain Scaling Section -->
+            <div class="uk-margin">
+                <label>
+                    <input class="uk-checkbox" type="checkbox" id="rain-scaling-checkbox"
+                        {{ if and .WeatherControl .WeatherControl.Rain }}checked{{ end }}
+                        _="on change if my.checked remove .uk-hidden from #rain-fields then remove @disabled from <#rain-fields input, #rain-fields select/> else set <#rain-fields input/>'s value to '' then set #rain-client-select's selectedIndex to -1 then add @disabled to <#rain-fields input, #rain-fields select/> then add .uk-hidden to #rain-fields">
+                    Enable Rain Scaling
+                </label>
+            </div>
+            <div id="rain-fields" class="{{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}uk-hidden{{ end }}">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="rain-client-select">Weather Client*</label>
+                    <select id="rain-client-select" class="uk-select" name="WeatherControl.Rain.ClientID" required
+                        {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                        {{ range .WeatherClients }}
+                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Rain (eq .ID.String $.WeatherControl.Rain.ClientID.String) }}selected{{ end }}>{{ .Name }}</option>
+                        {{ end }}
+                    </select>
+                </div>
+                <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
+                    <div>
+                        <label class="uk-form-label" for="rain-baseline">Baseline (mm)*</label>
+                        <input id="rain-baseline" class="uk-input" type="number" step="0.01" required
+                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.BaselineValue }}{{ DerefFloat32 .WeatherControl.Rain.BaselineValue }}{{ end }}"
+                            name="WeatherControl.Rain.BaselineValue"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="rain-factor">Factor*</label>
+                        <input id="rain-factor" class="uk-input" type="number" step="0.01" min="0" max="1" required
+                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.Factor }}{{ DerefFloat32 .WeatherControl.Rain.Factor }}{{ end }}"
+                            name="WeatherControl.Rain.Factor"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="rain-range">Range (mm)*</label>
+                        <input id="rain-range" class="uk-input" type="number" step="0.01" min="0" required
+                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.Range }}{{ DerefFloat32 .WeatherControl.Rain.Range }}{{ end }}"
+                            name="WeatherControl.Rain.Range"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Temperature Scaling Section -->
+            <div class="uk-margin">
+                <label>
+                    <input class="uk-checkbox" type="checkbox" id="temperature-scaling-checkbox"
+                        {{ if and .WeatherControl .WeatherControl.Temperature }}checked{{ end }}
+                        _="on change if my.checked remove .uk-hidden from #temperature-fields then remove @disabled from <#temperature-fields input, #temperature-fields select/> else set <#temperature-fields input/>'s value to '' then set #temperature-client-select's selectedIndex to -1 then add @disabled to <#temperature-fields input, #temperature-fields select/> then add .uk-hidden to #temperature-fields">
+                    Enable Temperature Scaling
+                </label>
+            </div>
+            <div id="temperature-fields" class="{{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}uk-hidden{{ end }}">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="temperature-client-select">Weather Client*</label>
+                    <select id="temperature-client-select" class="uk-select" name="WeatherControl.Temperature.ClientID" required
+                        {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                        {{ range .WeatherClients }}
+                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Temperature (eq .ID.String $.WeatherControl.Temperature.ClientID.String) }}selected{{ end }}>{{ .Name }}</option>
+                        {{ end }}
+                    </select>
+                </div>
+                <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
+                    <div>
+                        <label class="uk-form-label" for="temperature-baseline">Baseline (°C)*</label>
+                        <input id="temperature-baseline" class="uk-input" type="number" step="0.01" required
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.BaselineValue }}{{ DerefFloat32 .WeatherControl.Temperature.BaselineValue }}{{ end }}"
+                            name="WeatherControl.Temperature.BaselineValue"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="temperature-factor">Factor*</label>
+                        <input id="temperature-factor" class="uk-input" type="number" step="0.01" min="0" max="1" required
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.Factor }}{{ DerefFloat32 .WeatherControl.Temperature.Factor }}{{ end }}"
+                            name="WeatherControl.Temperature.Factor"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="temperature-range">Range (°)*</label>
+                        <input id="temperature-range" class="uk-input" type="number" step="0.01" min="0" required
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.Range }}{{ DerefFloat32 .WeatherControl.Temperature.Range }}{{ end }}"
+                            name="WeatherControl.Temperature.Range"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                    </div>
+                </div>
+            </div>
+
             {{ template "modalSubmitButton" }}
             {{ if .Duration }}
             {{ template "deleteButton" (
