@@ -161,11 +161,12 @@ func (api *WeatherClientsAPI) exchangeCodeForTokens(ctx context.Context, code st
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 
+	// nolint:gosec // URL is hardcoded OAuth2 token endpoint, not user input
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -177,8 +178,8 @@ func (api *WeatherClientsAPI) exchangeCodeForTokens(ctx context.Context, code st
 	}
 
 	var tokenResponse struct {
-		AccessToken  string `json:"access_token"`
-		RefreshToken string `json:"refresh_token"`
+		AccessToken  string `json:"access_token"`  // nolint:gosec // JSON struct field for token response
+		RefreshToken string `json:"refresh_token"` // nolint:gosec // JSON struct field for token response
 		ExpiresIn    int    `json:"expires_in"`
 	}
 
@@ -208,7 +209,7 @@ func (api *WeatherClientsAPI) getNetatmoStations(_ http.ResponseWriter, r *http.
 	// Check if authentication exists
 	auth, ok := wc.Options["authentication"].(map[string]any)
 	if !ok || auth == nil {
-		return nil, babyapi.ErrInvalidRequest(errors.New("Netatmo authentication required"))
+		return nil, babyapi.ErrInvalidRequest(errors.New("netatmo authentication required"))
 	}
 
 	accessToken, _ := auth["access_token"].(string)
@@ -243,7 +244,7 @@ func (api *WeatherClientsAPI) getNetatmoModules(_ http.ResponseWriter, r *http.R
 	// Check if authentication exists
 	auth, ok := wc.Options["authentication"].(map[string]any)
 	if !ok || auth == nil {
-		return nil, babyapi.ErrInvalidRequest(errors.New("Netatmo authentication required"))
+		return nil, babyapi.ErrInvalidRequest(errors.New("netatmo authentication required"))
 	}
 
 	accessToken, _ := auth["access_token"].(string)
@@ -273,11 +274,12 @@ func (api *WeatherClientsAPI) fetchNetatmoStations(ctx context.Context, accessTo
 	req.Header.Add("Authorization", "Bearer "+accessToken)
 	req.Header.Add("Accept", "application/json")
 
+	// nolint:gosec // URL is hardcoded Netatmo API endpoint, not user input
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
@@ -310,7 +312,15 @@ func (api *WeatherClientsAPI) fetchNetatmoStations(ctx context.Context, accessTo
 
 // fetchNetatmoModules calls the Netatmo API to get modules for a station
 func (api *WeatherClientsAPI) fetchNetatmoModules(ctx context.Context, accessToken, stationID string) ([]map[string]string, []map[string]string, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.netatmo.com/api/getstationsdata?device_id="+url.QueryEscape(stationID), nil)
+	u, err := url.Parse("https://api.netatmo.com/api/getstationsdata")
+	if err != nil {
+		return nil, nil, err
+	}
+	q := u.Query()
+	q.Set("device_id", stationID)
+	u.RawQuery = q.Encode()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -321,7 +331,7 @@ func (api *WeatherClientsAPI) fetchNetatmoModules(ctx context.Context, accessTok
 	if err != nil {
 		return nil, nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

@@ -1,3 +1,4 @@
+// Package influxdb provides an InfluxDB client for storing metrics
 package influxdb
 
 import (
@@ -201,13 +202,13 @@ func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicP
 
 		// a "zero" or null Time from InfluxDB is different from Go's zero value
 		zeroTime := time.Date(1970, time.January, 1, 0, 0, 0, 0, time.UTC)
-		if h.SentAt == zeroTime {
+		if h.SentAt.Equal(zeroTime) {
 			h.SentAt = time.Time{}
 		}
-		if h.StartedAt == zeroTime {
+		if h.StartedAt.Equal(zeroTime) {
 			h.StartedAt = time.Time{}
 		}
-		if h.CompletedAt == zeroTime {
+		if h.CompletedAt.Equal(zeroTime) {
 			h.CompletedAt = time.Time{}
 		}
 

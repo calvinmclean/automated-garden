@@ -1,3 +1,4 @@
+// Package netatmo provides a client for the Netatmo weather API
 package netatmo
 
 import (
@@ -34,13 +35,13 @@ type Config struct {
 
 	Authentication *TokenData `json:"authentication,omitempty" yaml:"authentication,omitempty" mapstructure:"authentication,omitempty"`
 	ClientID       string     `json:"client_id,omitempty" yaml:"client_id,omitempty" mapstructure:"client_id,omitempty"`
-	ClientSecret   string     `json:"client_secret,omitempty" yaml:"client_secret,omitempty" mapstructure:"client_secret,omitempty"`
+	ClientSecret   string     `json:"client_secret,omitempty" yaml:"client_secret,omitempty" mapstructure:"client_secret,omitempty"` // nolint:gosec // config struct field
 }
 
 // TokenData contains information returned by Netatmo auth API
 type TokenData struct {
-	AccessToken    string `json:"access_token,omitempty" yaml:"access_token,omitempty" mapstructure:"access_token,omitempty"`
-	RefreshToken   string `json:"refresh_token,omitempty" yaml:"refresh_token,omitempty" mapstructure:"refresh_token,omitempty"`
+	AccessToken    string `json:"access_token,omitempty" yaml:"access_token,omitempty" mapstructure:"access_token,omitempty"`    // nolint:gosec // config struct field
+	RefreshToken   string `json:"refresh_token,omitempty" yaml:"refresh_token,omitempty" mapstructure:"refresh_token,omitempty"` // nolint:gosec // config struct field
 	ExpiresIn      int    `json:"expires_in,omitempty" yaml:"expires_in,omitempty" mapstructure:"expires_in,omitempty"`
 	ExpirationDate string `json:"expiration_date,omitempty" yaml:"expiration_date,omitempty" mapstructure:"expiration_date,omitempty"`
 }
@@ -126,11 +127,12 @@ func (c *Client) getStationData() (stationDataResponse, error) {
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.Authentication.AccessToken))
 	req.Header.Add("Accept", "application/json")
 
+	// nolint:gosec // URL is constructed from hardcoded base URL with query params, not user input
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return stationDataResponse{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
@@ -222,11 +224,12 @@ func (c *Client) refreshToken() error {
 		return err
 	}
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	// nolint:gosec // URL is hardcoded OAuth2 token endpoint, not user input
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

@@ -50,7 +50,7 @@ func (g *Garden) ParentID() string {
 	return ""
 }
 
-// String...
+// String returns a string representation of the Garden
 func (g *Garden) String() string {
 	return fmt.Sprintf("%+v", *g)
 }

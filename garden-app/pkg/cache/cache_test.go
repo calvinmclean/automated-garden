@@ -206,6 +206,7 @@ func TestCacheConcurrentAccess(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		go func(id int) {
 			for j := 0; j < 100; j++ {
+				// nolint:gosec // id is between 0-4, so 'a'+id is always a valid rune
 				cache.Set(string(rune('a'+id)), j)
 			}
 			done <- true
@@ -216,6 +217,7 @@ func TestCacheConcurrentAccess(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		go func(id int) {
 			for j := 0; j < 100; j++ {
+				// nolint:gosec // id is between 0-4, so 'a'+id is always a valid rune
 				cache.Get(string(rune('a' + id)))
 			}
 			done <- true

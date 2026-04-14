@@ -1,3 +1,4 @@
+// Package netatmo provides a client for the Netatmo weather API
 package netatmo
 
 import (
@@ -97,11 +98,12 @@ func (c *Client) getMeasure(ctx context.Context, dataType, scale string, beginDa
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", c.Authentication.AccessToken))
 	req.Header.Add("Accept", "application/json")
 
+	// nolint:gosec // URL is constructed from hardcoded base URL with query params, not user input
 	resp, err := c.Client.Do(req)
 	if err != nil {
 		return nil, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {

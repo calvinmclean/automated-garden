@@ -12,19 +12,19 @@ func TestRunBasic(t *testing.T) {
 	tasks := []Task[int]{
 		{
 			Name: "task1",
-			Fn: func(ctx context.Context) (int, error) {
+			Fn: func(_ context.Context) (int, error) {
 				return 1, nil
 			},
 		},
 		{
 			Name: "task2",
-			Fn: func(ctx context.Context) (int, error) {
+			Fn: func(_ context.Context) (int, error) {
 				return 2, nil
 			},
 		},
 		{
 			Name: "task3",
-			Fn: func(ctx context.Context) (int, error) {
+			Fn: func(_ context.Context) (int, error) {
 				return 3, nil
 			},
 		},

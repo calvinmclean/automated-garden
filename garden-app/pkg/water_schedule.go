@@ -36,7 +36,7 @@ func (ws *WaterSchedule) ParentID() string {
 	return ""
 }
 
-// String...
+// String returns a string representation of the WaterSchedule
 func (ws *WaterSchedule) String() string {
 	return fmt.Sprintf("%+v", *ws)
 }

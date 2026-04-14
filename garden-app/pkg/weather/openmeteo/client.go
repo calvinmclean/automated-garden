@@ -1,3 +1,4 @@
+// Package openmeteo provides a client for the Open-Meteo weather API
 package openmeteo
 
 import (
@@ -92,11 +93,12 @@ func (c *Client) fetchData(ctx context.Context, pastDays int, dailyVars ...strin
 		return nil, err
 	}
 
+	// nolint:gosec // URL is constructed from hardcoded base URL with query params, not user input
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("error making API request: %w", err)
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)

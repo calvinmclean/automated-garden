@@ -504,11 +504,12 @@ func makeRequest(method, path string, body, response any) (int, error) {
 
 	req.Header.Set("Content-Type", "application/json")
 
+	// nolint:gosec // URL is hardcoded test server URL, not user input
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return 0, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {

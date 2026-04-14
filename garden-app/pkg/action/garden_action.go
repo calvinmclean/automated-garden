@@ -1,3 +1,4 @@
+// Package action defines actions that can be performed on gardens and zones
 package action
 
 import (
@@ -16,7 +17,7 @@ type GardenAction struct {
 	Update *UpdateAction `json:"update" form:"update"`
 }
 
-// String...
+// String returns a string representation of the GardenAction
 func (action *GardenAction) String() string {
 	return fmt.Sprintf("{LightAction: %+v, StopAction: %+v, UpdateAction: %+v}", action.Light, action.Stop, action.Update)
 }
@@ -48,7 +49,7 @@ type StopAction struct {
 	All bool `json:"all" form:"all"`
 }
 
-// Update action is used to send the Garden's current ControllerConfig to the the controller
+// UpdateAction is used to send the Garden's current ControllerConfig to the controller
 type UpdateAction struct {
 	Config bool `json:"config" form:"config"`
 }

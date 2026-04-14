@@ -36,7 +36,7 @@ func (z Zone) ParentID() string {
 	return z.GardenID.String()
 }
 
-// String...
+// String returns a string representation of the Zone
 func (z *Zone) String() string {
 	return fmt.Sprintf("%+v", *z)
 }
@@ -91,7 +91,7 @@ type ZoneDetails struct {
 	Notes       string `json:"notes,omitempty" yaml:"notes,omitempty"`
 }
 
-// String...
+// String returns a string representation of the ZoneDetails
 func (zd *ZoneDetails) String() string {
 	return fmt.Sprintf("%+v", *zd)
 }

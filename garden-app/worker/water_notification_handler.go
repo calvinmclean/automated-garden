@@ -112,12 +112,6 @@ func parseWaterMessage(msg []byte) (action.WaterMessage, error) {
 			default:
 				return action.WaterMessage{}, fmt.Errorf("invalid status: %q", val)
 			}
-
-			if val == "complete" {
-				result.Start = false
-			} else if val == "start" {
-				result.Start = true
-			}
 		}
 
 		part, err = p.readNextPair()

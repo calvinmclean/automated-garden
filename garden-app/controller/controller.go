@@ -1,3 +1,4 @@
+// Package controller provides the mock controller for testing
 package controller
 
 import (
@@ -204,8 +205,8 @@ func (c *Controller) setupUI() *tview.Application {
 		AddItem(left, 1, 0, 1, 1, 0, 100, false).
 		AddItem(right, 1, 1, 1, 1, 0, 100, false)
 
-	tview.ANSIWriter(left).Write([]byte("\n"))
-	tview.ANSIWriter(right).Write([]byte("\n"))
+	_, _ = tview.ANSIWriter(left).Write([]byte("\n"))
+	_, _ = tview.ANSIWriter(right).Write([]byte("\n"))
 
 	return app.SetRoot(grid, true)
 }

@@ -1,3 +1,4 @@
+// Package cmd provides the CLI commands for the garden-app
 package cmd
 
 import (
@@ -31,34 +32,34 @@ var (
 
 func init() {
 	controllerCommand.PersistentFlags().StringVarP(&topicPrefix, "topic", "t", "test-garden", "MQTT topic prefix of the garden-controller")
-	viper.BindPFlag("controller.topic_prefix", controllerCommand.PersistentFlags().Lookup("topic"))
+	_ = viper.BindPFlag("controller.topic_prefix", controllerCommand.PersistentFlags().Lookup("topic"))
 
 	controllerCommand.PersistentFlags().IntVarP(&numZones, "zones", "z", 0, "Number of Zones")
-	viper.BindPFlag("controller.num_zones", controllerCommand.PersistentFlags().Lookup("zones"))
+	_ = viper.BindPFlag("controller.num_zones", controllerCommand.PersistentFlags().Lookup("zones"))
 
 	controllerCommand.PersistentFlags().BoolVar(&publishWaterEvent, "publish-water-event", true, "Whether or not watering events should be published for logging")
-	viper.BindPFlag("controller.publish_water_event", controllerCommand.PersistentFlags().Lookup("publish-water-event"))
+	_ = viper.BindPFlag("controller.publish_water_event", controllerCommand.PersistentFlags().Lookup("publish-water-event"))
 
 	controllerCommand.PersistentFlags().BoolVar(&publishHealth, "publish-health", true, "Whether or not to publish health data every minute")
-	viper.BindPFlag("controller.publish_health", controllerCommand.PersistentFlags().Lookup("publish-health"))
+	_ = viper.BindPFlag("controller.publish_health", controllerCommand.PersistentFlags().Lookup("publish-health"))
 
 	controllerCommand.PersistentFlags().DurationVar(&healthInterval, "health-interval", time.Minute, "Interval between health data publishing")
-	viper.BindPFlag("controller.health_interval", controllerCommand.PersistentFlags().Lookup("health-interval"))
+	_ = viper.BindPFlag("controller.health_interval", controllerCommand.PersistentFlags().Lookup("health-interval"))
 
 	controllerCommand.PersistentFlags().BoolVar(&enableUI, "enable-ui", true, "Enable tview UI for nicer output")
-	viper.BindPFlag("controller.enable_ui", controllerCommand.PersistentFlags().Lookup("enable-ui"))
+	_ = viper.BindPFlag("controller.enable_ui", controllerCommand.PersistentFlags().Lookup("enable-ui"))
 
 	controllerCommand.PersistentFlags().BoolVar(&publishTemperatureHumidity, "publish-temperature-humidity", false, "Whether or not to publish temperature and humidity data")
-	viper.BindPFlag("controller.publish_temperature_humidity", controllerCommand.PersistentFlags().Lookup("publish-temperature-humidity"))
+	_ = viper.BindPFlag("controller.publish_temperature_humidity", controllerCommand.PersistentFlags().Lookup("publish-temperature-humidity"))
 
 	controllerCommand.PersistentFlags().DurationVar(&temperatureHumidityInterval, "temperature-humidity-interval", time.Minute, "Interval for temperature and humidity publishing")
-	viper.BindPFlag("controller.temperature_humidity_interval", controllerCommand.PersistentFlags().Lookup("temperature-humidity-interval"))
+	_ = viper.BindPFlag("controller.temperature_humidity_interval", controllerCommand.PersistentFlags().Lookup("temperature-humidity-interval"))
 
 	controllerCommand.PersistentFlags().Float64Var(&temperatureValue, "temperature-value", 100, "The value to use for temperature data publishing")
-	viper.BindPFlag("controller.temperature_value", controllerCommand.PersistentFlags().Lookup("temperature-value"))
+	_ = viper.BindPFlag("controller.temperature_value", controllerCommand.PersistentFlags().Lookup("temperature-value"))
 
 	controllerCommand.PersistentFlags().Float64Var(&humidityValue, "humidity-value", 100, "The value to use for humidity data publishing")
-	viper.BindPFlag("controller.humidity_value", controllerCommand.PersistentFlags().Lookup("humidity-value"))
+	_ = viper.BindPFlag("controller.humidity_value", controllerCommand.PersistentFlags().Lookup("humidity-value"))
 }
 
 // runController will start up the mock garden-controller

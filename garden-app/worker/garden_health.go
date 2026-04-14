@@ -1,3 +1,4 @@
+// Package worker handles scheduled watering, health checks, and notifications
 package worker
 
 import (

@@ -12,7 +12,7 @@ import (
 func TestGenerateConfig(_ *testing.T) {
 	GenerateConfig(Config{}, true, true, true, false, false)
 	GenerateConfig(Config{}, true, true, true, false, false)
-	os.RemoveAll("config.h")
+	_ = os.RemoveAll("config.h")
 }
 
 func TestGenerateMainConfig(t *testing.T) {

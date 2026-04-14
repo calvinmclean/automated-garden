@@ -17,7 +17,7 @@ import (
 func TestNotificationClientURLMigration(t *testing.T) {
 	db, err := sql.Open("sqlite", "file:migrateTest?mode=memory&cache=shared")
 	require.NoError(t, err)
-	defer db.Close()
+	defer func() { _ = db.Close() }()
 
 	_, err = db.Exec(`
 		CREATE TABLE notification_clients (
