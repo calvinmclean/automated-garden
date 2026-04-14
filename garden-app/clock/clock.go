@@ -1,3 +1,4 @@
+// Package clock provides time-related utilities and wrappers
 package clock
 
 import (

@@ -1,3 +1,4 @@
+// Package netatmo provides a client for the Netatmo weather API
 package netatmo
 
 import (

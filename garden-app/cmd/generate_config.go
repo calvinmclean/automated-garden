@@ -24,7 +24,7 @@ var (
 
 func init() {
 	generateConfigCommand.Flags().StringVar(&wifiSSID, "ssid", "", "SSID for your WiFi network")
-	viper.BindPFlag("controller.wifi.ssid", generateConfigCommand.Flags().Lookup("ssid"))
+	_ = viper.BindPFlag("controller.wifi.ssid", generateConfigCommand.Flags().Lookup("ssid"))
 
 	generateConfigCommand.Flags().BoolVarP(&writeFile, "write", "w", false, "write results to file instead of stdout")
 	generateConfigCommand.Flags().BoolVar(&wifiConfig, "wifi-config", true, "enable generating 'wifi_config.h'")

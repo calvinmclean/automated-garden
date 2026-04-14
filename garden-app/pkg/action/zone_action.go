@@ -1,3 +1,4 @@
+// Package action defines actions that can be performed on gardens and zones
 package action
 
 import (
@@ -14,7 +15,7 @@ type ZoneAction struct {
 	Water *WaterAction `json:"water" form:"water"`
 }
 
-// String...
+// String returns a string representation of the ZoneAction
 func (action *ZoneAction) String() string {
 	return fmt.Sprintf("%+v", *action.Water)
 }
@@ -51,7 +52,7 @@ type WaterMessage struct {
 	Start bool `json:"-"`
 }
 
-// String...
+// String returns a string representation of the WaterMessage
 func (m *WaterMessage) String() string {
 	return fmt.Sprintf("%+v", *m)
 }

@@ -141,7 +141,7 @@ func templateFuncs(r *http.Request) map[string]any {
 				selected = "selected"
 			}
 
-			sb.WriteString(fmt.Sprintf("<option value=\"\" disabled %s>%s</option>\n", selected, start))
+			fmt.Fprintf(&sb, "<option value=\"\" disabled %s>%s</option>\n", selected, start)
 
 			for month := time.January; month <= time.December; month++ {
 				format := `<option value="%s">%s</option>`
@@ -157,7 +157,7 @@ func templateFuncs(r *http.Request) map[string]any {
 					}
 				}
 
-				sb.WriteString(fmt.Sprintf(format, month.String(), month.String()))
+				fmt.Fprintf(&sb, format, month.String(), month.String())
 				sb.WriteString("\n")
 			}
 

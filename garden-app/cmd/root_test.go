@@ -47,7 +47,7 @@ func TestViperAutomaticEnv(t *testing.T) {
 	}
 
 	for _, v := range envVars {
-		os.Setenv(v.envVar, v.value)
+		_ = os.Setenv(v.envVar, v.value)
 		assert.Equal(t, v.value, viper.Get(v.configKey))
 	}
 }

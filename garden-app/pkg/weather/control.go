@@ -1,3 +1,4 @@
+// Package weather provides weather client interfaces and implementations
 package weather
 
 import "github.com/rs/xid"

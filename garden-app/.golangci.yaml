@@ -1,42 +1,44 @@
+version: "2"
+
 run:
   timeout: 2m
   issues-exit-code: 1
   tests: true
 
-issues:
-  exclude:
-    - "Error return value of `render.Render` is not checked"
-    - "Error return value of `viper.BindPFlag` is not checked"
-    - "Error return value of `.+Command.RegisterFlagCompletionFunc` is not checked"
-    - "Error return value of `.+.Write` is not checked"
-  exclude-rules:
-    - path: ".*_test\\.go"
-      linters:
-        - revive
-
-output:
-  # print lines of code with issue, default is true
-  print-issued-lines: true
-  # print linter name in the end of issue text, default is true
-  print-linter-name: true
-  # add a prefix to the output file references; default is no prefix
-  path-prefix: ""
-  # sorts results by: filepath, line and column
-  sort-results: true
-
 linters:
+  default: none
   enable:
     - bodyclose
     - errcheck
-    - gofmt
-    - gofumpt
-    - goimports
     - gosec
-    - gosimple
     - govet
     - ineffassign
     - misspell
     - revive
-    - staticcheck
-    - typecheck
     - unused
+    - staticcheck
+  settings:
+    revive:
+      rules:
+        - name: package-comments
+          disabled: true
+        - name: exported
+          disabled: true
+    staticcheck:
+      checks:
+        - all
+        - -QF1008 # could remove embedded field from selector
+
+formatters:
+  enable:
+    - gofmt
+    - gofumpt
+    - goimports
+
+output:
+  formats:
+    text:
+      path: stdout
+      print-linter-name: true
+      print-issued-lines: true
+  sort-results: true

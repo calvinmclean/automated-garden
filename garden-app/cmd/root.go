@@ -43,7 +43,7 @@ func Execute() {
 		panic(err)
 	}
 
-	viper.BindPFlag("log.level", command.PersistentFlags().Lookup("log-level"))
+	_ = viper.BindPFlag("log.level", command.PersistentFlags().Lookup("log-level"))
 
 	command.PersistentPreRunE = func(c *cobra.Command, _ []string) error {
 		if c.Name() != "serve" {
@@ -70,10 +70,10 @@ func Execute() {
 		}
 
 		c.Flags().Int("port", 80, "port to run Application server on")
-		viper.BindPFlag("web_server.port", c.Flags().Lookup("port"))
+		_ = viper.BindPFlag("web_server.port", c.Flags().Lookup("port"))
 
 		c.Flags().Bool("readonly", false, "run in read-only mode so server will only allow GET requests")
-		viper.BindPFlag("web_server.readonly", c.Flags().Lookup("readonly"))
+		_ = viper.BindPFlag("web_server.readonly", c.Flags().Lookup("readonly"))
 	}
 
 	err = command.Execute()

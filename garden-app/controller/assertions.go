@@ -1,3 +1,4 @@
+// Package controller provides the mock controller for testing
 package controller
 
 import (

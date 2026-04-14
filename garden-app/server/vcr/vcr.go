@@ -1,3 +1,4 @@
+// Package vcr provides VCR recording functionality for tests
 package vcr
 
 import (

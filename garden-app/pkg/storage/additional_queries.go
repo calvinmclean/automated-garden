@@ -1,3 +1,4 @@
+// Package storage provides database storage implementations
 package storage
 
 import (

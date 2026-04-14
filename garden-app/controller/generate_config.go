@@ -1,3 +1,4 @@
+// Package controller provides the mock controller for testing
 package controller
 
 import (
@@ -59,7 +60,7 @@ const (
 // WifiConfig holds WiFi connection details
 type WifiConfig struct {
 	SSID     string `mapstructure:"ssid"`
-	Password string `mapstructure:"password"`
+	Password string `mapstructure:"password"` // nolint:gosec // config struct field with mapstructure tag
 }
 
 // ZoneConfig has the configuration details for controlling hardware pins
@@ -164,6 +165,7 @@ func writeOutput(logger *slog.Logger, content, filename string, writeFile, overw
 		}
 
 		var err error
+		// nolint:gosec // filename is user-provided but this is for local config generation
 		file, err = os.Create(filename)
 		if err != nil {
 			return err

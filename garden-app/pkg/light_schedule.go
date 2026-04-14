@@ -31,7 +31,7 @@ var (
 // LightState is an enum representing the state of a Light (ON or OFF)
 type LightState int
 
-// Return the string representation of this LightState
+// String returns the string representation of this LightState
 func (l LightState) String() string {
 	return stateToString[l]
 }
@@ -70,7 +70,7 @@ type LightSchedule struct {
 	StartTime *StartTime `json:"start_time" yaml:"start_time"`
 }
 
-// String...
+// String returns a string representation of the LightSchedule
 func (ls *LightSchedule) String() string {
 	return fmt.Sprintf("%+v", *ls)
 }

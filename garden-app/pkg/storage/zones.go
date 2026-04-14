@@ -99,7 +99,7 @@ func (s *ZoneStorage) Get(ctx context.Context, id string) (*pkg.Zone, error) {
 	return dbZoneToZone(dbZone)
 }
 
-// List returns all Zones from storage
+// Search returns all Zones from storage
 func (s *ZoneStorage) Search(ctx context.Context, gardenID string, q url.Values) ([]*pkg.Zone, error) {
 	getEndDated := q.Get("end_dated") == "true"
 

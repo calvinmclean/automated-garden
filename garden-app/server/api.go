@@ -1,3 +1,4 @@
+// Package server provides the HTTP API server for the garden application
 package server
 
 import (

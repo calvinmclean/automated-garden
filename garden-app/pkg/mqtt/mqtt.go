@@ -1,3 +1,4 @@
+// Package mqtt provides MQTT client functionality
 package mqtt
 
 //go:generate mockery --all --inpackage

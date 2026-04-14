@@ -1,3 +1,4 @@
+// Package fake provides a fake notification client for testing
 package fake
 
 import (
