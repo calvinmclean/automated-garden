@@ -188,7 +188,7 @@ func TestDeleteWeatherClient(t *testing.T) {
 			id.String(),
 			createExampleWeatherClientConfig(),
 			``,
-			http.StatusNoContent,
+			http.StatusOK,
 		},
 		{
 			"UnableToDeleteUsedByWaterSchedules",
