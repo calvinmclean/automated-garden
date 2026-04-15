@@ -42,6 +42,11 @@
             {{ end }}
 
             {{ template "gardenTemperatureSection" . }}
+            {{ if .Garden.HasTemperatureHumiditySensor }}
+            <div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
+                hx-trigger="unitsChanged from:body" hx-swap="innerHTML" hx-target="#garden-data-{{ .ID }}"
+                style="display: none;"></div>
+            {{ end }}
         </div>
         <div class="uk-card-footer">
             <div class="uk-clearfix">

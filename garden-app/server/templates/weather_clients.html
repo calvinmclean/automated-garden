@@ -6,7 +6,7 @@
 
 {{ define "WeatherClients" }}
 <div hx-swap="outerHTML" hx-get="/weather_clients?refresh=true&duration={{ .Duration }}" hx-headers='{"Accept": "text/html"}'
-    hx-trigger="newWeatherClient from:body, unitsChanged from:body">
+    hx-trigger="newWeatherClient from:body">
     <div class="uk-margin-small-top uk-margin-small-bottom uk-text-center">
         <select class="uk-select uk-form-small" style="width: auto; min-width: 90px; display: inline-block;"
             hx-get="/weather_clients?refresh=true"
@@ -43,6 +43,9 @@
         </div>
         <div class="uk-card-body">
             {{ template "WeatherClientDataSection" . }}
+            <div hx-get="/weather_clients/{{ .Config.ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
+                hx-trigger="unitsChanged from:body" hx-swap="innerHTML" hx-target="#weather-data-{{ .Config.ID }}"
+                style="display: none;"></div>
         </div>
     </div>
 </div>
