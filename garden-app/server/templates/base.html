@@ -178,6 +178,33 @@
                 UIkit.notification('Please allow popups to authenticate with Netatmo', { status: 'warning' });
             }
         });
+
+        // Modal close handlers for ESC key and clicking outside
+        document.addEventListener('keydown', function(evt) {
+            if (evt.key === 'Escape') {
+                const modal = document.getElementById('modal');
+                if (modal && modal.classList.contains('uk-open')) {
+                    modal.classList.remove('uk-open');
+                    setTimeout(function() {
+                        modal.remove();
+                    }, 200);
+                }
+            }
+        });
+
+        document.addEventListener('click', function(evt) {
+            const modal = document.getElementById('modal');
+            if (modal && modal.classList.contains('uk-open')) {
+                // Check if click is on the modal backdrop (outside the dialog)
+                const dialog = modal.querySelector('.uk-modal-dialog');
+                if (dialog && !dialog.contains(evt.target) && evt.target === modal) {
+                    modal.classList.remove('uk-open');
+                    setTimeout(function() {
+                        modal.remove();
+                    }, 200);
+                }
+            }
+        });
     </script>
 </body>
 
