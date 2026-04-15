@@ -104,8 +104,20 @@ func templateFuncs(r *http.Request) map[string]any {
 			return fmt.Sprintf("%02d", i)
 		},
 		"Sprintf": fmt.Sprintf,
-		"CelsiusToFahrenheit": func(c float64) float64 {
-			return c*1.8 + 32
+		"CelsiusToFahrenheit": func(c float32) float64 {
+			return float64(c)*1.8 + 32
+		},
+		"MmToInches": func(val *float32) float64 {
+			if val == nil {
+				return 0
+			}
+			return float64(*val) / 25.4
+		},
+		"CelsiusDeltaToFahrenheitDelta": func(val *float32) float64 {
+			if val == nil {
+				return 0
+			}
+			return float64(*val) * 1.8
 		},
 		"IsMetric": func() bool {
 			return getUnitsFromRequest(r) == "metric"

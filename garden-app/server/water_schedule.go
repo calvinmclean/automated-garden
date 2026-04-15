@@ -87,7 +87,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
 		case "create_modal":
-			return api.waterScheduleModalRenderer(r.Context(), &pkg.WaterSchedule{
+			return api.waterScheduleModalRenderer(r, &pkg.WaterSchedule{
 				ID: NewID(),
 			})
 		default:
@@ -98,7 +98,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 	api.AddCustomIDRoute(http.MethodGet, "/components", api.GetRequestedResourceAndDo(func(_ http.ResponseWriter, r *http.Request, ws *pkg.WaterSchedule) (render.Renderer, *babyapi.ErrResponse) {
 		switch r.URL.Query().Get("type") {
 		case "edit_modal":
-			return api.waterScheduleModalRenderer(r.Context(), ws), nil
+			return api.waterScheduleModalRenderer(r, ws), nil
 		case "detail_modal":
 			return waterScheduleDetailModalTemplate.Renderer(ws), nil
 		default:
@@ -113,8 +113,8 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 	return api
 }
 
-func (api *WaterSchedulesAPI) waterScheduleModalRenderer(ctx context.Context, ws *pkg.WaterSchedule) render.Renderer {
-	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(ctx, "", nil)
+func (api *WaterSchedulesAPI) waterScheduleModalRenderer(r *http.Request, ws *pkg.WaterSchedule) render.Renderer {
+	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(r.Context(), "", nil)
 	if err != nil {
 		return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create water schedule modal: %w", err))
 	}
@@ -123,7 +123,7 @@ func (api *WaterSchedulesAPI) waterScheduleModalRenderer(ctx context.Context, ws
 		return strings.Compare(nc1.Name, nc2.Name)
 	})
 
-	weatherClients, err := api.storageClient.WeatherClientConfigs.Search(ctx, "", nil)
+	weatherClients, err := api.storageClient.WeatherClientConfigs.Search(r.Context(), "", nil)
 	if err != nil {
 		return babyapi.InternalServerError(fmt.Errorf("error getting all weather clients to create water schedule modal: %w", err))
 	}
@@ -173,6 +173,30 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 				return babyapi.ErrInvalidRequest(fmt.Errorf("unable to get WeatherClients for WaterSchedule: %w", err))
 			}
 			return babyapi.InternalServerError(err)
+		}
+
+		// Convert imperial values to metric if user is using imperial units
+		if getUnitsFromRequest(r) == "imperial" {
+			if ws.WeatherControl.Rain != nil {
+				if ws.WeatherControl.Rain.BaselineValue != nil {
+					val := *ws.WeatherControl.Rain.BaselineValue * 25.4 // in → mm
+					ws.WeatherControl.Rain.BaselineValue = &val
+				}
+				if ws.WeatherControl.Rain.Range != nil {
+					val := *ws.WeatherControl.Rain.Range * 25.4 // in → mm
+					ws.WeatherControl.Rain.Range = &val
+				}
+			}
+			if ws.WeatherControl.Temperature != nil {
+				if ws.WeatherControl.Temperature.BaselineValue != nil {
+					val := (*ws.WeatherControl.Temperature.BaselineValue - 32) / 1.8 // °F → °C
+					ws.WeatherControl.Temperature.BaselineValue = &val
+				}
+				if ws.WeatherControl.Temperature.Range != nil {
+					val := *ws.WeatherControl.Temperature.Range / 1.8 // °F delta → °C delta
+					ws.WeatherControl.Temperature.Range = &val
+				}
+			}
 		}
 
 		err = pkg.ValidateWeatherControl(ws.WeatherControl)

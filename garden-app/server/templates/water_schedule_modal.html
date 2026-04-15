@@ -85,9 +85,9 @@
                 </div>
                 <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
                     <div>
-                        <label class="uk-form-label" for="rain-baseline">Baseline (mm)*</label>
+                        <label class="uk-form-label" for="rain-baseline">Baseline ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
                         <input id="rain-baseline" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.BaselineValue }}{{ DerefFloat32 .WeatherControl.Rain.BaselineValue }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.BaselineValue }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Rain.BaselineValue }}{{ else }}{{ printf "%.2f" (MmToInches .WeatherControl.Rain.BaselineValue) }}{{ end }}{{ end }}"
                             name="WeatherControl.Rain.BaselineValue"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
@@ -99,9 +99,9 @@
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
                     <div>
-                        <label class="uk-form-label" for="rain-range">Range (mm)*</label>
+                        <label class="uk-form-label" for="rain-range">Range ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
                         <input id="rain-range" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.Range }}{{ DerefFloat32 .WeatherControl.Rain.Range }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.Range }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Rain.Range }}{{ else }}{{ printf "%.2f" (MmToInches .WeatherControl.Rain.Range) }}{{ end }}{{ end }}"
                             name="WeatherControl.Rain.Range"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
@@ -129,9 +129,9 @@
                 </div>
                 <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
                     <div>
-                        <label class="uk-form-label" for="temperature-baseline">Baseline (°C)*</label>
+                        <label class="uk-form-label" for="temperature-baseline">Baseline ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
                         <input id="temperature-baseline" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.BaselineValue }}{{ DerefFloat32 .WeatherControl.Temperature.BaselineValue }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.BaselineValue }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Temperature.BaselineValue }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit (DerefFloat32 .WeatherControl.Temperature.BaselineValue)) }}{{ end }}{{ end }}"
                             name="WeatherControl.Temperature.BaselineValue"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
@@ -143,22 +143,24 @@
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
                     <div>
-                        <label class="uk-form-label" for="temperature-range">Range (°)*</label>
+                        <label class="uk-form-label" for="temperature-range">Range ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
                         <input id="temperature-range" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.Range }}{{ DerefFloat32 .WeatherControl.Temperature.Range }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.Range }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Temperature.Range }}{{ else }}{{ printf "%.1f" (CelsiusDeltaToFahrenheitDelta .WeatherControl.Temperature.Range) }}{{ end }}{{ end }}"
                             name="WeatherControl.Temperature.Range"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
                 </div>
             </div>
 
-            {{ template "modalSubmitButton" }}
-            {{ if .Duration }}
-            {{ template "deleteButton" (
-            args "HXDelete" (print "/water_schedules/" .ID) "HXTarget" (print "#ws-card-" .ID)
-            ) }}
-            {{ end }}
-            {{ template "modalCloseButton" }}
+            <div class="uk-margin-top">
+                    {{ template "modalSubmitButton" }}
+                {{ if .Duration }}
+                {{ template "deleteButton" (
+                args "HXDelete" (print "/water_schedules/" .ID) "HXTarget" (print "#ws-card-" .ID)
+                ) }}
+                {{ end }}
+                {{ template "modalCloseButton" }}
+            </div>
         </form>
     </div>
 </div>

@@ -30,8 +30,9 @@
 
 {{ define "UnitsSelector" }}
 <div class="uk-margin-small-bottom">
-    <label class="uk-form-label">Units</label>
-    <div class="uk-button-group">
+    <div class="uk-flex uk-flex-middle" style="gap: 8px;">
+        <span uk-icon="icon: settings; ratio: 0.9" uk-tooltip="Units"></span>
+        <div class="uk-button-group">
         <button class="uk-button uk-button-small {{ if .IsMetric }}uk-button-primary{{ else }}uk-button-default{{ end }}"
                 hx-put="/user_settings/units"
                 hx-vals='{"value": "metric"}'
@@ -50,6 +51,7 @@
                 hx-on::after-request="if(event.detail.successful) document.body.dispatchEvent(new CustomEvent('unitsChanged'))">
             Imperial
         </button>
+        </div>
     </div>
 </div>
 {{ end }}
