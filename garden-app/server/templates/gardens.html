@@ -42,6 +42,11 @@
             {{ end }}
 
             {{ template "gardenTemperatureSection" . }}
+            {{ if .Garden.HasTemperatureHumiditySensor }}
+            <div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
+                hx-trigger="unitsChanged from:body" hx-swap="innerHTML" hx-target="#garden-data-{{ .ID }}"
+                style="display: none;"></div>
+            {{ end }}
         </div>
         <div class="uk-card-footer">
             <div class="uk-clearfix">
@@ -127,7 +132,6 @@
         <div uk-spinner="ratio: 0.5"></div>
     </div>
 </div>
-{{ template "gardenTemperatureLazyLoadTrigger" . }}
 {{ end }}
 {{ end }}
 {{ end }}
@@ -138,18 +142,18 @@
 </div>
 {{ end }}
 
-{{ define "gardenTemperatureLazyLoadTrigger" }}
-<div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
-    hx-trigger="load" hx-swap="innerHTML" hx-target="#garden-temp-{{ .ID }}">
-</div>
-{{ end }}
-
 {{ define "temperatureHumidityDetails" }}
 <p>
     <span>
-        Temperature: {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
-        {{ Sprintf "%.2f" $tempF }}°F
+        Temperature:
+        {{ if IsMetric }}
+        {{ Sprintf "%.1f" .TemperatureCelsius }}°C
+        <progress class="uk-progress" value="{{ .TemperatureCelsius }}" max="50"></progress>
+        {{ else }}
+        {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
+        {{ Sprintf "%.1f" $tempF }}°F
         <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
+        {{ end }}
     </span>
     <span>
         Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%
@@ -359,12 +363,27 @@
 {{ end }}
 {{ end }}
 
+{{ define "gardenSwapDataResponse" }}
+{{ template "gardenDataSection" . }}
+{{ if .TemperatureHumidityData }}
+<div id="garden-temp-{{ .ID }}" hx-swap-oob="true">
+    {{ template "temperatureHumidityDetails" .TemperatureHumidityData }}
+</div>
+{{ end }}
+{{ end }}
+
 {{ define "temperatureHumidityDetailsOnly" }}
 <p>
     <span>
-        Temperature: {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
-        {{ Sprintf "%.2f" $tempF }}°F
+        Temperature:
+        {{ if IsMetric }}
+        {{ Sprintf "%.1f" .TemperatureCelsius }}°C
+        <progress class="uk-progress" value="{{ .TemperatureCelsius }}" max="50"></progress>
+        {{ else }}
+        {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
+        {{ Sprintf "%.1f" $tempF }}°F
         <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
+        {{ end }}
     </span>
     <span>
         Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%

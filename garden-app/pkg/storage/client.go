@@ -10,6 +10,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/db"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/golang-migrate/migrate/v4"
@@ -93,6 +94,23 @@ func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 	return weather.NewClient(clientConfig, func(weatherClientOptions map[string]any) error {
 		clientConfig.Options = weatherClientOptions
 		return c.WeatherClientConfigs.Set(context.Background(), clientConfig)
+	})
+}
+
+// GetUserSetting retrieves a user setting by key
+func (c *Client) GetUserSetting(ctx context.Context, key string) (string, error) {
+	result, err := c.AdditionalQueries.q.GetUserSetting(ctx, key)
+	if err != nil {
+		return "", err
+	}
+	return result.Value, nil
+}
+
+// SetUserSetting creates or updates a user setting
+func (c *Client) SetUserSetting(ctx context.Context, key, value string) error {
+	return c.AdditionalQueries.q.UpsertUserSetting(ctx, db.UpsertUserSettingParams{
+		Key:   key,
+		Value: value,
 	})
 }
 

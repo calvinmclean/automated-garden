@@ -300,9 +300,9 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 }
 
 func (g *GardenResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
-	// For swap_data, return just the data section (health, zones, watering) for lazy loading
+	// For swap_data, return data section with OOB temperature swap for lazy loading
 	if r.URL.Query().Get("swap_data") == "true" {
-		return gardenDataSectionTemplate.Render(r, g)
+		return gardenSwapDataResponseTemplate.Render(r, g)
 	}
 	return gardenCardTemplate.Render(r, g)
 }

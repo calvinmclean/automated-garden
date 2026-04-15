@@ -26,7 +26,12 @@ type Garden struct {
 type NotificationClient struct {
 	ID   string
 	Name string
-	URL  string
+	Url  string
+}
+
+type UserSetting struct {
+	Key   string
+	Value string
 }
 
 type WaterRoutine struct {

@@ -24,6 +24,7 @@ const (
 	gardensTemplate                      html.Template = "Gardens"
 	gardenCardTemplate                   html.Template = "GardenCard"
 	gardenDataSectionTemplate            html.Template = "gardenDataSection"
+	gardenSwapDataResponseTemplate       html.Template = "gardenSwapDataResponse"
 	gardenModalTemplate                  html.Template = "GardenModal"
 	zonesPageTemplate                    html.Template = "ZonesPage"
 	zonesTemplate                        html.Template = "Zones"
@@ -59,6 +60,9 @@ const (
 	notificationClientEditRowTemplate html.Template = "NotificationClientEditRow"
 	notificationClientAddRowTemplate  html.Template = "NotificationClientAddRow"
 	removeAddRowTemplate              html.Template = "RemoveAddRow"
+
+	// User settings templates
+	unitsSelectorTemplate html.Template = "UnitsSelector"
 )
 
 func templateFuncs(r *http.Request) map[string]any {
@@ -101,8 +105,59 @@ func templateFuncs(r *http.Request) map[string]any {
 			return fmt.Sprintf("%02d", i)
 		},
 		"Sprintf": fmt.Sprintf,
-		"CelsiusToFahrenheit": func(c float64) float64 {
-			return c*1.8 + 32
+		"CelsiusToFahrenheit": func(c any) float64 {
+			switch v := c.(type) {
+			case float64:
+				return v*1.8 + 32
+			case float32:
+				return float64(v)*1.8 + 32
+			default:
+				return 0
+			}
+		},
+		"MmToInches": func(val any) float64 {
+			var f float64
+			switch v := val.(type) {
+			case *float64:
+				if v == nil {
+					return 0
+				}
+				f = *v
+			case *float32:
+				if v == nil {
+					return 0
+				}
+				f = float64(*v)
+			case float64:
+				f = v
+			case float32:
+				f = float64(v)
+			default:
+				return 0
+			}
+			return f / 25.4
+		},
+		"CelsiusDeltaToFahrenheitDelta": func(val any) float64 {
+			var f float64
+			switch v := val.(type) {
+			case *float64:
+				if v == nil {
+					return 0
+				}
+				f = *v
+			case *float32:
+				if v == nil {
+					return 0
+				}
+				f = float64(*v)
+			case float64:
+				f = v
+			case float32:
+				f = float64(v)
+			default:
+				return 0
+			}
+			return f * 1.8
 		},
 		"IsMetric": func() bool {
 			return getUnitsFromRequest(r) == "metric"

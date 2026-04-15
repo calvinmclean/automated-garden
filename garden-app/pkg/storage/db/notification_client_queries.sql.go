@@ -26,11 +26,7 @@ WHERE id = ? LIMIT 1
 func (q *Queries) GetNotificationClient(ctx context.Context, id string) (NotificationClient, error) {
 	row := q.db.QueryRowContext(ctx, getNotificationClient, id)
 	var i NotificationClient
-	err := row.Scan(
-		&i.ID,
-		&i.Name,
-		&i.URL,
-	)
+	err := row.Scan(&i.ID, &i.Name, &i.Url)
 	return i, err
 }
 
@@ -47,11 +43,7 @@ func (q *Queries) ListNotificationClients(ctx context.Context) ([]NotificationCl
 	var items []NotificationClient
 	for rows.Next() {
 		var i NotificationClient
-		if err := rows.Scan(
-			&i.ID,
-			&i.Name,
-			&i.URL,
-		); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.Url); err != nil {
 			return nil, err
 		}
 		items = append(items, i)
@@ -79,14 +71,10 @@ DO UPDATE SET
 type UpsertNotificationClientParams struct {
 	ID   string
 	Name string
-	URL  string
+	Url  string
 }
 
 func (q *Queries) UpsertNotificationClient(ctx context.Context, arg UpsertNotificationClientParams) error {
-	_, err := q.db.ExecContext(ctx, upsertNotificationClient,
-		arg.ID,
-		arg.Name,
-		arg.URL,
-	)
+	_, err := q.db.ExecContext(ctx, upsertNotificationClient, arg.ID, arg.Name, arg.Url)
 	return err
 }
