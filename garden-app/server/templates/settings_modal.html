@@ -1,21 +1,55 @@
 {{ define "SettingsModal" }}
 <div id="modal" class="uk-modal" style="display:block;">
     <div class="uk-modal-dialog uk-modal-body" style="max-width: 800px;">
-        <h3 class="uk-modal-title">Notification Settings</h3>
-        
+        <h3 class="uk-modal-title">Settings</h3>
+
+        <!-- General Settings Section -->
+        <h4 class="uk-heading-bullet uk-margin-small-top">General</h4>
+        <div id="units-selector-container">
+            {{ template "UnitsSelector" . }}
+        </div>
+
+        <!-- Notification Settings Section -->
+        <h4 class="uk-heading-bullet uk-margin-top">Notifications</h4>
         <div class="uk-overflow-auto" style="max-height: 60vh;">
-            <div id="settings-list-container" hx-swap="outerHTML" 
+            <div id="settings-list-container" hx-swap="outerHTML"
                  hx-get="/notification_clients/components?type=settings_list"
                  hx-trigger="newNotificationClient from:body, load"
                  hx-headers='{"Accept": "text/html"}'>
             </div>
         </div>
-        
+
         <div class="uk-text-right uk-margin-top">
             <button class="uk-button uk-button-default" type="button" {{ template "closeModal" }}>
                 Close
             </button>
         </div>
+    </div>
+</div>
+{{ end }}
+
+{{ define "UnitsSelector" }}
+<div class="uk-margin-small-bottom">
+    <label class="uk-form-label">Units</label>
+    <div class="uk-button-group">
+        <button class="uk-button uk-button-small {{ if .IsMetric }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                hx-put="/user_settings/units"
+                hx-vals='{"value": "metric"}'
+                hx-target="#units-selector-container"
+                hx-swap="innerHTML"
+                hx-headers='{"Accept": "text/html"}'
+                hx-on::after-request="if(event.detail.successful) document.body.dispatchEvent(new CustomEvent('unitsChanged'))">
+            Metric
+        </button>
+        <button class="uk-button uk-button-small {{ if not .IsMetric }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                hx-put="/user_settings/units"
+                hx-vals='{"value": "imperial"}'
+                hx-target="#units-selector-container"
+                hx-swap="innerHTML"
+                hx-headers='{"Accept": "text/html"}'
+                hx-on::after-request="if(event.detail.successful) document.body.dispatchEvent(new CustomEvent('unitsChanged'))">
+            Imperial
+        </button>
     </div>
 </div>
 {{ end }}
@@ -36,7 +70,7 @@
             {{ end }}
         </tbody>
     </table>
-    <button class="uk-button uk-button-primary uk-button-small" 
+    <button class="uk-button uk-button-primary uk-button-small"
             hx-get="/notification_clients/components?type=add_row"
             hx-target="tbody"
             hx-swap="beforeend"
@@ -86,17 +120,17 @@
             <input type="hidden" value="{{ .ID }}" name="ID">
             <div class="uk-grid-small uk-flex-middle" uk-grid>
                 <div class="uk-width-expand@m">
-                    <input class="uk-input uk-form-small" 
-                           type="text" 
-                           name="Name" 
+                    <input class="uk-input uk-form-small"
+                           type="text"
+                           name="Name"
                            value="{{ .Name }}"
                            placeholder="Name"
                            required>
                 </div>
                 <div class="uk-width-1-2@m">
-                    <input class="uk-input uk-form-small" 
-                           type="text" 
-                           name="URL" 
+                    <input class="uk-input uk-form-small"
+                           type="text"
+                           name="URL"
                            value="{{ .URL }}"
                            placeholder="pushover://shoutrrr:token@recipient/"
                            required>
@@ -130,17 +164,17 @@
             <input type="hidden" value="{{ .ID }}" name="ID">
             <div class="uk-grid-small uk-flex-middle" uk-grid>
                 <div class="uk-width-expand@m">
-                    <input class="uk-input uk-form-small" 
-                           type="text" 
-                           name="Name" 
+                    <input class="uk-input uk-form-small"
+                           type="text"
+                           name="Name"
                            value="{{ .Name }}"
                            placeholder="Name"
                            required>
                 </div>
                 <div class="uk-width-1-2@m">
-                    <input class="uk-input uk-form-small" 
-                           type="text" 
-                           name="URL" 
+                    <input class="uk-input uk-form-small"
+                           type="text"
+                           name="URL"
                            value="{{ .URL }}"
                            placeholder="pushover://shoutrrr:token@recipient/"
                            required>

@@ -116,14 +116,6 @@ func getTemperatureData(ctx context.Context, ws *pkg.WaterSchedule, storageClien
 	return &avgTemperature, nil
 }
 
-func getUnitsFromRequest(r *http.Request) string {
-	units := r.URL.Query().Get("units")
-	if units != "imperial" {
-		return "metric"
-	}
-	return units
-}
-
 func getDurationFromRequest(r *http.Request) time.Duration {
 	durationStr := r.URL.Query().Get("duration")
 	if durationStr == "" {

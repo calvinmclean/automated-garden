@@ -147,9 +147,15 @@
 {{ define "temperatureHumidityDetails" }}
 <p>
     <span>
-        Temperature: {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
-        {{ Sprintf "%.2f" $tempF }}°F
+        Temperature:
+        {{ if IsMetric }}
+        {{ Sprintf "%.1f" .TemperatureCelsius }}°C
+        <progress class="uk-progress" value="{{ .TemperatureCelsius }}" max="50"></progress>
+        {{ else }}
+        {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
+        {{ Sprintf "%.1f" $tempF }}°F
         <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
+        {{ end }}
     </span>
     <span>
         Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%
@@ -362,9 +368,15 @@
 {{ define "temperatureHumidityDetailsOnly" }}
 <p>
     <span>
-        Temperature: {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
-        {{ Sprintf "%.2f" $tempF }}°F
+        Temperature:
+        {{ if IsMetric }}
+        {{ Sprintf "%.1f" .TemperatureCelsius }}°C
+        <progress class="uk-progress" value="{{ .TemperatureCelsius }}" max="50"></progress>
+        {{ else }}
+        {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
+        {{ Sprintf "%.1f" $tempF }}°F
         <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
+        {{ end }}
     </span>
     <span>
         Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%

@@ -58,7 +58,7 @@ func (s *NotificationClientStorage) Set(ctx context.Context, notificationClient 
 	return s.q.UpsertNotificationClient(ctx, db.UpsertNotificationClientParams{
 		ID:   notificationClient.ID.String(),
 		Name: notificationClient.Name,
-		URL:  notificationClient.URL,
+		Url:  notificationClient.URL,
 	})
 }
 
@@ -75,6 +75,6 @@ func dbNotificationClientToNotificationClient(dbNotificationClient db.Notificati
 	return &notifications.Client{
 		ID:   notificationClientID,
 		Name: dbNotificationClient.Name,
-		URL:  dbNotificationClient.URL,
+		URL:  dbNotificationClient.Url,
 	}, nil
 }

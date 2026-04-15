@@ -59,6 +59,9 @@ const (
 	notificationClientEditRowTemplate html.Template = "NotificationClientEditRow"
 	notificationClientAddRowTemplate  html.Template = "NotificationClientAddRow"
 	removeAddRowTemplate              html.Template = "RemoveAddRow"
+
+	// User settings templates
+	unitsSelectorTemplate html.Template = "UnitsSelector"
 )
 
 func templateFuncs(r *http.Request) map[string]any {

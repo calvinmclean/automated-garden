@@ -37,7 +37,7 @@
                         <li {{ if URLContains "/water_routines" }}class="uk-active" {{ end }}><a
                                 href="/water_routines">Water Routines</a></li>
                         <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
-                                href="/weather_clients?units=imperial">Weather Clients</a></li>
+                                href="/weather_clients">Weather Clients</a></li>
                         <li>
                         </li>
                     </ul>
@@ -45,7 +45,7 @@
                 <div class="uk-navbar-right">
                     <ul class="uk-navbar-nav">
                         <li>
-                            <a hx-get="/notification_clients/components?type=settings_modal" hx-headers='{"Accept": "text/html"}'
+                            <a hx-get="/settings/components?type=settings_modal" hx-headers='{"Accept": "text/html"}'
                                 hx-target="#settings-modal-here"
                                 _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
                                 <span uk-icon="icon: cog; ratio: 1.0"></span>

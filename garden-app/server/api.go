@@ -37,6 +37,7 @@ type API struct {
 	notificationClients *NotificationClientsAPI
 	waterSchedules      *WaterSchedulesAPI
 	waterRoutines       *WaterRoutineAPI
+	settings            *SettingsAPI
 	weatherCache        *cache.Cache[*WeatherData]
 }
 
@@ -50,6 +51,7 @@ func NewAPI() *API {
 		notificationClients: NewNotificationClientsAPI(),
 		waterSchedules:      NewWaterSchedulesAPI(),
 		waterRoutines:       NewWaterRoutineAPI(),
+		settings:            NewSettingsAPI(),
 		weatherCache:        cache.New[*WeatherData](5 * time.Minute),
 	}
 	api.gardens.AddNestedAPI(api.zones)
@@ -70,6 +72,9 @@ func NewAPI() *API {
 		AddNestedAPI(api.notificationClients).
 		AddNestedAPI(api.waterSchedules).
 		AddNestedAPI(api.waterRoutines).
+		AddCustomRoute(http.MethodGet, "/settings/components", babyapi.Handler(api.settings.handleSettingsComponents)).
+		AddCustomRoute(http.MethodGet, "/user_settings/{key}", babyapi.Handler(api.settings.handleGetUserSetting)).
+		AddCustomRoute(http.MethodPut, "/user_settings/{key}", babyapi.Handler(api.settings.handleUpdateUserSetting)).
 		EnableMCP(babyapi.MCPPermNone).
 		AddMCPServerOptions(
 			server.WithInstructions(`
@@ -194,6 +199,10 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 	api.weatherClients.setup(storageClient)
 	api.notificationClients.setup(storageClient)
 	api.waterRoutines.setup(storageClient, worker)
+	api.settings.Setup(storageClient)
+
+	// Add units middleware to handle user unit preferences
+	api.AddMiddleware(unitsMiddleware(storageClient))
 
 	return nil
 }
