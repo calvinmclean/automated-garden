@@ -27,7 +27,7 @@ func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) 
 	case input.Update != nil:
 		err := w.ExecuteUpdateAction(g, input.Update)
 		if err != nil {
-			return fmt.Errorf("unable to execute UpdateActin: %v", err)
+			return fmt.Errorf("unable to execute UpdateAction: %v", err)
 		}
 	}
 	return nil

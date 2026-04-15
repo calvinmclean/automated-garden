@@ -77,7 +77,7 @@ func TestGardenAction(t *testing.T) {
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {},
 			func(err error, t *testing.T) {
 				assert.Error(t, err)
-				assert.Equal(t, "unable to execute UpdateActin: update action must have config=true", err.Error())
+				assert.Equal(t, "unable to execute UpdateAction: update action must have config=true", err.Error())
 			},
 		},
 	}

@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
+	"github.com/calvinmclean/babyapi/extensions"
 	"github.com/go-chi/render"
 )
 
@@ -124,6 +125,8 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 
 		return nil
 	})
+
+	api.ApplyExtension(extensions.HTMX[*weather.Config]{})
 
 	api.EnableMCP(babyapi.MCPPermRead)
 

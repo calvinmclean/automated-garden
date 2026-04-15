@@ -193,17 +193,13 @@
             </li>
             {{ end }}
             <li>
-                <a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none" {{
-                    template "actionFeedback" "danger" }}>
-                    <input type="hidden" name="stop.all" value="true">
+                <a href="#stop-watering-confirm-{{ .ID }}" uk-toggle>
                     <span uk-icon="ban"></span> Stop Watering
                 </a>
             </li>
             {{- if .ControllerConfig }}
             <li>
-                <a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none" {{
-                    template "actionFeedback" "primary" }}>
-                    <input type="hidden" name="update.config" value="true">
+                <a href="#update-config-confirm-{{ .ID }}" uk-toggle>
                     <span uk-icon="push"></span> Update Config
                 </a>
             </li>
@@ -211,6 +207,9 @@
         </ul>
     </div>
 </div>
+
+{{ template "stopWateringConfirmationModal" . }}
+{{ template "updateConfigConfirmationModal" . }}
 {{ end }}
 
 {{ define "lightActionButton" }}
@@ -224,6 +223,48 @@
     {{ end }}
     Light {{ .State }}
 </a>
+{{ end }}
+
+{{ define "stopWateringConfirmationModal" }}
+<div id="stop-watering-confirm-{{ .ID }}" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">Confirm Stop Watering</h3>
+        <p>Are you sure you want to stop all watering for <strong>{{ .Name }}</strong>?</p>
+
+        <p class="uk-text-right">
+            <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
+            <button class="uk-button uk-button-danger" type="button"
+                hx-post="/gardens/{{ .ID }}/action"
+                hx-vals='{"stop.all": "true"}'
+                hx-swap="none"
+                {{ template "actionFeedback" "danger" }}
+                onclick="UIkit.modal('#stop-watering-confirm-{{ .ID }}').hide()">
+                <span uk-icon="ban"></span> Stop Watering
+            </button>
+        </p>
+    </div>
+</div>
+{{ end }}
+
+{{ define "updateConfigConfirmationModal" }}
+<div id="update-config-confirm-{{ .ID }}" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">Confirm Update Config</h3>
+        <p>Are you sure you want to update the controller configuration for <strong>{{ .Name }}</strong>?</p>
+
+        <p class="uk-text-right">
+            <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
+            <button class="uk-button uk-button-primary" type="button"
+                hx-post="/gardens/{{ .ID }}/action"
+                hx-vals='{"update.config": "true"}'
+                hx-swap="none"
+                {{ template "actionFeedback" "primary" }}
+                onclick="UIkit.modal('#update-config-confirm-{{ .ID }}').hide()">
+                <span uk-icon="push"></span> Update Config
+            </button>
+        </p>
+    </div>
+</div>
 {{ end }}
 
 {{ define "gardenInfoPopover" }}
