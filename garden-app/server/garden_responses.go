@@ -343,3 +343,30 @@ type GardenActionResponse struct{}
 func (*GardenActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
+
+// GardenSectionResponse represents a garden with its zones for the unified view
+type GardenSectionResponse struct {
+	*GardenResponse
+	Zones []*ZoneResponse
+}
+
+// GardensNewResponse is the response for the new unified gardens view
+type GardensNewResponse struct {
+	Items []*GardenSectionResponse
+}
+
+func (gnr GardensNewResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func (gnr GardensNewResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	slices.SortFunc(gnr.Items, func(a, b *GardenSectionResponse) int {
+		return strings.Compare(a.Name, b.Name)
+	})
+
+	if r.URL.Query().Get("refresh") == "true" {
+		return gardensNewTemplate.Render(r, gnr)
+	}
+
+	return gardensNewPageTemplate.Render(r, gnr)
+}

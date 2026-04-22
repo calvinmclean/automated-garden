@@ -185,7 +185,9 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 		api.SetAddress(net.JoinHostPort("", fmt.Sprint(cfg.WebConfig.Port)))
 	}
 
-	err := api.gardens.setup(cfg, storageClient, influxdbClient, worker)
+	api.zones.setup(storageClient, influxdbClient, worker, api.weatherCache)
+
+	err := api.gardens.setup(cfg, storageClient, influxdbClient, worker, api.zones)
 	if err != nil {
 		return fmt.Errorf("error setting up Gardens API: %w", err)
 	}
@@ -194,8 +196,6 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 	if err != nil {
 		return fmt.Errorf("error setting up WaterSchedules API: %w", err)
 	}
-
-	api.zones.setup(storageClient, influxdbClient, worker, api.weatherCache)
 	api.weatherClients.setup(storageClient)
 	api.notificationClients.setup(storageClient)
 	api.waterRoutines.setup(storageClient, worker)

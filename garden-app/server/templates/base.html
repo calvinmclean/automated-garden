@@ -30,7 +30,9 @@
             <div uk-navbar>
                 <div class="uk-navbar-left">
                     <ul class="uk-navbar-nav">
-                        <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a>
+                        <li {{ if and (URLContains "/gardens") (not (URLContains "/gardens/new")) }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a>
+                        </li>
+                        <li {{ if URLContains "/gardens/new" }}class="uk-active" {{ end }}><a href="/gardens/new">Gardens (new)</a>
                         </li>
                         <li {{ if URLContains "/water_schedules" }}class="uk-active" {{ end }}><a
                                 href="/water_schedules?exclude_weather_data=true">Water Schedules</a></li>

@@ -1,0 +1,108 @@
+{{ define "GardensNewPage" }}
+{{ template "start" . }}
+{{ template "GardensNew" . }}
+{{ template "end" }}
+{{ end }}
+
+{{ define "GardensNew" }}
+<div class="uk-margin-medium-top uk-margin-medium-left uk-margin-medium-right" hx-swap="outerHTML" hx-get="/gardens/new?refresh=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="newGarden from:body">
+    {{ range .Items }}
+    {{ template "GardenSection" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "GardenSection" }}
+<div class="uk-margin-medium-bottom" id="garden-section-{{ .ID }}">
+    {{/* Modal container - outside accordion so it's always accessible */}}
+    <div id="edit-modal-here-{{ .ID }}"></div>
+    {{/* Garden Card with attached Zones accordion */}}
+    <div class="uk-card uk-card-default">
+        <div class="uk-card-header">
+            <div class="uk-grid-small uk-flex-middle" uk-grid>
+                <div class="uk-width-expand">
+                    <h3 class="uk-card-title uk-margin-remove-bottom"><a href="/gardens/{{ .ID }}/zones?exclude_weather_data=true">{{ .Name }}</a></h3>
+                </div>
+                <div class="uk-width-auto">
+                    <a hx-get="/gardens/{{ .ID }}/components?type=edit_modal" hx-headers='{"Accept": "text/html"}' hx-target="#edit-modal-here-{{ .ID }}" uk-icon="icon: file-edit; ratio: 1.5"
+                        _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal">
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="uk-card-body">
+            {{ if not .EndDated }}
+            <div id="garden-data-{{ .ID }}">
+                {{ template "gardenHealthSection" . }}
+                <span class="uk-label uk-margin-small-left">
+                    {{ .NumZones }} Zones <i class="bi-grid"></i>
+                </span>
+
+                {{ template "gardenWateringSection" . }}
+                {{ template "gardenLazyLoadTrigger" . }}
+            </div>
+            {{ end }}
+
+            {{ if .LightSchedule }}
+            {{ template "lightScheduleDetails" . }}
+            {{ end }}
+
+            {{ template "gardenTemperatureSection" . }}
+        </div>
+        <div class="uk-card-footer">
+            <div class="uk-clearfix">
+                <div class="uk-float-left">
+                    {{ template "gardenActionButton" . }}
+                </div>
+                <div class="uk-float-right">
+                    {{ template "gardenInfoPopover" . }}
+                </div>
+            </div>
+        </div>
+
+        {{/* Zones Section - Attached Accordion with chevron icon */}}
+        <div class="uk-card-footer uk-background-muted uk-padding-remove" style="border-top: 1px solid #e5e5e5;">
+            <style>
+                #garden-section-{{ .ID }} .uk-accordion-title::before {
+                    display: none !important;
+                }
+                #garden-section-{{ .ID }} .zones-chevron {
+                    transition: transform 0.3s ease;
+                }
+                #garden-section-{{ .ID }} .uk-open .zones-chevron {
+                    transform: rotate(180deg);
+                }
+            </style>
+            <ul uk-accordion="collapsible: true; multiple: false" class="uk-margin-remove-bottom">
+                <li>
+                    <a class="uk-accordion-title uk-padding-small uk-flex uk-flex-middle" href style="text-decoration: none; font-size: 0.875rem;">
+                        <span class="zones-chevron uk-margin-small-right" uk-icon="icon: chevron-down; ratio: 1"></span>
+                        <span>Zones ({{ .NumZones }})</span>
+                    </a>
+                    <div class="uk-accordion-content uk-margin-remove-top uk-background-default">
+                        <div class="uk-padding-small">
+                            <div id="garden-zones-{{ .ID }}">
+                                <div class="uk-text-center uk-margin">
+                                    <div uk-spinner></div>
+                                </div>
+                <div hx-get="/gardens/{{ .ID }}/new/zones" hx-headers='{"Accept": "text/html"}'
+                    hx-trigger="load" hx-swap="outerHTML" hx-target="#garden-zones-{{ .ID }}">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{{ end }}
+
+{{ define "GardenZonesLazyLoad" }}
+<div uk-grid class="uk-child-width-1-2@m">
+    {{ range .Items }}
+    {{ template "ZoneCard" . }}
+    {{ end }}
+</div>
+{{ end }}

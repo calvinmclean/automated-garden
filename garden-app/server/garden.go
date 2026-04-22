@@ -36,6 +36,7 @@ type GardensAPI struct {
 	worker         *worker.Worker
 	config         Config
 	healthCache    *cache.Cache[*pkg.GardenHealth]
+	zonesAPI       *ZonesAPI
 }
 
 func NewGardenAPI() *GardensAPI {
@@ -80,6 +81,16 @@ func NewGardenAPI() *GardensAPI {
 		default:
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
+	}))
+
+	// New unified gardens view endpoint
+	api.AddCustomRoute(http.MethodGet, "/new", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
+		return api.getGardensNewResponse(r)
+	}))
+
+	// Lazy-load zones for a garden in the new unified view
+	api.AddCustomIDRoute(http.MethodGet, "/new/zones", api.GetRequestedResourceAndDo(func(_ http.ResponseWriter, r *http.Request, g *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+		return api.getGardenNewZonesResponse(r, g)
 	}))
 
 	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
@@ -136,11 +147,12 @@ func (api *GardensAPI) gardenModalRenderer(ctx context.Context, g *pkg.Garden) r
 	}{g, notificationClients})
 }
 
-func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker) error {
+func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influxdbClient influxdb.Client, worker *worker.Worker, zonesAPI *ZonesAPI) error {
 	api.storageClient = storageClient
 	api.influxdbClient = influxdbClient
 	api.worker = worker
 	api.config = config
+	api.zonesAPI = zonesAPI
 
 	api.SetStorage(api.storageClient.Gardens)
 
@@ -270,4 +282,72 @@ func checkNotificationClientExists(ctx context.Context, storageClient *storage.C
 	}
 
 	return nil
+}
+
+// getGardensNewResponse returns the unified gardens view with zones
+func (api *GardensAPI) getGardensNewResponse(r *http.Request) render.Renderer {
+	ctx := r.Context()
+	logger := babyapi.GetLoggerFromContext(ctx)
+
+	gardens, err := api.storageClient.Gardens.Search(ctx, "", nil)
+	if err != nil {
+		logger.Error("error searching gardens", "error", err)
+		return babyapi.InternalServerError(fmt.Errorf("error getting gardens: %w", err))
+	}
+
+	response := GardensNewResponse{
+		Items: make([]*GardenSectionResponse, 0, len(gardens)),
+	}
+
+	for _, garden := range gardens {
+		if garden.EndDated() {
+			continue
+		}
+		gardenResponse := api.NewGardenResponse(garden)
+		// Render the garden response to populate NextLightAction and other computed fields
+		err := gardenResponse.Render(nil, r)
+		if err != nil {
+			logger.Error("error rendering garden response", "error", err, "garden", garden.ID)
+			continue
+		}
+		response.Items = append(response.Items, &GardenSectionResponse{
+			GardenResponse: gardenResponse,
+			Zones:          nil, // Zones are lazy-loaded
+		})
+	}
+
+	return response
+}
+
+// getGardenNewZonesResponse returns just the zones grid for lazy loading
+func (api *GardensAPI) getGardenNewZonesResponse(r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+	ctx := r.Context()
+	logger := babyapi.GetLoggerFromContext(ctx)
+
+	zones, err := api.getAllZones(ctx, garden.ID.String(), false)
+	if err != nil {
+		logger.Error("error getting zones for garden", "error", err)
+		return nil, babyapi.InternalServerError(fmt.Errorf("error getting zones: %w", err))
+	}
+
+	// Create zone responses using the zones API and render them fully
+	zoneResponses := make([]*ZoneResponse, 0, len(zones))
+	for _, zone := range zones {
+		zoneResp := api.zonesAPI.NewZoneResponse(zone)
+		// Render the zone to populate NextWater and other computed fields
+		err := zoneResp.Render(nil, r)
+		if err != nil {
+			logger.Error("error rendering zone response", "error", err, "zone", zone.ID)
+			continue
+		}
+		zoneResponses = append(zoneResponses, zoneResp)
+	}
+
+	// Build response data with garden context for template
+	data := map[string]any{
+		"Items":  zoneResponses,
+		"Garden": garden,
+	}
+
+	return gardensNewZonesTemplate.Renderer(data), nil
 }
