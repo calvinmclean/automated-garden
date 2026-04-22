@@ -6,3 +6,4 @@ wifi_config.h
 vendor/
 deploy/configs/telegraf/.cache
 garden-app.so
+.worktrees/
