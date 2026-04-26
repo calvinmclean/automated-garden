@@ -168,6 +168,9 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 			return *f
 		},
+		"Float64Ptr": func(f float64) *float64 {
+			return &f
+		},
 		"timeNow": func() time.Time {
 			return clock.Now()
 		},

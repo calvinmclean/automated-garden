@@ -409,11 +409,13 @@ func WaterScheduleTests(t *testing.T) {
 		var ws2 server.WaterScheduleResponse
 		status, err = makeRequest(http.MethodPatch, "/water_schedules/"+waterScheduleID, pkg.WaterSchedule{
 			WeatherControl: &weather.Control{
-				Rain: &weather.ScaleControl{
-					BaselineValue: pointer[float32](0),
-					Factor:        pointer[float32](0),
-					Range:         pointer[float32](25.4),
+				Rain: &weather.WeatherScaler{
 					ClientID:      weatherClientWithRain,
+					Interpolation: weather.Linear,
+					InputMin:      pointer[float64](0),
+					InputMax:      pointer[float64](25.4),
+					FactorMin:     pointer[float64](1.0),
+					FactorMax:     pointer[float64](0.0),
 				},
 			},
 		}, &ws2)

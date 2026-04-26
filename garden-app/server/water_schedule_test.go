@@ -27,6 +27,8 @@ import (
 
 var createdAt, _ = time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
 
+func float64Ptr(f float64) *float64 { return &f }
+
 func createExampleWaterSchedule() *pkg.WaterSchedule {
 	return &pkg.WaterSchedule{
 		ID:        babyapi.ID{ID: id},
@@ -62,21 +64,25 @@ func TestGetWaterSchedule(t *testing.T) {
 				StartTime: pkg.NewStartTime(createdAt),
 				StartDate: &createdAt,
 				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: float32Pointer(0),
-						Factor:        float32Pointer(0),
-						Range:         float32Pointer(25.4),
+					Rain: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(0),
+						InputMax:      float64Ptr(30),
+						FactorMin:     float64Ptr(1.0),
+						FactorMax:     float64Ptr(0.0),
 					},
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(30),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"weather_data":{"rain":{"mm":25.4,"inches":1.0000006},"temperature":{"celsius":80,"fahrenheit":176}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":30,"factor_min":1,"factor_max":0},"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0.5,"factor_max":1.5}},"weather_data":{"rain":{"mm":25.4,"inches":1.0000006},"temperature":{"celsius":80,"fahrenheit":176}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"13m48\.[0-9]+s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureDataButWeatherDataExcluded",
@@ -88,21 +94,25 @@ func TestGetWaterSchedule(t *testing.T) {
 				StartTime: pkg.NewStartTime(createdAt),
 				StartDate: &createdAt,
 				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: float32Pointer(0),
-						Factor:        float32Pointer(0),
-						Range:         float32Pointer(25.4),
+					Rain: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(0),
+						InputMax:      float64Ptr(25.4),
+						FactorMin:     float64Ptr(1.0),
+						FactorMax:     float64Ptr(1.0),
 					},
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(30),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"},"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":1,"factor_max":1},"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0.5,"factor_max":1.5}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorRainWeatherClientDNE",
@@ -114,15 +124,17 @@ func TestGetWaterSchedule(t *testing.T) {
 				StartTime: pkg.NewStartTime(createdAt),
 				StartDate: &createdAt,
 				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: float32Pointer(0),
-						Factor:        float32Pointer(0),
-						Range:         float32Pointer(25.4),
+					Rain: &weather.WeatherScaler{
 						ClientID:      id2,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(0),
+						InputMax:      float64Ptr(25.4),
+						FactorMin:     float64Ptr(1.0),
+						FactorMax:     float64Ptr(0.0),
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":1,"factor_max":0}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h0m0s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
@@ -134,15 +146,17 @@ func TestGetWaterSchedule(t *testing.T) {
 				StartTime: pkg.NewStartTime(createdAt),
 				StartDate: &createdAt,
 				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(30),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
 						ClientID:      id2,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"baseline_value":30,"factor":0.5,"range":10,"client_id":"chkodpg3lcj13q82mq40"}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"59m59.99995904s","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":20,"input_max":40,"factor_min":[0-9.]+,"factor_max":[0-9.]+}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"[0-9a-zµs.]+","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 	}
 
@@ -236,13 +250,13 @@ func TestUpdateWaterSchedule(t *testing.T) {
 		},
 		{
 			"BadRequestInvalidTemperatureControl",
-			`{"weather_control":{"temperature_control":{"baseline_value":27,"factor":-1,"range":10,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
-			`{"status":"Invalid request.","error":"invalid WaterSchedule.WeatherControl after patching: error validating temperature_control: factor must be between 0 and 1"}`,
+			`{"weather_control":{"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":20,"input_max":40,"factor_min":-1,"factor_max":1.5}}}`,
+			`{"status":"Invalid request.","error":"invalid WaterSchedule.WeatherControl after patching: error validating temperature_control: factors must be non-negative"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorRainWeatherClientDNE",
-			`{"weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"chkodpg3lcj13q82mq40"}}}`,
+			`{"weather_control":{"rain_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":0,"factor_max":0}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for RainControl: error getting WeatherClient with ID \\"chkodpg3lcj13q82mq40\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
@@ -447,13 +461,13 @@ func TestCreateWaterSchedule(t *testing.T) {
 		},
 		{
 			"ErrorRainWeatherClientDNE",
-			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":0,"factor_max":0}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for RainControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
-			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":0,"factor_max":0}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for TemperatureControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
@@ -529,13 +543,13 @@ func TestUpdateWaterSchedulePUT(t *testing.T) {
 		},
 		{
 			"ErrorRainWeatherClientDNE",
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"rain_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":0,"factor_max":0}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for RainControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"temperature_control":{"baseline_value":0,"factor":0,"range":25.4,"client_id":"c5cvhpcbcv45e8bp16dg"}}}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"24h0m0s","start_time":"11:24:52-07:00", "weather_control":{"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":0,"factor_max":0}}}`,
 			`{"status":"Invalid request.","error":"unable to get WeatherClients for WaterSchedule: error getting client for TemperatureControl: error getting WeatherClient with ID \\"c5cvhpcbcv45e8bp16dg\\": resource not found"}`,
 			http.StatusBadRequest,
 		},
@@ -611,129 +625,151 @@ func TestWaterScheduleRequest(t *testing.T) {
 			"missing required start_time field",
 		},
 		{
-			"EmptyWeatherControlBaselineTemperature",
-			&pkg.WaterSchedule{
-				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: pkg.NewStartTime(now),
-				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						Factor: float32Pointer(0.5),
-						Range:  float32Pointer(10),
-					},
-				},
-			},
-			"error validating weather_control: error validating temperature_control: missing required field: baseline_value",
-		},
-		{
-			"EmptyWeatherControlFactor",
-			&pkg.WaterSchedule{
-				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: pkg.NewStartTime(now),
-				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(27),
-						Range:         float32Pointer(10),
-					},
-				},
-			},
-			"error validating weather_control: error validating temperature_control: missing required field: factor",
-		},
-		{
-			"EmptyWeatherControlRange",
-			&pkg.WaterSchedule{
-				Interval:  &pkg.Duration{Duration: time.Hour * 24},
-				Duration:  &pkg.Duration{Duration: time.Second},
-				StartTime: pkg.NewStartTime(now),
-				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(27),
-						Factor:        float32Pointer(0.5),
-					},
-				},
-			},
-			"error validating weather_control: error validating temperature_control: missing required field: range",
-		},
-		{
 			"EmptyWeatherControlClientID",
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(27),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			},
 			"error validating weather_control: error validating temperature_control: missing required field: client_id",
 		},
 		{
-			"WeatherControlInvalidFactorBig",
+			"EmptyWeatherControlInputMin",
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(27),
-						Factor:        float32Pointer(2),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
+						ClientID:      xid.New(),
+						Interpolation: weather.Linear,
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			},
-			"error validating weather_control: error validating temperature_control: factor must be between 0 and 1",
+			"error validating weather_control: error validating temperature_control: missing required field: input_min",
 		},
 		{
-			"WeatherControlInvalidFactorSmall",
+			"EmptyWeatherControlInputMax",
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(27),
-						Factor:        float32Pointer(-1),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
+						ClientID:      xid.New(),
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			},
-			"error validating weather_control: error validating temperature_control: factor must be between 0 and 1",
+			"error validating weather_control: error validating temperature_control: missing required field: input_max",
 		},
 		{
-			"WeatherControlInvalidRange",
+			"EmptyWeatherControlFactorMin",
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(27),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(-1),
+					Temperature: &weather.WeatherScaler{
+						ClientID:      xid.New(),
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			},
-			"error validating weather_control: error validating temperature_control: range must be a positive number",
+			"error validating weather_control: error validating temperature_control: missing required field: factor_min",
 		},
 		{
-			"WeatherControlRainInvalidRange",
+			"EmptyWeatherControlFactorMax",
 			&pkg.WaterSchedule{
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				Duration:  &pkg.Duration{Duration: time.Second},
 				StartTime: pkg.NewStartTime(now),
 				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: float32Pointer(27),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(-1),
+					Temperature: &weather.WeatherScaler{
+						ClientID:      xid.New(),
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
 					},
 				},
 			},
-			"error validating weather_control: error validating rain_control: range must be a positive number",
+			"error validating weather_control: error validating temperature_control: missing required field: factor_max",
+		},
+		{
+			"WeatherControlInvalidFactorMin",
+			&pkg.WaterSchedule{
+				Interval:  &pkg.Duration{Duration: time.Hour * 24},
+				Duration:  &pkg.Duration{Duration: time.Second},
+				StartTime: pkg.NewStartTime(now),
+				WeatherControl: &weather.Control{
+					Temperature: &weather.WeatherScaler{
+						ClientID:      xid.New(),
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(-1),
+						FactorMax:     float64Ptr(1.5),
+					},
+				},
+			},
+			"error validating weather_control: error validating temperature_control: factors must be non-negative",
+		},
+		{
+			"WeatherControlInvalidInputRange",
+			&pkg.WaterSchedule{
+				Interval:  &pkg.Duration{Duration: time.Hour * 24},
+				Duration:  &pkg.Duration{Duration: time.Second},
+				StartTime: pkg.NewStartTime(now),
+				WeatherControl: &weather.Control{
+					Temperature: &weather.WeatherScaler{
+						ClientID:      xid.New(),
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(40),
+						InputMax:      float64Ptr(20),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
+					},
+				},
+			},
+			"error validating weather_control: error validating temperature_control: input_max must be greater than input_min",
+		},
+		{
+			"WeatherControlRainInvalidInputRange",
+			&pkg.WaterSchedule{
+				Interval:  &pkg.Duration{Duration: time.Hour * 24},
+				Duration:  &pkg.Duration{Duration: time.Second},
+				StartTime: pkg.NewStartTime(now),
+				WeatherControl: &weather.Control{
+					Rain: &weather.WeatherScaler{
+						ClientID:      xid.New(),
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(50),
+						InputMax:      float64Ptr(20),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.0),
+					},
+				},
+			},
+			"error validating weather_control: error validating rain_control: input_max must be greater than input_min",
 		},
 		{
 			"ActivePeriodInvalid",
@@ -755,11 +791,13 @@ func TestWaterScheduleRequest(t *testing.T) {
 			Interval:  &pkg.Duration{Duration: time.Hour * 24},
 			StartTime: pkg.NewStartTime(now),
 			WeatherControl: &weather.Control{
-				Temperature: &weather.ScaleControl{
-					BaselineValue: float32Pointer(27),
-					Factor:        float32Pointer(0.5),
-					Range:         float32Pointer(10),
+				Temperature: &weather.WeatherScaler{
 					ClientID:      xid.New(),
+					Interpolation: weather.Linear,
+					InputMin:      float64Ptr(20),
+					InputMax:      float64Ptr(40),
+					FactorMin:     float64Ptr(0.5),
+					FactorMax:     float64Ptr(1.5),
 				},
 			},
 		}

@@ -5,21 +5,21 @@ import "github.com/rs/xid"
 
 // Control defines certain parameters and behaviors to influence watering patterns based off weather data
 type Control struct {
-	Rain        *ScaleControl `json:"rain_control,omitempty"`
-	Temperature *ScaleControl `json:"temperature_control,omitempty"`
+	Rain        *WeatherScaler `json:"rain_control,omitempty"`
+	Temperature *WeatherScaler `json:"temperature_control,omitempty"`
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
 func (wc *Control) Patch(newControl *Control) {
 	if newControl.Rain != nil {
 		if wc.Rain == nil {
-			wc.Rain = &ScaleControl{}
+			wc.Rain = &WeatherScaler{}
 		}
 		wc.Rain.Patch(newControl.Rain)
 	}
 	if newControl.Temperature != nil {
 		if wc.Temperature == nil {
-			wc.Temperature = &ScaleControl{}
+			wc.Temperature = &WeatherScaler{}
 		}
 		wc.Temperature.Patch(newControl.Temperature)
 	}

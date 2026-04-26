@@ -7,9 +7,14 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func float64Ptr(f float64) *float64 {
+	return &f
+}
 
 func TestWaterScheduleEndDated(t *testing.T) {
 	pastDate := clock.Now().Add(-1 * time.Minute)
@@ -35,7 +40,6 @@ func TestWaterScheduleEndDated(t *testing.T) {
 }
 
 func TestWaterSchedulePatch(t *testing.T) {
-	float := float32(1)
 	now := clock.Now()
 	tests := []struct {
 		name             string
@@ -78,13 +82,15 @@ func TestWaterSchedulePatch(t *testing.T) {
 			},
 		},
 		{
-			"PatchWeatherControl.Temperature",
+			"PatchWeatherControl.Rain",
 			&WaterSchedule{
 				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: &float,
-						Factor:        &float,
-						Range:         &float,
+					Rain: &weather.WeatherScaler{
+						ClientID:  xid.New(),
+						InputMin:  float64Ptr(0.0),
+						InputMax:  float64Ptr(25.4),
+						FactorMin: float64Ptr(0.5),
+						FactorMax: float64Ptr(1.0),
 					},
 				},
 			},
@@ -93,10 +99,12 @@ func TestWaterSchedulePatch(t *testing.T) {
 			"PatchWeatherControl.Temperature",
 			&WaterSchedule{
 				WeatherControl: &weather.Control{
-					Temperature: &weather.ScaleControl{
-						BaselineValue: &float,
-						Factor:        &float,
-						Range:         &float,
+					Temperature: &weather.WeatherScaler{
+						ClientID:  xid.New(),
+						InputMin:  float64Ptr(20.0),
+						InputMax:  float64Ptr(40.0),
+						FactorMin: float64Ptr(0.5),
+						FactorMax: float64Ptr(1.5),
 					},
 				},
 			},

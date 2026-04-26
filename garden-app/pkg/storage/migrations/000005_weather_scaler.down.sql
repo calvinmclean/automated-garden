@@ -1,5 +1,5 @@
 -- Down migration to revert weather_control from WeatherScaler format back to ScaleControl format
--- New format: {enabled, client_id, interpolation, input_min, input_max, factor_min, factor_max}
+-- New format: {client_id, interpolation, input_min, input_max, factor_min, factor_max}
 -- Old format: {baseline_value, factor, range, client_id}
 
 -- Revert rain_control: rain scales down only

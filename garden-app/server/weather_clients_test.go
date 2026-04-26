@@ -146,11 +146,21 @@ func TestDeleteWeatherClient(t *testing.T) {
 
 	ws1 := createExampleWaterSchedule()
 	ws1.WeatherControl = &weather.Control{
-		Rain: &weather.ScaleControl{
-			ClientID: id2,
+		Rain: &weather.WeatherScaler{
+			ClientID:      id2,
+			Interpolation: weather.Linear,
+			InputMin:      float64Ptr(0),
+			InputMax:      float64Ptr(25.4),
+			FactorMin:     float64Ptr(0.5),
+			FactorMax:     float64Ptr(1.0),
 		},
-		Temperature: &weather.ScaleControl{
-			ClientID: id2,
+		Temperature: &weather.WeatherScaler{
+			ClientID:      id2,
+			Interpolation: weather.Linear,
+			InputMin:      float64Ptr(20),
+			InputMax:      float64Ptr(40),
+			FactorMin:     float64Ptr(0.5),
+			FactorMax:     float64Ptr(1.5),
 		},
 	}
 
@@ -158,11 +168,21 @@ func TestDeleteWeatherClient(t *testing.T) {
 	ws2 := createExampleWaterSchedule()
 	ws2.ID = babyapi.NewID()
 	ws2.WeatherControl = &weather.Control{
-		Rain: &weather.ScaleControl{
-			ClientID: xid.New(),
+		Rain: &weather.WeatherScaler{
+			ClientID:      xid.New(),
+			Interpolation: weather.Linear,
+			InputMin:      float64Ptr(0),
+			InputMax:      float64Ptr(25.4),
+			FactorMin:     float64Ptr(0.5),
+			FactorMax:     float64Ptr(1.0),
 		},
-		Temperature: &weather.ScaleControl{
-			ClientID: xid.New(),
+		Temperature: &weather.WeatherScaler{
+			ClientID:      xid.New(),
+			Interpolation: weather.Linear,
+			InputMin:      float64Ptr(20),
+			InputMax:      float64Ptr(40),
+			FactorMin:     float64Ptr(0.5),
+			FactorMax:     float64Ptr(1.5),
 		},
 	}
 

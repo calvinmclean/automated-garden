@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/mock"
 )
 
+func float64Ptr(f float64) *float64 { return &f }
+
 func TestExecuteScheduledWaterAction(t *testing.T) {
 	CreateNewID = func() xid.ID { return xid.NilID() }
 	defer func() { CreateNewID = xid.New }()
@@ -27,17 +29,21 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 		TopicPrefix: "garden",
 	}
 	weatherClientID, _ := xid.FromString("c5cvhpcbcv45e8bp16dg")
-	temperatureControl := &weather.ScaleControl{
-		BaselineValue: float32Pointer(70),
-		Factor:        float32Pointer(0.5),
-		Range:         float32Pointer(30),
+	temperatureControl := &weather.WeatherScaler{
 		ClientID:      weatherClientID,
+		Interpolation: weather.Linear,
+		InputMin:      float64Ptr(40),
+		InputMax:      float64Ptr(100),
+		FactorMin:     float64Ptr(0.5),
+		FactorMax:     float64Ptr(1.5),
 	}
-	rainControl := &weather.ScaleControl{
-		BaselineValue: float32Pointer(0),
-		Factor:        float32Pointer(0),
-		Range:         float32Pointer(50),
+	rainControl := &weather.WeatherScaler{
 		ClientID:      weatherClientID,
+		Interpolation: weather.Linear,
+		InputMin:      float64Ptr(0),
+		InputMax:      float64Ptr(50),
+		FactorMin:     float64Ptr(1.0),
+		FactorMax:     float64Ptr(0.0),
 	}
 
 	tests := []struct {

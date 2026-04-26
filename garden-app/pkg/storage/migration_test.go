@@ -179,8 +179,6 @@ func TestWeatherScalerMigration(t *testing.T) {
 	var weatherControl string
 	err = db.QueryRow("SELECT weather_control FROM water_schedules WHERE id = 'ws_rain_only'").Scan(&weatherControl)
 	require.NoError(t, err)
-	// SQLite stores booleans as 1/0 in JSON
-	assert.Contains(t, weatherControl, `"enabled":1`)
 	assert.Contains(t, weatherControl, `"interpolation":"linear"`)
 	assert.Contains(t, weatherControl, `"input_min":0`)
 	assert.Contains(t, weatherControl, `"input_max":25.4`)
@@ -195,7 +193,6 @@ func TestWeatherScalerMigration(t *testing.T) {
 	// Verify temperature-only conversion
 	err = db.QueryRow("SELECT weather_control FROM water_schedules WHERE id = 'ws_temp_only'").Scan(&weatherControl)
 	require.NoError(t, err)
-	assert.Contains(t, weatherControl, `"enabled":1`)
 	assert.Contains(t, weatherControl, `"interpolation":"linear"`)
 	assert.Contains(t, weatherControl, `"input_min":20`)   // 30 - 10 = 20
 	assert.Contains(t, weatherControl, `"input_max":40`)   // 30 + 10 = 40

@@ -1,6 +1,6 @@
 -- Migration to convert weather_control from ScaleControl format to WeatherScaler format
 -- Old format: {baseline_value, factor, range, client_id}
--- New format: {enabled, client_id, interpolation, input_min, input_max, factor_min, factor_max}
+-- New format: {client_id, interpolation, input_min, input_max, factor_min, factor_max}
 
 -- Update rain_control: rain scales down only
 -- input_min = baseline_value
@@ -12,7 +12,6 @@ SET weather_control = json_set(
     weather_control,
     '$.rain_control',
     json_object(
-        'enabled', true,
         'client_id', json_extract(weather_control, '$.rain_control.client_id'),
         'interpolation', 'linear',
         'input_min', json_extract(weather_control, '$.rain_control.baseline_value'),
@@ -34,7 +33,6 @@ SET weather_control = json_set(
     weather_control,
     '$.temperature_control',
     json_object(
-        'enabled', true,
         'client_id', json_extract(weather_control, '$.temperature_control.client_id'),
         'interpolation', 'linear',
         'input_min', json_extract(weather_control, '$.temperature_control.baseline_value') - json_extract(weather_control, '$.temperature_control.range'),

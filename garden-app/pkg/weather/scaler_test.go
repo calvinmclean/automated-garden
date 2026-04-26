@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"testing"
 
+	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -122,12 +123,11 @@ func TestInterpolationModeIsValid(t *testing.T) {
 // Test WeatherScaler Scale method with clamping
 func TestWeatherScalerClamping(t *testing.T) {
 	scaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: Linear,
-		InputMin:      10.0,
-		InputMax:      50.0,
-		FactorMin:     0.5,
-		FactorMax:     1.5,
+		InputMin:      float64Ptr(10.0),
+		InputMax:      float64Ptr(50.0),
+		FactorMin:     float64Ptr(0.5),
+		FactorMax:     float64Ptr(1.5),
 	}
 
 	tests := []struct {
@@ -150,32 +150,14 @@ func TestWeatherScalerClamping(t *testing.T) {
 	}
 }
 
-// Test disabled WeatherScaler returns 1.0
-func TestWeatherScalerDisabled(t *testing.T) {
-	scaler := &WeatherScaler{
-		Enabled:       false,
-		Interpolation: Linear,
-		InputMin:      10.0,
-		InputMax:      50.0,
-		FactorMin:     0.5,
-		FactorMax:     1.5,
-	}
-
-	// Should return 1.0 regardless of input when disabled
-	assert.InDelta(t, 1.0, scaler.Scale(5.0), 0.0001)
-	assert.InDelta(t, 1.0, scaler.Scale(30.0), 0.0001)
-	assert.InDelta(t, 1.0, scaler.Scale(60.0), 0.0001)
-}
-
 // Scenario 1: Rain Scaler - Input: 0-30mm, Output: 1.0-0.0 (linear)
 func TestRainScenario(t *testing.T) {
 	rainScaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: Linear,
-		InputMin:      0.0,
-		InputMax:      30.0,
-		FactorMin:     1.0,
-		FactorMax:     0.0,
+		InputMin:      float64Ptr(0.0),
+		InputMax:      float64Ptr(30.0),
+		FactorMin:     float64Ptr(1.0),
+		FactorMax:     float64Ptr(0.0),
 	}
 
 	tests := []struct {
@@ -198,12 +180,11 @@ func TestRainScenario(t *testing.T) {
 // Scenario 2: Temperature Scaler - Input: 20-46°C, Output: 1.0-1.5 (ease_in)
 func TestTemperatureScenario(t *testing.T) {
 	tempScaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: EaseIn,
-		InputMin:      20.0,
-		InputMax:      46.0,
-		FactorMin:     1.0,
-		FactorMax:     1.5,
+		InputMin:      float64Ptr(20.0),
+		InputMax:      float64Ptr(46.0),
+		FactorMin:     float64Ptr(1.0),
+		FactorMax:     float64Ptr(1.5),
 	}
 
 	// Manual calculation verification
@@ -224,21 +205,19 @@ func TestTemperatureScenario(t *testing.T) {
 // Test multi-scaler multiplication
 func TestScaleMulti(t *testing.T) {
 	rainScaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: Linear,
-		InputMin:      0.0,
-		InputMax:      30.0,
-		FactorMin:     1.0,
-		FactorMax:     0.0,
+		InputMin:      float64Ptr(0.0),
+		InputMax:      float64Ptr(30.0),
+		FactorMin:     float64Ptr(1.0),
+		FactorMax:     float64Ptr(0.0),
 	}
 
 	tempScaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: Linear,
-		InputMin:      20.0,
-		InputMax:      46.0,
-		FactorMin:     1.0,
-		FactorMax:     1.5,
+		InputMin:      float64Ptr(20.0),
+		InputMax:      float64Ptr(46.0),
+		FactorMin:     float64Ptr(1.0),
+		FactorMax:     float64Ptr(1.5),
 	}
 
 	// rain: 6mm -> t=0.2 -> 0.8, temp: 30C -> t=(30-20)/26=10/26 -> 1.0+0.5*(10/26)=1.1923...
@@ -250,43 +229,14 @@ func TestScaleMulti(t *testing.T) {
 	assert.InDelta(t, 0.953846, result, 0.0001)
 }
 
-// Test multi-scaler with disabled scaler
-func TestScaleMultiWithDisabled(t *testing.T) {
-	enabledScaler := &WeatherScaler{
-		Enabled:       true,
-		Interpolation: Linear,
-		InputMin:      0.0,
-		InputMax:      10.0,
-		FactorMin:     0.5,
-		FactorMax:     1.0,
-	}
-
-	disabledScaler := &WeatherScaler{
-		Enabled:       false,
-		Interpolation: Linear,
-		InputMin:      0.0,
-		InputMax:      10.0,
-		FactorMin:     0.5,
-		FactorMax:     1.0,
-	}
-
-	// enabled: 0.5 (at InputMin), disabled: 1.0 → expected: 0.5
-	scalers := []*WeatherScaler{enabledScaler, disabledScaler}
-	inputs := []float64{0.0, 5.0}
-
-	result := ScaleMulti(scalers, inputs)
-	assert.InDelta(t, 0.5, result, 0.0001)
-}
-
 // Test ScaleMulti with mismatched lengths
 func TestScaleMultiMismatchedLengths(t *testing.T) {
 	scaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: Linear,
-		InputMin:      0.0,
-		InputMax:      10.0,
-		FactorMin:     0.5,
-		FactorMax:     1.0,
+		InputMin:      float64Ptr(0.0),
+		InputMax:      float64Ptr(10.0),
+		FactorMin:     float64Ptr(0.5),
+		FactorMax:     float64Ptr(1.0),
 	}
 
 	// Mismatched lengths should return 1.0
@@ -305,36 +255,23 @@ func TestWeatherScalerValidate(t *testing.T) {
 		{
 			name: "valid config",
 			scaler: WeatherScaler{
-				Enabled:       true,
+				ClientID:      xid.New(),
 				Interpolation: Linear,
-				InputMin:      0.0,
-				InputMax:      10.0,
-				FactorMin:     0.5,
-				FactorMax:     1.5,
-			},
-			wantError: false,
-		},
-		{
-			name: "disabled scaler skips validation",
-			scaler: WeatherScaler{
-				Enabled:       false,
-				Interpolation: "invalid",
-				InputMin:      10.0,
-				InputMax:      0.0,  // invalid but ignored
-				FactorMin:     -1.0, // invalid but ignored
-				FactorMax:     1.0,
+				InputMin:      float64Ptr(0.0),
+				InputMax:      float64Ptr(10.0),
+				FactorMin:     float64Ptr(0.5),
+				FactorMax:     float64Ptr(1.5),
 			},
 			wantError: false,
 		},
 		{
 			name: "input_max <= input_min",
 			scaler: WeatherScaler{
-				Enabled:       true,
 				Interpolation: Linear,
-				InputMin:      10.0,
-				InputMax:      10.0,
-				FactorMin:     0.5,
-				FactorMax:     1.5,
+				InputMin:      float64Ptr(10.0),
+				InputMax:      float64Ptr(10.0),
+				FactorMin:     float64Ptr(0.5),
+				FactorMax:     float64Ptr(1.5),
 			},
 			wantError: true,
 			errMsg:    "input_max must be greater than input_min",
@@ -342,12 +279,11 @@ func TestWeatherScalerValidate(t *testing.T) {
 		{
 			name: "negative FactorMin",
 			scaler: WeatherScaler{
-				Enabled:       true,
 				Interpolation: Linear,
-				InputMin:      0.0,
-				InputMax:      10.0,
-				FactorMin:     -0.5,
-				FactorMax:     1.5,
+				InputMin:      float64Ptr(0.0),
+				InputMax:      float64Ptr(10.0),
+				FactorMin:     float64Ptr(-0.5),
+				FactorMax:     float64Ptr(1.5),
 			},
 			wantError: true,
 			errMsg:    "factors must be non-negative",
@@ -355,12 +291,11 @@ func TestWeatherScalerValidate(t *testing.T) {
 		{
 			name: "negative FactorMax",
 			scaler: WeatherScaler{
-				Enabled:       true,
 				Interpolation: Linear,
-				InputMin:      0.0,
-				InputMax:      10.0,
-				FactorMin:     0.5,
-				FactorMax:     -1.5,
+				InputMin:      float64Ptr(0.0),
+				InputMax:      float64Ptr(10.0),
+				FactorMin:     float64Ptr(0.5),
+				FactorMax:     float64Ptr(-1.5),
 			},
 			wantError: true,
 			errMsg:    "factors must be non-negative",
@@ -368,12 +303,11 @@ func TestWeatherScalerValidate(t *testing.T) {
 		{
 			name: "invalid interpolation mode",
 			scaler: WeatherScaler{
-				Enabled:       true,
 				Interpolation: "invalid_mode",
-				InputMin:      0.0,
-				InputMax:      10.0,
-				FactorMin:     0.5,
-				FactorMax:     1.5,
+				InputMin:      float64Ptr(0.0),
+				InputMax:      float64Ptr(10.0),
+				FactorMin:     float64Ptr(0.5),
+				FactorMax:     float64Ptr(1.5),
 			},
 			wantError: true,
 			errMsg:    "invalid interpolation mode",
@@ -397,12 +331,11 @@ func TestWeatherScalerValidate(t *testing.T) {
 func TestWeatherScalerEdgeCases(t *testing.T) {
 	t.Run("flat line - FactorMin equals FactorMax", func(t *testing.T) {
 		scaler := &WeatherScaler{
-			Enabled:       true,
 			Interpolation: Linear,
-			InputMin:      0.0,
-			InputMax:      10.0,
-			FactorMin:     0.5,
-			FactorMax:     0.5,
+			InputMin:      float64Ptr(0.0),
+			InputMax:      float64Ptr(10.0),
+			FactorMin:     float64Ptr(0.5),
+			FactorMax:     float64Ptr(0.5),
 		}
 
 		// Should always return 0.5 regardless of input
@@ -413,12 +346,11 @@ func TestWeatherScalerEdgeCases(t *testing.T) {
 
 	t.Run("very large input range", func(t *testing.T) {
 		scaler := &WeatherScaler{
-			Enabled:       true,
 			Interpolation: Linear,
-			InputMin:      0.0,
-			InputMax:      1e9,
-			FactorMin:     0.0,
-			FactorMax:     1.0,
+			InputMin:      float64Ptr(0.0),
+			InputMax:      float64Ptr(1e9),
+			FactorMin:     float64Ptr(0.0),
+			FactorMax:     float64Ptr(1.0),
 		}
 
 		assert.InDelta(t, 0.5, scaler.Scale(5e8), 0.0001)
@@ -426,12 +358,11 @@ func TestWeatherScalerEdgeCases(t *testing.T) {
 
 	t.Run("very small input range", func(t *testing.T) {
 		scaler := &WeatherScaler{
-			Enabled:       true,
 			Interpolation: Linear,
-			InputMin:      0.0,
-			InputMax:      0.001,
-			FactorMin:     0.0,
-			FactorMax:     1.0,
+			InputMin:      float64Ptr(0.0),
+			InputMax:      float64Ptr(0.001),
+			FactorMin:     float64Ptr(0.0),
+			FactorMax:     float64Ptr(1.0),
 		}
 
 		assert.InDelta(t, 0.5, scaler.Scale(0.0005), 0.0001)
@@ -441,12 +372,11 @@ func TestWeatherScalerEdgeCases(t *testing.T) {
 // Test floating point precision
 func TestFloatingPointPrecision(t *testing.T) {
 	scaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: Linear,
-		InputMin:      0.0,
-		InputMax:      1.0,
-		FactorMin:     0.0,
-		FactorMax:     1.0,
+		InputMin:      float64Ptr(0.0),
+		InputMax:      float64Ptr(1.0),
+		FactorMin:     float64Ptr(0.0),
+		FactorMax:     float64Ptr(1.0),
 	}
 
 	// Test that results are precise
@@ -466,12 +396,11 @@ func TestAllInterpolationModes(t *testing.T) {
 	for _, mode := range modes {
 		t.Run(string(mode), func(t *testing.T) {
 			scaler := &WeatherScaler{
-				Enabled:       true,
 				Interpolation: mode,
-				InputMin:      0.0,
-				InputMax:      10.0,
-				FactorMin:     0.0,
-				FactorMax:     1.0,
+				InputMin:      float64Ptr(0.0),
+				InputMax:      float64Ptr(10.0),
+				FactorMin:     float64Ptr(0.0),
+				FactorMax:     float64Ptr(1.0),
 			}
 
 			// All interpolators should return FactorMin at InputMin
@@ -507,12 +436,11 @@ func BenchmarkEaseInInterpolation(b *testing.B) {
 
 func BenchmarkWeatherScalerScale(b *testing.B) {
 	scaler := &WeatherScaler{
-		Enabled:       true,
 		Interpolation: EaseInOut,
-		InputMin:      0.0,
-		InputMax:      100.0,
-		FactorMin:     0.5,
-		FactorMax:     1.5,
+		InputMin:      float64Ptr(0.0),
+		InputMax:      float64Ptr(100.0),
+		FactorMin:     float64Ptr(0.5),
+		FactorMax:     float64Ptr(1.5),
 	}
 	for i := 0; i < b.N; i++ {
 		scaler.Scale(50.0)

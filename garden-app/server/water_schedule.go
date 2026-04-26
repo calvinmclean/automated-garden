@@ -174,23 +174,21 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 		// Convert imperial values to metric if user is using imperial units
 		if getUnitsFromRequest(r) == "imperial" {
 			if ws.WeatherControl.Rain != nil {
-				if ws.WeatherControl.Rain.BaselineValue != nil {
-					val := *ws.WeatherControl.Rain.BaselineValue * 25.4 // in → mm
-					ws.WeatherControl.Rain.BaselineValue = &val
+				// Convert rain input range (inches to mm)
+				if ws.WeatherControl.Rain.InputMin != nil {
+					*ws.WeatherControl.Rain.InputMin *= 25.4 // in → mm
 				}
-				if ws.WeatherControl.Rain.Range != nil {
-					val := *ws.WeatherControl.Rain.Range * 25.4 // in → mm
-					ws.WeatherControl.Rain.Range = &val
+				if ws.WeatherControl.Rain.InputMax != nil {
+					*ws.WeatherControl.Rain.InputMax *= 25.4 // in → mm
 				}
 			}
 			if ws.WeatherControl.Temperature != nil {
-				if ws.WeatherControl.Temperature.BaselineValue != nil {
-					val := (*ws.WeatherControl.Temperature.BaselineValue - 32) / 1.8 // °F → °C
-					ws.WeatherControl.Temperature.BaselineValue = &val
+				// Convert temperature input range (°F to °C)
+				if ws.WeatherControl.Temperature.InputMin != nil {
+					*ws.WeatherControl.Temperature.InputMin = (*ws.WeatherControl.Temperature.InputMin - 32) / 1.8 // °F → °C
 				}
-				if ws.WeatherControl.Temperature.Range != nil {
-					val := *ws.WeatherControl.Temperature.Range / 1.8 // °F delta → °C delta
-					ws.WeatherControl.Temperature.Range = &val
+				if ws.WeatherControl.Temperature.InputMax != nil {
+					*ws.WeatherControl.Temperature.InputMax = (*ws.WeatherControl.Temperature.InputMax - 32) / 1.8 // °F → °C
 				}
 			}
 		}

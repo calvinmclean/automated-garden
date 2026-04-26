@@ -79,31 +79,51 @@
                     <select id="rain-client-select" class="uk-select" name="WeatherControl.Rain.ClientID" required
                         {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                         {{ range .WeatherClients }}
-                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Rain (eq .ID.String $.WeatherControl.Rain.ClientID.String) }}selected{{ end }}>{{ .Name }}</option>
+                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Rain (eq .ID.String $.WeatherControl.Rain.ClientID) }}selected{{ end }}>{{ .Name }}</option>
                         {{ end }}
                     </select>
                 </div>
                 <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
                     <div>
-                        <label class="uk-form-label" for="rain-baseline">Baseline ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
-                        <input id="rain-baseline" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.BaselineValue }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Rain.BaselineValue }}{{ else }}{{ printf "%.2f" (MmToInches .WeatherControl.Rain.BaselineValue) }}{{ end }}{{ end }}"
-                            name="WeatherControl.Rain.BaselineValue"
+                        <label class="uk-form-label" for="rain-input-min">Input Min ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
+                        <input id="rain-input-min" class="uk-input" type="number" step="0.01" required
+                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ if IsMetric }}{{ printf "%.2f" .WeatherControl.Rain.InputMin }}{{ else }}{{ printf "%.2f" (MmToInches (Float64Ptr .WeatherControl.Rain.InputMin)) }}{{ end }}{{ end }}"
+                            name="WeatherControl.Rain.InputMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
                     <div>
-                        <label class="uk-form-label" for="rain-factor">Factor*</label>
-                        <input id="rain-factor" class="uk-input" type="number" step="0.01" min="0" max="1" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.Factor }}{{ DerefFloat32 .WeatherControl.Rain.Factor }}{{ end }}"
-                            name="WeatherControl.Rain.Factor"
+                        <label class="uk-form-label" for="rain-input-max">Input Max ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
+                        <input id="rain-input-max" class="uk-input" type="number" step="0.01" required
+                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ if IsMetric }}{{ printf "%.2f" .WeatherControl.Rain.InputMax }}{{ else }}{{ printf "%.2f" (MmToInches (Float64Ptr .WeatherControl.Rain.InputMax)) }}{{ end }}{{ end }}"
+                            name="WeatherControl.Rain.InputMax"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
                     <div>
-                        <label class="uk-form-label" for="rain-range">Range ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
-                        <input id="rain-range" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain .WeatherControl.Rain.Range }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Rain.Range }}{{ else }}{{ printf "%.2f" (MmToInches .WeatherControl.Rain.Range) }}{{ end }}{{ end }}"
-                            name="WeatherControl.Rain.Range"
+                        <label class="uk-form-label" for="rain-factor-min">Factor Min*</label>
+                        <input id="rain-factor-min" class="uk-input" type="number" step="0.01" min="0" required
+                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ printf "%.2f" .WeatherControl.Rain.FactorMin }}{{ end }}"
+                            name="WeatherControl.Rain.FactorMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                    </div>
+                </div>
+                <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+                    <div>
+                        <label class="uk-form-label" for="rain-factor-max">Factor Max*</label>
+                        <input id="rain-factor-max" class="uk-input" type="number" step="0.01" min="0" required
+                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ printf "%.2f" .WeatherControl.Rain.FactorMax }}{{ end }}"
+                            name="WeatherControl.Rain.FactorMax"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="rain-interpolation">Interpolation*</label>
+                        <select id="rain-interpolation" class="uk-select" name="WeatherControl.Rain.Interpolation" required
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                            <option value="linear" {{ if and .WeatherControl .WeatherControl.Rain (eq .WeatherControl.Rain.Interpolation "linear") }}selected{{ end }}>Linear</option>
+                            <option value="ease_in" {{ if and .WeatherControl .WeatherControl.Rain (eq .WeatherControl.Rain.Interpolation "ease_in") }}selected{{ end }}>Ease In</option>
+                            <option value="ease_out" {{ if and .WeatherControl .WeatherControl.Rain (eq .WeatherControl.Rain.Interpolation "ease_out") }}selected{{ end }}>Ease Out</option>
+                            <option value="ease_in_out" {{ if and .WeatherControl .WeatherControl.Rain (eq .WeatherControl.Rain.Interpolation "ease_in_out") }}selected{{ end }}>Ease In/Out</option>
+                            <option value="step" {{ if and .WeatherControl .WeatherControl.Rain (eq .WeatherControl.Rain.Interpolation "step") }}selected{{ end }}>Step</option>
+                        </select>
                     </div>
                 </div>
             </div>
@@ -123,31 +143,51 @@
                     <select id="temperature-client-select" class="uk-select" name="WeatherControl.Temperature.ClientID" required
                         {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                         {{ range .WeatherClients }}
-                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Temperature (eq .ID.String $.WeatherControl.Temperature.ClientID.String) }}selected{{ end }}>{{ .Name }}</option>
+                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Temperature (eq .ID.String $.WeatherControl.Temperature.ClientID) }}selected{{ end }}>{{ .Name }}</option>
                         {{ end }}
                     </select>
                 </div>
                 <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
                     <div>
-                        <label class="uk-form-label" for="temperature-baseline">Baseline ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
-                        <input id="temperature-baseline" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.BaselineValue }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Temperature.BaselineValue }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit (DerefFloat32 .WeatherControl.Temperature.BaselineValue)) }}{{ end }}{{ end }}"
-                            name="WeatherControl.Temperature.BaselineValue"
+                        <label class="uk-form-label" for="temperature-input-min">Input Min ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
+                        <input id="temperature-input-min" class="uk-input" type="number" step="0.01" required
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ if IsMetric }}{{ printf "%.1f" .WeatherControl.Temperature.InputMin }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit (Float64Ptr .WeatherControl.Temperature.InputMin)) }}{{ end }}{{ end }}"
+                            name="WeatherControl.Temperature.InputMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
                     <div>
-                        <label class="uk-form-label" for="temperature-factor">Factor*</label>
-                        <input id="temperature-factor" class="uk-input" type="number" step="0.01" min="0" max="1" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.Factor }}{{ DerefFloat32 .WeatherControl.Temperature.Factor }}{{ end }}"
-                            name="WeatherControl.Temperature.Factor"
+                        <label class="uk-form-label" for="temperature-input-max">Input Max ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
+                        <input id="temperature-input-max" class="uk-input" type="number" step="0.01" required
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ if IsMetric }}{{ printf "%.1f" .WeatherControl.Temperature.InputMax }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit (Float64Ptr .WeatherControl.Temperature.InputMax)) }}{{ end }}{{ end }}"
+                            name="WeatherControl.Temperature.InputMax"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
                     <div>
-                        <label class="uk-form-label" for="temperature-range">Range ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
-                        <input id="temperature-range" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature .WeatherControl.Temperature.Range }}{{ if IsMetric }}{{ DerefFloat32 .WeatherControl.Temperature.Range }}{{ else }}{{ printf "%.1f" (CelsiusDeltaToFahrenheitDelta .WeatherControl.Temperature.Range) }}{{ end }}{{ end }}"
-                            name="WeatherControl.Temperature.Range"
+                        <label class="uk-form-label" for="temperature-factor-min">Factor Min*</label>
+                        <input id="temperature-factor-min" class="uk-input" type="number" step="0.01" min="0" required
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ printf "%.2f" .WeatherControl.Temperature.FactorMin }}{{ end }}"
+                            name="WeatherControl.Temperature.FactorMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                    </div>
+                </div>
+                <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+                    <div>
+                        <label class="uk-form-label" for="temperature-factor-max">Factor Max*</label>
+                        <input id="temperature-factor-max" class="uk-input" type="number" step="0.01" min="0" required
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ printf "%.2f" .WeatherControl.Temperature.FactorMax }}{{ end }}"
+                            name="WeatherControl.Temperature.FactorMax"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="temperature-interpolation">Interpolation*</label>
+                        <select id="temperature-interpolation" class="uk-select" name="WeatherControl.Temperature.Interpolation" required
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                            <option value="linear" {{ if and .WeatherControl .WeatherControl.Temperature (eq .WeatherControl.Temperature.Interpolation "linear") }}selected{{ end }}>Linear</option>
+                            <option value="ease_in" {{ if and .WeatherControl .WeatherControl.Temperature (eq .WeatherControl.Temperature.Interpolation "ease_in") }}selected{{ end }}>Ease In</option>
+                            <option value="ease_out" {{ if and .WeatherControl .WeatherControl.Temperature (eq .WeatherControl.Temperature.Interpolation "ease_out") }}selected{{ end }}>Ease Out</option>
+                            <option value="ease_in_out" {{ if and .WeatherControl .WeatherControl.Temperature (eq .WeatherControl.Temperature.Interpolation "ease_in_out") }}selected{{ end }}>Ease In/Out</option>
+                            <option value="step" {{ if and .WeatherControl .WeatherControl.Temperature (eq .WeatherControl.Temperature.Interpolation "step") }}selected{{ end }}>Step</option>
+                        </select>
                     </div>
                 </div>
             </div>
