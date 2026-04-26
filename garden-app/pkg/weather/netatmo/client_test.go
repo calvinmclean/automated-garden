@@ -106,21 +106,6 @@ func TestWeatherRequestMethods(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			opts := map[string]any{
-				"authentication": map[string]any{
-					"access_token":    "ACCESS_TOKEN",
-					"refresh_token":   "REFRESH_TOKEN",
-					"expiration_date": tt.tokenExpiration.Format(time.RFC3339Nano),
-				},
-				"client_id":         "CLIENT_ID",
-				"client_secret":     "CLIENT_SECRET",
-				"outdoor_module_id": "OUTDOOR_MODULE_ID",
-				"rain_module_id":    "RAIN_MODULE_ID",
-				"station_id":        "STATION_ID",
-			}
-			client, err := NewClient(opts, func(newOpts map[string]any) error { return nil })
-			require.NoError(t, err)
-
 			r, err := recorder.New(
 				tt.fixture,
 				recorder.WithMatcher(matcher),
@@ -136,7 +121,24 @@ func TestWeatherRequestMethods(t *testing.T) {
 				t.Fatal("Recorder should be in ModeRecordOnce")
 			}
 
-			client.Client = r.GetDefaultClient()
+			// Set the default client to VCR so NewClient uses it during token refresh
+			DefaultClient = r.GetDefaultClient()
+			defer func() { DefaultClient = http.DefaultClient }()
+
+			opts := map[string]any{
+				"authentication": map[string]any{
+					"access_token":    "ACCESS_TOKEN",
+					"refresh_token":   "REFRESH_TOKEN",
+					"expiration_date": tt.tokenExpiration.Format(time.RFC3339Nano),
+				},
+				"client_id":         "CLIENT_ID",
+				"client_secret":     "CLIENT_SECRET",
+				"outdoor_module_id": "OUTDOOR_MODULE_ID",
+				"rain_module_id":    "RAIN_MODULE_ID",
+				"station_id":        "STATION_ID",
+			}
+			client, err := NewClient(opts, func(newOpts map[string]any) error { return nil })
+			require.NoError(t, err)
 
 			tt.exec(t, client)
 		})

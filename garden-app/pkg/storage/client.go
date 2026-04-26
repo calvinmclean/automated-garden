@@ -80,7 +80,7 @@ func NewClient(config Config) (*Client, error) {
 	}, nil
 }
 
-// GetWeatherClient retrieves a WeatherClient by ID and initializes it
+// GetWeatherClient retrieves a WeatherClient by ID and initializes it.
 func (c *Client) GetWeatherClient(id xid.ID) (weather.Client, error) {
 	clientConfig, err := c.WeatherClientConfigs.Get(context.Background(), id.String())
 	if err != nil {

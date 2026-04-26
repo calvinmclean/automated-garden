@@ -47,7 +47,7 @@ go run main.go serve --config config.yaml
 ## Key Conventions
 
 - Go module: `github.com/calvinmclean/automated-garden/garden-app`
-- Go version: 1.24
+- Go version: 1.26
 - Linters configured in `garden-app/.golangci.yaml` (includes gofumpt, gosec, revive, etc.)
 - `render.Render` and `viper.BindPFlag` error returns are intentionally excluded from errcheck — see `.golangci.yaml` excludes.
 - Test files exclude `revive` linter.
