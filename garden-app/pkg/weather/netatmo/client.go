@@ -13,11 +13,16 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/mitchellh/mapstructure"
+	"golang.org/x/sync/singleflight"
 )
 
 const (
 	baseURI = "https://api.netatmo.com"
 )
+
+// refreshFlight is used to deduplicate concurrent token refresh requests
+// to prevent race conditions when multiple clients try to refresh the same token
+var refreshFlight singleflight.Group
 
 // Config is specific to the Netatmo API and holds all of the necessary fields for interacting with the API.
 // If StationID is not provided, StationName is used to get it from the API
@@ -75,6 +80,13 @@ func NewClient(options map[string]any, storageCallback func(map[string]any) erro
 	client.baseURL, err = url.Parse(baseURI)
 	if err != nil {
 		return nil, err
+	}
+
+	if client.Authentication != nil {
+		err = client.refreshToken()
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// Only fetch device IDs if authentication is available and IDs are missing
@@ -212,6 +224,16 @@ func (c *Client) refreshToken() error {
 		return nil
 	}
 
+	// Use singleflight to deduplicate concurrent refresh requests using the same refresh token
+	// This prevents race conditions where multiple clients with the same token try to refresh simultaneously
+	_, err, _ := refreshFlight.Do(c.Authentication.RefreshToken, func() (interface{}, error) {
+		return nil, c.doRefreshToken()
+	})
+
+	return err
+}
+
+func (c *Client) doRefreshToken() error {
 	formData := url.Values{
 		"grant_type":    {"refresh_token"},
 		"refresh_token": {c.Authentication.RefreshToken},

@@ -2,14 +2,14 @@
 // README at: https://github.com/devcontainers/templates/tree/main/src/go
 {
   "name": "automated-garden",
-  "image": "mcr.microsoft.com/devcontainers/go:1-1.24-bullseye",
+  "image": "mcr.microsoft.com/devcontainers/go:1-1.26-bullseye",
   "features": {
     "ghcr.io/devcontainers/features/sshd:1": {
-      "version": "latest"
+      "version": "latest",
     },
     "ghcr.io/devcontainers-contrib/features/go-task:1": {},
     "ghcr.io/devcontainers-contrib/features/fish-apt-get:1": {},
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
   },
   "customizations": {
     "vscode": {
@@ -17,7 +17,7 @@
         "golang.go",
         "davidanson.vscode-markdownlint",
         "ms-azuretools.vscode-docker", // Docker integration and linting
-        "mohsen1.prettify-json" // Prettify JSON data
+        "mohsen1.prettify-json", // Prettify JSON data
       ],
       "settings": {
         "files.eol": "\n",
@@ -33,15 +33,15 @@
         "go.lintOnSave": "package",
         "[go]": {
           "editor.codeActionsOnSave": {
-            "source.organizeImports": true
-          }
+            "source.organizeImports": true,
+          },
         },
         "gopls": {
           "usePlaceholders": false,
           "staticcheck": true,
-          "vulncheck": "Imports"
-        }
-      }
-    }
-  }
+          "vulncheck": "Imports",
+        },
+      },
+    },
+  },
 }
