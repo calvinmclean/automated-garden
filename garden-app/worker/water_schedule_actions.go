@@ -7,7 +7,6 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
-	"github.com/rs/xid"
 )
 
 // ExecuteScheduledWaterAction will run ExecuteWaterAction after checking SkipCount and scaling based on weather data
@@ -79,7 +78,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 	}
 
 	if ws.HasRainControl() {
-		weatherClient, err := w.storageClient.GetWeatherClient(xid.ID(ws.WeatherControl.Rain.ClientID))
+		weatherClient, err := w.storageClient.GetWeatherClient(ws.WeatherControl.Rain.ClientID)
 		if err != nil {
 			hadError = true
 			w.logger.Warn("error getting WeatherClient for RainControl", "error", err)

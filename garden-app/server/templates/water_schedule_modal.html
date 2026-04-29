@@ -257,11 +257,33 @@
     opacity: 1 !important;
     background: none !important;
 }
+.scaling-chart-container {
+    background: #f8f8f8;
+    border-radius: 4px;
+    height: 150px;
+    margin-top: 5px;
+}
 </style>
 {{ if or .RainExamples .TemperatureExamples }}
-<div class="uk-alert-primary uk-box-shadow-large" uk-alert style="margin: 0; padding: 20px; max-width: 500px;">
+<div class="uk-alert-primary uk-box-shadow-large" uk-alert style="margin: 0; padding: 20px; max-width: 600px;">
     <a class="uk-alert-close" uk-close></a>
     <h4 class="uk-alert-title uk-margin-remove">Scaling Preview <span class="uk-text-small uk-text-muted">({{ .BaseDuration }})</span></h4>
+    
+    <!-- Charts Section -->
+    <div class="uk-grid uk-grid-small uk-child-width-1-2@l uk-margin-small-top" uk-grid>
+        {{ if .RainExamples }}
+        <div>
+            <div class="uk-text-small uk-text-bold">Rain Scaling Curve</div>
+            <div id="rain-scaling-chart" class="scaling-chart-container"></div>
+        </div>
+        {{ end }}
+        {{ if .TemperatureExamples }}
+        <div>
+            <div class="uk-text-small uk-text-bold">Temperature Scaling Curve</div>
+            <div id="temperature-scaling-chart" class="scaling-chart-container"></div>
+        </div>
+        {{ end }}
+    </div>
     
     {{ if .RainExamples }}
     <div class="uk-margin-small-top">
@@ -297,6 +319,14 @@
     </div>
     {{ end }}
 </div>
+<script>
+    // Generate charts after the preview results are loaded
+    (function() {
+        if (typeof updateScalingCharts === 'function') {
+            updateScalingCharts();
+        }
+    })();
+</script>
 {{ else }}
 <div class="uk-alert-warning uk-box-shadow-large" uk-alert style="margin: 0; padding: 20px; max-width: 500px;">
     <a class="uk-alert-close" uk-close></a>

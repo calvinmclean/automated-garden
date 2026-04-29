@@ -180,6 +180,215 @@
             }
         });
 
+        // Scaling Chart Functions
+        const ScalingInterpolation = {
+            linear: t => t,
+            ease_in: t => t * t,
+            ease_out: t => 1 - Math.pow(1 - t, 2),
+            ease_in_out: t => t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2,
+            step: t => t < 1 ? 0 : 1
+        };
+
+        function generateScalingCurveSVG(inputMin, inputMax, factorMin, factorMax, mode, width, height) {
+            // Validate inputs
+            if (inputMin === '' || inputMax === '' || factorMin === '' || factorMax === '' || !mode) {
+                return null;
+            }
+            
+            const iMin = parseFloat(inputMin);
+            const iMax = parseFloat(inputMax);
+            const fMin = parseFloat(factorMin);
+            const fMax = parseFloat(factorMax);
+            
+            if (isNaN(iMin) || isNaN(iMax) || isNaN(fMin) || isNaN(fMax)) {
+                return null;
+            }
+            
+            const interpolate = ScalingInterpolation[mode] || ScalingInterpolation.linear;
+            const padding = { top: 10, right: 10, bottom: 25, left: 35 };
+            const chartWidth = width - padding.left - padding.right;
+            const chartHeight = height - padding.top - padding.bottom;
+            
+            // Determine Y range (round to nice numbers)
+            const yMin = Math.min(fMin, fMax);
+            const yMax = Math.max(fMin, fMax);
+            const yPadding = (yMax - yMin) * 0.1 || 0.5;
+            const yRangeMin = Math.max(0, yMin - yPadding);
+            const yRangeMax = yMax + yPadding;
+            
+            // Generate points
+            const numPoints = 30;
+            let pathData = '';
+            
+            for (let i = 0; i <= numPoints; i++) {
+                const t = i / numPoints;
+                const inputValue = iMin + t * (iMax - iMin);
+                const factorT = interpolate(t);
+                const factorValue = fMin + factorT * (fMax - fMin);
+                
+                const x = padding.left + t * chartWidth;
+                const y = padding.top + chartHeight - ((factorValue - yRangeMin) / (yRangeMax - yRangeMin)) * chartHeight;
+                
+                if (i === 0) {
+                    pathData += `M ${x} ${y}`;
+                } else {
+                    pathData += ` L ${x} ${y}`;
+                }
+            }
+            
+            // Format numbers nicely
+            const fmt = (n) => {
+                if (Math.abs(n) >= 100) return Math.round(n).toString();
+                if (Math.abs(n) >= 10) return n.toFixed(1);
+                if (Math.abs(n) >= 1) return n.toFixed(2);
+                return n.toFixed(3);
+            };
+            
+            // Create SVG
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+            svg.setAttribute('class', 'scaling-chart');
+            svg.style.width = '100%';
+            svg.style.height = 'auto';
+            svg.style.maxWidth = '350px';
+            
+            // Grid lines (horizontal)
+            const numGridLines = 4;
+            for (let i = 0; i <= numGridLines; i++) {
+                const yVal = yRangeMin + (i / numGridLines) * (yRangeMax - yRangeMin);
+                const y = padding.top + chartHeight - (i / numGridLines) * chartHeight;
+                
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', padding.left);
+                line.setAttribute('y1', y);
+                line.setAttribute('x2', padding.left + chartWidth);
+                line.setAttribute('y2', y);
+                line.setAttribute('stroke', '#e5e5e5');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+                
+                // Y-axis label
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', padding.left - 5);
+                text.setAttribute('y', y + 3);
+                text.setAttribute('text-anchor', 'end');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('fill', '#999');
+                text.textContent = fmt(yVal);
+                svg.appendChild(text);
+            }
+            
+            // Grid lines (vertical - just at min/max)
+            [0, 1].forEach(t => {
+                const x = padding.left + t * chartWidth;
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x);
+                line.setAttribute('y1', padding.top);
+                line.setAttribute('x2', x);
+                line.setAttribute('y2', padding.top + chartHeight);
+                line.setAttribute('stroke', '#e5e5e5');
+                line.setAttribute('stroke-width', '1');
+                svg.appendChild(line);
+            });
+            
+            // X-axis labels
+            const xLabels = [fmt(iMin), fmt(iMax)];
+            xLabels.forEach((label, i) => {
+                const x = padding.left + i * chartWidth;
+                const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+                text.setAttribute('x', x);
+                text.setAttribute('y', height - 5);
+                text.setAttribute('text-anchor', i === 0 ? 'start' : 'end');
+                text.setAttribute('font-size', '10');
+                text.setAttribute('fill', '#999');
+                text.textContent = label;
+                svg.appendChild(text);
+            });
+            
+            // Curve path
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('fill', 'none');
+            path.setAttribute('stroke', '#1e87f0');
+            path.setAttribute('stroke-width', '2.5');
+            path.setAttribute('stroke-linecap', 'round');
+            path.setAttribute('stroke-linejoin', 'round');
+            svg.appendChild(path);
+            
+            // Axis lines
+            const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            xAxis.setAttribute('x1', padding.left);
+            xAxis.setAttribute('y1', padding.top + chartHeight);
+            xAxis.setAttribute('x2', padding.left + chartWidth);
+            xAxis.setAttribute('y2', padding.top + chartHeight);
+            xAxis.setAttribute('stroke', '#ccc');
+            xAxis.setAttribute('stroke-width', '1');
+            svg.appendChild(xAxis);
+            
+            const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            yAxis.setAttribute('x1', padding.left);
+            yAxis.setAttribute('y1', padding.top);
+            yAxis.setAttribute('x2', padding.left);
+            yAxis.setAttribute('y2', padding.top + chartHeight);
+            yAxis.setAttribute('stroke', '#ccc');
+            yAxis.setAttribute('stroke-width', '1');
+            svg.appendChild(yAxis);
+            
+            return svg;
+        }
+
+        function updateScalingCharts() {
+            // Rain chart
+            const rainChartContainer = document.getElementById('rain-scaling-chart');
+            if (rainChartContainer && !document.getElementById('rain-fields').classList.contains('uk-hidden')) {
+                const rainInputs = {
+                    inputMin: document.getElementById('rain-input-min')?.value,
+                    inputMax: document.getElementById('rain-input-max')?.value,
+                    factorMin: document.getElementById('rain-factor-min')?.value,
+                    factorMax: document.getElementById('rain-factor-max')?.value,
+                    mode: document.getElementById('rain-interpolation')?.value
+                };
+                
+                const rainSVG = generateScalingCurveSVG(
+                    rainInputs.inputMin, rainInputs.inputMax,
+                    rainInputs.factorMin, rainInputs.factorMax,
+                    rainInputs.mode, 300, 150
+                );
+                
+                rainChartContainer.innerHTML = '';
+                if (rainSVG) {
+                    rainChartContainer.appendChild(rainSVG);
+                } else {
+                    rainChartContainer.innerHTML = '<div class="uk-text-muted uk-text-center" style="line-height: 150px;">Enter values to see curve</div>';
+                }
+            }
+            
+            // Temperature chart
+            const tempChartContainer = document.getElementById('temperature-scaling-chart');
+            if (tempChartContainer && !document.getElementById('temperature-fields').classList.contains('uk-hidden')) {
+                const tempInputs = {
+                    inputMin: document.getElementById('temperature-input-min')?.value,
+                    inputMax: document.getElementById('temperature-input-max')?.value,
+                    factorMin: document.getElementById('temperature-factor-min')?.value,
+                    factorMax: document.getElementById('temperature-factor-max')?.value,
+                    mode: document.getElementById('temperature-interpolation')?.value
+                };
+                
+                const tempSVG = generateScalingCurveSVG(
+                    tempInputs.inputMin, tempInputs.inputMax,
+                    tempInputs.factorMin, tempInputs.factorMax,
+                    tempInputs.mode, 300, 150
+                );
+                
+                tempChartContainer.innerHTML = '';
+                if (tempSVG) {
+                    tempChartContainer.appendChild(tempSVG);
+                } else {
+                    tempChartContainer.innerHTML = '<div class="uk-text-muted uk-text-center" style="line-height: 150px;">Enter values to see curve</div>';
+                }
+            }
+        }
+
         // Modal close handlers for ESC key and clicking outside
         document.addEventListener('keydown', function(evt) {
             if (evt.key === 'Escape') {

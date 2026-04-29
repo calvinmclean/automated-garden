@@ -156,7 +156,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":20,"input_max":40,"factor_min":[0-9.]+,"factor_max":[0-9.]+}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"[0-9a-zµs.]+","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h0m0s","interval":"24h0m0s","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0\.5,"factor_max":1\.5}},"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"[0-9a-zµs.]+","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 	}
 
