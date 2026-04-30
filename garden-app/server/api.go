@@ -9,10 +9,8 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/cache"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
@@ -38,7 +36,6 @@ type API struct {
 	waterSchedules      *WaterSchedulesAPI
 	waterRoutines       *WaterRoutineAPI
 	settings            *SettingsAPI
-	weatherCache        *cache.Cache[*WeatherData]
 }
 
 // NewAPI intializes an API without any integrations or clients. Use api.Setup(...) before running
@@ -52,7 +49,6 @@ func NewAPI() *API {
 		waterSchedules:      NewWaterSchedulesAPI(),
 		waterRoutines:       NewWaterRoutineAPI(),
 		settings:            NewSettingsAPI(),
-		weatherCache:        cache.New[*WeatherData](5 * time.Minute),
 	}
 	api.gardens.AddNestedAPI(api.zones)
 
@@ -190,12 +186,12 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 		return fmt.Errorf("error setting up Gardens API: %w", err)
 	}
 
-	err = api.waterSchedules.setup(storageClient, worker, api.weatherCache)
+	err = api.waterSchedules.setup(storageClient, worker)
 	if err != nil {
 		return fmt.Errorf("error setting up WaterSchedules API: %w", err)
 	}
 
-	api.zones.setup(storageClient, influxdbClient, worker, api.weatherCache)
+	api.zones.setup(storageClient, influxdbClient, worker)
 	api.weatherClients.setup(storageClient)
 	api.notificationClients.setup(storageClient)
 	api.waterRoutines.setup(storageClient, worker)

@@ -167,7 +167,7 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	}
 
 	if nextWaterSchedule.HasWeatherControl() && !excludeWeatherData {
-		zr.WeatherData = zr.api.getCachedWeatherData(ctx, nextWaterSchedule, logger)
+		zr.WeatherData = getWeatherData(ctx, nextWaterSchedule, zr.api.storageClient, logger)
 	}
 
 	return nil
