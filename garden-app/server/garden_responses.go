@@ -146,14 +146,6 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 // This includes health, temperature/humidity, and active watering status for all zones.
 // All operations are run in a single concurrent batch.
 func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Logger, includeActiveWatering bool) {
-	// First, check cache for health data
-	if g.api.healthCache != nil {
-		cacheKey := g.Garden.GetID()
-		if cachedHealth, found := g.api.healthCache.Get(cacheKey); found {
-			g.Health = cachedHealth
-		}
-	}
-
 	// Get zones first (this is from SQLite, not InfluxDB, so it's fast)
 	var zones []*pkg.Zone
 	if includeActiveWatering {
@@ -173,10 +165,6 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 				health := g.api.worker.GetGardenHealth(taskCtx, g.Garden)
 				if health != nil {
 					g.Health = health
-					// Cache the health data
-					if g.api.healthCache != nil {
-						g.api.healthCache.Set(g.Garden.GetID(), health)
-					}
 				}
 				return nil
 			},

@@ -4,13 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 	"slices"
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/cache"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
@@ -32,7 +30,6 @@ type WaterSchedulesAPI struct {
 
 	storageClient *storage.Client
 	worker        *worker.Worker
-	weatherCache  *cache.Cache[*WeatherData]
 }
 
 func NewWaterSchedulesAPI() *WaterSchedulesAPI {
@@ -139,10 +136,9 @@ func (api *WaterSchedulesAPI) waterScheduleModalRenderer(r *http.Request, ws *pk
 	}{ws, notificationClients, weatherClients})
 }
 
-func (api *WaterSchedulesAPI) setup(storageClient *storage.Client, worker *worker.Worker, weatherCache *cache.Cache[*WeatherData]) error {
+func (api *WaterSchedulesAPI) setup(storageClient *storage.Client, worker *worker.Worker) error {
 	api.storageClient = storageClient
 	api.worker = worker
-	api.weatherCache = weatherCache
 
 	api.SetStorage(api.storageClient.WaterSchedules)
 
@@ -239,32 +235,4 @@ func (api *WaterSchedulesAPI) weatherClientExists(ctx context.Context, id xid.ID
 		return fmt.Errorf("error getting WeatherClient with ID %q: %w", id, err)
 	}
 	return nil
-}
-
-// getCachedWeatherData retrieves weather data from cache or fetches it from the API
-// Cache key is based on water schedule ID and interval duration
-func (api *WaterSchedulesAPI) getCachedWeatherData(ctx context.Context, ws *pkg.WaterSchedule, logger *slog.Logger) *WeatherData {
-	if api.weatherCache == nil {
-		return getWeatherData(ctx, ws, api.storageClient, logger)
-	}
-
-	// Create cache key based on water schedule ID and interval
-	cacheKey := fmt.Sprintf("%s-%s", ws.ID.String(), ws.Interval.Duration.String())
-
-	// Check cache first
-	if cached, found := api.weatherCache.Get(cacheKey); found {
-		logger.Debug("using cached weather data", "water_schedule_id", ws.ID.String())
-		return cached
-	}
-
-	// Fetch fresh data
-	logger.Debug("fetching fresh weather data", "water_schedule_id", ws.ID.String())
-	weatherData := getWeatherData(ctx, ws, api.storageClient, logger)
-
-	// Store in cache if we got valid data
-	if weatherData != nil && (weatherData.Rain != nil || weatherData.Temperature != nil) {
-		api.weatherCache.Set(cacheKey, weatherData)
-	}
-
-	return weatherData
 }

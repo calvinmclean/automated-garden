@@ -204,7 +204,7 @@ func TestGetZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()), nil)
+			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			zr.worker.StartAsync()
 
 			for _, ws := range tt.waterSchedules {
@@ -271,7 +271,7 @@ func TestZoneAction(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()), nil)
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
 
 			zr.worker.StartAsync()
 
@@ -347,7 +347,7 @@ func TestZoneActionForm(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()), nil)
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
 
 			zr.worker.StartAsync()
 
@@ -414,7 +414,7 @@ func TestUpdateZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 
 			garden := createExampleGarden()
 			zone := createExampleZone()
@@ -463,7 +463,7 @@ func TestEndDateZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 
 			garden := createExampleGarden()
 			zone := createExampleZone()
@@ -481,7 +481,7 @@ func TestGetAllZones(t *testing.T) {
 	storageClient := setupWaterScheduleStorage(t)
 
 	zr := NewZonesAPI()
-	zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
+	zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 
 	garden := createExampleGarden()
 	zone := createExampleZone()
@@ -662,7 +662,7 @@ func TestCreateZone(t *testing.T) {
 			}
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 
 			for _, ws := range tt.waterSchedules {
 				err := zr.worker.ScheduleWaterAction(ws)
@@ -816,7 +816,7 @@ func TestUpdateZonePUT(t *testing.T) {
 			}
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 
 			for _, ws := range tt.waterSchedules {
 				err := zr.worker.ScheduleWaterAction(ws)
@@ -978,7 +978,7 @@ func TestCreateZonePUT(t *testing.T) {
 			}
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()), nil)
+			zr.setup(storageClient, nil, worker.NewWorker(storageClient, nil, nil, slog.Default()))
 
 			for _, ws := range tt.waterSchedules {
 				err := zr.worker.ScheduleWaterAction(ws)
@@ -1125,7 +1125,7 @@ func TestWaterHistory(t *testing.T) {
 		assert.NoError(t, err)
 
 		zr := NewZonesAPI()
-		zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()), nil)
+		zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 
 		garden := createExampleGarden()
 		zone := createExampleZone()
@@ -1159,7 +1159,7 @@ func TestWaterHistory(t *testing.T) {
 			assert.NoError(t, err)
 
 			zr := NewZonesAPI()
-			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()), nil)
+			zr.setup(storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 
 			garden := createExampleGarden()
 			zone := createExampleZone()
