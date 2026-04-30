@@ -38,7 +38,7 @@ type GardensAPI struct {
 func NewGardenAPI() *GardensAPI {
 	api := &GardensAPI{}
 
-	api.API = babyapi.NewAPI("Gardens", gardenBasePath, func() *pkg.Garden { return &pkg.Garden {} })
+	api.API = babyapi.NewAPI("Gardens", gardenBasePath, func() *pkg.Garden { return &pkg.Garden{} })
 	api.SetResponseWrapper(func(g *pkg.Garden) render.Renderer {
 		return api.NewGardenResponse(g)
 	})
