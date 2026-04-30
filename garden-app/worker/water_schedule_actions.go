@@ -53,7 +53,7 @@ func (w *Worker) exerciseWeatherControl(ws *pkg.WaterSchedule) (time.Duration, e
 // ScaleWateringDuration returns a new watering duration based on weather scaling. It will not return
 // any errors if they are encountered because there are multiple factors impacting watering
 func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bool) {
-	scaleFactor := float32(1)
+	scaleFactor := 1.0
 	hadError := false
 
 	if ws.HasTemperatureControl() {
@@ -67,7 +67,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 				hadError = true
 				w.logger.Warn("error getting average high temperatures", "error", err)
 			} else {
-				scaleFactor = ws.WeatherControl.Temperature.Scale(avgHighTemp)
+				scaleFactor = ws.WeatherControl.Temperature.Scale(float64(avgHighTemp))
 				w.logger.With(
 					"avg_high_temp", avgHighTemp,
 					"time_period", ws.Interval.String(),
@@ -88,7 +88,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 				hadError = true
 				w.logger.Warn("error getting rain data", "error", err)
 			} else {
-				rainScaleFactor := ws.WeatherControl.Rain.InvertedScaleDownOnly(totalRain)
+				rainScaleFactor := ws.WeatherControl.Rain.Scale(float64(totalRain))
 				w.logger.With(
 					"total_rain", totalRain,
 					"time_period", ws.Interval.String(),
@@ -101,5 +101,9 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 
 	w.logger.Info("compounded scale factor", "compound_scale_factor", scaleFactor)
 
-	return time.Duration(float32(ws.Duration.Duration) * scaleFactor), hadError
+	result := time.Duration(float64(ws.Duration.Duration) * scaleFactor)
+	if result.Milliseconds() == 0 {
+		return 0, hadError
+	}
+	return result, hadError
 }

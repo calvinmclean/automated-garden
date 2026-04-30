@@ -102,11 +102,6 @@ func setupZoneAndGardenStorage(t *testing.T) *storage.Client {
 	return storageClient
 }
 
-func float32Pointer(n float64) *float32 {
-	f := float32(n)
-	return &f
-}
-
 func pointer[T any](v T) *T {
 	return &v
 }
@@ -137,24 +132,28 @@ func TestGetZone(t *testing.T) {
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: float32Pointer(0),
-						Factor:        float32Pointer(0),
-						Range:         float32Pointer(25.4),
+					Rain: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(0),
+						InputMax:      float64Ptr(25.5),
+						FactorMin:     float64Ptr(1.0),
+						FactorMax:     float64Ptr(0.0),
 					},
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(30),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			}},
 			func(influxdbClient *influxdb.MockClient) {
 				influxdbClient.On("Close")
 			},
-			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"weather_data":{"rain":{"mm":25.4,"inches":1.0000006},"temperature":{"celsius":80,"fahrenheit":176}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"0s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
+			`{"name":"test-zone","id":"c5cvhpcbcv45e8bp16dg","garden_id":"c5cvhpcbcv45e8bp16dg","position":0,"created_at":"2021-10-03T11:24:52-07:00","water_schedule_ids":\["c5cvhpcbcv45e8bp16dg"\],"skip_count":null,"weather_data":{"rain":{"mm":25.4,"inches":1.0000006},"temperature":{"celsius":80,"fahrenheit":176}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"21.17655137s","water_schedule_id":"c5cvhpcbcv45e8bp16dg"},"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg"},{"rel":"garden","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/action"},{"rel":"history","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones/c5cvhpcbcv45e8bp16dg/history"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureDataButWeatherDataExcluded",
@@ -165,17 +164,21 @@ func TestGetZone(t *testing.T) {
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				StartTime: pkg.NewStartTime(createdAt),
 				WeatherControl: &weather.Control{
-					Rain: &weather.ScaleControl{
-						BaselineValue: float32Pointer(0),
-						Factor:        float32Pointer(0),
-						Range:         float32Pointer(25.4),
+					Rain: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(0),
+						InputMax:      float64Ptr(25.5),
+						FactorMin:     float64Ptr(1.0),
+						FactorMax:     float64Ptr(0.0),
 					},
-					Temperature: &weather.ScaleControl{
-						BaselineValue: float32Pointer(30),
-						Factor:        float32Pointer(0.5),
-						Range:         float32Pointer(10),
+					Temperature: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
+						Interpolation: weather.Linear,
+						InputMin:      float64Ptr(20),
+						InputMax:      float64Ptr(40),
+						FactorMin:     float64Ptr(0.5),
+						FactorMax:     float64Ptr(1.5),
 					},
 				},
 			}},
