@@ -120,3 +120,26 @@ func (aws AllWaterSchedulesResponse) HTML(_ http.ResponseWriter, r *http.Request
 
 	return waterSchedulesPageTemplate.Render(r, aws)
 }
+
+// ScalingExamplePoint represents a single sample point in the scaling preview
+type ScalingExamplePoint struct {
+	InputValue  float64 `json:"input_value"`
+	InputUnit   string  `json:"input_unit"`
+	ScaleFactor float64 `json:"scale_factor"`
+	Duration    string  `json:"duration,omitempty"`
+}
+
+// ScalingExampleResponse contains the scaling preview data for both rain and temperature
+type ScalingExampleResponse struct {
+	RainExamples        []ScalingExamplePoint `json:"rain_examples,omitempty"`
+	TemperatureExamples []ScalingExamplePoint `json:"temperature_examples,omitempty"`
+	BaseDuration        string                `json:"base_duration"`
+}
+
+func (ser ScalingExampleResponse) Render(w http.ResponseWriter, r *http.Request) error {
+	return nil
+}
+
+func (ser ScalingExampleResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	return scalingExampleResultsTemplate.Render(r, ser)
+}

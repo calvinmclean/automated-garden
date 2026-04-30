@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
@@ -102,6 +104,9 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 			return nil, babyapi.ErrInvalidRequest(fmt.Errorf("invalid component: %s", r.URL.Query().Get("type")))
 		}
 	}))
+
+	// Scaling example endpoint for previewing weather-based scaling
+	api.AddCustomRoute(http.MethodPost, "/scaling_example", babyapi.Handler(api.scalingExample))
 
 	api.ApplyExtension(extensions.HTMX[*pkg.WaterSchedule]{})
 
@@ -233,4 +238,176 @@ func (api *WaterSchedulesAPI) weatherClientExists(ctx context.Context, id xid.ID
 		return fmt.Errorf("error getting WeatherClient with ID %q: %w", id, err)
 	}
 	return nil
+}
+
+// scalingExample handles POST requests to preview how watering duration will scale based on weather configuration
+// nolint:gosec // Request body size is limited by babyapi middleware
+func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Request) render.Renderer {
+	// Parse form data from the request
+	if err := r.ParseForm(); err != nil {
+		return babyapi.ErrInvalidRequest(fmt.Errorf("error parsing form data: %w", err))
+	}
+
+	units := getUnitsFromRequest(r)
+	isImperial := units == "imperial"
+
+	// Parse base duration
+	baseDurationStr := r.FormValue("Duration")
+	var baseDuration time.Duration
+	if baseDurationStr != "" {
+		var err error
+		baseDuration, err = time.ParseDuration(baseDurationStr)
+		if err != nil {
+			// If standard parsing fails, the duration might be in a different format
+			// Just leave baseDuration as 0
+			baseDuration = 0
+		}
+	}
+
+	response := ScalingExampleResponse{
+		BaseDuration: baseDurationStr,
+	}
+
+	// Parse rain scaling configuration
+	rainInputMin := parseFormFloat(r, "WeatherControl.Rain.InputMin")
+	rainInputMax := parseFormFloat(r, "WeatherControl.Rain.InputMax")
+	rainFactorMin := parseFormFloat(r, "WeatherControl.Rain.FactorMin")
+	rainFactorMax := parseFormFloat(r, "WeatherControl.Rain.FactorMax")
+	rainInterpolation := r.FormValue("WeatherControl.Rain.Interpolation")
+
+	// If rain scaling is configured, generate examples
+	if rainInputMin != nil && rainInputMax != nil && rainFactorMin != nil && rainFactorMax != nil {
+		// Convert imperial to metric if needed (form values are in user units)
+		if isImperial {
+			*rainInputMin *= 25.4 // in → mm
+			*rainInputMax *= 25.4
+		}
+
+		scaler := &weather.WeatherScaler{
+			Interpolation: weather.InterpolationMode(rainInterpolation),
+			InputMin:      rainInputMin,
+			InputMax:      rainInputMax,
+			FactorMin:     rainFactorMin,
+			FactorMax:     rainFactorMax,
+		}
+
+		response.RainExamples = generateScalingExamples(scaler, baseDuration, isImperial, true)
+	}
+
+	// Parse temperature scaling configuration
+	tempInputMin := parseFormFloat(r, "WeatherControl.Temperature.InputMin")
+	tempInputMax := parseFormFloat(r, "WeatherControl.Temperature.InputMax")
+	tempFactorMin := parseFormFloat(r, "WeatherControl.Temperature.FactorMin")
+	tempFactorMax := parseFormFloat(r, "WeatherControl.Temperature.FactorMax")
+	tempInterpolation := r.FormValue("WeatherControl.Temperature.Interpolation")
+
+	// If temperature scaling is configured, generate examples
+	if tempInputMin != nil && tempInputMax != nil && tempFactorMin != nil && tempFactorMax != nil {
+		// Convert imperial to metric if needed (form values are in user units)
+		if isImperial {
+			*tempInputMin = (*tempInputMin - 32) / 1.8 // °F → °C
+			*tempInputMax = (*tempInputMax - 32) / 1.8
+		}
+
+		scaler := &weather.WeatherScaler{
+			Interpolation: weather.InterpolationMode(tempInterpolation),
+			InputMin:      tempInputMin,
+			InputMax:      tempInputMax,
+			FactorMin:     tempFactorMin,
+			FactorMax:     tempFactorMax,
+		}
+
+		response.TemperatureExamples = generateScalingExamples(scaler, baseDuration, isImperial, false)
+	}
+
+	return response
+}
+
+// parseFormFloat parses a float64 from form data
+func parseFormFloat(r *http.Request, name string) *float64 {
+	valueStr := r.FormValue(name)
+	if valueStr == "" {
+		return nil
+	}
+	value, err := strconv.ParseFloat(valueStr, 64)
+	if err != nil {
+		return nil
+	}
+	return &value
+}
+
+// generateScalingExamples creates 5 sample points across the input range
+func generateScalingExamples(scaler *weather.WeatherScaler, baseDuration time.Duration, isImperial bool, isRain bool) []ScalingExamplePoint {
+	if scaler.InputMin == nil || scaler.InputMax == nil {
+		return nil
+	}
+
+	inputMin := *scaler.InputMin
+	inputMax := *scaler.InputMax
+	inputRange := inputMax - inputMin
+
+	// Generate 5 sample points: min, 25%, 50%, 75%, max
+	percentages := []float64{0.0, 0.25, 0.5, 0.75, 1.0}
+	examples := make([]ScalingExamplePoint, len(percentages))
+
+	for i, pct := range percentages {
+		inputValue := inputMin + (inputRange * pct)
+		scaleFactor := scaler.Scale(inputValue)
+
+		// Convert to user units for display
+		displayValue := inputValue
+		unit := "mm"
+		if isRain {
+			if isImperial {
+				displayValue = inputValue / 25.4 // mm to inches
+				unit = "in"
+			}
+		} else {
+			if isImperial {
+				displayValue = inputValue*1.8 + 32 // Celsius to Fahrenheit
+				unit = "°F"
+			} else {
+				unit = "°C"
+			}
+		}
+
+		examples[i] = ScalingExamplePoint{
+			InputValue:  displayValue,
+			InputUnit:   unit,
+			ScaleFactor: scaleFactor,
+		}
+
+		// Calculate resulting duration if base duration is provided
+		if baseDuration > 0 {
+			resultDuration := time.Duration(float64(baseDuration) * scaleFactor)
+			examples[i].Duration = formatDurationShort(resultDuration)
+		}
+	}
+
+	return examples
+}
+
+// formatDurationShort formats a duration in a short, readable format
+func formatDurationShort(d time.Duration) string {
+	if d == 0 {
+		return "0s"
+	}
+
+	hours := int(d.Hours())
+	minutes := int(d.Minutes()) % 60
+	seconds := int(d.Seconds()) % 60
+
+	if hours > 0 {
+		if minutes > 0 {
+			return fmt.Sprintf("%dh%dm", hours, minutes)
+		}
+		return fmt.Sprintf("%dh", hours)
+	}
+	if minutes > 0 {
+		if seconds > 0 {
+			return fmt.Sprintf("%dm%ds", minutes, seconds)
+		}
+		return fmt.Sprintf("%dm", minutes)
+	}
+	return fmt.Sprintf("%ds", seconds)
 }

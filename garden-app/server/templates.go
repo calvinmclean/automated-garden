@@ -63,6 +63,9 @@ const (
 
 	// User settings templates
 	unitsSelectorTemplate html.Template = "UnitsSelector"
+
+	// Scaling example results template
+	scalingExampleResultsTemplate html.Template = "ScalingExampleResults"
 )
 
 func templateFuncs(r *http.Request) map[string]any {
@@ -106,14 +109,26 @@ func templateFuncs(r *http.Request) map[string]any {
 		},
 		"Sprintf": fmt.Sprintf,
 		"CelsiusToFahrenheit": func(c any) float64 {
+			var f float64
 			switch v := c.(type) {
 			case float64:
-				return v*1.8 + 32
+				f = v
 			case float32:
-				return float64(v)*1.8 + 32
+				f = float64(v)
+			case *float64:
+				if v == nil {
+					return 0
+				}
+				f = *v
+			case *float32:
+				if v == nil {
+					return 0
+				}
+				f = float64(*v)
 			default:
 				return 0
 			}
+			return f*1.8 + 32
 		},
 		"MmToInches": func(val any) float64 {
 			var f float64
@@ -167,6 +182,15 @@ func templateFuncs(r *http.Request) map[string]any {
 				return 0
 			}
 			return *f
+		},
+		"DerefFloat64": func(f *float64) float64 {
+			if f == nil {
+				return 0
+			}
+			return *f
+		},
+		"IsNotNil": func(v any) bool {
+			return v != nil
 		},
 		"Float64Ptr": func(f float64) *float64 {
 			return &f

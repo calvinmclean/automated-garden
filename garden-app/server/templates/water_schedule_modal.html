@@ -65,13 +65,26 @@
             </div>
 
             <!-- Rain Scaling Section -->
-            <div class="uk-margin">
-                <label>
-                    <input class="uk-checkbox" type="checkbox" id="rain-scaling-checkbox"
-                        {{ if and .WeatherControl .WeatherControl.Rain }}checked{{ end }}
-                        _="on change if my.checked remove .uk-hidden from #rain-fields then remove @disabled from <#rain-fields input, #rain-fields select/> else set <#rain-fields input/>'s value to '' then set #rain-client-select's selectedIndex to -1 then add @disabled to <#rain-fields input, #rain-fields select/> then add .uk-hidden to #rain-fields">
-                    Enable Rain Scaling
-                </label>
+            <div class="uk-margin" style="text-align: left;">
+                <button type="button" id="rain-scaling-toggle" 
+                    class="uk-button {{ if and .WeatherControl .WeatherControl.Rain }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                    _="on click 
+                        if #rain-fields.classList.contains('uk-hidden') then 
+                            remove .uk-hidden from #rain-fields 
+                            then remove @disabled from <#rain-fields input, #rain-fields select/> 
+                            then add .uk-button-primary to me 
+                            then remove .uk-button-default from me
+                            then remove .uk-hidden from #scaling-preview-section
+                        else 
+                            set <#rain-fields input/>'s value to '' 
+                            then set #rain-client-select's selectedIndex to -1 
+                            then add @disabled to <#rain-fields input, #rain-fields select/> 
+                            then add .uk-hidden to #rain-fields 
+                            then add .uk-button-default to me 
+                            then remove .uk-button-primary from me
+                            then if #temperature-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
+                    {{ if and .WeatherControl .WeatherControl.Rain }}Disable{{ else }}Enable{{ end }} Rain Scaling
+                </button>
             </div>
             <div id="rain-fields" class="{{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}uk-hidden{{ end }}">
                 <div class="uk-margin">
@@ -79,7 +92,7 @@
                     <select id="rain-client-select" class="uk-select" name="WeatherControl.Rain.ClientID" required
                         {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                         {{ range .WeatherClients }}
-                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Rain (eq .ID.String $.WeatherControl.Rain.ClientID) }}selected{{ end }}>{{ .Name }}</option>
+                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Rain (eq .ID.ID $.WeatherControl.Rain.ClientID) }}selected{{ end }}>{{ .Name }}</option>
                         {{ end }}
                     </select>
                 </div>
@@ -87,21 +100,21 @@
                     <div>
                         <label class="uk-form-label" for="rain-input-min">Input Min ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
                         <input id="rain-input-min" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ if IsMetric }}{{ printf "%.2f" .WeatherControl.Rain.InputMin }}{{ else }}{{ printf "%.2f" (MmToInches (Float64Ptr .WeatherControl.Rain.InputMin)) }}{{ end }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Rain (IsNotNil .WeatherControl.Rain.InputMin) }}{{ if IsMetric }}{{ printf "%.2f" (DerefFloat64 .WeatherControl.Rain.InputMin) }}{{ else }}{{ printf "%.2f" (MmToInches .WeatherControl.Rain.InputMin) }}{{ end }}{{ end }}"
                             name="WeatherControl.Rain.InputMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
                     <div>
                         <label class="uk-form-label" for="rain-input-max">Input Max ({{ if IsMetric }}mm{{ else }}in{{ end }})*</label>
                         <input id="rain-input-max" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ if IsMetric }}{{ printf "%.2f" .WeatherControl.Rain.InputMax }}{{ else }}{{ printf "%.2f" (MmToInches (Float64Ptr .WeatherControl.Rain.InputMax)) }}{{ end }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Rain (IsNotNil .WeatherControl.Rain.InputMax) }}{{ if IsMetric }}{{ printf "%.2f" (DerefFloat64 .WeatherControl.Rain.InputMax) }}{{ else }}{{ printf "%.2f" (MmToInches .WeatherControl.Rain.InputMax) }}{{ end }}{{ end }}"
                             name="WeatherControl.Rain.InputMax"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
                     <div>
                         <label class="uk-form-label" for="rain-factor-min">Factor Min*</label>
                         <input id="rain-factor-min" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ printf "%.2f" .WeatherControl.Rain.FactorMin }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Rain (IsNotNil .WeatherControl.Rain.FactorMin) }}{{ printf "%.2f" (DerefFloat64 .WeatherControl.Rain.FactorMin) }}{{ end }}"
                             name="WeatherControl.Rain.FactorMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
@@ -110,7 +123,7 @@
                     <div>
                         <label class="uk-form-label" for="rain-factor-max">Factor Max*</label>
                         <input id="rain-factor-max" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Rain }}{{ printf "%.2f" .WeatherControl.Rain.FactorMax }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Rain (IsNotNil .WeatherControl.Rain.FactorMax) }}{{ printf "%.2f" (DerefFloat64 .WeatherControl.Rain.FactorMax) }}{{ end }}"
                             name="WeatherControl.Rain.FactorMax"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
                     </div>
@@ -129,13 +142,26 @@
             </div>
 
             <!-- Temperature Scaling Section -->
-            <div class="uk-margin">
-                <label>
-                    <input class="uk-checkbox" type="checkbox" id="temperature-scaling-checkbox"
-                        {{ if and .WeatherControl .WeatherControl.Temperature }}checked{{ end }}
-                        _="on change if my.checked remove .uk-hidden from #temperature-fields then remove @disabled from <#temperature-fields input, #temperature-fields select/> else set <#temperature-fields input/>'s value to '' then set #temperature-client-select's selectedIndex to -1 then add @disabled to <#temperature-fields input, #temperature-fields select/> then add .uk-hidden to #temperature-fields">
-                    Enable Temperature Scaling
-                </label>
+            <div class="uk-margin" style="text-align: left;">
+                <button type="button" id="temperature-scaling-toggle"
+                    class="uk-button {{ if and .WeatherControl .WeatherControl.Temperature }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                    _="on click
+                        if #temperature-fields.classList.contains('uk-hidden') then
+                            remove .uk-hidden from #temperature-fields
+                            then remove @disabled from <#temperature-fields input, #temperature-fields select/>
+                            then add .uk-button-primary to me
+                            then remove .uk-button-default from me
+                            then remove .uk-hidden from #scaling-preview-section
+                        else
+                            set <#temperature-fields input/>'s value to ''
+                            then set #temperature-client-select's selectedIndex to -1
+                            then add @disabled to <#temperature-fields input, #temperature-fields select/>
+                            then add .uk-hidden to #temperature-fields
+                            then add .uk-button-default to me
+                            then remove .uk-button-primary from me
+                            then if #rain-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
+                    {{ if and .WeatherControl .WeatherControl.Temperature }}Disable{{ else }}Enable{{ end }} Temperature Scaling
+                </button>
             </div>
             <div id="temperature-fields" class="{{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}uk-hidden{{ end }}">
                 <div class="uk-margin">
@@ -143,7 +169,7 @@
                     <select id="temperature-client-select" class="uk-select" name="WeatherControl.Temperature.ClientID" required
                         {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                         {{ range .WeatherClients }}
-                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Temperature (eq .ID.String $.WeatherControl.Temperature.ClientID) }}selected{{ end }}>{{ .Name }}</option>
+                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Temperature (eq .ID.ID $.WeatherControl.Temperature.ClientID) }}selected{{ end }}>{{ .Name }}</option>
                         {{ end }}
                     </select>
                 </div>
@@ -151,21 +177,21 @@
                     <div>
                         <label class="uk-form-label" for="temperature-input-min">Input Min ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
                         <input id="temperature-input-min" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ if IsMetric }}{{ printf "%.1f" .WeatherControl.Temperature.InputMin }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit (Float64Ptr .WeatherControl.Temperature.InputMin)) }}{{ end }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature (IsNotNil .WeatherControl.Temperature.InputMin) }}{{ if IsMetric }}{{ printf "%.1f" (DerefFloat64 .WeatherControl.Temperature.InputMin) }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit .WeatherControl.Temperature.InputMin) }}{{ end }}{{ end }}"
                             name="WeatherControl.Temperature.InputMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
                     <div>
                         <label class="uk-form-label" for="temperature-input-max">Input Max ({{ if IsMetric }}°C{{ else }}°F{{ end }})*</label>
                         <input id="temperature-input-max" class="uk-input" type="number" step="0.01" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ if IsMetric }}{{ printf "%.1f" .WeatherControl.Temperature.InputMax }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit (Float64Ptr .WeatherControl.Temperature.InputMax)) }}{{ end }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature (IsNotNil .WeatherControl.Temperature.InputMax) }}{{ if IsMetric }}{{ printf "%.1f" (DerefFloat64 .WeatherControl.Temperature.InputMax) }}{{ else }}{{ printf "%.1f" (CelsiusToFahrenheit .WeatherControl.Temperature.InputMax) }}{{ end }}{{ end }}"
                             name="WeatherControl.Temperature.InputMax"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
                     <div>
                         <label class="uk-form-label" for="temperature-factor-min">Factor Min*</label>
                         <input id="temperature-factor-min" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ printf "%.2f" .WeatherControl.Temperature.FactorMin }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature (IsNotNil .WeatherControl.Temperature.FactorMin) }}{{ printf "%.2f" (DerefFloat64 .WeatherControl.Temperature.FactorMin) }}{{ end }}"
                             name="WeatherControl.Temperature.FactorMin"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
@@ -174,7 +200,7 @@
                     <div>
                         <label class="uk-form-label" for="temperature-factor-max">Factor Max*</label>
                         <input id="temperature-factor-max" class="uk-input" type="number" step="0.01" min="0" required
-                            value="{{ if and .WeatherControl .WeatherControl.Temperature }}{{ printf "%.2f" .WeatherControl.Temperature.FactorMax }}{{ end }}"
+                            value="{{ if and .WeatherControl .WeatherControl.Temperature (IsNotNil .WeatherControl.Temperature.FactorMax) }}{{ printf "%.2f" (DerefFloat64 .WeatherControl.Temperature.FactorMax) }}{{ end }}"
                             name="WeatherControl.Temperature.FactorMax"
                             {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
                     </div>
@@ -192,6 +218,19 @@
                 </div>
             </div>
 
+            <!-- Scaling Preview Section -->
+            <div id="scaling-preview-section" class="uk-margin {{ if not (or (and .WeatherControl .WeatherControl.Rain) (and .WeatherControl .WeatherControl.Temperature)) }}uk-hidden{{ end }}">
+                <button type="button" class="uk-button uk-button-secondary uk-button-small"
+                    hx-post="/water_schedules/scaling_example"
+                    hx-include="closest form"
+                    hx-target="#scaling-example-results"
+                    hx-swap="innerHTML"
+                    hx-headers='{"Accept": "text/html"}'>
+                    Preview Scaling
+                </button>
+            </div>
+            <div id="scaling-example-results"></div>
+
             <div class="uk-margin-top">
                     {{ template "modalSubmitButton" }}
                 {{ if .Duration }}
@@ -204,6 +243,66 @@
         </form>
     </div>
 </div>
+{{ end }}
+
+{{ define "ScalingExampleResults" }}
+<style>
+#scaling-example-results .uk-alert {
+    transition: none !important;
+}
+#scaling-example-results .uk-alert * {
+    transition: none !important;
+}
+#scaling-example-results .uk-alert.uk-alert-close {
+    opacity: 1 !important;
+    background: none !important;
+}
+</style>
+{{ if or .RainExamples .TemperatureExamples }}
+<div class="uk-alert-primary uk-box-shadow-large" uk-alert style="margin: 0; padding: 20px; max-width: 500px;">
+    <a class="uk-alert-close" uk-close></a>
+    <h4 class="uk-alert-title uk-margin-remove">Scaling Preview <span class="uk-text-small uk-text-muted">({{ .BaseDuration }})</span></h4>
+    
+    {{ if .RainExamples }}
+    <div class="uk-margin-small-top">
+        <div class="uk-text-bold">Rain</div>
+        <table class="uk-table uk-table-justify uk-table-small uk-margin-remove">
+            <tbody>
+                {{ range .RainExamples }}
+                <tr class="uk-padding-remove">
+                    <td class="uk-padding-remove" style="width: 35%;">{{ printf "%.2f" .InputValue }}{{ .InputUnit }}</td>
+                    <td class="uk-padding-remove uk-text-center" style="width: 30%;">{{ printf "%.2f" .ScaleFactor }}x</td>
+                    {{ if .Duration }}<td class="uk-padding-remove uk-text-right" style="width: 35%;">{{ .Duration }}</td>{{ end }}
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+    {{ end }}
+    
+    {{ if .TemperatureExamples }}
+    <div class="uk-margin-small-top">
+        <div class="uk-text-bold">Temperature</div>
+        <table class="uk-table uk-table-justify uk-table-small uk-margin-remove">
+            <tbody>
+                {{ range .TemperatureExamples }}
+                <tr class="uk-padding-remove">
+                    <td class="uk-padding-remove" style="width: 35%;">{{ printf "%.1f" .InputValue }}{{ .InputUnit }}</td>
+                    <td class="uk-padding-remove uk-text-center" style="width: 30%;">{{ printf "%.2f" .ScaleFactor }}x</td>
+                    {{ if .Duration }}<td class="uk-padding-remove uk-text-right" style="width: 35%;">{{ .Duration }}</td>{{ end }}
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
+    {{ end }}
+</div>
+{{ else }}
+<div class="uk-alert-warning uk-box-shadow-large" uk-alert style="margin: 0; padding: 20px; max-width: 500px;">
+    <a class="uk-alert-close" uk-close></a>
+    <p class="uk-margin-remove">Please configure rain or temperature scaling to see a preview.</p>
+</div>
+{{ end }}
 {{ end }}
 
 {{ define "WaterScheduleDetailModal" }}
