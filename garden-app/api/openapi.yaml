@@ -1165,11 +1165,15 @@ components:
               type: number
               format: float
               description: total rainfall since last watering (in millimeters)
+            inches:
+              type: number
+              format: float
+              description: total rainfall since last watering (in inches)
             scale_factor:
               type: number
               format: float
               description: scale factor calculated by WeatherControl setup and recent rain data
-        average_temperature:
+        temperature:
           type: object
           description: data about the average daily high temperatures
           properties:
@@ -1177,10 +1181,26 @@ components:
               type: number
               format: float
               description: average high daily temperatures since last watering (in degrees celsius)
+            fahrenheit:
+              type: number
+              format: float
+              description: average high daily temperatures since last watering (in degrees fahrenheit)
             scale_factor:
               type: number
               format: float
               description: scale factor calculated by WeatherControl setup and recent temperature data
+        evapotranspiration:
+          type: object
+          description: data about the average daily reference evapotranspiration (ET0)
+          properties:
+            mm:
+              type: number
+              format: float
+              description: average daily reference evapotranspiration in millimeters
+            inches:
+              type: number
+              format: float
+              description: average daily reference evapotranspiration in inches
 
     WaterHistoryResponse:
       type: object

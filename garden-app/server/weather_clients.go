@@ -267,6 +267,18 @@ func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient 
 		result.Rain = &RainData{MM: &rd}
 	}
 
+	// Fetch evapotranspiration data if the client supports it
+	if etClient, ok := wc.(weather.ETProvider); ok {
+		et, err := etClient.GetAverageEvapotranspiration(ctx, duration)
+		if err == nil {
+			if units == "imperial" {
+				result.Evapotranspiration = &EvapotranspirationData{Inches: convertRainToInches(et)}
+			} else {
+				result.Evapotranspiration = &EvapotranspirationData{MM: &et}
+			}
+		}
+	}
+
 	return result, nil
 }
 

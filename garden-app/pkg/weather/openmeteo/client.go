@@ -29,17 +29,19 @@ type Client struct {
 }
 
 const (
-	minRainInterval        = 24 * time.Hour
-	minTemperatureInterval = 72 * time.Hour
-	defaultBaseURL         = "https://api.open-meteo.com"
+	minRainInterval               = 24 * time.Hour
+	minTemperatureInterval        = 72 * time.Hour
+	minEvapotranspirationInterval = 24 * time.Hour
+	defaultBaseURL                = "https://api.open-meteo.com"
 )
 
 // openMeteoResponse represents the structure of the API response
 type openMeteoResponse struct {
 	Daily struct {
-		Time             []string  `json:"time"`
-		Temperature2mMax []float32 `json:"temperature_2m_max"`
-		PrecipitationSum []float32 `json:"precipitation_sum"`
+		Time                     []string  `json:"time"`
+		Temperature2mMax         []float32 `json:"temperature_2m_max"`
+		PrecipitationSum         []float32 `json:"precipitation_sum"`
+		ET0FaoEvapotranspiration []float32 `json:"et0_fao_evapotranspiration"`
 	} `json:"daily"`
 }
 
@@ -190,4 +192,33 @@ func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Durat
 	}
 
 	return sum / float32(count), nil
+}
+
+// GetAverageEvapotranspiration returns the average daily reference evapotranspiration (ET₀) over the given period
+// using OpenMeteo's et0_fao_evapotranspiration parameter
+func (c *Client) GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (float32, error) {
+	// Time to check from must always be at least 24 hours to get valid data
+	if since < minEvapotranspirationInterval {
+		since = minEvapotranspirationInterval
+	}
+
+	// Calculate past days needed (round up)
+	pastDays := int(since.Hours()/24) + 1
+
+	data, err := c.fetchData(ctx, pastDays, "et0_fao_evapotranspiration")
+	if err != nil {
+		return 0, fmt.Errorf("error fetching evapotranspiration data: %w", err)
+	}
+
+	if len(data.Daily.ET0FaoEvapotranspiration) == 0 {
+		return 0, errors.New("no evapotranspiration data returned")
+	}
+
+	// Calculate average of daily ET₀ values
+	var sum float32
+	for _, et := range data.Daily.ET0FaoEvapotranspiration {
+		sum += et
+	}
+
+	return sum / float32(len(data.Daily.ET0FaoEvapotranspiration)), nil
 }

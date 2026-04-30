@@ -39,6 +39,12 @@ type Client interface {
 	GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error)
 }
 
+// ETProvider is an optional capability interface for weather clients that support
+// evapotranspiration data retrieval
+type ETProvider interface {
+	GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (float32, error)
+}
+
 // Config is used to identify and configure a client type
 type Config struct {
 	ID      babyapi.ID     `json:"id" yaml:"id"`
@@ -192,4 +198,35 @@ func (c *clientWrapper) GetAverageHighTemperature(ctx context.Context, since tim
 
 func ResetCache() {
 	responseCache = cache.New(5*time.Minute, 1*time.Minute)
+}
+
+// GetAverageEvapotranspiration implements the ETProvider interface for the wrapper.
+// It forwards to the underlying client if it supports ETProvider.
+func (c *clientWrapper) GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (float32, error) {
+	now := clock.Now()
+	cached := false
+	defer func() {
+		weatherClientSummary.WithLabelValues("GetAverageEvapotranspiration", fmt.Sprintf("%t", cached)).Observe(time.Since(now).Seconds())
+	}()
+
+	cacheKey := fmt.Sprintf("avg_et_%d_%s", since, c.Config.ID)
+	cachedData, found := responseCache.Get(cacheKey)
+	if found {
+		cached = true
+		return cachedData.(float32), nil
+	}
+
+	// Check if underlying client supports ETProvider
+	etClient, ok := c.Client.(ETProvider)
+	if !ok {
+		return 0, fmt.Errorf("weather client does not support evapotranspiration data")
+	}
+
+	avgET, err := etClient.GetAverageEvapotranspiration(ctx, since)
+	if err != nil {
+		return 0, err
+	}
+	responseCache.Set(cacheKey, avgET, cache.DefaultExpiration)
+
+	return avgET, nil
 }
