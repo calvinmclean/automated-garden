@@ -82,7 +82,7 @@
                             then add .uk-hidden to #rain-fields 
                             then add .uk-button-default to me 
                             then remove .uk-button-primary from me
-                            then if #temperature-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
+                            then if #temperature-fields.classList.contains('uk-hidden') and #et-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
                     {{ if and .WeatherControl .WeatherControl.Rain }}Disable{{ else }}Enable{{ end }} Rain Scaling
                 </button>
             </div>
@@ -159,7 +159,7 @@
                             then add .uk-hidden to #temperature-fields
                             then add .uk-button-default to me
                             then remove .uk-button-primary from me
-                            then if #rain-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
+                            then if #rain-fields.classList.contains('uk-hidden') and #et-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
                     {{ if and .WeatherControl .WeatherControl.Temperature }}Disable{{ else }}Enable{{ end }} Temperature Scaling
                 </button>
             </div>
@@ -228,13 +228,15 @@
                             then remove @disabled from <#et-fields input, #et-fields select/>
                             then add .uk-button-primary to me
                             then remove .uk-button-default from me
+                            then remove .uk-hidden from #scaling-preview-section
                         else
                             set <#et-fields input/>'s value to ''
                             then set #et-client-select's selectedIndex to -1
                             then add @disabled to <#et-fields input, #et-fields select/>
                             then add .uk-hidden to #et-fields
                             then add .uk-button-default to me
-                            then remove .uk-button-primary from me">
+                            then remove .uk-button-primary from me
+                            then if #rain-fields.classList.contains('uk-hidden') and #temperature-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
                     {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}Disable{{ else }}Enable{{ end }} ET (Citrus) Watering
                 </button>
             </div>
