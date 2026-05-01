@@ -13,6 +13,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
@@ -181,19 +182,19 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 			if ws.WeatherControl.Rain != nil {
 				// Convert rain input range (inches to mm)
 				if ws.WeatherControl.Rain.InputMin != nil {
-					*ws.WeatherControl.Rain.InputMin *= 25.4 // in → mm
+					*ws.WeatherControl.Rain.InputMin = units.InchesToMm(*ws.WeatherControl.Rain.InputMin)
 				}
 				if ws.WeatherControl.Rain.InputMax != nil {
-					*ws.WeatherControl.Rain.InputMax *= 25.4 // in → mm
+					*ws.WeatherControl.Rain.InputMax = units.InchesToMm(*ws.WeatherControl.Rain.InputMax)
 				}
 			}
 			if ws.WeatherControl.Temperature != nil {
 				// Convert temperature input range (°F to °C)
 				if ws.WeatherControl.Temperature.InputMin != nil {
-					*ws.WeatherControl.Temperature.InputMin = (*ws.WeatherControl.Temperature.InputMin - 32) / 1.8 // °F → °C
+					*ws.WeatherControl.Temperature.InputMin = units.FahrenheitToCelsius(*ws.WeatherControl.Temperature.InputMin)
 				}
 				if ws.WeatherControl.Temperature.InputMax != nil {
-					*ws.WeatherControl.Temperature.InputMax = (*ws.WeatherControl.Temperature.InputMax - 32) / 1.8 // °F → °C
+					*ws.WeatherControl.Temperature.InputMax = units.FahrenheitToCelsius(*ws.WeatherControl.Temperature.InputMax)
 				}
 			}
 		}
@@ -248,8 +249,8 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 		return babyapi.ErrInvalidRequest(fmt.Errorf("error parsing form data: %w", err))
 	}
 
-	units := getUnitsFromRequest(r)
-	isImperial := units == "imperial"
+	userUnits := getUnitsFromRequest(r)
+	isImperial := userUnits == "imperial"
 
 	// Parse base duration and interval
 	baseDuration := parseFormDuration(r, "Duration", 0)
@@ -297,8 +298,8 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 	if rainInputMin != nil && rainInputMax != nil && rainFactorMin != nil && rainFactorMax != nil {
 		// Convert imperial to metric if needed (form values are in user units)
 		if isImperial {
-			*rainInputMin *= 25.4 // in → mm
-			*rainInputMax *= 25.4
+			*rainInputMin = units.InchesToMm(*rainInputMin)
+			*rainInputMax = units.InchesToMm(*rainInputMax)
 		}
 
 		scaler := &weather.WeatherScaler{
@@ -323,8 +324,8 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 	if tempInputMin != nil && tempInputMax != nil && tempFactorMin != nil && tempFactorMax != nil {
 		// Convert imperial to metric if needed (form values are in user units)
 		if isImperial {
-			*tempInputMin = (*tempInputMin - 32) / 1.8 // °F → °C
-			*tempInputMax = (*tempInputMax - 32) / 1.8
+			*tempInputMin = units.FahrenheitToCelsius(*tempInputMin)
+			*tempInputMax = units.FahrenheitToCelsius(*tempInputMax)
 		}
 
 		scaler := &weather.WeatherScaler{
@@ -431,12 +432,12 @@ func generateScalingExamples(scaler *weather.WeatherScaler, baseDuration time.Du
 		unit := "mm"
 		if isRain {
 			if isImperial {
-				displayValue = inputValue / 25.4 // mm to inches
+				displayValue = units.MmToInches(inputValue)
 				unit = "in"
 			}
 		} else {
 			if isImperial {
-				displayValue = inputValue*1.8 + 32 // Celsius to Fahrenheit
+				displayValue = units.CelsiusToFahrenheit(inputValue)
 				unit = "°F"
 			} else {
 				unit = "°C"

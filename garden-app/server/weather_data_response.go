@@ -10,6 +10,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/concurrent"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 )
 
@@ -82,7 +83,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 				}
 				weatherData.Temperature = &TemperatureData{
 					Celsius:    *celsius,
-					Fahrenheit: *celsius*1.8 + 32,
+					Fahrenheit: units.CelsiusToFahrenheit(*celsius),
 				}
 				return nil
 			},
@@ -100,7 +101,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 					// ET is optional, so don't warn on error
 					return nil
 				}
-				inches := *etMM * 0.0393701
+				inches := units.MmToInches(*etMM)
 				weatherData.Evapotranspiration = &EvapotranspirationData{
 					MM:     etMM,
 					Inches: &inches,

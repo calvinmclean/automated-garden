@@ -11,6 +11,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/html"
 	"github.com/rs/xid"
@@ -128,7 +129,7 @@ func templateFuncs(r *http.Request) map[string]any {
 			default:
 				return 0
 			}
-			return f*1.8 + 32
+			return units.CelsiusToFahrenheit(f)
 		},
 		"MmToInches": func(val any) float64 {
 			var f float64
@@ -150,29 +151,7 @@ func templateFuncs(r *http.Request) map[string]any {
 			default:
 				return 0
 			}
-			return f / 25.4
-		},
-		"CelsiusDeltaToFahrenheitDelta": func(val any) float64 {
-			var f float64
-			switch v := val.(type) {
-			case *float64:
-				if v == nil {
-					return 0
-				}
-				f = *v
-			case *float32:
-				if v == nil {
-					return 0
-				}
-				f = float64(*v)
-			case float64:
-				f = v
-			case float32:
-				f = float64(v)
-			default:
-				return 0
-			}
-			return f * 1.8
+			return units.MmToInches(f)
 		},
 		"IsMetric": func() bool {
 			return getUnitsFromRequest(r) == "metric"
