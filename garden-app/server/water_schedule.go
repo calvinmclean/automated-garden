@@ -251,21 +251,39 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 	units := getUnitsFromRequest(r)
 	isImperial := units == "imperial"
 
-	// Parse base duration
-	baseDurationStr := r.FormValue("Duration")
-	var baseDuration time.Duration
-	if baseDurationStr != "" {
-		var err error
-		baseDuration, err = time.ParseDuration(baseDurationStr)
-		if err != nil {
-			// If standard parsing fails, the duration might be in a different format
-			// Just leave baseDuration as 0
-			baseDuration = 0
-		}
-	}
+	// Parse base duration and interval
+	baseDuration := parseFormDuration(r, "Duration", 0)
+	interval := parseFormDuration(r, "Interval", 24*time.Hour)
 
 	response := ScalingExampleResponse{
-		BaseDuration: baseDurationStr,
+		BaseDuration: baseDuration.String(),
+	}
+
+	// Parse ET scaling configuration
+	etCanopyDiameter := parseFormFloat(r, "WeatherControl.Evapotranspiration.CanopyDiameterFeet")
+	etSpecies := r.FormValue("WeatherControl.Evapotranspiration.Species")
+	etFlowRate := parseFormFloat(r, "WeatherControl.Evapotranspiration.FlowRateGPH")
+	etClientID := r.FormValue("WeatherControl.Evapotranspiration.ClientID")
+
+	// If ET scaling is configured, calculate the ET-based duration
+	effectiveBaseDuration := baseDuration
+	if etCanopyDiameter != nil && etFlowRate != nil && etClientID != "" && etSpecies != "" {
+		response.ETConfigured = true
+
+		// Create a temporary ET config
+		etConfig := &weather.EvapotranspirationScaler{
+			CanopyDiameterFeet: float32(*etCanopyDiameter),
+			Species:            weather.Species(etSpecies),
+			FlowRateGPH:        float32(*etFlowRate),
+		}
+
+		// Calculate ET-based duration
+		etDuration, etValue := api.calculateETDuration(r.Context(), etClientID, etConfig, interval, isImperial)
+		response.ETDuration = etDuration.String()
+		response.ETValue = etValue
+		if etDuration > 0 {
+			effectiveBaseDuration = etDuration
+		}
 	}
 
 	// Parse rain scaling configuration
@@ -291,7 +309,7 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 			FactorMax:     rainFactorMax,
 		}
 
-		response.RainExamples = generateScalingExamples(scaler, baseDuration, isImperial, true)
+		response.RainExamples = generateScalingExamples(scaler, effectiveBaseDuration, isImperial, true)
 	}
 
 	// Parse temperature scaling configuration
@@ -317,10 +335,50 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 			FactorMax:     tempFactorMax,
 		}
 
-		response.TemperatureExamples = generateScalingExamples(scaler, baseDuration, isImperial, false)
+		response.TemperatureExamples = generateScalingExamples(scaler, effectiveBaseDuration, isImperial, false)
 	}
 
 	return response
+}
+
+// calculateETDuration fetches ET data and calculates watering duration based on citrus tree formula
+// Returns the duration and ET value (in user units for display)
+func (api *WaterSchedulesAPI) calculateETDuration(ctx context.Context, etClientID string, etConfig *weather.EvapotranspirationScaler, interval time.Duration, isImperial bool) (time.Duration, float32) {
+	clientID, err := xid.FromString(etClientID)
+	if err != nil {
+		return 0, 0
+	}
+
+	weatherClient, err := api.storageClient.GetWeatherClient(clientID)
+	if err != nil {
+		return 0, 0
+	}
+
+	// Check if client supports ET
+	etProvider, ok := weatherClient.(weather.ETProvider)
+	if !ok {
+		return 0, 0
+	}
+
+	// Fetch average ET over the configured interval
+	avgET, err := etProvider.GetAverageEvapotranspiration(ctx, interval)
+	if err != nil {
+		return 0, 0
+	}
+
+	// For imperial units, convert the display value to inches
+	etValue := avgET
+	if isImperial {
+		etValue = avgET * 0.0393701 // mm to inches
+	}
+
+	// Calculate duration using the configured interval
+	etDuration, err := worker.CalculateETDuration(etConfig, avgET, interval, time.Now())
+	if err != nil {
+		return 0, etValue
+	}
+
+	return etDuration, etValue
 }
 
 // parseFormFloat parses a float64 from form data
@@ -334,6 +392,20 @@ func parseFormFloat(r *http.Request, name string) *float64 {
 		return nil
 	}
 	return &value
+}
+
+// parseFormDuration parses a time.Duration from form data
+// Returns the default value if parsing fails or field is empty
+func parseFormDuration(r *http.Request, name string, defaultValue time.Duration) time.Duration {
+	valueStr := r.FormValue(name)
+	if valueStr == "" {
+		return defaultValue
+	}
+	value, err := time.ParseDuration(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
 }
 
 // generateScalingExamples creates 5 sample points across the input range

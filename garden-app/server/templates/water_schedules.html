@@ -64,5 +64,20 @@
     </span>
     {{ end }}
     {{ end }}
+    {{ if and .WeatherControl .WeatherControl.Rain }}
+    <span class="uk-label uk-label-primary" uk-tooltip="Rain Scaling Enabled">
+        <span uk-icon="cloud-rain" class="uk-margin-small-top uk-margin-small-bottom"></span>
+    </span>
+    {{ end }}
+    {{ if and .WeatherControl .WeatherControl.Temperature }}
+    <span class="uk-label uk-label-primary" uk-tooltip="Temperature Scaling Enabled" style="background-color: #faa05a;">
+        <span uk-icon="thermometer" class="uk-margin-small-top uk-margin-small-bottom"></span>
+    </span>
+    {{ end }}
+    {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}
+    <span class="uk-label uk-label-primary" uk-tooltip="ET (Citrus) Watering Enabled" style="background-color: #f0506e;">
+        <span uk-icon="sun" class="uk-margin-small-top uk-margin-small-bottom"></span>
+    </span>
+    {{ end }}
 </div>
 {{ end }}

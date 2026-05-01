@@ -98,16 +98,3 @@ func (ws *WeatherScaler) Scale(input float64) float64 {
 	// Map interpolated value to output range
 	return *ws.FactorMin + (*ws.FactorMax-*ws.FactorMin)*interpolated
 }
-
-// ScaleMulti multiplies multiple scaler factors together.
-func ScaleMulti(scalers []*WeatherScaler, inputs []float64) float64 {
-	if len(scalers) != len(inputs) {
-		return 1.0
-	}
-
-	result := 1.0
-	for i, scaler := range scalers {
-		result *= scaler.Scale(inputs[i])
-	}
-	return result
-}
