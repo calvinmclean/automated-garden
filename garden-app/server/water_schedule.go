@@ -257,7 +257,7 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 	interval := parseFormDuration(r, "Interval", 24*time.Hour)
 
 	response := ScalingExampleResponse{
-		BaseDuration: baseDuration.String(),
+		BaseDuration: baseDuration.Round(time.Second).String(),
 	}
 
 	// Parse ET scaling configuration
@@ -280,7 +280,7 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 
 		// Calculate ET-based duration
 		etDuration, etValue := api.calculateETDuration(r.Context(), etClientID, etConfig, interval, isImperial)
-		response.ETDuration = etDuration.String()
+		response.ETDuration = etDuration.Round(time.Second).String()
 		response.ETValue = etValue
 		if etDuration > 0 {
 			effectiveBaseDuration = etDuration
@@ -465,6 +465,9 @@ func formatDurationShort(d time.Duration) string {
 	if d == 0 {
 		return "0s"
 	}
+
+	// Round to nearest second to avoid sub-second precision
+	d = d.Round(time.Second)
 
 	hours := int(d.Hours())
 	minutes := int(d.Minutes()) % 60

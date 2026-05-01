@@ -335,8 +335,11 @@ func templateFuncs(r *http.Request) map[string]any {
 }
 
 func formatDuration(d *pkg.Duration) string {
-	days := d.Duration / (24 * time.Hour)
-	remaining := d.Duration % (24 * time.Hour)
+	// Round to nearest second to avoid sub-second precision in UI
+	roundedDuration := d.Duration.Round(time.Second)
+
+	days := roundedDuration / (24 * time.Hour)
+	remaining := roundedDuration % (24 * time.Hour)
 
 	remainingString := ""
 	hours := int(remaining.Hours())
