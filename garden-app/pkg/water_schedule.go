@@ -290,40 +290,16 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 // ValidateWeatherControl validates input for the WeatherControl of a WaterSchedule
 func ValidateWeatherControl(wc *weather.Control) error {
 	if wc.Temperature != nil {
-		err := ValidateScaleControl(wc.Temperature)
+		err := wc.Temperature.Validate()
 		if err != nil {
 			return fmt.Errorf("error validating temperature_control: %w", err)
 		}
 	}
 	if wc.Rain != nil {
-		err := ValidateScaleControl(wc.Rain)
+		err := wc.Rain.Validate()
 		if err != nil {
 			return fmt.Errorf("error validating rain_control: %w", err)
 		}
-	}
-	return nil
-}
-
-// ValidateScaleControl validates input for ScaleControl
-func ValidateScaleControl(sc *weather.ScaleControl) error {
-	errStringFormat := "missing required field: %s"
-	if sc.BaselineValue == nil {
-		return fmt.Errorf(errStringFormat, "baseline_value")
-	}
-	if sc.Factor == nil {
-		return fmt.Errorf(errStringFormat, "factor")
-	}
-	if *sc.Factor > float32(1) || *sc.Factor < float32(0) {
-		return errors.New("factor must be between 0 and 1")
-	}
-	if sc.Range == nil {
-		return fmt.Errorf(errStringFormat, "range")
-	}
-	if *sc.Range < float32(0) {
-		return errors.New("range must be a positive number")
-	}
-	if sc.ClientID.IsNil() {
-		return fmt.Errorf(errStringFormat, "client_id")
 	}
 	return nil
 }

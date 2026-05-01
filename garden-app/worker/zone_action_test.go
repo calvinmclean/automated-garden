@@ -126,8 +126,3 @@ func uintPointer(n uint) *uint {
 	uintn := uint(n)
 	return &uintn
 }
-
-func float32Pointer(n float64) *float32 {
-	f := float32(n)
-	return &f
-}
