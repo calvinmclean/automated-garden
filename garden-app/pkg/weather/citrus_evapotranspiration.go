@@ -13,6 +13,7 @@ const (
 	SpeciesOrange     Species = "orange"
 	SpeciesGrapefruit Species = "grapefruit"
 	SpeciesLemon      Species = "lemon"
+	SpeciesLime       Species = "lime"
 	SpeciesMandarin   Species = "mandarin"
 )
 

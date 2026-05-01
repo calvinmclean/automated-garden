@@ -16,6 +16,7 @@ var speciesMultipliers = map[weather.Species]float32{
 	weather.SpeciesOrange:     1.00,
 	weather.SpeciesGrapefruit: 1.20,
 	weather.SpeciesLemon:      1.20,
+	weather.SpeciesLime:       1.20,
 	weather.SpeciesMandarin:   0.90,
 }
 
