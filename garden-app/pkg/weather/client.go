@@ -57,6 +57,17 @@ func (wc *Config) GetID() string {
 	return wc.ID.String()
 }
 
+// HasEvapotranspiration returns true if this weather client supports evapotranspiration data.
+// Currently only OpenMeteo clients have this capability.
+func (wc *Config) HasEvapotranspiration() bool {
+	switch strings.ToLower(wc.Type) {
+	case "openmeteo":
+		return true
+	default:
+		return false
+	}
+}
+
 func (wc *Config) ParentID() string {
 	return ""
 }
