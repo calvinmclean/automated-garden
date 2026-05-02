@@ -311,6 +311,113 @@ func TestOpenMeteoResponseParsing(t *testing.T) {
 	})
 }
 
+func TestGetAverageEvapotranspiration(t *testing.T) {
+	// Matcher to normalize query parameters for consistent VCR matching
+	matcher := func(r1 *http.Request, r2 cassette.Request) bool {
+		// Parse both URLs
+		u1 := r1.URL
+		u2, err := url.Parse(r2.URL)
+		if err != nil {
+			return false
+		}
+
+		// Compare scheme, host, and path
+		if u1.Scheme != u2.Scheme || u1.Host != u2.Host || u1.Path != u2.Path {
+			return false
+		}
+
+		// Parse query parameters
+		q1 := u1.Query()
+		q2 := u2.Query()
+
+		// Check required parameters match
+		if q1.Get("daily") != q2.Get("daily") {
+			return false
+		}
+
+		return true
+	}
+
+	tests := []struct {
+		name     string
+		fixture  string
+		duration time.Duration
+		expected float32
+	}{
+		{
+			name:     "GetAverageEvapotranspiration_3Days",
+			fixture:  "testdata/fixtures/GetAverageEvapotranspiration_3Days",
+			duration: 72 * time.Hour,
+			expected: 3.528182,
+		},
+		{
+			name:     "GetAverageEvapotranspiration_7Days",
+			fixture:  "testdata/fixtures/GetAverageEvapotranspiration_7Days",
+			duration: 168 * time.Hour,
+			expected: 3.3460004,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := map[string]any{
+				"latitude":  37.7749,
+				"longitude": -122.4194,
+			}
+
+			r, err := recorder.New(
+				tt.fixture,
+				recorder.WithMatcher(matcher),
+				// recorder.WithMode(recorder.ModeRecordOnly),
+			)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer func() {
+				require.NoError(t, r.Stop())
+			}()
+
+			client, err := NewClientWithHTTPClient(opts, r.GetDefaultClient())
+			require.NoError(t, err)
+
+			et, err := client.GetAverageEvapotranspiration(context.Background(), tt.duration)
+			require.NoError(t, err)
+			assert.InDelta(t, tt.expected, et, 0.01)
+		})
+	}
+}
+
+func TestGetAverageEvapotranspiration_MinimumInterval(t *testing.T) {
+	matcher := func(r1 *http.Request, r2 cassette.Request) bool {
+		return true // Simple matcher for this test
+	}
+
+	opts := map[string]any{
+		"latitude":  37.7749,
+		"longitude": -122.4194,
+	}
+
+	r, err := recorder.New(
+		"testdata/fixtures/GetAverageEvapotranspiration_MinimumInterval",
+		recorder.WithMatcher(matcher),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer func() {
+		require.NoError(t, r.Stop())
+	}()
+
+	client, err := NewClientWithHTTPClient(opts, r.GetDefaultClient())
+	require.NoError(t, err)
+
+	// Pass less than 24 hours - should be enforced to 24h minimum
+	et, err := client.GetAverageEvapotranspiration(context.Background(), 1*time.Hour)
+	require.NoError(t, err)
+	// Should not error due to minimum interval enforcement
+	_ = et
+}
+
 func TestCalculatePastDays(t *testing.T) {
 	tests := []struct {
 		duration time.Duration

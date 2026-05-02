@@ -6,6 +6,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
@@ -64,14 +65,14 @@ func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request
 
 // HTML renders the weather client card for HTMX lazy loading
 func (resp *WeatherClientResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
-	units := getUnitsFromRequest(r)
+	userUnits := getUnitsFromRequest(r)
 	duration := getDurationFromRequest(r)
 	data := map[string]any{
 		"Config":      resp.Config,
 		"WeatherData": resp.WeatherData,
-		"Units":       units,
+		"Units":       userUnits,
 		"Duration":    duration,
-		"IsMetric":    units == "metric",
+		"IsMetric":    units.UnitSystem(userUnits).IsMetric(),
 	}
 	return weatherClientDataOnlyTemplate.Render(r, data)
 }
@@ -89,11 +90,11 @@ func (aws AllWeatherClientsResponse) HTML(_ http.ResponseWriter, r *http.Request
 		return strings.Compare(w.Name, x.Name)
 	})
 
-	units := getUnitsFromRequest(r)
+	userUnits := getUnitsFromRequest(r)
 	duration := getDurationFromRequest(r)
 	data := map[string]any{
 		"Items":    aws.Items,
-		"Units":    units,
+		"Units":    userUnits,
 		"Duration": duration,
 	}
 

@@ -62,7 +62,7 @@ func (ws *WaterSchedule) SetEndDate(now time.Time) {
 // This checks that WeatherControl is defined and has at least one type of control configured
 func (ws *WaterSchedule) HasWeatherControl() bool {
 	return ws != nil &&
-		(ws.HasRainControl() || ws.HasTemperatureControl())
+		(ws.HasRainControl() || ws.HasTemperatureControl() || ws.HasEvapotranspirationControl())
 }
 
 // Patch allows modifying the struct in-place with values from a different instance
@@ -117,6 +117,12 @@ func (ws *WaterSchedule) HasRainControl() bool {
 func (ws *WaterSchedule) HasTemperatureControl() bool {
 	return ws.WeatherControl != nil &&
 		ws.WeatherControl.Temperature != nil
+}
+
+// HasEvapotranspirationControl is used to determine if ET-based watering calculation is configured
+func (ws *WaterSchedule) HasEvapotranspirationControl() bool {
+	return ws.WeatherControl != nil &&
+		ws.WeatherControl.Evapotranspiration != nil
 }
 
 // IsActive determines if the WaterSchedule is currently in it's ActivePeriod. Always true if no ActivePeriod is configured

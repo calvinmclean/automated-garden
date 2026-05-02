@@ -1,0 +1,39 @@
+---
+version: 2
+interactions:
+    - id: 0
+      request:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        content_length: 0
+        transfer_encoding: []
+        trailer: {}
+        host: api.open-meteo.com
+        remote_addr: ""
+        request_uri: ""
+        body: ""
+        form: {}
+        headers: {}
+        url: https://api.open-meteo.com/v1/forecast?daily=et0_fao_evapotranspiration&latitude=37.774899&longitude=-122.419403&past_days=4&timezone=auto
+        method: GET
+      response:
+        proto: HTTP/1.1
+        proto_major: 1
+        proto_minor: 1
+        transfer_encoding:
+            - chunked
+        trailer: {}
+        content_length: -1
+        uncompressed: true
+        body: '{"latitude":37.763283,"longitude":-122.41286,"generationtime_ms":0.2516508102416992,"utc_offset_seconds":-25200,"timezone":"America/Los_Angeles","timezone_abbreviation":"GMT-7","elevation":18.0,"daily_units":{"time":"iso8601","et0_fao_evapotranspiration":"mm"},"daily":{"time":["2026-04-25","2026-04-26","2026-04-27","2026-04-28","2026-04-29","2026-04-30","2026-05-01","2026-05-02","2026-05-03","2026-05-04","2026-05-05"],"et0_fao_evapotranspiration":[2.22,3.41,3.71,4.02,4.16,3.50,2.83,3.16,3.74,3.91,4.15]}}'
+        headers:
+            Connection:
+                - keep-alive
+            Content-Type:
+                - application/json; charset=utf-8
+            Date:
+                - Thu, 30 Apr 2026 03:57:58 GMT
+        status: 200 OK
+        code: 200
+        duration: 793.847ms

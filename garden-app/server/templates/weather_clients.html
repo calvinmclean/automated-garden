@@ -75,6 +75,16 @@
         {{ end }}
     </div>
     {{ end }}
+    {{ if .WeatherData.Evapotranspiration }}
+    <div class="uk-flex uk-flex-middle">
+        <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
+        {{ if IsMetric }}
+        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.1f mm ET" (DerefFloat32 .WeatherData.Evapotranspiration.MM) }}</span>
+        {{ else }}
+        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.2f in ET" (DerefFloat32 .WeatherData.Evapotranspiration.Inches) }}</span>
+        {{ end }}
+    </div>
+    {{ end }}
 </div>
 {{ end }}
 {{ else }}
@@ -112,6 +122,16 @@
         <span class="uk-text-bold uk-text-primary">{{ printf "%.1f mm" (DerefFloat32 .WeatherData.Rain.MM) }}</span>
         {{ else }}
         <span class="uk-text-bold uk-text-primary">{{ printf "%.2f in" (DerefFloat32 .WeatherData.Rain.Inches) }}</span>
+        {{ end }}
+    </div>
+    {{ end }}
+    {{ if and .WeatherData .WeatherData.Evapotranspiration }}
+    <div class="uk-flex uk-flex-middle">
+        <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
+        {{ if IsMetric }}
+        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.1f mm ET" (DerefFloat32 .WeatherData.Evapotranspiration.MM) }}</span>
+        {{ else }}
+        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.2f in ET" (DerefFloat32 .WeatherData.Evapotranspiration.Inches) }}</span>
         {{ end }}
     </div>
     {{ end }}

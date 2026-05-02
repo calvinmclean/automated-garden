@@ -82,7 +82,7 @@
                             then add .uk-hidden to #rain-fields 
                             then add .uk-button-default to me 
                             then remove .uk-button-primary from me
-                            then if #temperature-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
+                            then if #temperature-fields.classList.contains('uk-hidden') and #et-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
                     {{ if and .WeatherControl .WeatherControl.Rain }}Disable{{ else }}Enable{{ end }} Rain Scaling
                 </button>
             </div>
@@ -159,7 +159,7 @@
                             then add .uk-hidden to #temperature-fields
                             then add .uk-button-default to me
                             then remove .uk-button-primary from me
-                            then if #rain-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
+                            then if #rain-fields.classList.contains('uk-hidden') and #et-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
                     {{ if and .WeatherControl .WeatherControl.Temperature }}Disable{{ else }}Enable{{ end }} Temperature Scaling
                 </button>
             </div>
@@ -218,8 +218,70 @@
                 </div>
             </div>
 
+            <!-- Evapotranspiration (ET) Scaling Section -->
+            <div class="uk-margin" style="text-align: left;">
+                <button type="button" id="et-scaling-toggle"
+                    class="uk-button {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                    _="on click
+                        if #et-fields.classList.contains('uk-hidden') then
+                            remove .uk-hidden from #et-fields
+                            then remove @disabled from <#et-fields input, #et-fields select/>
+                            then add .uk-button-primary to me
+                            then remove .uk-button-default from me
+                            then remove .uk-hidden from #scaling-preview-section
+                        else
+                            set <#et-fields input/>'s value to ''
+                            then set #et-client-select's selectedIndex to -1
+                            then add @disabled to <#et-fields input, #et-fields select/>
+                            then add .uk-hidden to #et-fields
+                            then add .uk-button-default to me
+                            then remove .uk-button-primary from me
+                            then if #rain-fields.classList.contains('uk-hidden') and #temperature-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
+                    {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}Disable{{ else }}Enable{{ end }} ET (Citrus) Watering
+                </button>
+            </div>
+            <div id="et-fields" class="{{ if or (eq .WeatherControl nil) (eq .WeatherControl.Evapotranspiration nil) }}uk-hidden{{ end }}">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="et-client-select">Weather Client (ET-capable)*</label>
+                    <select id="et-client-select" class="uk-select" name="WeatherControl.Evapotranspiration.ClientID" required
+                        {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Evapotranspiration nil) }}disabled{{ end }}>
+                        {{ range .WeatherClients }}
+                        {{ if .HasEvapotranspiration }}
+                        <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Evapotranspiration (eq .ID.ID $.WeatherControl.Evapotranspiration.ClientID) }}selected{{ end }}>{{ .Name }}</option>
+                        {{ end }}
+                        {{ end }}
+                    </select>
+                </div>
+                <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
+                    <div>
+                        <label class="uk-form-label" for="et-canopy-diameter">Canopy Diameter (ft)*</label>
+                        <input id="et-canopy-diameter" class="uk-input" type="number" step="0.1" min="0.1" required
+                            value="{{ if and .WeatherControl .WeatherControl.Evapotranspiration }}{{ printf "%.1f" .WeatherControl.Evapotranspiration.CanopyDiameterFeet }}{{ end }}"
+                            name="WeatherControl.Evapotranspiration.CanopyDiameterFeet"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Evapotranspiration nil) }}disabled{{ end }}>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="et-species">Species*</label>
+                        <select id="et-species" class="uk-select" name="WeatherControl.Evapotranspiration.Species" required
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Evapotranspiration nil) }}disabled{{ end }}>
+                            <option value="orange" {{ if and .WeatherControl .WeatherControl.Evapotranspiration (eq .WeatherControl.Evapotranspiration.Species "orange") }}selected{{ end }}>Orange</option>
+                            <option value="grapefruit" {{ if and .WeatherControl .WeatherControl.Evapotranspiration (eq .WeatherControl.Evapotranspiration.Species "grapefruit") }}selected{{ end }}>Grapefruit</option>
+                            <option value="lemon" {{ if and .WeatherControl .WeatherControl.Evapotranspiration (eq .WeatherControl.Evapotranspiration.Species "lemon") }}selected{{ end }}>Lemon</option>
+                            <option value="mandarin" {{ if and .WeatherControl .WeatherControl.Evapotranspiration (eq .WeatherControl.Evapotranspiration.Species "mandarin") }}selected{{ end }}>Mandarin</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="uk-form-label" for="et-flow-rate">Flow Rate (GPH)*</label>
+                        <input id="et-flow-rate" class="uk-input" type="number" step="0.1" min="0.1" required
+                            value="{{ if and .WeatherControl .WeatherControl.Evapotranspiration }}{{ printf "%.1f" .WeatherControl.Evapotranspiration.FlowRateGPH }}{{ end }}"
+                            name="WeatherControl.Evapotranspiration.FlowRateGPH"
+                            {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Evapotranspiration nil) }}disabled{{ end }}>
+                    </div>
+                </div>
+            </div>
+
             <!-- Scaling Preview Section -->
-            <div id="scaling-preview-section" class="uk-margin {{ if not (or (and .WeatherControl .WeatherControl.Rain) (and .WeatherControl .WeatherControl.Temperature)) }}uk-hidden{{ end }}">
+            <div id="scaling-preview-section" class="uk-margin {{ if not (or (and .WeatherControl .WeatherControl.Rain) (and .WeatherControl .WeatherControl.Temperature) (and .WeatherControl .WeatherControl.Evapotranspiration)) }}uk-hidden{{ end }}">
                 <button type="button" class="uk-button uk-button-secondary uk-button-small"
                     hx-post="/water_schedules/scaling_example"
                     hx-include="closest form"
@@ -264,10 +326,36 @@
     margin-top: 5px;
 }
 </style>
-{{ if or .RainExamples .TemperatureExamples }}
+{{ if or .RainExamples .TemperatureExamples .ETConfigured }}
 <div class="uk-alert-primary uk-box-shadow-large" uk-alert style="margin: 0; padding: 20px; max-width: 600px;">
     <a class="uk-alert-close" uk-close></a>
-    <h4 class="uk-alert-title uk-margin-remove">Scaling Preview <span class="uk-text-small uk-text-muted">({{ .BaseDuration }})</span></h4>
+    <h4 class="uk-alert-title uk-margin-remove">Scaling Preview</h4>
+    
+    {{ if .ETConfigured }}
+    <div class="uk-margin-small-top uk-padding-small uk-background-muted uk-border-rounded">
+        <div class="uk-text-bold uk-text-emphasis">
+            <span uk-icon="sun" style="color: #f0506e;"></span> ET-Based Watering
+        </div>
+        {{ if .ETDuration }}
+            <div class="uk-grid-small uk-child-width-1-2@s" uk-grid>
+                <div>
+                    <span class="uk-text-small">Base Duration:</span>
+                    <div class="uk-text-emphasis">{{ .ETDuration }}</div>
+                </div>
+                <div>
+                    <span class="uk-text-small">Avg ET Rate:</span>
+                    <div class="uk-text-emphasis">{{ if IsMetric }}{{ printf "%.2f" .ETValue }} mm/day{{ else }}{{ printf "%.2f" .ETValue }} in/day{{ end }}</div>
+                </div>
+            </div>
+        {{ else }}
+            <div class="uk-text-warning">
+                <span uk-icon="warning"></span> ET data not available - using configured duration
+            </div>
+        {{ end }}
+    </div>
+    {{ else }}
+    <div class="uk-margin-small-top uk-text-small uk-text-muted">Base Duration: {{ .BaseDuration }}</div>
+    {{ end }}
     
     <!-- Charts Section -->
     <div class="uk-grid uk-grid-small uk-child-width-1-2@l uk-margin-small-top" uk-grid>

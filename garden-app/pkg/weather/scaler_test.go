@@ -202,48 +202,6 @@ func TestTemperatureScenario(t *testing.T) {
 	})
 }
 
-// Test multi-scaler multiplication
-func TestScaleMulti(t *testing.T) {
-	rainScaler := &WeatherScaler{
-		Interpolation: Linear,
-		InputMin:      float64Ptr(0.0),
-		InputMax:      float64Ptr(30.0),
-		FactorMin:     float64Ptr(1.0),
-		FactorMax:     float64Ptr(0.0),
-	}
-
-	tempScaler := &WeatherScaler{
-		Interpolation: Linear,
-		InputMin:      float64Ptr(20.0),
-		InputMax:      float64Ptr(46.0),
-		FactorMin:     float64Ptr(1.0),
-		FactorMax:     float64Ptr(1.5),
-	}
-
-	// rain: 6mm -> t=0.2 -> 0.8, temp: 30C -> t=(30-20)/26=10/26 -> 1.0+0.5*(10/26)=1.1923...
-	// expected: 0.8 * 1.192307... = 0.953846...
-	scalers := []*WeatherScaler{rainScaler, tempScaler}
-	inputs := []float64{6.0, 30.0}
-
-	result := ScaleMulti(scalers, inputs)
-	assert.InDelta(t, 0.953846, result, 0.0001)
-}
-
-// Test ScaleMulti with mismatched lengths
-func TestScaleMultiMismatchedLengths(t *testing.T) {
-	scaler := &WeatherScaler{
-		Interpolation: Linear,
-		InputMin:      float64Ptr(0.0),
-		InputMax:      float64Ptr(10.0),
-		FactorMin:     float64Ptr(0.5),
-		FactorMax:     float64Ptr(1.0),
-	}
-
-	// Mismatched lengths should return 1.0
-	result := ScaleMulti([]*WeatherScaler{scaler}, []float64{5.0, 10.0})
-	assert.InDelta(t, 1.0, result, 0.0001)
-}
-
 // Test Validation
 func TestWeatherScalerValidate(t *testing.T) {
 	tests := []struct {

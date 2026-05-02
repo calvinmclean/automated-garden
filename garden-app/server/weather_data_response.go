@@ -10,6 +10,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/concurrent"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 )
 
 const (
@@ -19,8 +21,9 @@ const (
 
 // WeatherData is used to represent the data used for WeatherControl to a user
 type WeatherData struct {
-	Rain        *RainData        `json:"rain,omitempty"`
-	Temperature *TemperatureData `json:"temperature,omitempty"`
+	Rain               *RainData               `json:"rain,omitempty"`
+	Temperature        *TemperatureData        `json:"temperature,omitempty"`
+	Evapotranspiration *EvapotranspirationData `json:"evapotranspiration,omitempty"`
 }
 
 // RainData shows the total rain in both metric and imperial units
@@ -33,6 +36,12 @@ type RainData struct {
 type TemperatureData struct {
 	Celsius    float32 `json:"celsius,omitempty"`
 	Fahrenheit float32 `json:"fahrenheit,omitempty"`
+}
+
+// EvapotranspirationData shows the average daily evapotranspiration in both metric and imperial units
+type EvapotranspirationData struct {
+	MM     *float32 `json:"mm,omitempty"`
+	Inches *float32 `json:"inches,omitempty"`
 }
 
 func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client, logger *slog.Logger) *WeatherData {
@@ -52,7 +61,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 					logger.Warn("unable to get rain data for WaterSchedule", "error", err)
 					return err
 				}
-				inches := *rainMM * 0.0393701
+				inches := units.MmToInches(*rainMM)
 				weatherData.Rain = &RainData{
 					MM:     rainMM,
 					Inches: &inches,
@@ -74,7 +83,28 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 				}
 				weatherData.Temperature = &TemperatureData{
 					Celsius:    *celsius,
-					Fahrenheit: *celsius*1.8 + 32,
+					Fahrenheit: units.CelsiusToFahrenheit(*celsius),
+				}
+				return nil
+			},
+		},
+		{
+			Name: "evapotranspiration-data",
+			Fn: func(taskCtx context.Context) error {
+				// Only fetch ET if temperature control is enabled (to get the weather client)
+				if !ws.HasTemperatureControl() {
+					return nil
+				}
+				logger.Debug("getting evapotranspiration data for WaterSchedule")
+				etMM, err := getEvapotranspirationData(taskCtx, ws, storageClient)
+				if err != nil || etMM == nil {
+					// ET is optional, so don't warn on error
+					return nil
+				}
+				inches := units.MmToInches(*etMM)
+				weatherData.Evapotranspiration = &EvapotranspirationData{
+					MM:     etMM,
+					Inches: &inches,
 				}
 				return nil
 			},
@@ -114,6 +144,25 @@ func getTemperatureData(ctx context.Context, ws *pkg.WaterSchedule, storageClien
 		return nil, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
 	}
 	return &avgTemperature, nil
+}
+
+func getEvapotranspirationData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
+	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting WeatherClient for ET data: %w", err)
+	}
+
+	// Check if the client supports evapotranspiration
+	etClient, ok := weatherClient.(weather.ETProvider)
+	if !ok {
+		return nil, nil // Client doesn't support ET, return nil without error
+	}
+
+	avgET, err := etClient.GetAverageEvapotranspiration(ctx, ws.Interval.Duration)
+	if err != nil {
+		return nil, fmt.Errorf("unable to get evapotranspiration data from weather client: %w", err)
+	}
+	return &avgET, nil
 }
 
 func getDurationFromRequest(r *http.Request) time.Duration {

@@ -134,6 +134,9 @@ type ScalingExampleResponse struct {
 	RainExamples        []ScalingExamplePoint `json:"rain_examples,omitempty"`
 	TemperatureExamples []ScalingExamplePoint `json:"temperature_examples,omitempty"`
 	BaseDuration        string                `json:"base_duration"`
+	ETDuration          string                `json:"et_duration,omitempty"`
+	ETValue             float32               `json:"et_value,omitempty"`
+	ETConfigured        bool                  `json:"et_configured"`
 }
 
 func (ser ScalingExampleResponse) Render(w http.ResponseWriter, r *http.Request) error {

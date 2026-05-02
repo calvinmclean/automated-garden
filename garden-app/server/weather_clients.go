@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	unitspkg "github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/calvinmclean/babyapi/extensions"
@@ -259,22 +260,27 @@ func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient 
 		Temperature: &TemperatureData{},
 	}
 
-	if units == "imperial" {
-		result.Temperature.Fahrenheit = convertTempToF(td)
-		result.Rain = &RainData{Inches: convertRainToInches(rd)}
+	if unitspkg.UnitSystem(units).IsImperial() {
+		result.Temperature.Fahrenheit = unitspkg.CelsiusToFahrenheit(td)
+		inches := unitspkg.MmToInches(rd)
+		result.Rain = &RainData{Inches: &inches}
 	} else {
 		result.Temperature.Celsius = td
 		result.Rain = &RainData{MM: &rd}
 	}
 
+	// Fetch evapotranspiration data if the client supports it
+	if etClient, ok := wc.(weather.ETProvider); ok {
+		et, err := etClient.GetAverageEvapotranspiration(ctx, duration)
+		if err == nil {
+			if unitspkg.UnitSystem(units).IsImperial() {
+				inches := unitspkg.MmToInches(et)
+				result.Evapotranspiration = &EvapotranspirationData{Inches: &inches}
+			} else {
+				result.Evapotranspiration = &EvapotranspirationData{MM: &et}
+			}
+		}
+	}
+
 	return result, nil
-}
-
-func convertTempToF(celsius float32) float32 {
-	return celsius*1.8 + 32
-}
-
-func convertRainToInches(mm float32) *float32 {
-	inches := mm * (1 / 25.4)
-	return &inches
 }

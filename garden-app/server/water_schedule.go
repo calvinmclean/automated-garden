@@ -13,6 +13,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/automated-garden/garden-app/worker"
 	"github.com/calvinmclean/babyapi"
@@ -177,23 +178,23 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 		}
 
 		// Convert imperial values to metric if user is using imperial units
-		if getUnitsFromRequest(r) == "imperial" {
+		if units.UnitSystem(getUnitsFromRequest(r)).IsImperial() {
 			if ws.WeatherControl.Rain != nil {
 				// Convert rain input range (inches to mm)
 				if ws.WeatherControl.Rain.InputMin != nil {
-					*ws.WeatherControl.Rain.InputMin *= 25.4 // in → mm
+					*ws.WeatherControl.Rain.InputMin = units.InchesToMm(*ws.WeatherControl.Rain.InputMin)
 				}
 				if ws.WeatherControl.Rain.InputMax != nil {
-					*ws.WeatherControl.Rain.InputMax *= 25.4 // in → mm
+					*ws.WeatherControl.Rain.InputMax = units.InchesToMm(*ws.WeatherControl.Rain.InputMax)
 				}
 			}
 			if ws.WeatherControl.Temperature != nil {
 				// Convert temperature input range (°F to °C)
 				if ws.WeatherControl.Temperature.InputMin != nil {
-					*ws.WeatherControl.Temperature.InputMin = (*ws.WeatherControl.Temperature.InputMin - 32) / 1.8 // °F → °C
+					*ws.WeatherControl.Temperature.InputMin = units.FahrenheitToCelsius(*ws.WeatherControl.Temperature.InputMin)
 				}
 				if ws.WeatherControl.Temperature.InputMax != nil {
-					*ws.WeatherControl.Temperature.InputMax = (*ws.WeatherControl.Temperature.InputMax - 32) / 1.8 // °F → °C
+					*ws.WeatherControl.Temperature.InputMax = units.FahrenheitToCelsius(*ws.WeatherControl.Temperature.InputMax)
 				}
 			}
 		}
@@ -248,24 +249,42 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 		return babyapi.ErrInvalidRequest(fmt.Errorf("error parsing form data: %w", err))
 	}
 
-	units := getUnitsFromRequest(r)
-	isImperial := units == "imperial"
+	userUnits := getUnitsFromRequest(r)
+	isImperial := units.UnitSystem(userUnits).IsImperial()
 
-	// Parse base duration
-	baseDurationStr := r.FormValue("Duration")
-	var baseDuration time.Duration
-	if baseDurationStr != "" {
-		var err error
-		baseDuration, err = time.ParseDuration(baseDurationStr)
-		if err != nil {
-			// If standard parsing fails, the duration might be in a different format
-			// Just leave baseDuration as 0
-			baseDuration = 0
-		}
-	}
+	// Parse base duration and interval
+	baseDuration := parseFormDuration(r, "Duration", 0)
+	interval := parseFormDuration(r, "Interval", 24*time.Hour)
 
 	response := ScalingExampleResponse{
-		BaseDuration: baseDurationStr,
+		BaseDuration: baseDuration.Round(time.Second).String(),
+	}
+
+	// Parse ET scaling configuration
+	etCanopyDiameter := parseFormFloat(r, "WeatherControl.Evapotranspiration.CanopyDiameterFeet")
+	etSpecies := r.FormValue("WeatherControl.Evapotranspiration.Species")
+	etFlowRate := parseFormFloat(r, "WeatherControl.Evapotranspiration.FlowRateGPH")
+	etClientID := r.FormValue("WeatherControl.Evapotranspiration.ClientID")
+
+	// If ET scaling is configured, calculate the ET-based duration
+	effectiveBaseDuration := baseDuration
+	if etCanopyDiameter != nil && etFlowRate != nil && etClientID != "" && etSpecies != "" {
+		response.ETConfigured = true
+
+		// Create a temporary ET config
+		etConfig := &weather.EvapotranspirationScaler{
+			CanopyDiameterFeet: float32(*etCanopyDiameter),
+			Species:            weather.Species(etSpecies),
+			FlowRateGPH:        float32(*etFlowRate),
+		}
+
+		// Calculate ET-based duration
+		etDuration, etValue := api.calculateETDuration(r.Context(), etClientID, etConfig, interval, isImperial)
+		response.ETDuration = etDuration.Round(time.Second).String()
+		response.ETValue = etValue
+		if etDuration > 0 {
+			effectiveBaseDuration = etDuration
+		}
 	}
 
 	// Parse rain scaling configuration
@@ -279,8 +298,8 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 	if rainInputMin != nil && rainInputMax != nil && rainFactorMin != nil && rainFactorMax != nil {
 		// Convert imperial to metric if needed (form values are in user units)
 		if isImperial {
-			*rainInputMin *= 25.4 // in → mm
-			*rainInputMax *= 25.4
+			*rainInputMin = units.InchesToMm(*rainInputMin)
+			*rainInputMax = units.InchesToMm(*rainInputMax)
 		}
 
 		scaler := &weather.WeatherScaler{
@@ -291,7 +310,7 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 			FactorMax:     rainFactorMax,
 		}
 
-		response.RainExamples = generateScalingExamples(scaler, baseDuration, isImperial, true)
+		response.RainExamples = generateScalingExamples(scaler, effectiveBaseDuration, isImperial, true)
 	}
 
 	// Parse temperature scaling configuration
@@ -305,8 +324,8 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 	if tempInputMin != nil && tempInputMax != nil && tempFactorMin != nil && tempFactorMax != nil {
 		// Convert imperial to metric if needed (form values are in user units)
 		if isImperial {
-			*tempInputMin = (*tempInputMin - 32) / 1.8 // °F → °C
-			*tempInputMax = (*tempInputMax - 32) / 1.8
+			*tempInputMin = units.FahrenheitToCelsius(*tempInputMin)
+			*tempInputMax = units.FahrenheitToCelsius(*tempInputMax)
 		}
 
 		scaler := &weather.WeatherScaler{
@@ -317,10 +336,50 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 			FactorMax:     tempFactorMax,
 		}
 
-		response.TemperatureExamples = generateScalingExamples(scaler, baseDuration, isImperial, false)
+		response.TemperatureExamples = generateScalingExamples(scaler, effectiveBaseDuration, isImperial, false)
 	}
 
 	return response
+}
+
+// calculateETDuration fetches ET data and calculates watering duration based on citrus tree formula
+// Returns the duration and ET value (in user units for display)
+func (api *WaterSchedulesAPI) calculateETDuration(ctx context.Context, etClientID string, etConfig *weather.EvapotranspirationScaler, interval time.Duration, isImperial bool) (time.Duration, float32) {
+	clientID, err := xid.FromString(etClientID)
+	if err != nil {
+		return 0, 0
+	}
+
+	weatherClient, err := api.storageClient.GetWeatherClient(clientID)
+	if err != nil {
+		return 0, 0
+	}
+
+	// Check if client supports ET
+	etProvider, ok := weatherClient.(weather.ETProvider)
+	if !ok {
+		return 0, 0
+	}
+
+	// Fetch average ET over the configured interval
+	avgET, err := etProvider.GetAverageEvapotranspiration(ctx, interval)
+	if err != nil {
+		return 0, 0
+	}
+
+	// For imperial units, convert the display value to inches
+	etValue := avgET
+	if isImperial {
+		etValue = units.MmToInches(avgET)
+	}
+
+	// Calculate duration using the configured interval
+	etDuration, err := etConfig.CalculateETDuration(avgET, interval, time.Now())
+	if err != nil {
+		return 0, etValue
+	}
+
+	return etDuration, etValue
 }
 
 // parseFormFloat parses a float64 from form data
@@ -334,6 +393,20 @@ func parseFormFloat(r *http.Request, name string) *float64 {
 		return nil
 	}
 	return &value
+}
+
+// parseFormDuration parses a time.Duration from form data
+// Returns the default value if parsing fails or field is empty
+func parseFormDuration(r *http.Request, name string, defaultValue time.Duration) time.Duration {
+	valueStr := r.FormValue(name)
+	if valueStr == "" {
+		return defaultValue
+	}
+	value, err := time.ParseDuration(valueStr)
+	if err != nil {
+		return defaultValue
+	}
+	return value
 }
 
 // generateScalingExamples creates 5 sample points across the input range
@@ -359,12 +432,12 @@ func generateScalingExamples(scaler *weather.WeatherScaler, baseDuration time.Du
 		unit := "mm"
 		if isRain {
 			if isImperial {
-				displayValue = inputValue / 25.4 // mm to inches
+				displayValue = units.MmToInches(inputValue)
 				unit = "in"
 			}
 		} else {
 			if isImperial {
-				displayValue = inputValue*1.8 + 32 // Celsius to Fahrenheit
+				displayValue = units.CelsiusToFahrenheit(inputValue)
 				unit = "°F"
 			} else {
 				unit = "°C"
@@ -392,6 +465,9 @@ func formatDurationShort(d time.Duration) string {
 	if d == 0 {
 		return "0s"
 	}
+
+	// Round to nearest second to avoid sub-second precision
+	d = d.Round(time.Second)
 
 	hours := int(d.Hours())
 	minutes := int(d.Minutes()) % 60
