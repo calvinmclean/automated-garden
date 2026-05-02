@@ -3,6 +3,24 @@ package units
 
 import "golang.org/x/exp/constraints"
 
+// UnitSystem represents the unit system (metric or imperial)
+type UnitSystem string
+
+const (
+	Metric   UnitSystem = "metric"
+	Imperial UnitSystem = "imperial"
+)
+
+// IsMetric returns true if the unit system is metric
+func (u UnitSystem) IsMetric() bool {
+	return u == Metric
+}
+
+// IsImperial returns true if the unit system is imperial
+func (u UnitSystem) IsImperial() bool {
+	return u == Imperial
+}
+
 // Float is a constraint that matches both float32 and float64
 type Float interface {
 	constraints.Float

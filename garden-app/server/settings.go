@@ -9,6 +9,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/babyapi"
 	"github.com/go-chi/render"
 )
@@ -20,17 +21,19 @@ type unitsContextKey struct{}
 func unitsMiddleware(storageClient *storage.Client) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			units := r.URL.Query().Get("units")
-			if units != "imperial" && units != "metric" {
+			userUnits := r.URL.Query().Get("units")
+			us := units.UnitSystem(userUnits)
+			if !us.IsMetric() && !us.IsImperial() {
 				// Read from storage
 				storedValue, err := storageClient.GetUserSetting(r.Context(), "units")
-				if err == nil && (storedValue == "imperial" || storedValue == "metric") {
-					units = storedValue
+				storedUS := units.UnitSystem(storedValue)
+				if err == nil && (storedUS.IsImperial() || storedUS.IsMetric()) {
+					userUnits = storedValue
 				} else {
-					units = "metric"
+					userUnits = string(units.Metric)
 				}
 			}
-			ctx := context.WithValue(r.Context(), unitsContextKey{}, units)
+			ctx := context.WithValue(r.Context(), unitsContextKey{}, userUnits)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
@@ -38,10 +41,10 @@ func unitsMiddleware(storageClient *storage.Client) func(http.Handler) http.Hand
 
 // getUnitsFromRequest retrieves the units from request context
 func getUnitsFromRequest(r *http.Request) string {
-	if units, ok := r.Context().Value(unitsContextKey{}).(string); ok && units != "" {
-		return units
+	if userUnits, ok := r.Context().Value(unitsContextKey{}).(string); ok && userUnits != "" {
+		return userUnits
 	}
-	return "metric"
+	return string(units.Metric)
 }
 
 // SettingsAPI encapsulates the structs and dependencies necessary for the Settings API
@@ -77,13 +80,13 @@ func (api *SettingsAPI) handleSettingsComponents(_ http.ResponseWriter, r *http.
 
 // settingsModalRenderer returns the full settings modal
 func (api *SettingsAPI) settingsModalRenderer(ctx context.Context) render.Renderer {
-	units, err := api.storageClient.GetUserSetting(ctx, "units")
+	userUnits, err := api.storageClient.GetUserSetting(ctx, "units")
 	if err != nil {
-		units = "metric"
+		userUnits = string(units.Metric)
 	}
 	return settingsModalTemplate.Renderer(map[string]any{
-		"Units":    units,
-		"IsMetric": units == "metric",
+		"Units":    userUnits,
+		"IsMetric": units.UnitSystem(userUnits).IsMetric(),
 	})
 }
 
@@ -106,13 +109,13 @@ func (api *SettingsAPI) settingsListRenderer(ctx context.Context) render.Rendere
 
 // unitsSelectorRenderer returns the units selector fragment
 func (api *SettingsAPI) unitsSelectorRenderer(ctx context.Context) render.Renderer {
-	units, err := api.storageClient.GetUserSetting(ctx, "units")
+	userUnits, err := api.storageClient.GetUserSetting(ctx, "units")
 	if err != nil {
-		units = "metric"
+		userUnits = string(units.Metric)
 	}
 	return unitsSelectorTemplate.Renderer(map[string]any{
-		"Units":    units,
-		"IsMetric": units == "metric",
+		"Units":    userUnits,
+		"IsMetric": units.UnitSystem(userUnits).IsMetric(),
 	})
 }
 
@@ -143,7 +146,7 @@ func (api *SettingsAPI) handleGetUserSetting(_ http.ResponseWriter, r *http.Requ
 	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
 		return unitsSelectorTemplate.Renderer(map[string]any{
 			"Units":    value,
-			"IsMetric": value == "metric",
+			"IsMetric": units.UnitSystem(value).IsMetric(),
 		})
 	}
 
@@ -172,7 +175,8 @@ func (api *SettingsAPI) handleUpdateUserSetting(w http.ResponseWriter, r *http.R
 	}
 
 	// Validate the setting value
-	if key == "units" && value != "metric" && value != "imperial" {
+	us := units.UnitSystem(value)
+	if key == "units" && !us.IsMetric() && !us.IsImperial() {
 		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid units value: %s", value))
 	}
 
@@ -186,6 +190,6 @@ func (api *SettingsAPI) handleUpdateUserSetting(w http.ResponseWriter, r *http.R
 	// Return updated selector
 	return unitsSelectorTemplate.Renderer(map[string]any{
 		"Units":    value,
-		"IsMetric": value == "metric",
+		"IsMetric": units.UnitSystem(value).IsMetric(),
 	})
 }

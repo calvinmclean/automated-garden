@@ -5,6 +5,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/units"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 )
 
@@ -26,7 +27,6 @@ var speciesMultipliers = map[weather.Species]float32{
 // Returns duration and nil error on success
 func CalculateETDuration(config *weather.EvapotranspirationScaler, eto float32, interval time.Duration, now time.Time) (time.Duration, error) {
 	const conversionFactor = 0.436 // F = 7.48/12 × 0.7
-	const mmToInches = 1.0 / 25.4  // Convert mm to inches
 
 	// Validate FlowRateGPH to prevent division by zero
 	if config.FlowRateGPH == 0 {
@@ -34,7 +34,7 @@ func CalculateETDuration(config *weather.EvapotranspirationScaler, eto float32, 
 	}
 
 	// Convert ET from mm to inches (formula expects inches/day)
-	etoInches := eto * mmToInches
+	etoInches := units.MmToInches(eto)
 
 	// Get current month for Kc (time.Month is 1-indexed, so subtract 1)
 	currentMonth := now.Month() - 1

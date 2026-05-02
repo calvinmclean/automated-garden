@@ -154,7 +154,7 @@ func templateFuncs(r *http.Request) map[string]any {
 			return units.MmToInches(f)
 		},
 		"IsMetric": func() bool {
-			return getUnitsFromRequest(r) == "metric"
+			return units.UnitSystem(getUnitsFromRequest(r)).IsMetric()
 		},
 		"DerefFloat32": func(f *float32) float32 {
 			if f == nil {

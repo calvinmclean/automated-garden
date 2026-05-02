@@ -61,7 +61,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 					logger.Warn("unable to get rain data for WaterSchedule", "error", err)
 					return err
 				}
-				inches := *rainMM * 0.0393701
+				inches := units.MmToInches(*rainMM)
 				weatherData.Rain = &RainData{
 					MM:     rainMM,
 					Inches: &inches,

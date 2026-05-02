@@ -260,7 +260,7 @@ func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient 
 		Temperature: &TemperatureData{},
 	}
 
-	if units == "imperial" {
+	if unitspkg.UnitSystem(units).IsImperial() {
 		result.Temperature.Fahrenheit = unitspkg.CelsiusToFahrenheit(td)
 		inches := unitspkg.MmToInches(rd)
 		result.Rain = &RainData{Inches: &inches}
@@ -273,7 +273,7 @@ func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient 
 	if etClient, ok := wc.(weather.ETProvider); ok {
 		et, err := etClient.GetAverageEvapotranspiration(ctx, duration)
 		if err == nil {
-			if units == "imperial" {
+			if unitspkg.UnitSystem(units).IsImperial() {
 				inches := unitspkg.MmToInches(et)
 				result.Evapotranspiration = &EvapotranspirationData{Inches: &inches}
 			} else {

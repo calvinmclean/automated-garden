@@ -178,7 +178,7 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 		}
 
 		// Convert imperial values to metric if user is using imperial units
-		if getUnitsFromRequest(r) == "imperial" {
+		if units.UnitSystem(getUnitsFromRequest(r)).IsImperial() {
 			if ws.WeatherControl.Rain != nil {
 				// Convert rain input range (inches to mm)
 				if ws.WeatherControl.Rain.InputMin != nil {
@@ -250,7 +250,7 @@ func (api *WaterSchedulesAPI) scalingExample(_ http.ResponseWriter, r *http.Requ
 	}
 
 	userUnits := getUnitsFromRequest(r)
-	isImperial := userUnits == "imperial"
+	isImperial := units.UnitSystem(userUnits).IsImperial()
 
 	// Parse base duration and interval
 	baseDuration := parseFormDuration(r, "Duration", 0)
@@ -370,7 +370,7 @@ func (api *WaterSchedulesAPI) calculateETDuration(ctx context.Context, etClientI
 	// For imperial units, convert the display value to inches
 	etValue := avgET
 	if isImperial {
-		etValue = avgET * 0.0393701 // mm to inches
+		etValue = units.MmToInches(avgET)
 	}
 
 	// Calculate duration using the configured interval
