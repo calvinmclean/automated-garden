@@ -374,7 +374,7 @@ func (api *WaterSchedulesAPI) calculateETDuration(ctx context.Context, etClientI
 	}
 
 	// Calculate duration using the configured interval
-	etDuration, err := worker.CalculateETDuration(etConfig, avgET, interval, time.Now())
+	etDuration, err := etConfig.CalculateETDuration(avgET, interval, time.Now())
 	if err != nil {
 		return 0, etValue
 	}

@@ -89,7 +89,7 @@ func (w *Worker) CalculateETDuration(ws *pkg.WaterSchedule) (time.Duration, bool
 	}
 
 	// Calculate duration using citrus formula
-	duration, err := CalculateETDuration(etConfig, avgET, ws.Interval.Duration, time.Now())
+	duration, err := etConfig.CalculateETDuration(avgET, ws.Interval.Duration, time.Now())
 	if err != nil {
 		w.logger.Warn("error calculating ET-based duration", "error", err)
 		return 0, false

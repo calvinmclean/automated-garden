@@ -1,10 +1,9 @@
-package worker
+package weather
 
 import (
 	"testing"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
@@ -12,7 +11,7 @@ import (
 func TestCalculateETDuration(t *testing.T) {
 	tests := []struct {
 		name          string
-		config        *weather.EvapotranspirationScaler
+		config        *EvapotranspirationScaler
 		eto           float32
 		interval      time.Duration
 		now           time.Time
@@ -23,10 +22,10 @@ func TestCalculateETDuration(t *testing.T) {
 	}{
 		{
 			name: "Orange_16ft_August_10.16mmET_14days",
-			config: &weather.EvapotranspirationScaler{
+			config: &EvapotranspirationScaler{
 				ClientID:           xid.New(),
 				CanopyDiameterFeet: 16,
-				Species:            weather.SpeciesOrange,
+				Species:            SpeciesOrange,
 				FlowRateGPH:        10,
 			},
 			eto:         10.16,                                        // mm/day (0.4 inches)
@@ -43,10 +42,10 @@ func TestCalculateETDuration(t *testing.T) {
 		},
 		{
 			name: "Grapefruit_20ft_July_12.7mmET_10days",
-			config: &weather.EvapotranspirationScaler{
+			config: &EvapotranspirationScaler{
 				ClientID:           xid.New(),
 				CanopyDiameterFeet: 20,
-				Species:            weather.SpeciesGrapefruit,
+				Species:            SpeciesGrapefruit,
 				FlowRateGPH:        15,
 			},
 			eto:         12.7, // mm/day (0.5 inches)
@@ -63,10 +62,10 @@ func TestCalculateETDuration(t *testing.T) {
 		},
 		{
 			name: "Lemon_12ft_March_7.62mmET_21days",
-			config: &weather.EvapotranspirationScaler{
+			config: &EvapotranspirationScaler{
 				ClientID:           xid.New(),
 				CanopyDiameterFeet: 12,
-				Species:            weather.SpeciesLemon,
+				Species:            SpeciesLemon,
 				FlowRateGPH:        8,
 			},
 			eto:         7.62, // mm/day (0.3 inches)
@@ -83,10 +82,10 @@ func TestCalculateETDuration(t *testing.T) {
 		},
 		{
 			name: "Mandarin_10ft_June_8.89mmET_14days",
-			config: &weather.EvapotranspirationScaler{
+			config: &EvapotranspirationScaler{
 				ClientID:           xid.New(),
 				CanopyDiameterFeet: 10,
-				Species:            weather.SpeciesMandarin,
+				Species:            SpeciesMandarin,
 				FlowRateGPH:        5,
 			},
 			eto:         8.89, // mm/day (0.35 inches)
@@ -103,10 +102,10 @@ func TestCalculateETDuration(t *testing.T) {
 		},
 		{
 			name: "ZeroFlowRate_Error",
-			config: &weather.EvapotranspirationScaler{
+			config: &EvapotranspirationScaler{
 				ClientID:           xid.New(),
 				CanopyDiameterFeet: 16,
-				Species:            weather.SpeciesOrange,
+				Species:            SpeciesOrange,
 				FlowRateGPH:        0,
 			},
 			eto:           10.16, // mm/day (0.4 inches)
@@ -119,7 +118,7 @@ func TestCalculateETDuration(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			duration, err := CalculateETDuration(tt.config, tt.eto, tt.interval, tt.now)
+			duration, err := tt.config.CalculateETDuration(tt.eto, tt.interval, tt.now)
 
 			if tt.expectError {
 				assert.Error(t, err)
@@ -138,11 +137,11 @@ func TestCalculateETDuration(t *testing.T) {
 
 func TestSpeciesMultipliers(t *testing.T) {
 	// Test that all species constants have multipliers
-	speciesList := []weather.Species{
-		weather.SpeciesOrange,
-		weather.SpeciesGrapefruit,
-		weather.SpeciesLemon,
-		weather.SpeciesMandarin,
+	speciesList := []Species{
+		SpeciesOrange,
+		SpeciesGrapefruit,
+		SpeciesLemon,
+		SpeciesMandarin,
 	}
 
 	for _, species := range speciesList {
