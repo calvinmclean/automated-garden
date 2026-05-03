@@ -36,12 +36,11 @@
 
             <div class="uk-margin">
                 <label class="uk-form-label" for="garden-light-schedule-duration">Light Schedule Duration</label>
-                <select id="garden-light-schedule-duration" class="uk-select" name="LightSchedule.Duration">
-                    <option disabled value="" {{ if eq .LightSchedule nil }}selected{{ end }}>Light Schedule Duration</option>
-                    {{ range $i, $selected := LightScheduleRange .LightSchedule }}
-                    <option value="{{ $i }}h" {{ $selected }}>{{ $i }} hours</option>
-                    {{ end }}
-                </select>
+                {{ if .LightSchedule }}
+                {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" .LightSchedule.Duration "Mode" "hours-only") }}
+                {{ else }}
+                {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" nil "Mode" "hours-only") }}
+                {{ end }}
             </div>
             <div class="uk-margin">
                 {{ if .LightSchedule }}
@@ -121,17 +120,15 @@
                         </label>
                     </div>
                     <div class="uk-width-1-2@m">
-                        <label>
-                            <div class="uk-inline uk-margin-small-top">
-                                Downtime Notification
-                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
-                                <div uk-dropdown="pos: right-center">
-                                    Notify when the controller fails to publish health checks for the specified duration
-                                </div>
-                                <input class="uk-input" type="text" name="NotificationSettings.Downtime"
-                                    value="{{ if and .NotificationSettings .NotificationSettings.Downtime }}{{ .NotificationSettings.Downtime }}{{ end }}">
-                            </div>
+                        <label class="uk-form-label">
+                            Downtime Notification
+                            <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75" uk-tooltip="Notify when the controller fails to publish health checks for the specified duration"></span>
                         </label>
+                        {{ if and .NotificationSettings .NotificationSettings.Downtime }}
+                        {{ template "DurationInput" (args "Name" "NotificationSettings.Downtime" "Value" .NotificationSettings.Downtime "Mode" "interval") }}
+                        {{ else }}
+                        {{ template "DurationInput" (args "Name" "NotificationSettings.Downtime" "Value" nil "Mode" "interval") }}
+                        {{ end }}
                 </div>
                 </div>
             </div>
@@ -185,8 +182,11 @@
 
             <div class="uk-margin">
                 <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
-                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
-                    name="ControllerConfig.TemperatureHumidityInterval">
+                {{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}
+                {{ template "DurationInput" (args "Name" "ControllerConfig.TemperatureHumidityInterval" "Value" .ControllerConfig.TemperatureHumidityInterval "Mode" "interval") }}
+                {{ else }}
+                {{ template "DurationInput" (args "Name" "ControllerConfig.TemperatureHumidityInterval" "Value" nil "Mode" "interval") }}
+                {{ end }}
             </div>
             {{ end }}
 

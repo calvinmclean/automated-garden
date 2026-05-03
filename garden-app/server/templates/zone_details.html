@@ -18,8 +18,9 @@
                 <form class="uk-form-horizontal" hx-headers='{"Accept": "text/html"}'
                     hx-post="/gardens/{{ .GardenID }}/zones/{{ .ID }}/action" hx-on::after-request="this.reset()"
                     hx-swap="none">
-                    <input class="uk-input uk-form-width-small" type="text" placeholder="Duration"
-                        name="water.duration">
+                    <div class="uk-inline">
+                        {{ template "DurationInput" (args "Name" "water.duration" "Value" nil "Mode" "duration") }}
+                    </div>
                     <button class="uk-button uk-button-primary uk-margin-left">Water Zone</button>
                 </form>
             </div>

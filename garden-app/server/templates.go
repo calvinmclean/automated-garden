@@ -321,6 +321,13 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 			return result
 		},
+		"Iterate": func(start, end int) []int {
+			result := make([]int, end-start+1)
+			for i := start; i <= end; i++ {
+				result[i-start] = i
+			}
+			return result
+		},
 		"UIntRange": func(n *uint) []uint {
 			if n == nil {
 				return []uint{}
