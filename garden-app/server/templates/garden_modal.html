@@ -34,21 +34,41 @@
                 <label class="uk-form-label" for="garden-temp-hum"> Temperature/Humidity Sensor</label>
             </div>
 
-            <div class="uk-margin">
-                <label class="uk-form-label" for="garden-light-schedule-duration">Light Schedule Duration</label>
-                {{ if .LightSchedule }}
-                {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" .LightSchedule.Duration "Mode" "hours-only") }}
-                {{ else }}
-                {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" nil "Mode" "hours-only") }}
-                {{ end }}
+            <div class="uk-margin" style="text-align: left;">
+                <button type="button" id="light-schedule-toggle"
+                    class="uk-button {{ if .LightSchedule }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                    _="on click
+                        if #light-schedule-fields.classList.contains('uk-hidden') then
+                            remove .uk-hidden from #light-schedule-fields
+                            then remove @disabled from <#light-schedule-fields input, #light-schedule-fields select/>
+                            then add .uk-button-primary to me
+                            then remove .uk-button-default from me
+                        else
+                            set <#light-schedule-fields input/>'s value to ''
+                            then add @disabled to <#light-schedule-fields input, #light-schedule-fields select/>
+                            then add .uk-hidden to #light-schedule-fields
+                            then add .uk-button-default to me
+                            then remove .uk-button-primary from me">
+                    {{ if .LightSchedule }}Disable{{ else }}Enable{{ end }} Light Schedule
+                </button>
             </div>
-            <div class="uk-margin">
-                {{ if .LightSchedule }}
-                {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime" "StartTime"
-                .LightSchedule.StartTime) }}
-                {{ else }}
-                {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime") }}
-                {{ end }}
+            <div id="light-schedule-fields" class="{{ if not .LightSchedule }}uk-hidden{{ end }}">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-light-schedule-duration">Light Schedule Duration</label>
+                    {{ if .LightSchedule }}
+                    {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" .LightSchedule.Duration "Mode" "hours-only") }}
+                    {{ else }}
+                    {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" nil "Mode" "hours-only") }}
+                    {{ end }}
+                </div>
+                <div class="uk-margin">
+                    {{ if .LightSchedule }}
+                    {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime" "StartTime"
+                    .LightSchedule.StartTime) }}
+                    {{ else }}
+                    {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime") }}
+                    {{ end }}
+                </div>
             </div>
             
             <div class="uk-margin">
