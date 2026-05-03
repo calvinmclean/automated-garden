@@ -10,7 +10,7 @@ SELECT * FROM water_schedules WHERE end_date IS NULL
    OR end_date > ?;
 
 -- name: FindWaterSchedulesByWeatherClientID :many
-SELECT * FROM water_schedules
+SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id, send_reminder FROM water_schedules
 WHERE weather_control IS NOT NULL AND (
     json_extract(weather_control, '$.rain_control.client_id') = ?
     OR json_extract(weather_control, '$.temperature_control.client_id') = ?
@@ -24,9 +24,10 @@ INSERT INTO water_schedules (
   end_date,
   active_period_start_month, active_period_end_month,
   weather_control,
-  notification_client_id
+  notification_client_id,
+  send_reminder
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -39,7 +40,8 @@ DO UPDATE SET
   active_period_start_month = EXCLUDED.active_period_start_month,
   active_period_end_month = EXCLUDED.active_period_end_month,
   weather_control = EXCLUDED.weather_control,
-  notification_client_id = EXCLUDED.notification_client_id;
+  notification_client_id = EXCLUDED.notification_client_id,
+  send_reminder = EXCLUDED.send_reminder;
 
 -- name: SetWaterScheduleEndDate :exec
 UPDATE water_schedules

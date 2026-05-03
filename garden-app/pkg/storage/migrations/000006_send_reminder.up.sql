@@ -1,0 +1,1 @@
+ALTER TABLE water_schedules ADD COLUMN send_reminder BOOLEAN NOT NULL DEFAULT FALSE;

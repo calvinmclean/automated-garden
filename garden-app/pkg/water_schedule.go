@@ -26,6 +26,7 @@ type WaterSchedule struct {
 	Description          string           `json:"description,omitempty" yaml:"description,omitempty"`
 	ActivePeriod         *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
 	NotificationClientID *string          `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	SendReminder         *bool            `json:"send_reminder,omitempty" yaml:"send_reminder,omitempty"`
 }
 
 func (ws *WaterSchedule) GetID() string {
@@ -102,6 +103,9 @@ func (ws *WaterSchedule) Patch(newWaterSchedule *WaterSchedule) *babyapi.ErrResp
 	}
 	if newWaterSchedule.NotificationClientID != nil {
 		ws.NotificationClientID = newWaterSchedule.NotificationClientID
+	}
+	if newWaterSchedule.SendReminder != nil {
+		ws.SendReminder = newWaterSchedule.SendReminder
 	}
 
 	return nil

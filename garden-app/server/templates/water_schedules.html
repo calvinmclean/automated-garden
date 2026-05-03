@@ -79,5 +79,10 @@
         <span uk-icon="sun" class="uk-margin-small-top uk-margin-small-bottom"></span>
     </span>
     {{ end }}
+    {{ if and .SendReminder (derefBool .SendReminder) }}
+    <span class="uk-label uk-label-primary" uk-tooltip="Reminder Enabled">
+        <span uk-icon="bell" class="uk-margin-small-top uk-margin-small-bottom"></span>
+    </span>
+    {{ end }}
 </div>
 {{ end }}

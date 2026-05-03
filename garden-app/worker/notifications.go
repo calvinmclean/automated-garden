@@ -40,6 +40,46 @@ Details: %s`, actionName, health.LastContact.Format(time.DateTime), health.Detai
 	)
 }
 
+func (w *Worker) sendWateringReminder(ws *pkg.WaterSchedule, duration time.Duration, zoneCount int, logger *slog.Logger) {
+	if ws.GetNotificationClientID() == "" || ws.SendReminder == nil || !*ws.SendReminder {
+		return
+	}
+
+	title, message := generateWateringNotificationContent(ws, duration, zoneCount)
+	w.sendNotification(ws.GetNotificationClientID(), title, message, logger)
+}
+
+func generateWateringNotificationContent(ws *pkg.WaterSchedule, duration time.Duration, zoneCount int) (string, string) {
+	var title, message string
+	if zoneCount > 0 {
+		title = fmt.Sprintf("Watering %d Zone", zoneCount)
+		if zoneCount > 1 {
+			title += "s"
+		}
+		if ws.Name != "" {
+			title += fmt.Sprintf(": %s", ws.Name)
+		}
+	} else {
+		title = "Watering Reminder"
+		if ws.Name != "" {
+			title += fmt.Sprintf(": %s", ws.Name)
+		}
+	}
+
+	if duration == 0 {
+		message = "Weather conditions suggest skipping watering today"
+	} else {
+		baseDuration := ws.Duration.Duration
+		message = fmt.Sprintf("Duration: %s", duration)
+		if duration != baseDuration {
+			scaleFactor := float64(duration) / float64(baseDuration)
+			message += fmt.Sprintf(" (base: %s, scaled %.2fx)", baseDuration, scaleFactor)
+		}
+	}
+
+	return title, message
+}
+
 func (w *Worker) sendNotification(clientID, title, msg string, logger *slog.Logger) {
 	ncLogger := logger.With("notification_client_id", clientID)
 
