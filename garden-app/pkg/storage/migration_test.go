@@ -219,8 +219,8 @@ func TestWeatherScalerMigration(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, nullControl.Valid)
 
-	// Test down migration - step back just one migration
-	err = m.Steps(-1)
+	// Test down migration - go back to version 4 (before migration 5)
+	err = m.Migrate(4)
 	require.NoError(t, err)
 
 	// Verify rain-only reversion

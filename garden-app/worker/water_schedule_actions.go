@@ -10,8 +10,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 )
 
-// ExecuteScheduledWaterAction will run ExecuteWaterAction after checking SkipCount and scaling based on weather data
-func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule) error {
+// ExecuteScheduledWaterAction will run ExecuteWaterAction after checking SkipCount
+func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule, duration time.Duration) error {
 	if z.SkipCount != nil && *z.SkipCount > 0 {
 		*z.SkipCount--
 		err := w.storageClient.Zones.Set(context.Background(), z)
@@ -22,13 +22,9 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 		w.logger.Info("skipping watering Zone because of SkipCount", "zone_id", z.GetID())
 		return nil
 	}
-	duration, err := w.exerciseWeatherControl(ws)
-	if err != nil {
-		w.logger.Error("error executing weather controls, continuing to water", "error", err)
-		duration = ws.Duration.Duration
-	}
+
 	if duration == 0 {
-		w.logger.Info("weather control determined that watering should be skipped")
+		w.logger.Info("skipping watering Zone because duration is 0")
 		return nil
 	}
 
@@ -40,15 +36,6 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 		Duration: &pkg.Duration{Duration: duration},
 		Source:   action.SourceSchedule,
 	})
-}
-
-func (w *Worker) exerciseWeatherControl(ws *pkg.WaterSchedule) (time.Duration, error) {
-	if !ws.HasWeatherControl() {
-		return ws.Duration.Duration, nil
-	}
-
-	duration, _ := w.ScaleWateringDuration(ws)
-	return duration, nil
 }
 
 // CalculateETDuration calculates watering duration based on ET data using the citrus tree formula.

@@ -126,6 +126,11 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		interval = int64(waterSchedule.Interval.Duration)
 	}
 
+	sendReminder := false
+	if waterSchedule.SendReminder != nil {
+		sendReminder = *waterSchedule.SendReminder
+	}
+
 	return s.q.UpsertWaterSchedule(ctx, db.UpsertWaterScheduleParams{
 		ID:                     waterSchedule.ID.String(),
 		Name:                   name,
@@ -139,6 +144,7 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		ActivePeriodEndMonth:   activePeriodEndMonth,
 		WeatherControl:         weatherControl,
 		NotificationClientID:   notificationClientID,
+		SendReminder:           sendReminder,
 	})
 }
 
@@ -214,6 +220,8 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 	if dbWaterSchedule.NotificationClientID.Valid {
 		waterSchedule.NotificationClientID = &dbWaterSchedule.NotificationClientID.String
 	}
+
+	waterSchedule.SendReminder = &dbWaterSchedule.SendReminder
 
 	return waterSchedule, nil
 }

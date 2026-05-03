@@ -20,7 +20,7 @@ func (q *Queries) DeleteWaterSchedule(ctx context.Context, id string) error {
 }
 
 const findWaterSchedulesByWeatherClientID = `-- name: FindWaterSchedulesByWeatherClientID :many
-SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules
+SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id, send_reminder FROM water_schedules
 WHERE weather_control IS NOT NULL AND (
     json_extract(weather_control, '$.rain_control.client_id') = ?
     OR json_extract(weather_control, '$.temperature_control.client_id') = ?
@@ -54,6 +54,7 @@ func (q *Queries) FindWaterSchedulesByWeatherClientID(ctx context.Context, arg F
 			&i.ActivePeriodEndMonth,
 			&i.WeatherControl,
 			&i.NotificationClientID,
+			&i.SendReminder,
 		); err != nil {
 			return nil, err
 		}
@@ -69,7 +70,7 @@ func (q *Queries) FindWaterSchedulesByWeatherClientID(ctx context.Context, arg F
 }
 
 const getWaterSchedule = `-- name: GetWaterSchedule :one
-SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules
+SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id, send_reminder FROM water_schedules
 WHERE id = ? LIMIT 1
 `
 
@@ -89,12 +90,13 @@ func (q *Queries) GetWaterSchedule(ctx context.Context, id string) (WaterSchedul
 		&i.ActivePeriodEndMonth,
 		&i.WeatherControl,
 		&i.NotificationClientID,
+		&i.SendReminder,
 	)
 	return i, err
 }
 
 const listActiveWaterSchedules = `-- name: ListActiveWaterSchedules :many
-SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules WHERE end_date IS NULL
+SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id, send_reminder FROM water_schedules WHERE end_date IS NULL
    OR end_date > ?
 `
 
@@ -120,6 +122,7 @@ func (q *Queries) ListActiveWaterSchedules(ctx context.Context, endDate sql.Null
 			&i.ActivePeriodEndMonth,
 			&i.WeatherControl,
 			&i.NotificationClientID,
+			&i.SendReminder,
 		); err != nil {
 			return nil, err
 		}
@@ -135,7 +138,7 @@ func (q *Queries) ListActiveWaterSchedules(ctx context.Context, endDate sql.Null
 }
 
 const listAllWaterSchedules = `-- name: ListAllWaterSchedules :many
-SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id FROM water_schedules
+SELECT id, name, description, duration, interval, start_date, start_time, end_date, active_period_start_month, active_period_end_month, weather_control, notification_client_id, send_reminder FROM water_schedules
 `
 
 func (q *Queries) ListAllWaterSchedules(ctx context.Context) ([]WaterSchedule, error) {
@@ -160,6 +163,7 @@ func (q *Queries) ListAllWaterSchedules(ctx context.Context) ([]WaterSchedule, e
 			&i.ActivePeriodEndMonth,
 			&i.WeatherControl,
 			&i.NotificationClientID,
+			&i.SendReminder,
 		); err != nil {
 			return nil, err
 		}
@@ -198,9 +202,10 @@ INSERT INTO water_schedules (
   end_date,
   active_period_start_month, active_period_end_month,
   weather_control,
-  notification_client_id
+  notification_client_id,
+  send_reminder
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -213,7 +218,8 @@ DO UPDATE SET
   active_period_start_month = EXCLUDED.active_period_start_month,
   active_period_end_month = EXCLUDED.active_period_end_month,
   weather_control = EXCLUDED.weather_control,
-  notification_client_id = EXCLUDED.notification_client_id
+  notification_client_id = EXCLUDED.notification_client_id,
+  send_reminder = EXCLUDED.send_reminder
 `
 
 type UpsertWaterScheduleParams struct {
@@ -229,6 +235,7 @@ type UpsertWaterScheduleParams struct {
 	ActivePeriodEndMonth   sql.NullString
 	WeatherControl         sql.NullString
 	NotificationClientID   sql.NullString
+	SendReminder           bool
 }
 
 func (q *Queries) UpsertWaterSchedule(ctx context.Context, arg UpsertWaterScheduleParams) error {
@@ -245,6 +252,7 @@ func (q *Queries) UpsertWaterSchedule(ctx context.Context, arg UpsertWaterSchedu
 		arg.ActivePeriodEndMonth,
 		arg.WeatherControl,
 		arg.NotificationClientID,
+		arg.SendReminder,
 	)
 	return err
 }

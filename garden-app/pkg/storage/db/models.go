@@ -53,6 +53,7 @@ type WaterSchedule struct {
 	ActivePeriodEndMonth   sql.NullString
 	WeatherControl         sql.NullString
 	NotificationClientID   sql.NullString
+	SendReminder           bool
 }
 
 type WeatherClient struct {

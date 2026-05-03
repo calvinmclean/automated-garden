@@ -51,13 +51,29 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 					return nil
 				}
 
+				// Calculate duration for weather control (for notifications and zone watering)
+				duration := ws.Duration.Duration
+				if ws.HasWeatherControl() {
+					duration, _ = w.ScaleWateringDuration(ws)
+				}
+
+				// Get zones using this WaterSchedule (for notifications and watering)
 				zonesAndGardens, err := w.storageClient.GetZonesUsingWaterSchedule(ws.ID.String())
 				if err != nil {
 					return fmt.Errorf("error getting Zones for WaterSchedule when executing scheduled Job: %w", err)
 				}
 
+				// Send watering notification if enabled
+				w.sendWateringReminder(ws, duration, len(zonesAndGardens), jobLogger)
+
+				// If duration is 0 (weather says skip), don't water any zones
+				if duration == 0 {
+					jobLogger.Info("skipping watering all zones due to weather control")
+					return nil
+				}
+
 				for _, zg := range zonesAndGardens {
-					err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws)
+					err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws, duration)
 					if err != nil {
 						jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
 						schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()

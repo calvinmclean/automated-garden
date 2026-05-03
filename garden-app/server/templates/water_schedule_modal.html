@@ -55,13 +55,21 @@
                     $noClientSelected = eq .NotificationClientID nil
                     {{ end }}
                     <option disabled {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
-                    
+
                     {{ $ws := . }}
                     {{ range $i, $nc := .NotificationClients }}
                     {{ $selected := CompareNotificationClientID $nc.GetID $ws }}
                     <option value="{{ $nc.ID }}" {{ if $selected }}selected{{ end }}>{{ $nc.Name }}</option>
                     {{ end }}
                 </select>
+            </div>
+
+            <div class="uk-margin" style="text-align: left;">
+                <label class="uk-form-label" for="send-reminder-checkbox">
+                    <input id="send-reminder-checkbox" class="uk-checkbox" type="checkbox" name="SendReminder" value="true" {{ if and .SendReminder (derefBool .SendReminder) }}checked{{ end }}>
+                    Send watering reminder notification
+                </label>
+                <div class="uk-text-small uk-text-muted">Sends a notification with the calculated watering duration before watering begins</div>
             </div>
 
             <!-- Rain Scaling Section -->

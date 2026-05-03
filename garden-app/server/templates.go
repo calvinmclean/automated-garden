@@ -168,6 +168,12 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 			return *f
 		},
+		"derefBool": func(b *bool) bool {
+			if b == nil {
+				return false
+			}
+			return *b
+		},
 		"IsNotNil": func(v any) bool {
 			return v != nil
 		},
