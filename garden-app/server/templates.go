@@ -168,7 +168,7 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 			return *f
 		},
-		"derefBool": func(b *bool) bool {
+		"DerefBool": func(b *bool) bool {
 			if b == nil {
 				return false
 			}
