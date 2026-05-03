@@ -30,26 +30,45 @@
                     type="checkbox"
                     name="TemperatureHumiditySensor"
                     value="true"
-                    {{ if .TemperatureHumiditySensor }}checked{{ end }}>
+                    {{ if and .TemperatureHumiditySensor (DerefBool .TemperatureHumiditySensor) }}checked{{ end }}>
                 <label class="uk-form-label" for="garden-temp-hum"> Temperature/Humidity Sensor</label>
             </div>
 
-            <div class="uk-margin">
-                <label class="uk-form-label" for="garden-light-schedule-duration">Light Schedule Duration</label>
-                <select id="garden-light-schedule-duration" class="uk-select" name="LightSchedule.Duration">
-                    <option disabled value="" {{ if eq .LightSchedule nil }}selected{{ end }}>Light Schedule Duration</option>
-                    {{ range $i, $selected := LightScheduleRange .LightSchedule }}
-                    <option value="{{ $i }}h" {{ $selected }}>{{ $i }} hours</option>
-                    {{ end }}
-                </select>
+            <div class="uk-margin" style="text-align: left;">
+                <button type="button" id="light-schedule-toggle"
+                    class="uk-button {{ if .LightSchedule }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                    _="on click
+                        if #light-schedule-fields.classList.contains('uk-hidden') then
+                            remove .uk-hidden from #light-schedule-fields
+                            then remove @disabled from <#light-schedule-fields input, #light-schedule-fields select/>
+                            then add .uk-button-primary to me
+                            then remove .uk-button-default from me
+                        else
+                            set <#light-schedule-fields input/>'s value to ''
+                            then add @disabled to <#light-schedule-fields input, #light-schedule-fields select/>
+                            then add .uk-hidden to #light-schedule-fields
+                            then add .uk-button-default to me
+                            then remove .uk-button-primary from me">
+                    {{ if .LightSchedule }}Disable{{ else }}Enable{{ end }} Light Schedule
+                </button>
             </div>
-            <div class="uk-margin">
-                {{ if .LightSchedule }}
-                {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime" "StartTime"
-                .LightSchedule.StartTime) }}
-                {{ else }}
-                {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime") }}
-                {{ end }}
+            <div id="light-schedule-fields" class="{{ if not .LightSchedule }}uk-hidden{{ end }}">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-light-schedule-duration">Light Schedule Duration</label>
+                    {{ if .LightSchedule }}
+                    {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" .LightSchedule.Duration "Mode" "hours-only") }}
+                    {{ else }}
+                    {{ template "DurationInput" (args "Name" "LightSchedule.Duration" "Value" nil "Mode" "hours-only") }}
+                    {{ end }}
+                </div>
+                <div class="uk-margin">
+                    {{ if .LightSchedule }}
+                    {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime" "StartTime"
+                    .LightSchedule.StartTime) }}
+                    {{ else }}
+                    {{ template "startTimeInput" (args "Name" "LightSchedule.StartTime") }}
+                    {{ end }}
+                </div>
             </div>
             
             <div class="uk-margin">
@@ -121,74 +140,93 @@
                         </label>
                     </div>
                     <div class="uk-width-1-2@m">
-                        <label>
-                            <div class="uk-inline uk-margin-small-top">
-                                Downtime Notification
-                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
-                                <div uk-dropdown="pos: right-center">
-                                    Notify when the controller fails to publish health checks for the specified duration
-                                </div>
-                                <input class="uk-input" type="text" name="NotificationSettings.Downtime"
-                                    value="{{ if and .NotificationSettings .NotificationSettings.Downtime }}{{ .NotificationSettings.Downtime }}{{ end }}">
-                            </div>
+                        <label class="uk-form-label">
+                            Downtime Notification
+                            <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75" uk-tooltip="Notify when the controller fails to publish health checks for the specified duration"></span>
                         </label>
+                        {{ if and .NotificationSettings .NotificationSettings.Downtime }}
+                        {{ template "DurationInput" (args "Name" "NotificationSettings.Downtime" "Value" .NotificationSettings.Downtime "Mode" "interval") }}
+                        {{ else }}
+                        {{ template "DurationInput" (args "Name" "NotificationSettings.Downtime" "Value" nil "Mode" "interval") }}
+                        {{ end }}
                 </div>
                 </div>
             </div>
             
-            {{ if .MaxZones }}
-            {{ $controllerConfig := .ControllerConfig }}
-            <div class="uk-margin">
-                <label class="uk-form-label">Valve Pins</label>
-                <div class="uk-grid-small" uk-grid>
-                    {{ range $i := (UIntRange .MaxZones) }}
-                    <div>
-                        <label class="uk-form-label" for="garden-config-valvepin-{{ $i }}">Zone {{ $i }}</label>
-                        <input id="garden-config-valvepin-{{ $i }}" class="uk-input uk-form-width-small" type="number"
-                            value="{{ $controllerConfig.ValvePin $i }}" placeholder="" min="0"
-                            name="ControllerConfig.ValvePins.{{ $i }}">
+            <div class="uk-margin" style="text-align: left;">
+                <button type="button" id="controller-config-toggle" class="uk-button uk-button-default"
+                    _="on click
+                        if #controller-config-fields.classList.contains('uk-hidden') then
+                            remove .uk-hidden from #controller-config-fields
+                            then add .uk-button-primary to me
+                            then remove .uk-button-default from me
+                            then set my text to 'Hide Controller Config'
+                        else
+                            add .uk-hidden to #controller-config-fields
+                            then add .uk-button-default to me
+                            then remove .uk-button-primary from me
+                            then set my text to 'Show Controller Config'">
+                    Show Controller Config
+                </button>
+            </div>
+            <div id="controller-config-fields" class="uk-hidden">
+                {{ if .MaxZones }}
+                {{ $controllerConfig := .ControllerConfig }}
+                <div class="uk-margin">
+                    <label class="uk-form-label">Valve Pins</label>
+                    <div class="uk-grid-small" uk-grid>
+                        {{ range $i := (UIntRange .MaxZones) }}
+                        <div>
+                            <label class="uk-form-label" for="garden-config-valvepin-{{ $i }}">Zone {{ $i }}</label>
+                            <input id="garden-config-valvepin-{{ $i }}" class="uk-input uk-form-width-small" type="number"
+                                value="{{ $controllerConfig.ValvePin $i }}" placeholder="" min="0"
+                                name="ControllerConfig.ValvePins.{{ $i }}">
+                        </div>
+                        {{ end }}
                     </div>
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label">Pump Pins <span uk-tooltip="If you don't use a pump, set to the same pin as valves" uk-icon="icon: info; ratio: 0.75"></span></label>
+                    <div class="uk-grid-small" uk-grid>
+                        {{ range $i := (UIntRange .MaxZones) }}
+                        <div>
+                            <label class="uk-form-label" for="garden-config-pumppin-{{ $i }}">Zone {{ $i }}</label>
+                            <input id="garden-config-pumppin-{{ $i }}" class="uk-input uk-form-width-small" type="number"
+                                value="{{ $controllerConfig.PumpPin $i }}" placeholder="" min="0"
+                                name="ControllerConfig.PumpPins.{{ $i }}">
+                        </div>
+                        {{ end }}
+                    </div>
+                </div>
+                {{ end }}
+
+                {{ if .LightSchedule }}
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-config-light-pin">Light Pin</label>
+                    <input id="garden-config-light-pin" class="uk-input" type="number"
+                        value="{{ if and .ControllerConfig .ControllerConfig.LightPin }}{{ .ControllerConfig.LightPin }}{{ end }}" placeholder="Light Pin"
+                        name="ControllerConfig.LightPin">
+                </div>
+                {{ end }}
+
+                {{ if .TemperatureHumiditySensor }}
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-config-temp-hum-pin">Temperature/Humidity Sensor Pin</label>
+                    <input id="garden-config-temp-hum-pin" class="uk-input" type="number"
+                        value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityPin }}{{ .ControllerConfig.TemperatureHumidityPin }}{{ end }}" placeholder="Temperature/Humidity Sensor Pin"
+                        name="ControllerConfig.TemperatureHumidityPin">
+                </div>
+
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
+                    {{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}
+                    {{ template "DurationInput" (args "Name" "ControllerConfig.TemperatureHumidityInterval" "Value" .ControllerConfig.TemperatureHumidityInterval "Mode" "interval") }}
+                    {{ else }}
+                    {{ template "DurationInput" (args "Name" "ControllerConfig.TemperatureHumidityInterval" "Value" nil "Mode" "interval") }}
                     {{ end }}
                 </div>
+                {{ end }}
             </div>
-            <div class="uk-margin">
-                <label class="uk-form-label">Pump Pins <span uk-tooltip="If you don't use a pump, set to the same pin as valves" uk-icon="icon: info; ratio: 0.75"></span></label>
-                <div class="uk-grid-small" uk-grid>
-                    {{ range $i := (UIntRange .MaxZones) }}
-                    <div>
-                        <label class="uk-form-label" for="garden-config-pumppin-{{ $i }}">Zone {{ $i }}</label>
-                        <input id="garden-config-pumppin-{{ $i }}" class="uk-input uk-form-width-small" type="number"
-                            value="{{ $controllerConfig.PumpPin $i }}" placeholder="" min="0"
-                            name="ControllerConfig.PumpPins.{{ $i }}">
-                    </div>
-                    {{ end }}
-                </div>
-            </div>
-            {{ end }}
-
-            {{ if .LightSchedule }}
-            <div class="uk-margin">
-                <label class="uk-form-label" for="garden-config-light-pin">Light Pin</label>
-                <input id="garden-config-light-pin" class="uk-input" type="number"
-                    value="{{ if and .ControllerConfig .ControllerConfig.LightPin }}{{ .ControllerConfig.LightPin }}{{ end }}" placeholder="Light Pin"
-                    name="ControllerConfig.LightPin">
-            </div>
-            {{ end }}
-
-            {{ if .TemperatureHumiditySensor }}
-            <div class="uk-margin">
-                <label class="uk-form-label" for="garden-config-temp-hum-pin">Temperature/Humidity Sensor Pin</label>
-                <input id="garden-config-temp-hum-pin" class="uk-input" type="number"
-                    value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityPin }}{{ .ControllerConfig.TemperatureHumidityPin }}{{ end }}" placeholder="Temperature/Humidity Sensor Pin"
-                    name="ControllerConfig.TemperatureHumidityPin">
-            </div>
-
-            <div class="uk-margin">
-                <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
-                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
-                    name="ControllerConfig.TemperatureHumidityInterval">
-            </div>
-            {{ end }}
 
             {{ template "modalSubmitButton" }}
             {{ if .Name }}

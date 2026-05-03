@@ -18,13 +18,15 @@
             <div class="uk-margin">
                 <input class="uk-input" value="{{ .Description }}" placeholder="Description" name="Description">
             </div>
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ if .Duration }}{{ .Duration }}{{ end }}" placeholder="Duration"
-                    name="Duration">
-            </div>
-            <div class="uk-margin">
-                <input class="uk-input" value="{{ if .Interval }}{{ .Interval }}{{ end }}" placeholder="Interval"
-                    name="Interval">
+            <div class="uk-margin uk-grid-small uk-child-width-1-2@s uk-text-left" uk-grid>
+                <div>
+                    <label class="uk-form-label">Duration</label>
+                    {{ template "DurationInput" (args "Name" "Duration" "Value" .Duration "Mode" "duration") }}
+                </div>
+                <div>
+                    <label class="uk-form-label">Interval</label>
+                    {{ template "DurationInput" (args "Name" "Interval" "Value" .Interval "Mode" "interval") }}
+                </div>
             </div>
             <div class="uk-margin">
                 <div class="uk-margin">
@@ -46,7 +48,7 @@
                     {{ MonthRows .ActivePeriod false }}
                 </select>
             </div>
-            
+
             <div class="uk-margin">
                 <label class="uk-form-label" for="notification-client-select">Notification Client</label>
                 <select id="notification-client-select" class="uk-select" name="NotificationClientID">
@@ -66,7 +68,7 @@
 
             <div class="uk-margin" style="text-align: left;">
                 <label class="uk-form-label" for="send-reminder-checkbox">
-                    <input id="send-reminder-checkbox" class="uk-checkbox" type="checkbox" name="SendReminder" value="true" {{ if and .SendReminder (derefBool .SendReminder) }}checked{{ end }}>
+                    <input id="send-reminder-checkbox" class="uk-checkbox" type="checkbox" name="SendReminder" value="true" {{ if and .SendReminder (DerefBool .SendReminder) }}checked{{ end }}>
                     Send watering reminder notification
                 </label>
                 <div class="uk-text-small uk-text-muted">Sends a notification with the calculated watering duration before watering begins</div>
@@ -74,21 +76,21 @@
 
             <!-- Rain Scaling Section -->
             <div class="uk-margin" style="text-align: left;">
-                <button type="button" id="rain-scaling-toggle" 
+                <button type="button" id="rain-scaling-toggle"
                     class="uk-button {{ if and .WeatherControl .WeatherControl.Rain }}uk-button-primary{{ else }}uk-button-default{{ end }}"
-                    _="on click 
-                        if #rain-fields.classList.contains('uk-hidden') then 
-                            remove .uk-hidden from #rain-fields 
-                            then remove @disabled from <#rain-fields input, #rain-fields select/> 
-                            then add .uk-button-primary to me 
+                    _="on click
+                        if #rain-fields.classList.contains('uk-hidden') then
+                            remove .uk-hidden from #rain-fields
+                            then remove @disabled from <#rain-fields input, #rain-fields select/>
+                            then add .uk-button-primary to me
                             then remove .uk-button-default from me
                             then remove .uk-hidden from #scaling-preview-section
-                        else 
-                            set <#rain-fields input/>'s value to '' 
-                            then set #rain-client-select's selectedIndex to -1 
-                            then add @disabled to <#rain-fields input, #rain-fields select/> 
-                            then add .uk-hidden to #rain-fields 
-                            then add .uk-button-default to me 
+                        else
+                            set <#rain-fields input/>'s value to ''
+                            then set #rain-client-select's selectedIndex to -1
+                            then add @disabled to <#rain-fields input, #rain-fields select/>
+                            then add .uk-hidden to #rain-fields
+                            then add .uk-button-default to me
                             then remove .uk-button-primary from me
                             then if #temperature-fields.classList.contains('uk-hidden') and #et-fields.classList.contains('uk-hidden') then add .uk-hidden to #scaling-preview-section end">
                     {{ if and .WeatherControl .WeatherControl.Rain }}Disable{{ else }}Enable{{ end }} Rain Scaling
@@ -338,7 +340,7 @@
 <div class="uk-alert-primary uk-box-shadow-large" uk-alert style="margin: 0; padding: 20px; max-width: 600px;">
     <a class="uk-alert-close" uk-close></a>
     <h4 class="uk-alert-title uk-margin-remove">Scaling Preview</h4>
-    
+
     {{ if .ETConfigured }}
     <div class="uk-margin-small-top uk-padding-small uk-background-muted uk-border-rounded">
         <div class="uk-text-bold uk-text-emphasis">
@@ -364,7 +366,7 @@
     {{ else }}
     <div class="uk-margin-small-top uk-text-small uk-text-muted">Base Duration: {{ .BaseDuration }}</div>
     {{ end }}
-    
+
     <!-- Charts Section -->
     <div class="uk-grid uk-grid-small uk-child-width-1-2@l uk-margin-small-top" uk-grid>
         {{ if .RainExamples }}
@@ -380,7 +382,7 @@
         </div>
         {{ end }}
     </div>
-    
+
     {{ if .RainExamples }}
     <div class="uk-margin-small-top">
         <div class="uk-text-bold">Rain</div>
@@ -397,7 +399,7 @@
         </table>
     </div>
     {{ end }}
-    
+
     {{ if .TemperatureExamples }}
     <div class="uk-margin-small-top">
         <div class="uk-text-bold">Temperature</div>

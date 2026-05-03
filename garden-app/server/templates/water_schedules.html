@@ -1,87 +1,108 @@
-{{ define "WaterSchedulesPage" }}
-{{ template "start" }}
-{{ template "WaterSchedules" . }}
-{{ template "end" }}
-{{ end }}
-
-{{ define "WaterSchedules" }}
-<div hx-swap="outerHTML" hx-get="/water_schedules?refresh=true" hx-headers='{"Accept": "text/html"}'
-    hx-trigger="{{ if NotRefresh }}load, {{ end }}newWaterSchedule from:body" uk-grid>
-    {{ range .Items }}
-    {{ template "waterScheduleCard" . }}
-    {{ end }}
+{{ define "WaterSchedulesPage" }} {{ template "start" }} {{ template
+"WaterSchedules" . }} {{ template "end" }} {{ end }} {{ define "WaterSchedules"
+}}
+<div
+    hx-swap="outerHTML"
+    hx-get="/water_schedules?refresh=true"
+    hx-headers='{"Accept": "text/html"}'
+    hx-trigger="{{ if NotRefresh }}load, {{ end }}newWaterSchedule from:body"
+    uk-grid
+>
+    {{ range .Items }} {{ template "waterScheduleCard" . }} {{ end }}
 </div>
-{{ end }}
-
-{{ define "waterScheduleCard" }}
-{{ $name := .Name }}
-{{ if eq $name "" }}
-{{ $name = .ID }}
-{{ end }}
+{{ end }} {{ define "waterScheduleCard" }} {{ $name := .Name }} {{ if eq $name
+"" }} {{ $name = .ID }} {{ end }}
 <div class="uk-width-1-2@m" id="ws-card-{{ .ID }}">
     <div id="edit-modal-here"></div>
-    <div class="uk-card uk-card-default" style="margin: 5%;">
+    <div class="uk-card uk-card-default" style="margin: 5%">
         <div class="uk-card-header uk-text-center">
-            <h3 class="uk-card-title uk-margin-remove-bottom">
-                {{ $name }}
-            </h3>
-            {{ template "cardEditButton" (print "/water_schedules/" .ID "/components?type=edit_modal") }}
+            <h3 class="uk-card-title uk-margin-remove-bottom">{{ $name }}</h3>
+            {{ template "cardEditButton" (print "/water_schedules/" .ID
+            "/components?type=edit_modal") }}
         </div>
         <div class="uk-card-body">
-            {{ if .NextWater }}
-            {{ template "nextWaterDetail" .NextWater }}
-            {{ end }}
-
-            {{ template "waterScheduleDetails" . }}
+            {{ if .NextWater }} {{ template "nextWaterDetail" .NextWater }} {{
+            end }} {{ template "waterScheduleDetails" . }}
         </div>
     </div>
 </div>
-{{ end }}
-
-{{ define "waterScheduleDetails" }}
+{{ end }} {{ define "waterScheduleDetails" }}
 <div class="uk-margin-top" uk-margin>
     <p>{{ .Description }}</p>
     <span class="uk-label uk-label-primary" uk-tooltip="Duration">
-        <span uk-icon="future" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration .Duration }}
+        <span
+            uk-icon="future"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
+        {{ FormatDuration .Duration }}
     </span>
     <span class="uk-label uk-label-primary" uk-tooltip="Start Time">
-        <span uk-icon="clock" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatStartTime .StartTime
-        }}
+        <span
+            uk-icon="clock"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
+        {{ FormatStartTime .StartTime }}
     </span>
     <span class="uk-label uk-label-primary" uk-tooltip="Interval">
-        <span uk-icon="refresh" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ FormatDuration
-        .Interval }}
+        <span
+            uk-icon="refresh"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
+        {{ FormatDuration .Interval }}
     </span>
-    {{ if .ActivePeriod }}
-    {{ $activePeriod := Sprintf "%s - %s" (ShortMonth .ActivePeriod.StartMonth) (ShortMonth .ActivePeriod.EndMonth) }}
-    {{ if .IsActive timeNow }}
+    {{ if .ActivePeriod }} {{ $activePeriod := Sprintf "%s - %s" (ShortMonth
+    .ActivePeriod.StartMonth) (ShortMonth .ActivePeriod.EndMonth) }} {{ if
+    .IsActive timeNow }}
     <span class="uk-label uk-label-success" uk-tooltip="Active">
-        <span uk-icon="calendar" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ $activePeriod }}
+        <span
+            uk-icon="calendar"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
+        {{ $activePeriod }}
     </span>
     {{ else }}
     <span class="uk-label uk-label-danger" uk-tooltip="Inactive">
-        <span uk-icon="calendar" class="uk-margin-small-top uk-margin-small-bottom"></span> {{ $activePeriod }}
+        <span
+            uk-icon="calendar"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
+        {{ $activePeriod }}
     </span>
-    {{ end }}
-    {{ end }}
-    {{ if and .WeatherControl .WeatherControl.Rain }}
+    {{ end }} {{ end }} {{ if and .WeatherControl .WeatherControl.Rain }}
     <span class="uk-label uk-label-primary" uk-tooltip="Rain Scaling Enabled">
-        <span uk-icon="cloud-rain" class="uk-margin-small-top uk-margin-small-bottom"></span>
+        <span
+            uk-icon="cloud-rain"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
     </span>
-    {{ end }}
-    {{ if and .WeatherControl .WeatherControl.Temperature }}
-    <span class="uk-label uk-label-primary" uk-tooltip="Temperature Scaling Enabled" style="background-color: #faa05a;">
-        <span uk-icon="thermometer" class="uk-margin-small-top uk-margin-small-bottom"></span>
+    {{ end }} {{ if and .WeatherControl .WeatherControl.Temperature }}
+    <span
+        class="uk-label uk-label-primary"
+        uk-tooltip="Temperature Scaling Enabled"
+        style="background-color: #faa05a"
+    >
+        <span
+            uk-icon="thermometer"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
     </span>
-    {{ end }}
-    {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}
-    <span class="uk-label uk-label-primary" uk-tooltip="ET (Citrus) Watering Enabled" style="background-color: #f0506e;">
-        <span uk-icon="sun" class="uk-margin-small-top uk-margin-small-bottom"></span>
+    {{ end }} {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}
+    <span
+        class="uk-label uk-label-primary"
+        uk-tooltip="ET (Citrus) Watering Enabled"
+        style="background-color: #f0506e"
+    >
+        <span
+            uk-icon="sun"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
     </span>
-    {{ end }}
-    {{ if and .SendReminder (derefBool .SendReminder) }}
+    {{ end }} {{ if and .SendReminder (DerefBool .SendReminder) }}
     <span class="uk-label uk-label-primary" uk-tooltip="Reminder Enabled">
-        <span uk-icon="bell" class="uk-margin-small-top uk-margin-small-bottom"></span>
+        <span
+            uk-icon="bell"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
     </span>
     {{ end }}
 </div>

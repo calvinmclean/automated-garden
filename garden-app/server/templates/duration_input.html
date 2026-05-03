@@ -1,0 +1,93 @@
+{{ define "DurationInput" }}
+{{ $days := 0 }}
+{{ $hours := 0 }}
+{{ $minutes := 0 }}
+{{ $durationStr := "" }}
+{{ if .Value }}
+{{ $components := .Value.ToDaysHoursMinutes }}
+{{ $days = $components.Days }}
+{{ $hours = $components.Hours }}
+{{ $minutes = $components.Minutes }}
+{{ $durationStr = .Value.String }}
+{{ end }}
+
+{{ $daysID := printf "duration-days-%s" .Name }}
+{{ $hoursID := printf "duration-hours-%s" .Name }}
+{{ $minutesID := printf "duration-minutes-%s" .Name }}
+
+<div class="duration-input">
+    <style>
+        .duration-input input[type="number"]::-webkit-outer-spin-button,
+        .duration-input input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        .duration-input input[type="number"] {
+            -moz-appearance: textfield;
+        }
+    </style>
+    <input type="hidden" name="{{ .Name }}" value="{{ $durationStr }}">
+    
+    {{ if eq .Mode "hours-only" }}
+    <select class="uk-select uk-form-width-small" name="{{ .Name }}">
+        <option disabled value="" {{ if eq $hours 0 }}selected{{ end }}>Hours</option>
+        {{ range $i := Iterate 0 23 }}
+        <option value="{{ $i }}h" {{ if eq $hours $i }}selected{{ end }}>{{ $i }} hours</option>
+        {{ end }}
+    </select>
+    {{ else }}
+    <div class="uk-flex uk-flex-left uk-text-left">
+        {{ if eq .Mode "interval" }}
+        <div class="duration-field uk-margin-small-right">
+            <label class="uk-form-label uk-text-small uk-text-muted" style="display: block; margin-bottom: 2px;">Days</label>
+            <input id="{{ $daysID }}" type="number" class="uk-input uk-form-width-xsmall" min="0" 
+                   value="{{ if ne $days 0 }}{{ $days }}{{ end }}" placeholder="0"
+                   _="on input from me or input from #{{ $hoursID }} or input from #{{ $minutesID }}
+                      set daysVal to (my value as Int) or 0
+                      set hoursVal to (#{{ $hoursID }}'s value as Int) or 0
+                      set minsVal to (#{{ $minutesID }}'s value as Int) or 0
+                      set result to ''
+                      if daysVal > 0 set result to result + daysVal + 'd'
+                      if hoursVal > 0 set result to result + hoursVal + 'h'
+                      if minsVal > 0 set result to result + minsVal + 'm'
+                      set the value of the previous <input[type='hidden']/> to result">
+        </div>
+        {{ end }}
+        
+        <div class="duration-field uk-margin-small-right">
+            <label class="uk-form-label uk-text-small uk-text-muted" style="display: block; margin-bottom: 2px;">Hours</label>
+            <input id="{{ $hoursID }}" type="number" class="uk-input uk-form-width-xsmall" min="0" max="23"
+                   value="{{ if ne $hours 0 }}{{ $hours }}{{ end }}" placeholder="0"
+                   _="on input from me
+                      {{ if eq .Mode "interval" }} or input from #{{ $daysID }}{{ end }}
+                      or input from #{{ $minutesID }}
+                      {{ if eq .Mode "interval" }}set daysVal to (#{{ $daysID }}'s value as Int) or 0{{ else }}set daysVal to 0{{ end }}
+                      set hoursVal to (my value as Int) or 0
+                      set minsVal to (#{{ $minutesID }}'s value as Int) or 0
+                      set result to ''
+                      if daysVal > 0 set result to result + daysVal + 'd'
+                      if hoursVal > 0 set result to result + hoursVal + 'h'
+                      if minsVal > 0 set result to result + minsVal + 'm'
+                      set the value of the previous <input[type='hidden']/> to result">
+        </div>
+        
+        <div class="duration-field">
+            <label class="uk-form-label uk-text-small uk-text-muted" style="display: block; margin-bottom: 2px;">Minutes</label>
+            <input id="{{ $minutesID }}" type="number" class="uk-input uk-form-width-xsmall" min="0" max="59"
+                   value="{{ if ne $minutes 0 }}{{ $minutes }}{{ end }}" placeholder="0"
+                   _="on input from me
+                      {{ if eq .Mode "interval" }} or input from #{{ $daysID }}{{ end }}
+                      or input from #{{ $hoursID }}
+                      {{ if eq .Mode "interval" }}set daysVal to (#{{ $daysID }}'s value as Int) or 0{{ else }}set daysVal to 0{{ end }}
+                      set hoursVal to (#{{ $hoursID }}'s value as Int) or 0
+                      set minsVal to (my value as Int) or 0
+                      set result to ''
+                      if daysVal > 0 set result to result + daysVal + 'd'
+                      if hoursVal > 0 set result to result + hoursVal + 'h'
+                      if minsVal > 0 set result to result + minsVal + 'm'
+                      set the value of the previous <input[type='hidden']/> to result">
+        </div>
+    </div>
+    {{ end }}
+</div>
+{{ end }}

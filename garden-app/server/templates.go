@@ -168,7 +168,7 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 			return *f
 		},
-		"derefBool": func(b *bool) bool {
+		"DerefBool": func(b *bool) bool {
 			if b == nil {
 				return false
 			}
@@ -318,6 +318,13 @@ func templateFuncs(r *http.Request) map[string]any {
 					selected = "selected"
 				}
 				result[i] = selected
+			}
+			return result
+		},
+		"Iterate": func(start, end int) []int {
+			result := make([]int, end-start+1)
+			for i := start; i <= end; i++ {
+				result[i-start] = i
 			}
 			return result
 		},
