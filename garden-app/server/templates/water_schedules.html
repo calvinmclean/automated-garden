@@ -61,7 +61,7 @@
         {{ $activePeriod }}
     </span>
     {{ else }}
-    <span class="uk-label uk-label-danger" uk-tooltip="Inactive">
+    <span class="uk-label" uk-tooltip="Inactive" style="background-color: #e5e5e5; color: #666">
         <span
             uk-icon="calendar"
             class="uk-margin-small-top uk-margin-small-bottom"
@@ -86,11 +86,11 @@
             class="uk-margin-small-top uk-margin-small-bottom"
         ></span>
     </span>
-    {{ end }} {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}
+    {{ end }}     {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}
     <span
         class="uk-label uk-label-primary"
         uk-tooltip="ET (Citrus) Watering Enabled"
-        style="background-color: #f0506e"
+        style="background-color: #C19A6B"
     >
         <span
             uk-icon="sun"
