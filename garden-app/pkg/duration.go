@@ -133,26 +133,3 @@ func parseString(input string) (time.Duration, string, error) {
 
 	return 0, cronStr, nil
 }
-
-// DurationComponents holds the breakdown of a duration into days, hours, and minutes
-type DurationComponents struct {
-	Days    int
-	Hours   int
-	Minutes int
-}
-
-// ToDaysHoursMinutes converts the duration into days, hours, and minutes components.
-// Returns zero values if the duration is nil.
-func (d *Duration) ToDaysHoursMinutes() DurationComponents {
-	if d == nil {
-		return DurationComponents{0, 0, 0}
-	}
-
-	totalMinutes := int(d.Duration.Minutes())
-	days := totalMinutes / (24 * 60)
-	remainingMinutes := totalMinutes % (24 * 60)
-	hours := remainingMinutes / 60
-	minutes := remainingMinutes % 60
-
-	return DurationComponents{days, hours, minutes}
-}
