@@ -26,7 +26,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  30 * time.Minute,
 			zoneCount: 1,
 			wantTitle: "Watering 1 Zone: My Schedule",
-			wantMsg:   "Duration: 30m0s",
+			wantMsg:   "Duration: 30m",
 		},
 		{
 			name: "Multiple zones with name",
@@ -37,7 +37,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  30 * time.Minute,
 			zoneCount: 3,
 			wantTitle: "Watering 3 Zones: My Schedule",
-			wantMsg:   "Duration: 30m0s",
+			wantMsg:   "Duration: 30m",
 		},
 		{
 			name: "Single zone without name",
@@ -47,7 +47,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  30 * time.Minute,
 			zoneCount: 1,
 			wantTitle: "Watering 1 Zone",
-			wantMsg:   "Duration: 30m0s",
+			wantMsg:   "Duration: 30m",
 		},
 		{
 			name: "No zones with name - reminder mode",
@@ -58,7 +58,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  30 * time.Minute,
 			zoneCount: 0,
 			wantTitle: "Watering Reminder: Indoor Plants",
-			wantMsg:   "Duration: 30m0s",
+			wantMsg:   "Duration: 30m",
 		},
 		{
 			name: "No zones without name - reminder mode",
@@ -68,7 +68,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  30 * time.Minute,
 			zoneCount: 0,
 			wantTitle: "Watering Reminder",
-			wantMsg:   "Duration: 30m0s",
+			wantMsg:   "Duration: 30m",
 		},
 		{
 			name: "Zero duration with zones - weather skip",
@@ -101,7 +101,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  15 * time.Minute,
 			zoneCount: 1,
 			wantTitle: "Watering 1 Zone: My Schedule",
-			wantMsg:   "Duration: 15m0s (base: 30m0s, scaled 0.50x)",
+			wantMsg:   "Duration: 15m (base: 30m, scaled 0.50x)",
 		},
 		{
 			name: "Scaled duration no zones",
@@ -112,7 +112,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  30 * time.Minute,
 			zoneCount: 0,
 			wantTitle: "Watering Reminder: Indoor Plants",
-			wantMsg:   "Duration: 30m0s (base: 1h0m0s, scaled 0.50x)",
+			wantMsg:   "Duration: 30m (base: 1h, scaled 0.50x)",
 		},
 		{
 			name: "Scaled up duration",
@@ -123,7 +123,7 @@ func TestGenerateWateringNotificationContent(t *testing.T) {
 			duration:  45 * time.Minute,
 			zoneCount: 1,
 			wantTitle: "Watering 1 Zone: My Schedule",
-			wantMsg:   "Duration: 45m0s (base: 30m0s, scaled 1.50x)",
+			wantMsg:   "Duration: 45m (base: 30m, scaled 1.50x)",
 		},
 	}
 

@@ -18,15 +18,13 @@
             <div class="uk-margin">
                 <input class="uk-input" value="{{ .Description }}" placeholder="Description" name="Description">
             </div>
-            <div class="uk-margin uk-grid-small uk-child-width-1-2@s uk-text-left" uk-grid>
-                <div>
-                    <label class="uk-form-label">Duration</label>
-                    {{ template "DurationInput" (args "Name" "Duration" "Value" .Duration "Mode" "duration") }}
-                </div>
-                <div>
-                    <label class="uk-form-label">Interval</label>
-                    {{ template "DurationInput" (args "Name" "Interval" "Value" .Interval "Mode" "interval") }}
-                </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ if .Duration }}{{ .Duration }}{{ end }}" placeholder="Duration"
+                    name="Duration">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" value="{{ if .Interval }}{{ .Interval }}{{ end }}" placeholder="Interval"
+                    name="Interval">
             </div>
             <div class="uk-margin">
                 <div class="uk-margin">

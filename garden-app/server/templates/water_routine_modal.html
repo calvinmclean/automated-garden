@@ -63,7 +63,13 @@
                             </select>
                         </div>
                         <div class="uk-width-1-3@s">
-                            {{ template "DurationInput" (args "Name" (printf "Steps.%d.Duration" $index) "Value" $step.Duration "Mode" "duration") }}
+                            <input
+                                class="uk-input"
+                                type="text"
+                                placeholder="Duration (e.g., 5m)"
+                                name="Steps.{{ $index }}.Duration"
+                                value="{{ FormatDuration $step.Duration }}"
+                            />
                         </div>
                         <div class="uk-width-auto@s">
                             <button
@@ -95,7 +101,12 @@
                             </select>
                         </div>
                         <div class="uk-width-1-3@s">
-                            {{ template "DurationInput" (args "Name" "Steps.0.Duration" "Value" nil "Mode" "duration") }}
+                            <input
+                                class="uk-input"
+                                type="text"
+                                placeholder="Duration (e.g., 5m)"
+                                name="Steps.0.Duration"
+                            />
                         </div>
                         <div class="uk-width-auto@s">
                             <button
@@ -146,7 +157,7 @@
                 </select>
             </div>
             <div class="uk-width-1-3@s">
-                <input class="uk-input" type="text" placeholder="Duration (e.g., 1h30m)" name="Steps.${stepCount}.Duration">
+                <input class="uk-input" type="text" placeholder="Duration (e.g., 5m)" name="Steps.${stepCount}.Duration">
             </div>
             <div class="uk-width-auto@s">
                 <button type="button" class="uk-button uk-button-danger uk-button-small" onclick="this.closest('.step-row').remove()">

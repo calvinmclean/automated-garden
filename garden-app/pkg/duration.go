@@ -32,9 +32,6 @@ func (d *Duration) SchedulerFunc(s *gocron.Scheduler) *gocron.Scheduler {
 
 // MarshalJSON will convert Duration into the string representation
 func (d *Duration) MarshalJSON() ([]byte, error) {
-	if d.Cron != "" {
-		return json.Marshal(cronPrefix + d.Cron)
-	}
 	return json.Marshal(d.String())
 }
 
@@ -117,8 +114,10 @@ func parseString(input string) (time.Duration, string, error) {
 		return 0, "", nil
 	}
 
+	input = strings.Trim(input, `"`)
+
 	if !strings.HasPrefix(input, cronPrefix) {
-		d, err := time.ParseDuration(strings.Trim(input, `"`))
+		d, err := parseDurationWithDays(input)
 		if err != nil {
 			return 0, "", fmt.Errorf("invalid format for time.Duration: %w", err)
 		}
@@ -134,25 +133,75 @@ func parseString(input string) (time.Duration, string, error) {
 	return 0, cronStr, nil
 }
 
-// DurationComponents holds the breakdown of a duration into days, hours, and minutes
-type DurationComponents struct {
-	Days    int
-	Hours   int
-	Minutes int
-}
-
-// ToDaysHoursMinutes converts the duration into days, hours, and minutes components.
-// Returns zero values if the duration is nil.
-func (d *Duration) ToDaysHoursMinutes() DurationComponents {
-	if d == nil {
-		return DurationComponents{0, 0, 0}
+// parseDurationWithDays parses a duration string that may contain days (d) suffix.
+// It converts days to hours and delegates the rest to time.ParseDuration.
+// Examples: "5d" -> 120h, "5d1h" -> 121h, "2d30m" -> 48h30m, "1h30m" -> 1h30m
+func parseDurationWithDays(input string) (time.Duration, error) {
+	daysStr, remainder, found := strings.Cut(input, "d")
+	if !found {
+		return time.ParseDuration(input)
 	}
 
-	totalMinutes := int(d.Duration.Minutes())
-	days := totalMinutes / (24 * 60)
-	remainingMinutes := totalMinutes % (24 * 60)
-	hours := remainingMinutes / 60
-	minutes := remainingMinutes % 60
+	days, err := strconv.Atoi(daysStr)
+	if err != nil {
+		return 0, fmt.Errorf("invalid days value: %w", err)
+	}
 
-	return DurationComponents{days, hours, minutes}
+	totalHours := days * 24
+
+	if remainder == "" {
+		return time.Duration(totalHours) * time.Hour, nil
+	}
+
+	remainderDuration, err := time.ParseDuration(remainder)
+	if err != nil {
+		return 0, fmt.Errorf("invalid remainder duration: %w", err)
+	}
+
+	return time.Duration(totalHours)*time.Hour + remainderDuration, nil
+}
+
+// String returns a string representation of the Duration using FormatDurationShort.
+// For cron expressions, it returns the cron prefix format.
+func (d Duration) String() string {
+	if d.Cron != "" {
+		return cronPrefix + d.Cron
+	}
+	return FormatDurationShort(d.Duration)
+}
+
+// FormatDurationShort formats a duration in a short, readable format.
+// It uses days (d) for durations of 24 hours or more, with optional hours, minutes, and seconds.
+// Examples: "4d", "3d2h", "2h30m", "45m", "30s"
+func FormatDurationShort(d time.Duration) string {
+	if d == 0 {
+		return "0s"
+	}
+
+	// Round to nearest second to avoid sub-second precision
+	d = d.Round(time.Second)
+
+	var result strings.Builder
+
+	days := int(d.Hours()) / 24
+	if days > 0 {
+		fmt.Fprintf(&result, "%dd", days)
+	}
+
+	hours := int(d.Hours()) % 24
+	if hours > 0 {
+		fmt.Fprintf(&result, "%dh", hours)
+	}
+
+	minutes := int(d.Minutes()) % 60
+	if minutes > 0 {
+		fmt.Fprintf(&result, "%dm", minutes)
+	}
+
+	seconds := int(d.Seconds()) % 60
+	if seconds > 0 {
+		fmt.Fprintf(&result, "%ds", seconds)
+	}
+
+	return result.String()
 }
