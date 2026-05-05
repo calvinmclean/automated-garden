@@ -107,7 +107,7 @@ func TestHandleHealthMessage(t *testing.T) {
 
 		lastMessage := fake.LastMessage()
 		assert.Equal(t, "MyGarden is down", lastMessage.Title)
-		assert.Equal(t, "Garden has been down for > 5m0s", lastMessage.Message)
+		assert.Equal(t, "Garden has been down for > 5m", lastMessage.Message)
 
 		logs := logBuffer.String()
 		assert.Contains(t, logs, `msg="successfully sent down notification" source=worker topic=garden/data/health`)

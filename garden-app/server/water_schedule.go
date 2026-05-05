@@ -453,37 +453,9 @@ func generateScalingExamples(scaler *weather.WeatherScaler, baseDuration time.Du
 		// Calculate resulting duration if base duration is provided
 		if baseDuration > 0 {
 			resultDuration := time.Duration(float64(baseDuration) * scaleFactor)
-			examples[i].Duration = formatDurationShort(resultDuration)
+			examples[i].Duration = pkg.FormatDurationShort(resultDuration)
 		}
 	}
 
 	return examples
-}
-
-// formatDurationShort formats a duration in a short, readable format
-func formatDurationShort(d time.Duration) string {
-	if d == 0 {
-		return "0s"
-	}
-
-	// Round to nearest second to avoid sub-second precision
-	d = d.Round(time.Second)
-
-	hours := int(d.Hours())
-	minutes := int(d.Minutes()) % 60
-	seconds := int(d.Seconds()) % 60
-
-	if hours > 0 {
-		if minutes > 0 {
-			return fmt.Sprintf("%dh%dm", hours, minutes)
-		}
-		return fmt.Sprintf("%dh", hours)
-	}
-	if minutes > 0 {
-		if seconds > 0 {
-			return fmt.Sprintf("%dm%ds", minutes, seconds)
-		}
-		return fmt.Sprintf("%dm", minutes)
-	}
-	return fmt.Sprintf("%ds", seconds)
 }

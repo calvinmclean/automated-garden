@@ -70,10 +70,10 @@ func generateWateringNotificationContent(ws *pkg.WaterSchedule, duration time.Du
 		message = "Weather conditions suggest skipping watering today"
 	} else {
 		baseDuration := ws.Duration.Duration
-		message = fmt.Sprintf("Duration: %s", duration)
+		message = fmt.Sprintf("Duration: %s", pkg.FormatDurationShort(duration))
 		if duration != baseDuration {
 			scaleFactor := float64(duration) / float64(baseDuration)
-			message += fmt.Sprintf(" (base: %s, scaled %.2fx)", baseDuration, scaleFactor)
+			message += fmt.Sprintf(" (base: %s, scaled %.2fx)", pkg.FormatDurationShort(baseDuration), scaleFactor)
 		}
 	}
 
