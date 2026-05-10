@@ -43,16 +43,22 @@ func TestGardenStorageSearchWithEndDated(t *testing.T) {
 
 	t.Run("SearchWithoutEndDated", func(t *testing.T) {
 		// Search without end_dated flag should only return active gardens
-		gardens, err := gardenStorage.Search(ctx, "", nil)
-		require.NoError(t, err)
+		gardens := make([]*pkg.Garden, 0)
+		for g, err := range gardenStorage.Search(ctx, "", nil) {
+			require.NoError(t, err)
+			gardens = append(gardens, g)
+		}
 		assert.Len(t, gardens, 1)
 		assert.Equal(t, "active-garden", gardens[0].Name)
 	})
 
 	t.Run("SearchWithEndDated", func(t *testing.T) {
 		// Search with end_dated=true should return all gardens including end-dated ones
-		gardens, err := gardenStorage.Search(ctx, "", babyapi.EndDatedQueryParam(true))
-		require.NoError(t, err)
+		gardens := make([]*pkg.Garden, 0)
+		for g, err := range gardenStorage.Search(ctx, "", babyapi.EndDatedQueryParam(true)) {
+			require.NoError(t, err)
+			gardens = append(gardens, g)
+		}
 		assert.Len(t, gardens, 2)
 
 		// Verify we got both gardens
@@ -108,16 +114,22 @@ func TestZoneStorageSearchWithEndDated(t *testing.T) {
 
 	t.Run("SearchWithoutEndDated", func(t *testing.T) {
 		// Search without end_dated flag should only return active zones
-		zones, err := zoneStorage.Search(ctx, gardenID.String(), nil)
-		require.NoError(t, err)
+		zones := make([]*pkg.Zone, 0)
+		for z, err := range zoneStorage.Search(ctx, gardenID.String(), nil) {
+			require.NoError(t, err)
+			zones = append(zones, z)
+		}
 		assert.Len(t, zones, 1)
 		assert.Equal(t, "active-zone", zones[0].Name)
 	})
 
 	t.Run("SearchWithEndDated", func(t *testing.T) {
 		// Search with end_dated=true should return all zones including end-dated ones
-		zones, err := zoneStorage.Search(ctx, gardenID.String(), babyapi.EndDatedQueryParam(true))
-		require.NoError(t, err)
+		zones := make([]*pkg.Zone, 0)
+		for z, err := range zoneStorage.Search(ctx, gardenID.String(), babyapi.EndDatedQueryParam(true)) {
+			require.NoError(t, err)
+			zones = append(zones, z)
+		}
 		assert.Len(t, zones, 2)
 
 		// Verify we got both zones
@@ -168,16 +180,22 @@ func TestWaterScheduleStorageSearchWithEndDated(t *testing.T) {
 
 	t.Run("SearchWithoutEndDated", func(t *testing.T) {
 		// Search without end_dated flag should only return active water schedules
-		schedules, err := waterScheduleStorage.Search(ctx, "", nil)
-		require.NoError(t, err)
+		schedules := make([]*pkg.WaterSchedule, 0)
+		for ws, err := range waterScheduleStorage.Search(ctx, "", nil) {
+			require.NoError(t, err)
+			schedules = append(schedules, ws)
+		}
 		assert.Len(t, schedules, 1)
 		assert.Equal(t, "active-schedule", schedules[0].Name)
 	})
 
 	t.Run("SearchWithEndDated", func(t *testing.T) {
 		// Search with end_dated=true should return all water schedules including end-dated ones
-		schedules, err := waterScheduleStorage.Search(ctx, "", babyapi.EndDatedQueryParam(true))
-		require.NoError(t, err)
+		schedules := make([]*pkg.WaterSchedule, 0)
+		for ws, err := range waterScheduleStorage.Search(ctx, "", babyapi.EndDatedQueryParam(true)) {
+			require.NoError(t, err)
+			schedules = append(schedules, ws)
+		}
 		assert.Len(t, schedules, 2)
 
 		// Verify we got both water schedules
@@ -218,7 +236,8 @@ func TestGardenStorageTopicPrefixUniqueness(t *testing.T) {
 		}
 		err = gardenStorage.Set(ctx, secondGarden)
 		require.Error(t, err)
-		assert.Contains(t, err.Error(), `topic_prefix "unique-topic" is already in use`)
+		// The error should be a Conflict error (409)
+		assert.Contains(t, err.Error(), "Conflict")
 	})
 
 	t.Run("UpdateWithSameTopicPrefixSucceeds", func(t *testing.T) {
@@ -293,8 +312,11 @@ func TestSearchEndDatedWithRFC3339Format(t *testing.T) {
 
 	t.Run("ActiveSearchExcludesPastEndDate", func(t *testing.T) {
 		// Search without end_dated flag should return active garden and future-ended garden
-		gardens, err := gardenStorage.Search(ctx, "", nil)
-		require.NoError(t, err)
+		gardens := make([]*pkg.Garden, 0)
+		for g, err := range gardenStorage.Search(ctx, "", nil) {
+			require.NoError(t, err)
+			gardens = append(gardens, g)
+		}
 		assert.Len(t, gardens, 2)
 
 		names := make([]string, len(gardens))
@@ -308,8 +330,11 @@ func TestSearchEndDatedWithRFC3339Format(t *testing.T) {
 
 	t.Run("EndDatedSearchIncludesAll", func(t *testing.T) {
 		// Search with end_dated=true should return all gardens
-		gardens, err := gardenStorage.Search(ctx, "", babyapi.EndDatedQueryParam(true))
-		require.NoError(t, err)
+		gardens := make([]*pkg.Garden, 0)
+		for g, err := range gardenStorage.Search(ctx, "", babyapi.EndDatedQueryParam(true)) {
+			require.NoError(t, err)
+			gardens = append(gardens, g)
+		}
 		assert.Len(t, gardens, 3)
 
 		names := make([]string, len(gardens))

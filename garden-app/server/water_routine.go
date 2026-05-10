@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"net/http"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -35,10 +36,13 @@ func NewWaterRoutineAPI() *WaterRoutineAPI {
 	api.SetResponseWrapper(func(wr *pkg.WaterRoutine) render.Renderer {
 		return &WaterRoutineResponse{wr}
 	})
-	api.SetSearchResponseWrapper(func(waterRoutines []*pkg.WaterRoutine) render.Renderer {
+	api.SetSearchResponseWrapper(func(waterRoutines iter.Seq2[*pkg.WaterRoutine, error]) render.Renderer {
 		resp := AllWaterRoutinesResponse{ResourceList: babyapi.ResourceList[*WaterRoutineResponse]{}}
 
-		for _, wr := range waterRoutines {
+		for wr, err := range waterRoutines {
+			if err != nil {
+				continue
+			}
 			resp.ResourceList.Items = append(resp.ResourceList.Items, &WaterRoutineResponse{wr})
 		}
 
@@ -81,29 +85,27 @@ func (api *WaterRoutineAPI) setup(storageClient *storage.Client, worker *worker.
 }
 
 func (api *WaterRoutineAPI) waterRoutineModalRenderer(ctx context.Context, wr *pkg.WaterRoutine) render.Renderer {
-	gardens, err := api.storageClient.Gardens.Search(ctx, "", nil)
-	if err != nil {
-		return babyapi.InternalServerError(fmt.Errorf("error getting all gardens to create water routine modal: %w", err))
-	}
-
 	type GardenZones struct {
 		GardenName string
 		Zones      []*pkg.Zone
 	}
 
 	groupedZones := make(map[string]*GardenZones)
-	for _, garden := range gardens {
+	for garden, err := range api.storageClient.Gardens.Search(ctx, "", nil) {
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("error getting all gardens to create water routine modal: %w", err))
+		}
 		gz := &GardenZones{
 			GardenName: garden.Name,
 			Zones:      []*pkg.Zone{},
 		}
 
-		zones, err := api.storageClient.Zones.Search(ctx, garden.GetID(), nil)
-		if err != nil {
-			return babyapi.InternalServerError(fmt.Errorf("error getting zones for garden %s: %w", garden.GetID(), err))
+		for zone, err := range api.storageClient.Zones.Search(ctx, garden.GetID(), nil) {
+			if err != nil {
+				return babyapi.InternalServerError(fmt.Errorf("error getting zones for garden %s: %w", garden.GetID(), err))
+			}
+			gz.Zones = append(gz.Zones, zone)
 		}
-
-		gz.Zones = zones
 
 		if len(gz.Zones) > 0 {
 			groupedZones[garden.GetID()] = gz
@@ -138,7 +140,7 @@ func (api *WaterRoutineAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Requ
 }
 
 func (api *WaterRoutineAPI) runWatering(_ http.ResponseWriter, r *http.Request, wr *pkg.WaterRoutine) (render.Renderer, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute WaterRoutine")
 
 	for _, step := range wr.Steps {

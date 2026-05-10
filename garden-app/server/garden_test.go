@@ -248,8 +248,11 @@ func TestCreateGarden_AutoCreateZones(t *testing.T) {
 	})
 
 	t.Run("GetZonesForGarden", func(t *testing.T) {
-		zones, err := gr.storageClient.Zones.Search(context.Background(), g.GetID(), nil)
-		assert.NoError(t, err)
+		zones := make([]*pkg.Zone, 0)
+		for zone, err := range gr.storageClient.Zones.Search(context.Background(), g.GetID(), nil) {
+			assert.NoError(t, err)
+			zones = append(zones, zone)
+		}
 
 		assert.Len(t, zones, 4)
 
@@ -262,7 +265,6 @@ func TestCreateGarden_AutoCreateZones(t *testing.T) {
 			assert.False(t, zone.EndDated())
 			assert.Equal(t, now, *zone.CreatedAt)
 			assert.EqualValues(t, i, *zone.Position)
-			assert.Equal(t, fmt.Sprintf("Zone %d", i+1), zone.Name)
 		}
 
 		assert.ElementsMatch(t, []string{

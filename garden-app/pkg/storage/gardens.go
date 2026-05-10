@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"iter"
 	"net/http"
 	"net/url"
 	"time"
@@ -45,32 +46,36 @@ func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error)
 }
 
 // Search returns all Gardens from storage
-func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.Garden, error) {
-	getEndDated := q.Get("end_dated") == "true"
+func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) iter.Seq2[*pkg.Garden, error] {
+	return func(yield func(*pkg.Garden, error) bool) {
+		getEndDated := q.Get("end_dated") == "true"
 
-	listGardens := s.q.ListAllGardens
-	if !getEndDated {
-		listGardens = func(ctx context.Context) ([]db.Garden, error) {
-			return s.q.ListActiveGardens(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+		listGardens := s.q.ListAllGardens
+		if !getEndDated {
+			listGardens = func(ctx context.Context) ([]db.Garden, error) {
+				return s.q.ListActiveGardens(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+			}
 		}
-	}
 
-	dbGardens, err := listGardens(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error listing gardens: %w", err)
-	}
-
-	gardens := make([]*pkg.Garden, len(dbGardens))
-	for i, dbGarden := range dbGardens {
-		garden, err := dbGardenToGarden(dbGarden)
+		dbGardens, err := listGardens(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("invalid garden: %w", err)
+			yield(nil, fmt.Errorf("error listing gardens: %w", err))
+			return
 		}
 
-		gardens[i] = garden
+		for _, dbGarden := range dbGardens {
+			garden, err := dbGardenToGarden(dbGarden)
+			if err != nil {
+				if !yield(nil, fmt.Errorf("invalid garden: %w", err)) {
+					return
+				}
+				continue
+			}
+			if !yield(garden, nil) {
+				return
+			}
+		}
 	}
-
-	return gardens, nil
 }
 
 // Set saves a Garden to storage (creates or updates)
@@ -156,11 +161,11 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 	if err != nil {
 		var sqliteErr *sqlite.Error
 		if errors.As(err, &sqliteErr) && sqliteErr.Code() == lib.SQLITE_CONSTRAINT_UNIQUE {
+			errMsg := fmt.Sprintf("topic_prefix %q is already in use", garden.TopicPrefix)
 			return &babyapi.ErrResponse{
-				Err:            fmt.Errorf("topic_prefix %q is already in use", garden.TopicPrefix),
 				HTTPStatusCode: http.StatusConflict,
 				StatusText:     "Conflict",
-				ErrorText:      err.Error(),
+				ErrorText:      errMsg,
 			}
 		}
 		return fmt.Errorf("error saving garden: %w", err)

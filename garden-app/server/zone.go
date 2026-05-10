@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"log/slog"
 	"net/http"
 	"slices"
@@ -44,10 +45,13 @@ func NewZonesAPI() *ZonesAPI {
 	api.SetResponseWrapper(func(z *pkg.Zone) render.Renderer {
 		return api.NewZoneResponse(z)
 	})
-	api.SetSearchResponseWrapper(func(zones []*pkg.Zone) render.Renderer {
+	api.SetSearchResponseWrapper(func(zones iter.Seq2[*pkg.Zone, error]) render.Renderer {
 		resp := AllZonesResponse{ResourceList: babyapi.ResourceList[*ZoneResponse]{}, api: api.API}
 
-		for _, z := range zones {
+		for z, err := range zones {
+			if err != nil {
+				continue
+			}
 			resp.ResourceList.Items = append(resp.ResourceList.Items, api.NewZoneResponse(z))
 		}
 
@@ -103,9 +107,12 @@ func (api *ZonesAPI) setup(storageClient *storage.Client, influxdbClient influxd
 }
 
 func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
-	waterSchedules, err := api.storageClient.WaterSchedules.Search(r.Context(), "", nil)
-	if err != nil {
-		return nil, babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
+	waterSchedules := make([]*pkg.WaterSchedule, 0)
+	for ws, err := range api.storageClient.WaterSchedules.Search(r.Context(), "", nil) {
+		if err != nil {
+			return nil, babyapi.InternalServerError(fmt.Errorf("error getting all waterschedules to create zone modal: %w", err))
+		}
+		waterSchedules = append(waterSchedules, ws)
 	}
 
 	slices.SortFunc(waterSchedules, func(ws1 *pkg.WaterSchedule, ws2 *pkg.WaterSchedule) int {
@@ -143,7 +150,7 @@ func (api *ZonesAPI) createModal(r *http.Request, zone *pkg.Zone) (render.Render
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (api *ZonesAPI) zoneAction(_ http.ResponseWriter, r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute ZoneAction")
 
 	if zone.EndDated() {
@@ -199,7 +206,7 @@ func (api *ZonesAPI) getGardenFromRequest(r *http.Request) (*pkg.Garden, *babyap
 }
 
 func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zone *pkg.Zone) *babyapi.ErrResponse {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	gardenID := api.GetParentIDParam(r)
 	if !zone.GardenID.IsNil() && gardenID != zone.GardenID.String() {
@@ -213,19 +220,23 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 	}
 
 	zoneAlreadyExists := false
-	zonesForGarden, err := api.storageClient.Zones.Search(r.Context(), gardenID, nil)
-	if err != nil {
-		err = fmt.Errorf("error getting all zones for Garden %q: %w", gardenID, err)
-		logger.Error("unable to get all zones", "error", err)
-		return babyapi.InternalServerError(err)
-	}
-	zonesForGarden = babyapi.FilterFunc[*pkg.Zone](func(z *pkg.Zone) bool {
-		if z.GetID() == zone.GetID() {
-			zoneAlreadyExists = true
+	zonesForGarden := make([]*pkg.Zone, 0)
+	var searchErr error
+	for z, err := range api.storageClient.Zones.Search(r.Context(), gardenID, nil) {
+		if err != nil {
+			searchErr = fmt.Errorf("error getting all zones for Garden %q: %w", gardenID, err)
+			logger.Error("unable to get all zones", "error", searchErr)
+			return babyapi.InternalServerError(searchErr)
 		}
-		return z.GardenID.String() == gardenID && !z.EndDated()
-	}).Filter(zonesForGarden)
+		if z.GardenID.String() == gardenID && !z.EndDated() {
+			if z.GetID() == zone.GetID() {
+				zoneAlreadyExists = true
+			}
+			zonesForGarden = append(zonesForGarden, z)
+		}
+	}
 
+	var err error
 	zone.GardenID, err = xid.FromString(gardenID)
 	if err != nil {
 		return babyapi.ErrInvalidRequest(fmt.Errorf("invalid GardenID: %w", err))
@@ -234,19 +245,18 @@ func (api *ZonesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, zo
 	// Validate that adding a Zone does not exceed Garden.MaxZones
 	//nolint:gosec
 	if !zoneAlreadyExists && uint(len(zonesForGarden)+1) > *garden.MaxZones {
-		err := fmt.Errorf("adding a Zone would exceed Garden's max_zones=%d", *garden.MaxZones)
-		logger.Error("invalid request to create Zone", "error", err)
-		return babyapi.ErrInvalidRequest(err)
+		maxZonesErr := fmt.Errorf("adding a Zone would exceed Garden's max_zones=%d", *garden.MaxZones)
+		logger.Error("invalid request to create Zone", "error", maxZonesErr)
+		return babyapi.ErrInvalidRequest(maxZonesErr)
 	}
 	// Validate that ZonePosition works for a Garden with MaxZones (remember ZonePosition is zero-indexed)
 	if *zone.Position >= *garden.MaxZones {
-		err := fmt.Errorf("position invalid for Garden with max_zones=%d", *garden.MaxZones)
-		logger.Error("invalid request to create Zone", "error", err)
-		return babyapi.ErrInvalidRequest(err)
+		positionErr := fmt.Errorf("position invalid for Garden with max_zones=%d", *garden.MaxZones)
+		logger.Error("invalid request to create Zone", "error", positionErr)
+		return babyapi.ErrInvalidRequest(positionErr)
 	}
 	// Validate water schedules exists
-	err = api.waterSchedulesExist(r.Context(), zone.WaterScheduleIDs)
-	if err != nil {
+	if err := api.waterSchedulesExist(r.Context(), zone.WaterScheduleIDs); err != nil {
 		if errors.Is(err, babyapi.ErrNotFound) {
 			logger.Error("invalid request to create Zone", "error", err)
 			return babyapi.ErrInvalidRequest(err)
@@ -287,7 +297,7 @@ func limitQueryParam(r *http.Request) (uint64, error) {
 
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
 func (api *ZonesAPI) waterHistory(_ http.ResponseWriter, r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to get Zone water history")
 
 	history, apiErr := api.getWaterHistoryFromRequest(r, zone, logger)

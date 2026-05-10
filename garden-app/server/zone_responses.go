@@ -69,7 +69,7 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	ctx := r.Context()
 	excludeWeatherData := excludeWeatherData(r)
 
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	// Fetch water schedules concurrently
 	ws := zr.fetchWaterSchedules(ctx, logger)

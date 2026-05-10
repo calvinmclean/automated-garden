@@ -263,8 +263,11 @@ func TestNotificationClientStorage(t *testing.T) {
 	assert.Equal(t, "TestClient", got.Name)
 	assert.Equal(t, "pushover://shoutrrr:testtoken@testuser/", got.URL)
 
-	all, err := sqlClient.NotificationClientConfigs.Search(ctx, "", nil)
-	require.NoError(t, err)
+	all := make([]*notifications.Client, 0)
+	for nc, err := range sqlClient.NotificationClientConfigs.Search(ctx, "", nil) {
+		require.NoError(t, err)
+		all = append(all, nc)
+	}
 	assert.Len(t, all, 1)
 
 	err = sqlClient.NotificationClientConfigs.Delete(ctx, nc.GetID())

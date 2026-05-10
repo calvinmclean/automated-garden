@@ -18,7 +18,7 @@ import (
 
 // startOAuth initiates the OAuth flow for Netatmo
 func (api *WeatherClientsAPI) startOAuth(_ http.ResponseWriter, r *http.Request, wc *weather.Config) (render.Renderer, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	// Validate that client_id and client_secret exist
 	clientID, ok := wc.Options["client_id"].(string)
@@ -71,7 +71,7 @@ func (o *OAuthStartResponse) HTML(w http.ResponseWriter, _ *http.Request) string
 
 // handleOAuthCallback handles the OAuth callback from Netatmo
 func (api *WeatherClientsAPI) handleOAuthCallback(_ http.ResponseWriter, r *http.Request) render.Renderer {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	// Parse query parameters
 	code := r.URL.Query().Get("code")
@@ -204,7 +204,7 @@ type OAuthCallbackData struct {
 
 // getNetatmoStations fetches the user's weather stations from Netatmo API
 func (api *WeatherClientsAPI) getNetatmoStations(_ http.ResponseWriter, r *http.Request, wc *weather.Config) (render.Renderer, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	// Check if authentication exists
 	auth, ok := wc.Options["authentication"].(map[string]any)
@@ -231,7 +231,7 @@ func (api *WeatherClientsAPI) getNetatmoStations(_ http.ResponseWriter, r *http.
 
 // getNetatmoModules fetches modules for a selected station
 func (api *WeatherClientsAPI) getNetatmoModules(_ http.ResponseWriter, r *http.Request, wc *weather.Config) (render.Renderer, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	stationID := r.URL.Query().Get("Options.station_id")
 	if stationID == "" {

@@ -1,12 +1,12 @@
 module github.com/calvinmclean/automated-garden/garden-app
 
-go 1.26
+go 1.26.2
 
 require (
 	github.com/AlecAivazis/survey/v2 v2.3.7
 	github.com/ajg/form v1.5.1
 	github.com/benbjohnson/clock v1.3.5
-	github.com/calvinmclean/babyapi v0.30.0
+	github.com/calvinmclean/babyapi v0.34.0
 	github.com/containrrr/shoutrrr v0.8.0
 	github.com/eclipse/paho.mqtt.golang v1.4.3
 	github.com/go-chi/render v1.0.3

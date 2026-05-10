@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"iter"
 	"math"
 	"net/url"
 	"strings"
@@ -100,35 +101,39 @@ func (s *ZoneStorage) Get(ctx context.Context, id string) (*pkg.Zone, error) {
 }
 
 // Search returns all Zones from storage
-func (s *ZoneStorage) Search(ctx context.Context, gardenID string, q url.Values) ([]*pkg.Zone, error) {
-	getEndDated := q.Get("end_dated") == "true"
+func (s *ZoneStorage) Search(ctx context.Context, gardenID string, q url.Values) iter.Seq2[*pkg.Zone, error] {
+	return func(yield func(*pkg.Zone, error) bool) {
+		getEndDated := q.Get("end_dated") == "true"
 
-	listZones := s.q.ListAllZones
-	if !getEndDated {
-		listZones = func(ctx context.Context, gardenID string) ([]db.Zone, error) {
-			return s.q.ListActiveZones(ctx, db.ListActiveZonesParams{
-				GardenID: gardenID,
-				EndDate:  sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true},
-			})
+		listZones := s.q.ListAllZones
+		if !getEndDated {
+			listZones = func(ctx context.Context, gardenID string) ([]db.Zone, error) {
+				return s.q.ListActiveZones(ctx, db.ListActiveZonesParams{
+					GardenID: gardenID,
+					EndDate:  sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true},
+				})
+			}
 		}
-	}
 
-	dbZones, err := listZones(ctx, gardenID)
-	if err != nil {
-		return nil, fmt.Errorf("error listing zones: %w", err)
-	}
-
-	zones := make([]*pkg.Zone, len(dbZones))
-	for i, dbZone := range dbZones {
-		zone, err := dbZoneToZone(dbZone)
+		dbZones, err := listZones(ctx, gardenID)
 		if err != nil {
-			return nil, fmt.Errorf("invalid zone: %w", err)
+			yield(nil, fmt.Errorf("error listing zones: %w", err))
+			return
 		}
 
-		zones[i] = zone
+		for _, dbZone := range dbZones {
+			zone, err := dbZoneToZone(dbZone)
+			if err != nil {
+				if !yield(nil, fmt.Errorf("invalid zone: %w", err)) {
+					return
+				}
+				continue
+			}
+			if !yield(zone, nil) {
+				return
+			}
+		}
 	}
-
-	return zones, nil
 }
 
 // Delete removes a Zone from storage

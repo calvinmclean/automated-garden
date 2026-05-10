@@ -85,7 +85,7 @@ func (ws *WaterScheduleResponse) Render(w http.ResponseWriter, r *http.Request) 
 	)
 
 	if ws.HasWeatherControl() && !ws.EndDated() && !excludeWeatherData(r) {
-		logger := babyapi.GetLoggerFromContext(r.Context())
+		logger, _ := babyapi.GetLoggerFromContext(r.Context())
 		ws.WeatherData = getWeatherData(r.Context(), ws.WaterSchedule, ws.api.storageClient, logger)
 	}
 
