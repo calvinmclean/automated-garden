@@ -190,6 +190,63 @@ func TestWaterScheduleStorageSearchWithEndDated(t *testing.T) {
 	})
 }
 
+func TestGardenStorageTopicPrefixUniqueness(t *testing.T) {
+	ctx := context.Background()
+
+	sqlClient, err := NewClient(Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+
+	gardenStorage := sqlClient.Gardens
+
+	// Create first garden
+	firstGarden := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "first-garden",
+		TopicPrefix: "unique-topic",
+	}
+	err = gardenStorage.Set(ctx, firstGarden)
+	require.NoError(t, err)
+
+	t.Run("CreateWithDuplicateTopicPrefixFails", func(t *testing.T) {
+		// Try to create second garden with same TopicPrefix
+		secondGarden := &pkg.Garden{
+			ID:          babyapi.NewID(),
+			Name:        "second-garden",
+			TopicPrefix: "unique-topic",
+		}
+		err = gardenStorage.Set(ctx, secondGarden)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), `topic_prefix "unique-topic" is already in use`)
+	})
+
+	t.Run("UpdateWithSameTopicPrefixSucceeds", func(t *testing.T) {
+		// Update the first garden with the same TopicPrefix should succeed
+		firstGarden.Name = "updated-first-garden"
+		err = gardenStorage.Set(ctx, firstGarden)
+		require.NoError(t, err)
+	})
+
+	t.Run("UpdateWithDifferentTopicPrefixSucceeds", func(t *testing.T) {
+		// Update with a different TopicPrefix should succeed
+		firstGarden.TopicPrefix = "new-topic"
+		err = gardenStorage.Set(ctx, firstGarden)
+		require.NoError(t, err)
+	})
+
+	t.Run("CreateWithOldTopicPrefixSucceeds", func(t *testing.T) {
+		// Now create a new garden with the old TopicPrefix (since first garden changed)
+		thirdGarden := &pkg.Garden{
+			ID:          babyapi.NewID(),
+			Name:        "third-garden",
+			TopicPrefix: "unique-topic",
+		}
+		err = gardenStorage.Set(ctx, thirdGarden)
+		require.NoError(t, err)
+	})
+}
+
 func TestSearchEndDatedWithRFC3339Format(t *testing.T) {
 	ctx := context.Background()
 

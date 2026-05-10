@@ -113,7 +113,7 @@ func TestHandleMessage(t *testing.T) {
 	t.Run("ErrorParsingMessage", func(t *testing.T) {
 		err = handler.doWaterCompleteMessage("garden/data/water", []byte{})
 		require.Error(t, err)
-		require.Equal(t, "error getting garden with topic-prefix \"garden\": no garden found", err.Error())
+		require.Equal(t, "error getting garden with topic-prefix \"garden\": error getting garden: resource not found", err.Error())
 	})
 
 	zoneID := babyapi.NewID()
@@ -121,7 +121,7 @@ func TestHandleMessage(t *testing.T) {
 		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
 		err = handler.doWaterCompleteMessage("garden/data/water", msg)
 		require.Error(t, err)
-		require.Equal(t, "error getting garden with topic-prefix \"garden\": no garden found", err.Error())
+		require.Equal(t, "error getting garden with topic-prefix \"garden\": error getting garden: resource not found", err.Error())
 	})
 
 	garden := &pkg.Garden{

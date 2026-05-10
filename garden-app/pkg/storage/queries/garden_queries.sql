@@ -37,3 +37,7 @@ WHERE id = ?;
 
 -- name: DeleteGarden :exec
 DELETE FROM gardens WHERE id = ?;
+
+-- name: GetGardenByTopicPrefix :one
+SELECT * FROM gardens
+WHERE topic_prefix = ? LIMIT 1;

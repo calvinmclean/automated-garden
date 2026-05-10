@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"time"
@@ -11,6 +12,8 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/db"
 	"github.com/calvinmclean/babyapi"
+	"modernc.org/sqlite"
+	lib "modernc.org/sqlite/lib"
 )
 
 // GardenStorage implements babyapi.Storage interface for Gardens using SQL
@@ -136,7 +139,7 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		createdAt = garden.CreatedAt.Format(time.RFC3339)
 	}
 
-	return s.q.UpsertGarden(ctx, db.UpsertGardenParams{
+	err := s.q.UpsertGarden(ctx, db.UpsertGardenParams{
 		ID:                   garden.ID.String(),
 		Name:                 garden.Name,
 		TopicPrefix:          garden.TopicPrefix,
@@ -149,11 +152,32 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		ControllerConfig:     controllerConfig,
 		LightSchedule:        lightSchedule,
 	})
+	if err != nil {
+		var sqliteErr *sqlite.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.Code() == lib.SQLITE_CONSTRAINT_UNIQUE {
+			return fmt.Errorf("topic_prefix %q is already in use", garden.TopicPrefix)
+		}
+		return fmt.Errorf("error saving garden: %w", err)
+	}
+	return nil
 }
 
 // Delete removes a Garden from storage
 func (s *GardenStorage) Delete(ctx context.Context, id string) error {
 	return s.q.DeleteGarden(ctx, id)
+}
+
+// GetByTopicPrefix retrieves a Garden by its TopicPrefix
+func (s *GardenStorage) GetByTopicPrefix(ctx context.Context, topicPrefix string) (*pkg.Garden, error) {
+	dbGarden, err := s.q.GetGardenByTopicPrefix(ctx, topicPrefix)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, babyapi.ErrNotFound
+		}
+		return nil, fmt.Errorf("error getting garden by topic_prefix: %w", err)
+	}
+
+	return dbGardenToGarden(dbGarden)
 }
 
 func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {

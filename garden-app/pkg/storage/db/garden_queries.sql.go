@@ -43,6 +43,30 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (Garden, error) {
 	return i, err
 }
 
+const getGardenByTopicPrefix = `-- name: GetGardenByTopicPrefix :one
+SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
+WHERE topic_prefix = ? LIMIT 1
+`
+
+func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string) (Garden, error) {
+	row := q.db.QueryRowContext(ctx, getGardenByTopicPrefix, topicPrefix)
+	var i Garden
+	err := row.Scan(
+		&i.ID,
+		&i.Name,
+		&i.TopicPrefix,
+		&i.MaxZones,
+		&i.TempHumidSensor,
+		&i.CreatedAt,
+		&i.EndDate,
+		&i.NotificationClientID,
+		&i.NotificationSettings,
+		&i.ControllerConfig,
+		&i.LightSchedule,
+	)
+	return i, err
+}
+
 const listActiveGardens = `-- name: ListActiveGardens :many
 SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens WHERE end_date IS NULL
    OR end_date > ?
