@@ -68,7 +68,14 @@
         ></span>
         {{ $activePeriod }}
     </span>
-    {{ end }} {{ end }} {{ if and .WeatherControl .WeatherControl.Rain }}
+    {{ end }} {{ end }} {{ if and .SendReminder (DerefBool .SendReminder) }}
+    <span class="uk-label uk-label-primary" uk-tooltip="Reminder Enabled">
+        <span
+            uk-icon="bell"
+            class="uk-margin-small-top uk-margin-small-bottom"
+        ></span>
+    </span>
+    {{ end }} {{ if and .WeatherControl .WeatherControl.Rain }}
     <span class="uk-label uk-label-primary" uk-tooltip="Rain Scaling Enabled">
         <span
             uk-icon="cloud-rain"
@@ -86,7 +93,7 @@
             class="uk-margin-small-top uk-margin-small-bottom"
         ></span>
     </span>
-    {{ end }}     {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}
+    {{ end }} {{ if and .WeatherControl .WeatherControl.Evapotranspiration }}
     <span
         class="uk-label uk-label-primary"
         uk-tooltip="ET (Citrus) Watering Enabled"
@@ -94,13 +101,6 @@
     >
         <span
             uk-icon="sun"
-            class="uk-margin-small-top uk-margin-small-bottom"
-        ></span>
-    </span>
-    {{ end }} {{ if and .SendReminder (DerefBool .SendReminder) }}
-    <span class="uk-label uk-label-primary" uk-tooltip="Reminder Enabled">
-        <span
-            uk-icon="bell"
             class="uk-margin-small-top uk-margin-small-bottom"
         ></span>
     </span>

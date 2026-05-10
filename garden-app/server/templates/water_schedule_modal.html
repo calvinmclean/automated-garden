@@ -54,7 +54,7 @@
                     {{ if ne . nil }}
                     $noClientSelected = eq .NotificationClientID nil
                     {{ end }}
-                    <option disabled {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
+                    <option value="" disabled {{ if $noClientSelected }}selected{{ end }}>Notification Client</option>
 
                     {{ $ws := . }}
                     {{ range $i, $nc := .NotificationClients }}
@@ -99,6 +99,7 @@
                     <label class="uk-form-label" for="rain-client-select">Weather Client*</label>
                     <select id="rain-client-select" class="uk-select" name="WeatherControl.Rain.ClientID" required
                         {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Rain nil) }}disabled{{ end }}>
+                        <option value="" disabled selected>Weather Client</option>
                         {{ range .WeatherClients }}
                         <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Rain (eq .ID.ID $.WeatherControl.Rain.ClientID) }}selected{{ end }}>{{ .Name }}</option>
                         {{ end }}
@@ -176,6 +177,7 @@
                     <label class="uk-form-label" for="temperature-client-select">Weather Client*</label>
                     <select id="temperature-client-select" class="uk-select" name="WeatherControl.Temperature.ClientID" required
                         {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Temperature nil) }}disabled{{ end }}>
+                        <option value="" disabled selected>Weather Client</option>
                         {{ range .WeatherClients }}
                         <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Temperature (eq .ID.ID $.WeatherControl.Temperature.ClientID) }}selected{{ end }}>{{ .Name }}</option>
                         {{ end }}
@@ -253,6 +255,7 @@
                     <label class="uk-form-label" for="et-client-select">Weather Client (ET-capable)*</label>
                     <select id="et-client-select" class="uk-select" name="WeatherControl.Evapotranspiration.ClientID" required
                         {{ if or (eq .WeatherControl nil) (eq .WeatherControl.Evapotranspiration nil) }}disabled{{ end }}>
+                        <option value="" disabled selected>Weather Client (ET-capable)</option>
                         {{ range .WeatherClients }}
                         {{ if .HasEvapotranspiration }}
                         <option value="{{ .ID }}" {{ if and $.WeatherControl $.WeatherControl.Evapotranspiration (eq .ID.ID $.WeatherControl.Evapotranspiration.ClientID) }}selected{{ end }}>{{ .Name }}</option>

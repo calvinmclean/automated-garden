@@ -102,7 +102,11 @@ func (ws *WaterSchedule) Patch(newWaterSchedule *WaterSchedule) *babyapi.ErrResp
 		ws.ActivePeriod.Patch(newWaterSchedule.ActivePeriod)
 	}
 	if newWaterSchedule.NotificationClientID != nil {
-		ws.NotificationClientID = newWaterSchedule.NotificationClientID
+		if *newWaterSchedule.NotificationClientID == "" {
+			ws.NotificationClientID = nil
+		} else {
+			ws.NotificationClientID = newWaterSchedule.NotificationClientID
+		}
 	}
 	if newWaterSchedule.SendReminder != nil {
 		ws.SendReminder = newWaterSchedule.SendReminder
@@ -309,6 +313,12 @@ func ValidateWeatherControl(wc *weather.Control) error {
 		err := wc.Rain.Validate()
 		if err != nil {
 			return fmt.Errorf("error validating rain_control: %w", err)
+		}
+	}
+	if wc.Evapotranspiration != nil {
+		err := wc.Evapotranspiration.Validate()
+		if err != nil {
+			return fmt.Errorf("error validating evapotranspiration_control: %w", err)
 		}
 	}
 	return nil
