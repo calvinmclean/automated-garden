@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
 	"net/url"
 	"time"
 
@@ -155,7 +156,12 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 	if err != nil {
 		var sqliteErr *sqlite.Error
 		if errors.As(err, &sqliteErr) && sqliteErr.Code() == lib.SQLITE_CONSTRAINT_UNIQUE {
-			return fmt.Errorf("topic_prefix %q is already in use", garden.TopicPrefix)
+			return &babyapi.ErrResponse{
+				Err:            fmt.Errorf("topic_prefix %q is already in use", garden.TopicPrefix),
+				HTTPStatusCode: http.StatusConflict,
+				StatusText:     "Conflict",
+				ErrorText:      err.Error(),
+			}
 		}
 		return fmt.Errorf("error saving garden: %w", err)
 	}

@@ -86,16 +86,18 @@ func CreateGardenTest(t *testing.T) string {
 	var g server.GardenResponse
 
 	t.Run("CreateGarden", func(t *testing.T) {
-		status, err := makeRequest(http.MethodPost, "/gardens", `{
+		// Use a unique topic_prefix based on test name to avoid conflicts
+		topicPrefix := fmt.Sprintf("test-%d", time.Now().UnixNano())
+		status, err := makeRequest(http.MethodPost, "/gardens", fmt.Sprintf(`{
 			"name": "Test",
-			"topic_prefix": "test",
+			"topic_prefix": "%s",
 			"max_zones": 3,
 			"light_schedule": {
 				"duration": "14h",
 				"start_time": "22:00:00-07:00"
 			},
 			"temperature_humidity_sensor": true
-		}`, &g)
+		}`, topicPrefix), &g)
 		assert.NoError(t, err)
 
 		assert.Equal(t, http.StatusCreated, status)
@@ -440,11 +442,13 @@ func WaterScheduleTests(t *testing.T) {
 func ControllerStartupNotificationTest(t *testing.T) {
 	var g server.GardenResponse
 	t.Run("CreateGarden", func(t *testing.T) {
-		status, err := makeRequest(http.MethodPost, "/gardens", `{
+		// Use a unique topic_prefix to avoid conflicts
+		topicPrefix := fmt.Sprintf("notification-%d", time.Now().UnixNano())
+		status, err := makeRequest(http.MethodPost, "/gardens", fmt.Sprintf(`{
 				"name": "Notification",
-				"topic_prefix": "notification",
+				"topic_prefix": "%s",
 				"max_zones": 3
-			}`, &g)
+			}`, topicPrefix), &g)
 		assert.NoError(t, err)
 		assert.Equal(t, http.StatusCreated, status)
 	})

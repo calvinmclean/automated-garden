@@ -166,6 +166,13 @@ func TestCreateGarden(t *testing.T) {
 			`{"status":"Invalid request.","error":"unable to manually set ID"}`,
 			http.StatusBadRequest,
 		},
+		{
+			"ErrorDuplicateTopicPrefix",
+			`{"name": "duplicate-garden", "topic_prefix": "test-garden", "max_zones": 2}`,
+			false,
+			`{"status":"Conflict","error":"topic_prefix \\"test-garden\\" is already in use"}`,
+			http.StatusConflict,
+		},
 	}
 
 	for _, tt := range tests {
@@ -187,6 +194,16 @@ func TestCreateGarden(t *testing.T) {
 			gr := NewGardenAPI()
 			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
+
+			// For duplicate topic_prefix test, first create a garden with the same topic_prefix
+			if tt.name == "ErrorDuplicateTopicPrefix" {
+				firstGarden := `{"name": "first-garden", "topic_prefix": "test-garden", "max_zones": 2}`
+				r1 := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(firstGarden))
+				r1.Header.Set("Content-Type", "application/json")
+				r1.Header.Set("X-TZ-Offset", "420")
+				w1 := babytest.TestRequest[*pkg.Garden](t, gr.API, r1)
+				assert.Equal(t, http.StatusCreated, w1.Code)
+			}
 
 			r := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
