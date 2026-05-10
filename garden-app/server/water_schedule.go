@@ -205,6 +205,18 @@ func (api *WaterSchedulesAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 		}
 	}
 
+	// Validate NotificationClient exists and convert empty string to nil
+	if ws.NotificationClientID != nil {
+		if *ws.NotificationClientID == "" {
+			ws.NotificationClientID = nil
+		} else {
+			apiErr := checkNotificationClientExists(r.Context(), api.storageClient, *ws.NotificationClientID)
+			if apiErr != nil {
+				return apiErr
+			}
+		}
+	}
+
 	if !ws.EndDated() {
 		err := api.worker.ResetWaterSchedule(ws)
 		if err != nil {
@@ -227,6 +239,13 @@ func (api *WaterSchedulesAPI) weatherClientsExist(ctx context.Context, ws *pkg.W
 		err := api.weatherClientExists(ctx, ws.WeatherControl.Rain.ClientID)
 		if err != nil {
 			return fmt.Errorf("error getting client for RainControl: %w", err)
+		}
+	}
+
+	if ws.HasEvapotranspirationControl() {
+		err := api.weatherClientExists(ctx, ws.WeatherControl.Evapotranspiration.ClientID)
+		if err != nil {
+			return fmt.Errorf("error getting client for EvapotranspirationControl: %w", err)
 		}
 	}
 
