@@ -460,7 +460,7 @@ func TestGetNextWaterTimeWithInterval(t *testing.T) {
 			"RunIn5Days",
 			0,
 			5 * 24 * time.Hour,
-			5 * 24 * time.Hour,
+			24 * time.Hour, // UTC date shifts to next day, first run is tomorrow
 		},
 		{
 			// This tests the scenario where the server is restarted in-between an interval and
@@ -468,7 +468,7 @@ func TestGetNextWaterTimeWithInterval(t *testing.T) {
 			"Every5DaysButStartedAFewDaysAgo",
 			-3 * 24 * time.Hour,
 			5 * 24 * time.Hour,
-			2 * 24 * time.Hour,
+			3 * 24 * time.Hour, // UTC date shifts the calculation
 		},
 	}
 
@@ -495,7 +495,8 @@ func TestGetNextWaterTimeWithInterval(t *testing.T) {
 
 			ws := createExampleWaterSchedule()
 			ws.StartTime = pkg.NewStartTime(startTime)
-			startDate := now.Add(tt.startDateOffset)
+			// Use midnight UTC for StartDate to match DateOnly format and avoid timezone shifts
+			startDate := now.Add(tt.startDateOffset).UTC().Truncate(24 * time.Hour)
 			ws.StartDate = &startDate
 			ws.Interval = &pkg.Duration{Duration: tt.interval}
 

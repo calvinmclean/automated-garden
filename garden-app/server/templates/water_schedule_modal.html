@@ -37,6 +37,16 @@
             </div>
 
             <div class="uk-margin">
+                <label class="uk-form-label" for="start-date">Start Date</label>
+                <input id="start-date" class="uk-input" type="date"
+                    value="{{ if .StartDate }}{{ FormatDate .StartDate }}{{ end }}"
+                    name="StartDate">
+                {{ if not .Duration }}
+                <div class="uk-text-small uk-text-muted">Optional - defaults to today if not set</div>
+                {{ end }}
+            </div>
+
+            <div class="uk-margin">
                 <select class="uk-select" name="ActivePeriod.StartMonth">
                     {{ MonthRows .ActivePeriod true }}
                 </select>

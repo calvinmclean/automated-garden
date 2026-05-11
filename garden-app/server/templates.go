@@ -99,6 +99,12 @@ func templateFuncs(r *http.Request) map[string]any {
 		"FormatDateTime": func(date *time.Time) string {
 			return date.Local().Format(time.DateTime)
 		},
+		"FormatDate": func(t *time.Time) string {
+			if t == nil {
+				return ""
+			}
+			return t.Format("2006-01-02")
+		},
 		"FormatStartTime": func(startTime *pkg.StartTime) string {
 			return startTime.Time.Format(time.Kitchen)
 		},
