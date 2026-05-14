@@ -28,9 +28,15 @@
     <div id="notification-area" style="position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 2000; width: 90%; max-width: 800px;"></div>
     <nav class="uk-navbar-container">
         <div class="uk-container">
-            <div uk-navbar>
+            <div uk-navbar="mode: click">
                 <div class="uk-navbar-left">
-                    <ul class="uk-navbar-nav">
+                    <!-- Mobile toggle button -->
+                    <a class="uk-navbar-toggle uk-hidden@s" href="#mobile-nav" uk-toggle>
+                        <span uk-navbar-toggle-icon></span>
+                        <span class="uk-margin-small-left">Menu</span>
+                    </a>
+                    <!-- Desktop navigation -->
+                    <ul class="uk-navbar-nav uk-visible@s">
                         <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a>
                         </li>
                         <li {{ if URLContains "/water_schedules" }}class="uk-active" {{ end }}><a
@@ -39,8 +45,6 @@
                                 href="/water_routines">Water Routines</a></li>
                         <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
                                 href="/weather_clients">Weather Clients</a></li>
-                        <li>
-                        </li>
                     </ul>
                 </div>
                 <div class="uk-navbar-right">
@@ -66,6 +70,23 @@
             </div>
         </div>
     </nav>
+
+    <!-- Mobile navigation offcanvas -->
+    <div id="mobile-nav" uk-offcanvas="overlay: true">
+        <div class="uk-offcanvas-bar">
+            <button class="uk-offcanvas-close" type="button" uk-close></button>
+            <ul class="uk-nav uk-nav-default">
+                <li class="uk-nav-header">Navigation</li>
+                <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a></li>
+                <li {{ if URLContains "/water_schedules" }}class="uk-active" {{ end }}><a
+                        href="/water_schedules?exclude_weather_data=true">Water Schedules</a></li>
+                <li {{ if URLContains "/water_routines" }}class="uk-active" {{ end }}><a
+                        href="/water_routines">Water Routines</a></li>
+                <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
+                        href="/weather_clients">Weather Clients</a></li>
+            </ul>
+        </div>
+    </div>
     {{ end }}
 
     {{ define "end" }}
