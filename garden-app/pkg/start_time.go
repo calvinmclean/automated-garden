@@ -40,17 +40,12 @@ func (st *StartTime) String() string {
 }
 
 // OnDate takes the StartTime hour/minute/second and applies to the date on the input.
-// It preserves the calendar date (year/month/day) regardless of timezone differences.
-// This is important because StartDate is stored as a date-only value (YYYY-MM-DD) without timezone information.
+// It preserves the calendar date (year/month/day) in the StartTime's timezone.
 func (st StartTime) OnDate(date time.Time) time.Time {
-	// Always use UTC date components to preserve the intended calendar date.
-	// StartDate is stored as DateOnly format (midnight UTC), so we extract the year/month/day
-	// from UTC to ensure the calendar date is preserved regardless of the StartTime's timezone.
-	utcDate := date.UTC()
 	return time.Date(
-		utcDate.Year(),
-		utcDate.Month(),
-		utcDate.Day(),
+		date.Year(),
+		date.Month(),
+		date.Day(),
 		st.Time.Hour(),
 		st.Time.Minute(),
 		st.Time.Second(),

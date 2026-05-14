@@ -103,7 +103,7 @@ func templateFuncs(r *http.Request) map[string]any {
 			if t == nil {
 				return ""
 			}
-			return t.Format("2006-01-02")
+			return t.Format(time.DateOnly)
 		},
 		"FormatStartTime": func(startTime *pkg.StartTime) string {
 			return startTime.Time.Format(time.Kitchen)

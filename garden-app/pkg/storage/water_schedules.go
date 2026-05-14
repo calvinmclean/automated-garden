@@ -118,9 +118,9 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		notificationClientID = sql.NullString{String: *waterSchedule.NotificationClientID, Valid: true}
 	}
 
-	startDate := time.Now().Format(time.RFC3339)
+	startDate := pkg.NewDate(time.Now()).String()
 	if waterSchedule.StartDate != nil {
-		startDate = waterSchedule.StartDate.Format(time.RFC3339)
+		startDate = waterSchedule.StartDate.String()
 	}
 
 	var duration, interval int64
@@ -169,7 +169,7 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 	}
 
 	if dbWaterSchedule.StartDate != "" {
-		startDate, err := time.Parse(time.RFC3339, dbWaterSchedule.StartDate)
+		startDate, err := pkg.ParseDate(dbWaterSchedule.StartDate)
 		if err != nil {
 			return nil, fmt.Errorf("error parsing start_date: %w", err)
 		}

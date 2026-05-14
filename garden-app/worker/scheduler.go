@@ -26,7 +26,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 
 	startDate := clock.Now()
 	if waterSchedule.StartDate != nil {
-		startDate = *waterSchedule.StartDate
+		startDate = waterSchedule.StartDate.ToTimeInLocation(waterSchedule.StartTime.Time.Location())
 	}
 
 	// Schedule the WaterAction execution
