@@ -222,10 +222,11 @@
 
                 <div class="uk-margin">
                     <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
-                    <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
-                        name="ControllerConfig.TemperatureHumidityInterval">
-                </div>
-                {{ end }}
+                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
+                    name="ControllerConfig.TemperatureHumidityInterval">
+            </div>
+            {{ end }}
+            </div>
 
             {{ template "modalSubmitButton" }}
             {{ if .Name }}
