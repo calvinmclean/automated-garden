@@ -4,13 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"iter"
+	"net/http"
 	"net/url"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/db"
 	"github.com/calvinmclean/babyapi"
+	"modernc.org/sqlite"
+	lib "modernc.org/sqlite/lib"
 )
 
 // GardenStorage implements babyapi.Storage interface for Gardens using SQL
@@ -41,32 +46,36 @@ func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error)
 }
 
 // Search returns all Gardens from storage
-func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.Garden, error) {
-	getEndDated := q.Get("end_dated") == "true"
+func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) iter.Seq2[*pkg.Garden, error] {
+	return func(yield func(*pkg.Garden, error) bool) {
+		getEndDated := q.Get("end_dated") == "true"
 
-	listGardens := s.q.ListAllGardens
-	if !getEndDated {
-		listGardens = func(ctx context.Context) ([]db.Garden, error) {
-			return s.q.ListActiveGardens(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+		listGardens := s.q.ListAllGardens
+		if !getEndDated {
+			listGardens = func(ctx context.Context) ([]db.Garden, error) {
+				return s.q.ListActiveGardens(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+			}
 		}
-	}
 
-	dbGardens, err := listGardens(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error listing gardens: %w", err)
-	}
-
-	gardens := make([]*pkg.Garden, len(dbGardens))
-	for i, dbGarden := range dbGardens {
-		garden, err := dbGardenToGarden(dbGarden)
+		dbGardens, err := listGardens(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("invalid garden: %w", err)
+			yield(nil, fmt.Errorf("error listing gardens: %w", err))
+			return
 		}
 
-		gardens[i] = garden
+		for _, dbGarden := range dbGardens {
+			garden, err := dbGardenToGarden(dbGarden)
+			if err != nil {
+				if !yield(nil, fmt.Errorf("invalid garden: %w", err)) {
+					return
+				}
+				continue
+			}
+			if !yield(garden, nil) {
+				return
+			}
+		}
 	}
-
-	return gardens, nil
 }
 
 // Set saves a Garden to storage (creates or updates)
@@ -136,7 +145,7 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		createdAt = garden.CreatedAt.Format(time.RFC3339)
 	}
 
-	return s.q.UpsertGarden(ctx, db.UpsertGardenParams{
+	err := s.q.UpsertGarden(ctx, db.UpsertGardenParams{
 		ID:                   garden.ID.String(),
 		Name:                 garden.Name,
 		TopicPrefix:          garden.TopicPrefix,
@@ -149,11 +158,37 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		ControllerConfig:     controllerConfig,
 		LightSchedule:        lightSchedule,
 	})
+	if err != nil {
+		var sqliteErr *sqlite.Error
+		if errors.As(err, &sqliteErr) && sqliteErr.Code() == lib.SQLITE_CONSTRAINT_UNIQUE {
+			errMsg := fmt.Sprintf("topic_prefix %q is already in use", garden.TopicPrefix)
+			return &babyapi.ErrResponse{
+				HTTPStatusCode: http.StatusConflict,
+				StatusText:     "Conflict",
+				ErrorText:      errMsg,
+			}
+		}
+		return fmt.Errorf("error saving garden: %w", err)
+	}
+	return nil
 }
 
 // Delete removes a Garden from storage
 func (s *GardenStorage) Delete(ctx context.Context, id string) error {
 	return s.q.DeleteGarden(ctx, id)
+}
+
+// GetByTopicPrefix retrieves a Garden by its TopicPrefix
+func (s *GardenStorage) GetByTopicPrefix(ctx context.Context, topicPrefix string) (*pkg.Garden, error) {
+	dbGarden, err := s.q.GetGardenByTopicPrefix(ctx, topicPrefix)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, babyapi.ErrNotFound
+		}
+		return nil, fmt.Errorf("error getting garden by topic_prefix: %w", err)
+	}
+
+	return dbGardenToGarden(dbGarden)
 }
 
 func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {

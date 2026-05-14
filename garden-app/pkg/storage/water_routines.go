@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/url"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -40,23 +41,27 @@ func (s *WaterRoutineStorage) Get(ctx context.Context, id string) (*pkg.WaterRou
 }
 
 // Search returns all WaterRoutines from storage
-func (s *WaterRoutineStorage) Search(ctx context.Context, _ string, _ url.Values) ([]*pkg.WaterRoutine, error) {
-	dbWaterRoutines, err := s.q.ListWaterRoutines(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error listing water routines: %w", err)
-	}
-
-	waterRoutines := make([]*pkg.WaterRoutine, len(dbWaterRoutines))
-	for i, dbWaterRoutine := range dbWaterRoutines {
-		waterRoutine, err := dbWaterRoutineToWaterRoutine(dbWaterRoutine)
+func (s *WaterRoutineStorage) Search(ctx context.Context, _ string, _ url.Values) iter.Seq2[*pkg.WaterRoutine, error] {
+	return func(yield func(*pkg.WaterRoutine, error) bool) {
+		dbWaterRoutines, err := s.q.ListWaterRoutines(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("invalid water routine: %w", err)
+			yield(nil, fmt.Errorf("error listing water routines: %w", err))
+			return
 		}
 
-		waterRoutines[i] = waterRoutine
+		for _, dbWaterRoutine := range dbWaterRoutines {
+			waterRoutine, err := dbWaterRoutineToWaterRoutine(dbWaterRoutine)
+			if err != nil {
+				if !yield(nil, fmt.Errorf("invalid water routine: %w", err)) {
+					return
+				}
+				continue
+			}
+			if !yield(waterRoutine, nil) {
+				return
+			}
+		}
 	}
-
-	return waterRoutines, nil
 }
 
 // Set saves a WaterRoutine to storage (creates or updates)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"net/http"
 	"time"
 
@@ -39,10 +40,13 @@ func NewWeatherClientsAPI() *WeatherClientsAPI {
 	api.SetResponseWrapper(func(wc *weather.Config) render.Renderer {
 		return &WeatherClientResponse{Config: wc, api: api}
 	})
-	api.SetSearchResponseWrapper(func(wcs []*weather.Config) render.Renderer {
+	api.SetSearchResponseWrapper(func(wcs iter.Seq2[*weather.Config, error]) render.Renderer {
 		resp := AllWeatherClientsResponse{ResourceList: babyapi.ResourceList[*WeatherClientResponse]{}}
 
-		for _, wc := range wcs {
+		for wc, err := range wcs {
+			if err != nil {
+				continue
+			}
 			resp.ResourceList.Items = append(resp.ResourceList.Items, &WeatherClientResponse{Config: wc, api: api})
 		}
 
@@ -157,7 +161,7 @@ func (api *WeatherClientsAPI) getBaseURL(r *http.Request) string {
 }
 
 func (api *WeatherClientsAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, wc *weather.Config) *babyapi.ErrResponse {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	// If this is an update (PUT), preserve the authentication field
 	if r.Method == http.MethodPut {
@@ -217,7 +221,7 @@ func (api *WeatherClientsAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 }
 
 func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.Request) render.Renderer {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to test WeatherClient")
 
 	weatherClient, httpErr := api.GetRequestedResource(r)

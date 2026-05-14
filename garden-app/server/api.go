@@ -205,12 +205,10 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 
 // validateAllStoredResources will read all resources from storage and make sure they are valid for the types
 func validateAllStoredResources(storageClient *storage.Client) error {
-	gardens, err := storageClient.Gardens.Search(context.Background(), "", nil)
-	if err != nil {
-		return fmt.Errorf("unable to get all Gardens: %w", err)
-	}
-
-	for _, g := range gardens {
+	for g, err := range storageClient.Gardens.Search(context.Background(), "", nil) {
+		if err != nil {
+			return fmt.Errorf("unable to get all Gardens: %w", err)
+		}
 		if g.ID.IsNil() {
 			return errors.New("invalid Garden: missing required field 'id'")
 		}
@@ -219,12 +217,10 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 			return fmt.Errorf("invalid Garden %q: %w", g.ID, err)
 		}
 
-		zones, err := storageClient.Zones.Search(context.Background(), g.GetID(), nil)
-		if err != nil {
-			return fmt.Errorf("unable to get all Zones: %w", err)
-		}
-
-		for _, z := range zones {
+		for z, err := range storageClient.Zones.Search(context.Background(), g.GetID(), nil) {
+			if err != nil {
+				return fmt.Errorf("unable to get all Zones: %w", err)
+			}
 			if z.ID.IsNil() {
 				return errors.New("invalid Zone: missing required field 'id'")
 			}
@@ -235,12 +231,10 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	waterSchedules, err := storageClient.WaterSchedules.Search(context.Background(), "", nil)
-	if err != nil {
-		return fmt.Errorf("unable to get all WaterSchedules: %w", err)
-	}
-
-	for _, ws := range waterSchedules {
+	for ws, err := range storageClient.WaterSchedules.Search(context.Background(), "", nil) {
+		if err != nil {
+			return fmt.Errorf("unable to get all WaterSchedules: %w", err)
+		}
 		if ws.ID.IsNil() {
 			return errors.New("invalid WaterSchedule: missing required field 'id'")
 		}
@@ -250,12 +244,10 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		}
 	}
 
-	weatherClients, err := storageClient.WeatherClientConfigs.Search(context.Background(), "", nil)
-	if err != nil {
-		return fmt.Errorf("unable to get all WeatherClients: %w", err)
-	}
-
-	for _, wc := range weatherClients {
+	for wc, err := range storageClient.WeatherClientConfigs.Search(context.Background(), "", nil) {
+		if err != nil {
+			return fmt.Errorf("unable to get all WeatherClients: %w", err)
+		}
 		if wc.ID.IsNil() {
 			return errors.New("invalid WeatherClient: missing required field 'id'")
 		}

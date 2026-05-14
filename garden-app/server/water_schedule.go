@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"net/http"
 	"slices"
 	"strconv"
@@ -43,10 +44,13 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 	api.SetResponseWrapper(func(ws *pkg.WaterSchedule) render.Renderer {
 		return api.NewWaterScheduleResponse(ws)
 	})
-	api.SetSearchResponseWrapper(func(waterSchedules []*pkg.WaterSchedule) render.Renderer {
+	api.SetSearchResponseWrapper(func(waterSchedules iter.Seq2[*pkg.WaterSchedule, error]) render.Renderer {
 		resp := AllWaterSchedulesResponse{ResourceList: babyapi.ResourceList[*WaterScheduleResponse]{}}
 
-		for _, w := range waterSchedules {
+		for w, err := range waterSchedules {
+			if err != nil {
+				continue
+			}
 			resp.ResourceList.Items = append(resp.ResourceList.Items, api.NewWaterScheduleResponse(w))
 		}
 
@@ -71,7 +75,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 	})
 
 	api.SetAfterDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
-		logger := babyapi.GetLoggerFromContext(r.Context())
+		logger, _ := babyapi.GetLoggerFromContext(r.Context())
 		id := api.GetIDParam(r)
 
 		// Remove scheduled WaterActions
@@ -117,18 +121,24 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 }
 
 func (api *WaterSchedulesAPI) waterScheduleModalRenderer(r *http.Request, ws *pkg.WaterSchedule) render.Renderer {
-	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(r.Context(), "", nil)
-	if err != nil {
-		return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create water schedule modal: %w", err))
+	notificationClients := make([]*notifications.Client, 0)
+	for nc, err := range api.storageClient.NotificationClientConfigs.Search(r.Context(), "", nil) {
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create water schedule modal: %w", err))
+		}
+		notificationClients = append(notificationClients, nc)
 	}
 
 	slices.SortFunc(notificationClients, func(nc1 *notifications.Client, nc2 *notifications.Client) int {
 		return strings.Compare(nc1.Name, nc2.Name)
 	})
 
-	weatherClients, err := api.storageClient.WeatherClientConfigs.Search(r.Context(), "", nil)
-	if err != nil {
-		return babyapi.InternalServerError(fmt.Errorf("error getting all weather clients to create water schedule modal: %w", err))
+	weatherClients := make([]*weather.Config, 0)
+	for wc, err := range api.storageClient.WeatherClientConfigs.Search(r.Context(), "", nil) {
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("error getting all weather clients to create water schedule modal: %w", err))
+		}
+		weatherClients = append(weatherClients, wc)
 	}
 
 	slices.SortFunc(weatherClients, func(wc1 *weather.Config, wc2 *weather.Config) int {
@@ -149,11 +159,10 @@ func (api *WaterSchedulesAPI) setup(storageClient *storage.Client, worker *worke
 	api.SetStorage(api.storageClient.WaterSchedules)
 
 	// Initialize WaterActions for each WaterSchedule from the storage client
-	allWaterSchedules, err := api.storageClient.WaterSchedules.Search(context.Background(), "", nil)
-	if err != nil {
-		return fmt.Errorf("unable to get WaterSchedules: %v", err)
-	}
-	for _, ws := range allWaterSchedules {
+	for ws, err := range api.storageClient.WaterSchedules.Search(context.Background(), "", nil) {
+		if err != nil {
+			return fmt.Errorf("unable to get WaterSchedules: %v", err)
+		}
 		if ws.EndDated() {
 			continue
 		}

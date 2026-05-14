@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"iter"
 	"net/url"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
@@ -35,23 +36,27 @@ func (s *NotificationClientStorage) Get(ctx context.Context, id string) (*notifi
 	return dbNotificationClientToNotificationClient(dbNotificationClient)
 }
 
-func (s *NotificationClientStorage) Search(ctx context.Context, _ string, _ url.Values) ([]*notifications.Client, error) {
-	dbNotificationClients, err := s.q.ListNotificationClients(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error listing notification clients: %w", err)
-	}
-
-	notificationClients := make([]*notifications.Client, len(dbNotificationClients))
-	for i, dbNotificationClient := range dbNotificationClients {
-		notificationClient, err := dbNotificationClientToNotificationClient(dbNotificationClient)
+func (s *NotificationClientStorage) Search(ctx context.Context, _ string, _ url.Values) iter.Seq2[*notifications.Client, error] {
+	return func(yield func(*notifications.Client, error) bool) {
+		dbNotificationClients, err := s.q.ListNotificationClients(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("invalid notification client: %w", err)
+			yield(nil, fmt.Errorf("error listing notification clients: %w", err))
+			return
 		}
 
-		notificationClients[i] = notificationClient
+		for _, dbNotificationClient := range dbNotificationClients {
+			notificationClient, err := dbNotificationClientToNotificationClient(dbNotificationClient)
+			if err != nil {
+				if !yield(nil, fmt.Errorf("invalid notification client: %w", err)) {
+					return
+				}
+				continue
+			}
+			if !yield(notificationClient, nil) {
+				return
+			}
+		}
 	}
-
-	return notificationClients, nil
 }
 
 func (s *NotificationClientStorage) Set(ctx context.Context, notificationClient *notifications.Client) error {

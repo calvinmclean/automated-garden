@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/url"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage/db"
@@ -40,23 +41,27 @@ func (s *WeatherClientStorage) Get(ctx context.Context, id string) (*weather.Con
 }
 
 // Search returns all WeatherClient Configs from storage
-func (s *WeatherClientStorage) Search(ctx context.Context, _ string, _ url.Values) ([]*weather.Config, error) {
-	dbWeatherClients, err := s.q.ListWeatherClients(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error listing weather clients: %w", err)
-	}
-
-	weatherClients := make([]*weather.Config, len(dbWeatherClients))
-	for i, dbWeatherClient := range dbWeatherClients {
-		weatherClient, err := dbWeatherClientToWeatherClient(dbWeatherClient)
+func (s *WeatherClientStorage) Search(ctx context.Context, _ string, _ url.Values) iter.Seq2[*weather.Config, error] {
+	return func(yield func(*weather.Config, error) bool) {
+		dbWeatherClients, err := s.q.ListWeatherClients(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("invalid weather client: %w", err)
+			yield(nil, fmt.Errorf("error listing weather clients: %w", err))
+			return
 		}
 
-		weatherClients[i] = weatherClient
+		for _, dbWeatherClient := range dbWeatherClients {
+			weatherClient, err := dbWeatherClientToWeatherClient(dbWeatherClient)
+			if err != nil {
+				if !yield(nil, fmt.Errorf("invalid weather client: %w", err)) {
+					return
+				}
+				continue
+			}
+			if !yield(weatherClient, nil) {
+				return
+			}
+		}
 	}
-
-	return weatherClients, nil
 }
 
 // Set saves a WeatherClient Config to storage (creates or updates)

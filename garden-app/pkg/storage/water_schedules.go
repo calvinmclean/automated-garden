@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/url"
 	"time"
 
@@ -42,32 +43,36 @@ func (s *WaterScheduleStorage) Get(ctx context.Context, id string) (*pkg.WaterSc
 }
 
 // Search returns all WaterSchedules from storage
-func (s *WaterScheduleStorage) Search(ctx context.Context, _ string, q url.Values) ([]*pkg.WaterSchedule, error) {
-	getEndDated := q.Get("end_dated") == "true"
+func (s *WaterScheduleStorage) Search(ctx context.Context, _ string, q url.Values) iter.Seq2[*pkg.WaterSchedule, error] {
+	return func(yield func(*pkg.WaterSchedule, error) bool) {
+		getEndDated := q.Get("end_dated") == "true"
 
-	listWaterSchedules := s.q.ListAllWaterSchedules
-	if !getEndDated {
-		listWaterSchedules = func(ctx context.Context) ([]db.WaterSchedule, error) {
-			return s.q.ListActiveWaterSchedules(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+		listWaterSchedules := s.q.ListAllWaterSchedules
+		if !getEndDated {
+			listWaterSchedules = func(ctx context.Context) ([]db.WaterSchedule, error) {
+				return s.q.ListActiveWaterSchedules(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
+			}
 		}
-	}
 
-	dbWaterSchedules, err := listWaterSchedules(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("error listing water schedules: %w", err)
-	}
-
-	waterSchedules := make([]*pkg.WaterSchedule, len(dbWaterSchedules))
-	for i, dbWaterSchedule := range dbWaterSchedules {
-		waterSchedule, err := dbWaterScheduleToWaterSchedule(dbWaterSchedule)
+		dbWaterSchedules, err := listWaterSchedules(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("invalid water schedule: %w", err)
+			yield(nil, fmt.Errorf("error listing water schedules: %w", err))
+			return
 		}
 
-		waterSchedules[i] = waterSchedule
+		for _, dbWaterSchedule := range dbWaterSchedules {
+			waterSchedule, err := dbWaterScheduleToWaterSchedule(dbWaterSchedule)
+			if err != nil {
+				if !yield(nil, fmt.Errorf("invalid water schedule: %w", err)) {
+					return
+				}
+				continue
+			}
+			if !yield(waterSchedule, nil) {
+				return
+			}
+		}
 	}
-
-	return waterSchedules, nil
 }
 
 // Set saves a WaterSchedule to storage (creates or updates)

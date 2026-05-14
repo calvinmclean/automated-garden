@@ -58,10 +58,21 @@ func TestIntegration(t *testing.T) {
 
 	time.Sleep(500 * time.Millisecond)
 
-	t.Run("Garden", GardenTests)
-	t.Run("Zone", ZoneTests)
-	t.Run("WaterSchedule", WaterScheduleTests)
-	t.Run("ControllerStartupNotification", ControllerStartupNotificationTest)
+	// Create a single garden to be shared across tests
+	gardenID := CreateGardenTest(t)
+
+	t.Run("Garden", func(t *testing.T) {
+		GardenTestsWithID(t, gardenID)
+	})
+	t.Run("Zone", func(t *testing.T) {
+		ZoneTestsWithID(t, gardenID)
+	})
+	t.Run("WaterSchedule", func(t *testing.T) {
+		WaterScheduleTestsWithID(t, gardenID)
+	})
+	t.Run("ControllerStartupNotification", func(t *testing.T) {
+		ControllerStartupNotificationTestWithID(t, gardenID)
+	})
 }
 
 func getConfigs(t *testing.T) (server.Config, controller.Config) {
@@ -85,28 +96,28 @@ func getConfigs(t *testing.T) (server.Config, controller.Config) {
 func CreateGardenTest(t *testing.T) string {
 	var g server.GardenResponse
 
-	t.Run("CreateGarden", func(t *testing.T) {
-		status, err := makeRequest(http.MethodPost, "/gardens", `{
-			"name": "Test",
-			"topic_prefix": "test",
-			"max_zones": 3,
-			"light_schedule": {
-				"duration": "14h",
-				"start_time": "22:00:00-07:00"
-			},
-			"temperature_humidity_sensor": true
-		}`, &g)
-		assert.NoError(t, err)
-
-		assert.Equal(t, http.StatusCreated, status)
-	})
+	status, err := makeRequest(http.MethodPost, "/gardens", `{
+		"name": "Test",
+		"topic_prefix": "test",
+		"max_zones": 3,
+		"light_schedule": {
+			"duration": "14h",
+			"start_time": "22:00:00-07:00"
+		},
+		"temperature_humidity_sensor": true
+	}`, &g)
+	require.NoError(t, err)
+	require.Equal(t, http.StatusCreated, status)
 
 	return g.ID.String()
 }
 
 func GardenTests(t *testing.T) {
 	gardenID := CreateGardenTest(t)
+	GardenTestsWithID(t, gardenID)
+}
 
+func GardenTestsWithID(t *testing.T, gardenID string) {
 	t.Run("GetGarden", func(t *testing.T) {
 		var g server.GardenResponse
 		status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
@@ -280,6 +291,10 @@ func CreateWeatherClientTest(t *testing.T, opts fake.Config) xid.ID {
 
 func ZoneTests(t *testing.T) {
 	gardenID := CreateGardenTest(t)
+	ZoneTestsWithID(t, gardenID)
+}
+
+func ZoneTestsWithID(t *testing.T, gardenID string) {
 	waterScheduleID := CreateWaterScheduleTest(t)
 	zoneID := CreateZoneTest(t, gardenID, waterScheduleID)
 
@@ -382,6 +397,10 @@ func pointer[T any](v T) *T {
 
 func WaterScheduleTests(t *testing.T) {
 	gardenID := CreateGardenTest(t)
+	WaterScheduleTestsWithID(t, gardenID)
+}
+
+func WaterScheduleTestsWithID(t *testing.T, gardenID string) {
 	waterScheduleID := CreateWaterScheduleTest(t)
 	_ = CreateZoneTest(t, gardenID, waterScheduleID)
 
@@ -438,17 +457,11 @@ func WaterScheduleTests(t *testing.T) {
 }
 
 func ControllerStartupNotificationTest(t *testing.T) {
-	var g server.GardenResponse
-	t.Run("CreateGarden", func(t *testing.T) {
-		status, err := makeRequest(http.MethodPost, "/gardens", `{
-				"name": "Notification",
-				"topic_prefix": "notification",
-				"max_zones": 3
-			}`, &g)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusCreated, status)
-	})
+	gardenID := CreateGardenTest(t)
+	ControllerStartupNotificationTestWithID(t, gardenID)
+}
 
+func ControllerStartupNotificationTestWithID(t *testing.T, gardenID string) {
 	var nc notifications.Client
 	t.Run("CreateNotificationClient", func(t *testing.T) {
 		status, err := makeRequest(http.MethodPost, "/notification_clients", `{
@@ -459,8 +472,9 @@ func ControllerStartupNotificationTest(t *testing.T) {
 		assert.Equal(t, http.StatusCreated, status)
 	})
 
+	var g server.GardenResponse
 	t.Run("EnableNotificationsForGarden", func(t *testing.T) {
-		status, err := makeRequest(http.MethodPatch, "/gardens/"+g.GetID(), pkg.Garden{
+		status, err := makeRequest(http.MethodPatch, "/gardens/"+gardenID, pkg.Garden{
 			NotificationClientID: pointer(nc.GetID()),
 			NotificationSettings: &pkg.NotificationSettings{
 				ControllerStartup: true,
@@ -477,13 +491,12 @@ func ControllerStartupNotificationTest(t *testing.T) {
 		time.Sleep(500 * time.Millisecond)
 
 		lastMsg := fake_notification.LastMessage()
-		require.Equal(t, "Notification connected", lastMsg.Title)
+		require.Equal(t, "Test connected", lastMsg.Title)
 		require.Equal(t, "garden-controller setup complete", lastMsg.Message)
 	})
 }
 
 func makeRequest(method, path string, body, response any) (int, error) {
-	// TODO: Use babyapi Client
 	var reqBody io.Reader
 	switch v := body.(type) {
 	case nil:

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"iter"
 	"net/http"
 	"slices"
 	"strings"
@@ -47,10 +48,13 @@ func NewNotificationClientsAPI() *NotificationClientsAPI {
 		return &NotificationClientResponse{Client: nc}
 	})
 
-	api.SetSearchResponseWrapper(func(ncs []*notifications.Client) render.Renderer {
-		result := make([]*NotificationClientResponse, len(ncs))
-		for i, nc := range ncs {
-			result[i] = &NotificationClientResponse{Client: nc}
+	api.SetSearchResponseWrapper(func(ncs iter.Seq2[*notifications.Client, error]) render.Renderer {
+		result := make([]*NotificationClientResponse, 0)
+		for nc, err := range ncs {
+			if err != nil {
+				continue
+			}
+			result = append(result, &NotificationClientResponse{Client: nc})
 		}
 		return AllNotificationClientsResponse{
 			ResourceList: babyapi.ResourceList[*NotificationClientResponse]{Items: result},
@@ -114,9 +118,12 @@ func (api *NotificationClientsAPI) settingsModalRenderer(_ context.Context) rend
 
 // settingsListRenderer returns just the notification clients list for HTMX refresh
 func (api *NotificationClientsAPI) settingsListRenderer(ctx context.Context) render.Renderer {
-	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(ctx, "", nil)
-	if err != nil {
-		return babyapi.InternalServerError(fmt.Errorf("error fetching notification clients: %w", err))
+	notificationClients := make([]*notifications.Client, 0)
+	for nc, err := range api.storageClient.NotificationClientConfigs.Search(ctx, "", nil) {
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("error fetching notification clients: %w", err))
+		}
+		notificationClients = append(notificationClients, nc)
 	}
 
 	// Sort by name
@@ -141,7 +148,7 @@ type TestNotificationClientRequest struct {
 }
 
 func (api *NotificationClientsAPI) testNotificationClient(_ http.ResponseWriter, r *http.Request) render.Renderer {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to test NotificationClient")
 
 	notificationClient, httpErr := api.GetRequestedResource(r)

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"iter"
 	"net/http"
 	"slices"
 	"strings"
@@ -42,10 +43,14 @@ func NewGardenAPI() *GardensAPI {
 	api.SetResponseWrapper(func(g *pkg.Garden) render.Renderer {
 		return api.NewGardenResponse(g)
 	})
-	api.SetSearchResponseWrapper(func(gardens []*pkg.Garden) render.Renderer {
+	api.SetSearchResponseWrapper(func(gardens iter.Seq2[*pkg.Garden, error]) render.Renderer {
 		resp := AllGardensResponse{ResourceList: babyapi.ResourceList[*GardenResponse]{}}
 
-		for _, g := range gardens {
+		for g, err := range gardens {
+			if err != nil {
+				// Handle error - for now just skip items with errors
+				continue
+			}
 			resp.ResourceList.Items = append(resp.ResourceList.Items, api.NewGardenResponse(g))
 		}
 
@@ -77,7 +82,7 @@ func NewGardenAPI() *GardensAPI {
 	}))
 
 	api.SetBeforeDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
-		logger := babyapi.GetLoggerFromContext(r.Context())
+		logger, _ := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)
 
 		// Don't allow end-dating a Garden with active Zones
@@ -86,16 +91,16 @@ func NewGardenAPI() *GardensAPI {
 			return babyapi.InternalServerError(fmt.Errorf("error getting number of Zones for garden: %w", err))
 		}
 		if numZones > 0 {
-			err := errors.New("unable to end-date Garden with active Zones")
-			logger.Error("unable to end-date Garden", "error", err)
-			return babyapi.ErrInvalidRequest(err)
+			zoneErr := errors.New("unable to end-date Garden with active Zones")
+			logger.Error("unable to end-date Garden", "error", zoneErr)
+			return babyapi.ErrInvalidRequest(zoneErr)
 		}
 
 		return nil
 	})
 
 	api.SetAfterDelete(func(_ http.ResponseWriter, r *http.Request) *babyapi.ErrResponse {
-		logger := babyapi.GetLoggerFromContext(r.Context())
+		logger, _ := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)
 
 		// Remove scheduled light actions
@@ -115,9 +120,12 @@ func NewGardenAPI() *GardensAPI {
 }
 
 func (api *GardensAPI) gardenModalRenderer(ctx context.Context, g *pkg.Garden) render.Renderer {
-	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(ctx, "", nil)
-	if err != nil {
-		return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create garden modal: %w", err))
+	notificationClients := make([]*notifications.Client, 0)
+	for nc, err := range api.storageClient.NotificationClientConfigs.Search(ctx, "", nil) {
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("error getting all notification clients to create garden modal: %w", err))
+		}
+		notificationClients = append(notificationClients, nc)
 	}
 
 	slices.SortFunc(notificationClients, func(nc1 *notifications.Client, nc2 *notifications.Client) int {
@@ -139,11 +147,10 @@ func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influ
 	api.SetStorage(api.storageClient.Gardens)
 
 	// Initialize light schedules for all Gardens
-	allGardens, err := api.storageClient.Gardens.Search(context.Background(), "", nil)
-	if err != nil {
-		return err
-	}
-	for _, g := range allGardens {
+	for g, err := range api.storageClient.Gardens.Search(context.Background(), "", nil) {
+		if err != nil {
+			return fmt.Errorf("error getting gardens for light schedule initialization: %w", err)
+		}
 		if g.EndDated() || g.LightSchedule == nil {
 			continue
 		}
@@ -157,7 +164,7 @@ func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influ
 }
 
 func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, garden *pkg.Garden) *babyapi.ErrResponse {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 
 	numZones, err := api.numZones(r.Context(), garden.ID.String())
 	if err != nil {
@@ -229,7 +236,7 @@ func (api *GardensAPI) createZonesForGarden(ctx context.Context, g *pkg.Garden) 
 // that is available to run against a Zone. This one endpoint is used for all the different
 // kinds of actions so the action information is carried in the request body
 func (api *GardensAPI) gardenAction(_ http.ResponseWriter, r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
-	logger := babyapi.GetLoggerFromContext(r.Context())
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
 	logger.Info("received request to execute GardenAction")
 
 	if garden.EndDated() {

@@ -67,19 +67,9 @@ func (w *Worker) getGardenForTopic(topic string) (*pkg.Garden, error) {
 }
 
 func (w *Worker) getGarden(topicPrefix string) (*pkg.Garden, error) {
-	gardens, err := w.storageClient.Gardens.Search(context.Background(), "", nil)
+	garden, err := w.storageClient.Gardens.GetByTopicPrefix(context.Background(), topicPrefix)
 	if err != nil {
-		return nil, fmt.Errorf("error getting all gardens: %w", err)
-	}
-	var garden *pkg.Garden
-	for _, g := range gardens {
-		if g.TopicPrefix == topicPrefix {
-			garden = g
-			break
-		}
-	}
-	if garden == nil {
-		return nil, errors.New("no garden found")
+		return nil, fmt.Errorf("error getting garden: %w", err)
 	}
 
 	return garden, nil

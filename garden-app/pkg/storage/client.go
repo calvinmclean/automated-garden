@@ -33,7 +33,7 @@ type Config struct {
 }
 
 type Client struct {
-	Gardens                   babyapi.Storage[*pkg.Garden]
+	Gardens                   *GardenStorage
 	Zones                     babyapi.Storage[*pkg.Zone]
 	WaterSchedules            babyapi.Storage[*pkg.WaterSchedule]
 	WeatherClientConfigs      babyapi.Storage[*weather.Config]

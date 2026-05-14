@@ -92,9 +92,12 @@ func (api *SettingsAPI) settingsModalRenderer(ctx context.Context) render.Render
 
 // settingsListRenderer returns just the notification clients list for HTMX refresh
 func (api *SettingsAPI) settingsListRenderer(ctx context.Context) render.Renderer {
-	notificationClients, err := api.storageClient.NotificationClientConfigs.Search(ctx, "", nil)
-	if err != nil {
-		return babyapi.InternalServerError(fmt.Errorf("error fetching notification clients: %w", err))
+	notificationClients := make([]*notifications.Client, 0)
+	for nc, err := range api.storageClient.NotificationClientConfigs.Search(ctx, "", nil) {
+		if err != nil {
+			return babyapi.InternalServerError(fmt.Errorf("error fetching notification clients: %w", err))
+		}
+		notificationClients = append(notificationClients, nc)
 	}
 
 	// Sort by name

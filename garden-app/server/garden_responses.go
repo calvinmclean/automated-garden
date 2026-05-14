@@ -98,7 +98,7 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		},
 	)
 
-	logger := babyapi.GetLoggerFromContext(ctx)
+	logger, _ := babyapi.GetLoggerFromContext(ctx)
 
 	// By default, skip InfluxDB data fetching for fast page loads (lazy loading)
 	// Set swap_data=true to fetch all InfluxDB data in a single request
@@ -263,7 +263,7 @@ func (agr AllGardensResponse) Render(w http.ResponseWriter, r *http.Request) err
 	// Process all GardenResponse renders concurrently for better performance
 	// This is especially important when each garden fetches data from InfluxDB
 	ctx := r.Context()
-	logger := babyapi.GetLoggerFromContext(ctx)
+	logger, _ := babyapi.GetLoggerFromContext(ctx)
 
 	tasks := make([]concurrent.TaskFunc, 0, len(agr.Items))
 	for i := range agr.Items {
@@ -308,9 +308,12 @@ func (agr AllGardensResponse) HTML(_ http.ResponseWriter, r *http.Request) strin
 }
 
 func (api *GardensAPI) getAllZones(ctx context.Context, gardenID string, getEndDated bool) ([]*pkg.Zone, error) {
-	zones, err := api.storageClient.Zones.Search(ctx, gardenID, babyapi.EndDatedQueryParam(getEndDated))
-	if err != nil {
-		return nil, fmt.Errorf("error getting Zones for Garden: %w", err)
+	zones := make([]*pkg.Zone, 0)
+	for zone, err := range api.storageClient.Zones.Search(ctx, gardenID, babyapi.EndDatedQueryParam(getEndDated)) {
+		if err != nil {
+			return nil, fmt.Errorf("error getting Zones for Garden: %w", err)
+		}
+		zones = append(zones, zone)
 	}
 
 	return zones, nil

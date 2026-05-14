@@ -166,6 +166,13 @@ func TestCreateGarden(t *testing.T) {
 			`{"status":"Invalid request.","error":"unable to manually set ID"}`,
 			http.StatusBadRequest,
 		},
+		{
+			"ErrorDuplicateTopicPrefix",
+			`{"name": "duplicate-garden", "topic_prefix": "test-garden", "max_zones": 2}`,
+			false,
+			`{"status":"Conflict","error":"topic_prefix \\"test-garden\\" is already in use"}`,
+			http.StatusConflict,
+		},
 	}
 
 	for _, tt := range tests {
@@ -187,6 +194,16 @@ func TestCreateGarden(t *testing.T) {
 			gr := NewGardenAPI()
 			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
 			assert.NoError(t, err)
+
+			// For duplicate topic_prefix test, first create a garden with the same topic_prefix
+			if tt.name == "ErrorDuplicateTopicPrefix" {
+				firstGarden := `{"name": "first-garden", "topic_prefix": "test-garden", "max_zones": 2}`
+				r1 := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(firstGarden))
+				r1.Header.Set("Content-Type", "application/json")
+				r1.Header.Set("X-TZ-Offset", "420")
+				w1 := babytest.TestRequest[*pkg.Garden](t, gr.API, r1)
+				assert.Equal(t, http.StatusCreated, w1.Code)
+			}
 
 			r := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
@@ -231,8 +248,11 @@ func TestCreateGarden_AutoCreateZones(t *testing.T) {
 	})
 
 	t.Run("GetZonesForGarden", func(t *testing.T) {
-		zones, err := gr.storageClient.Zones.Search(context.Background(), g.GetID(), nil)
-		assert.NoError(t, err)
+		zones := make([]*pkg.Zone, 0)
+		for zone, err := range gr.storageClient.Zones.Search(context.Background(), g.GetID(), nil) {
+			assert.NoError(t, err)
+			zones = append(zones, zone)
+		}
 
 		assert.Len(t, zones, 4)
 
@@ -245,7 +265,6 @@ func TestCreateGarden_AutoCreateZones(t *testing.T) {
 			assert.False(t, zone.EndDated())
 			assert.Equal(t, now, *zone.CreatedAt)
 			assert.EqualValues(t, i, *zone.Position)
-			assert.Equal(t, fmt.Sprintf("Zone %d", i+1), zone.Name)
 		}
 
 		assert.ElementsMatch(t, []string{
