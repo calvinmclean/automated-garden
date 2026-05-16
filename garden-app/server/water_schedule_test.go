@@ -30,12 +30,13 @@ var createdAt, _ = time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:0
 func float64Ptr(f float64) *float64 { return &f }
 
 func createExampleWaterSchedule() *pkg.WaterSchedule {
+	startDate := pkg.NewDate(createdAt)
 	return &pkg.WaterSchedule{
 		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: pkg.NewStartTime(createdAt),
-		StartDate: &createdAt,
+		StartDate: &startDate,
 	}
 }
 
@@ -52,7 +53,7 @@ func TestGetWaterSchedule(t *testing.T) {
 			"Successful",
 			false,
 			createExampleWaterSchedule(),
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"1d","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52\-07:00","send_reminder":false,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52\-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1s","interval":"1d","start_date":"\d{4}-\d{2}-\d{2}","start_time":"11:24:52\-07:00","send_reminder":false,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52\-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureData",
@@ -62,7 +63,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: pkg.NewStartTime(createdAt),
-				StartDate: &createdAt,
+				StartDate: func() *pkg.Date { d := pkg.NewDate(createdAt); return &d }(),
 				WeatherControl: &weather.Control{
 					Rain: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
@@ -82,7 +83,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":30,"factor_min":1,"factor_max":0},"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0.5,"factor_max":1.5}},"send_reminder":false,"weather_data":{"rain":{"mm":25.4,"inches":1},"temperature":{"celsius":80,"fahrenheit":176}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"13m48s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d{2}","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":30,"factor_min":1,"factor_max":0},"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0.5,"factor_max":1.5}},"send_reminder":false,"weather_data":{"rain":{"mm":25.4,"inches":1},"temperature":{"celsius":80,"fahrenheit":176}},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"13m48s"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"SuccessfulWithRainAndTemperatureDataButWeatherDataExcluded",
@@ -92,7 +93,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: pkg.NewStartTime(createdAt),
-				StartDate: &createdAt,
+				StartDate: func() *pkg.Date { d := pkg.NewDate(createdAt); return &d }(),
 				WeatherControl: &weather.Control{
 					Rain: &weather.WeatherScaler{
 						ClientID:      weatherClientID,
@@ -112,7 +113,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":1,"factor_max":1},"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0.5,"factor_max":1.5}},"send_reminder":false,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d{2}","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":1,"factor_max":1},"temperature_control":{"client_id":"c5cvhpcbcv45e8bp16dg","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0.5,"factor_max":1.5}},"send_reminder":false,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorRainWeatherClientDNE",
@@ -122,7 +123,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: pkg.NewStartTime(createdAt),
-				StartDate: &createdAt,
+				StartDate: func() *pkg.Date { d := pkg.NewDate(createdAt); return &d }(),
 				WeatherControl: &weather.Control{
 					Rain: &weather.WeatherScaler{
 						ClientID:      id2,
@@ -134,7 +135,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":1,"factor_max":0}},"send_reminder":false,"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d{2}","start_time":"11:24:52-07:00","weather_control":{"rain_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":0,"input_max":25.4,"factor_min":1,"factor_max":0}},"send_reminder":false,"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 		{
 			"ErrorTemperatureWeatherClientDNE",
@@ -144,7 +145,7 @@ func TestGetWaterSchedule(t *testing.T) {
 				Duration:  &pkg.Duration{Duration: time.Hour},
 				Interval:  &pkg.Duration{Duration: time.Hour * 24},
 				StartTime: pkg.NewStartTime(createdAt),
-				StartDate: &createdAt,
+				StartDate: func() *pkg.Date { d := pkg.NewDate(createdAt); return &d }(),
 				WeatherControl: &weather.Control{
 					Temperature: &weather.WeatherScaler{
 						ClientID:      id2,
@@ -156,7 +157,7 @@ func TestGetWaterSchedule(t *testing.T) {
 					},
 				},
 			},
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0\.5,"factor_max":1\.5}},"send_reminder":false,"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"[0-9a-zµs.]+","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d{2}","start_time":"11:24:52-07:00","weather_control":{"temperature_control":{"client_id":"chkodpg3lcj13q82mq40","interpolation":"linear","input_min":20,"input_max":40,"factor_min":0\.5,"factor_max":1\.5}},"send_reminder":false,"weather_data":{},"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"[0-9a-zµs.]+","message":"error impacted duration scaling"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 		},
 	}
 
@@ -239,7 +240,7 @@ func TestUpdateWaterSchedule(t *testing.T) {
 		{
 			"Successful",
 			`{"duration":"1h"}`,
-			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","send_reminder":false,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
+			`{"id":"c5cvhpcbcv45e8bp16dg","duration":"1h","interval":"1d","start_date":"\d{4}-\d{2}-\d{2}","start_time":"11:24:52-07:00","send_reminder":false,"next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1h"},"links":\[{"rel":"self","href":"/water_schedules/c5cvhpcbcv45e8bp16dg"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -444,7 +445,7 @@ func TestCreateWaterSchedule(t *testing.T) {
 		{
 			"Successful",
 			`{"duration":"1s","interval":"1d","start_time":"11:24:52-07:00"}`,
-			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"1d","start_date":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
+			`{"id":"[0-9a-v]{20}","duration":"1s","interval":"1d","start_date":"\d{4}-\d{2}-\d{2}","start_time":"11:24:52-07:00","next_water":{"time":"\d\d\d\d-\d\d-\d\dT11:24:52-07:00","duration":"1s"},"links":\[{"rel":"self","href":"/water_schedules/[0-9a-v]{20}"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -875,4 +876,52 @@ func TestUpdateWaterScheduleRequest(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestStartDateBackwardCompatibility(t *testing.T) {
+	tests := []struct {
+		name         string
+		input        string
+		expectedDate pkg.Date
+	}{
+		{
+			name:         "DateOnly format",
+			input:        `{"start_date": "2024-01-15"}`,
+			expectedDate: pkg.MustParseDate("2024-01-15"),
+		},
+		{
+			name:         "RFC3339 format with timezone",
+			input:        `{"start_date": "2024-01-15T10:30:00-07:00"}`,
+			expectedDate: pkg.MustParseDate("2024-01-15"),
+		},
+		{
+			name:         "RFC3339 format UTC",
+			input:        `{"start_date": "2024-01-15T00:00:00Z"}`,
+			expectedDate: pkg.MustParseDate("2024-01-15"),
+		},
+		{
+			name:         "RFC3339 with nanoseconds",
+			input:        `{"start_date": "2024-01-15T10:30:52.891386-07:00"}`,
+			expectedDate: pkg.MustParseDate("2024-01-15"),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var ws pkg.WaterSchedule
+			err := json.Unmarshal([]byte(tt.input), &ws)
+			require.NoError(t, err)
+			assert.NotNil(t, ws.StartDate)
+			assert.True(t, ws.StartDate.Equal(tt.expectedDate), "Expected %v, got %v", tt.expectedDate, ws.StartDate)
+		})
+	}
+
+	t.Run("Output is DateOnly format", func(t *testing.T) {
+		ws := &pkg.WaterSchedule{
+			StartDate: func() *pkg.Date { d := pkg.MustParseDate("2024-06-20"); return &d }(),
+		}
+		output, err := json.Marshal(ws)
+		require.NoError(t, err)
+		assert.Contains(t, string(output), `"start_date":"2024-06-20"`)
+	})
 }

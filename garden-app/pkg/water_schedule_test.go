@@ -78,7 +78,7 @@ func TestWaterSchedulePatch(t *testing.T) {
 		{
 			"PatchStartDate",
 			&WaterSchedule{
-				StartDate: &now,
+				StartDate: func() *Date { d := NewDate(now); return &d }(),
 			},
 		},
 		{

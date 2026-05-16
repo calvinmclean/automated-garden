@@ -59,12 +59,13 @@ func createExampleZone() *pkg.Zone {
 
 func createExampleWaterSchedule() *pkg.WaterSchedule {
 	createdAt, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	startDate := pkg.NewDate(createdAt)
 	return &pkg.WaterSchedule{
 		ID:        babyapi.ID{ID: id},
 		Duration:  &pkg.Duration{Duration: time.Second},
 		Interval:  &pkg.Duration{Duration: time.Hour * 24},
 		StartTime: pkg.NewStartTime(createdAt),
-		StartDate: &createdAt,
+		StartDate: &startDate,
 	}
 }
 
@@ -427,7 +428,8 @@ func TestGetNextWaterTime(t *testing.T) {
 
 			ws := createExampleWaterSchedule()
 			ws.StartTime = pkg.NewStartTime(tt.startTime)
-			ws.StartDate = &now
+			startDate := pkg.NewDate(now)
+			ws.StartDate = &startDate
 			ws.Interval = &pkg.Duration{Duration: tt.interval}
 
 			err = worker.ScheduleWaterAction(ws)
@@ -452,23 +454,23 @@ func TestGetNextWaterTimeWithInterval(t *testing.T) {
 	}{
 		{
 			"RunTomorrow",
-			0,
+			0, // Start today so first run is now
 			24 * time.Hour,
 			24 * time.Hour,
 		},
 		{
 			"RunIn5Days",
-			0,
+			0, // Start today so first run is now
 			5 * 24 * time.Hour,
-			5 * 24 * time.Hour,
+			5 * 24 * time.Hour, // First run is now, next is 5 days later
 		},
 		{
 			// This tests the scenario where the server is restarted in-between an interval and
 			// relies on persistent state to reschedule
 			"Every5DaysButStartedAFewDaysAgo",
-			-3 * 24 * time.Hour,
+			-3 * 24 * time.Hour, // Started 3 days ago
 			5 * 24 * time.Hour,
-			2 * 24 * time.Hour,
+			2 * 24 * time.Hour, // Next run is in 2 days (5 - 3 = 2)
 		},
 	}
 
@@ -495,7 +497,8 @@ func TestGetNextWaterTimeWithInterval(t *testing.T) {
 
 			ws := createExampleWaterSchedule()
 			ws.StartTime = pkg.NewStartTime(startTime)
-			startDate := now.Add(tt.startDateOffset)
+			// Use local time with offset, NewDate will handle UTC conversion internally
+			startDate := pkg.NewDate(now.Add(tt.startDateOffset))
 			ws.StartDate = &startDate
 			ws.Interval = &pkg.Duration{Duration: tt.interval}
 

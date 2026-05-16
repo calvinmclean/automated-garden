@@ -18,7 +18,7 @@ type WaterSchedule struct {
 	ID                   babyapi.ID       `json:"id" yaml:"id"`
 	Duration             *Duration        `json:"duration" yaml:"duration"`
 	Interval             *Duration        `json:"interval" yaml:"interval"`
-	StartDate            *time.Time       `json:"start_date" yaml:"start_date"`
+	StartDate            *Date            `json:"start_date" yaml:"start_date"`
 	StartTime            *StartTime       `json:"start_time" yaml:"start_time"`
 	EndDate              *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	WeatherControl       *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
@@ -256,7 +256,7 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		}
 		// If StartDate is not included, default to today
 		if ws.StartDate == nil {
-			now := clock.Now()
+			now := NewDate(clock.Now().In(ws.StartTime.Time.Location()))
 			ws.StartDate = &now
 		}
 		if ws.WeatherControl != nil {
