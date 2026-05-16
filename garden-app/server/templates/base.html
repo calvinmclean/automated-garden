@@ -31,10 +31,21 @@
             <div uk-navbar="mode: click">
                 <div class="uk-navbar-left">
                     <!-- Mobile toggle button -->
-                    <a class="uk-navbar-toggle uk-hidden@s" href="#mobile-nav" uk-toggle>
+                    <a class="uk-navbar-toggle uk-hidden@s" href="#">
                         <span uk-navbar-toggle-icon></span>
-                        <span class="uk-margin-small-left">Menu</span>
                     </a>
+                    <!-- Mobile dropdown menu -->
+                    <div class="uk-navbar-dropdown uk-hidden@s" uk-dropdown="mode: click; boundary: !nav; stretch: false; flip: false">
+                        <ul class="uk-nav uk-navbar-dropdown-nav" style="font-size: 1.2rem;">
+                            <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens" style="font-size: 1.2rem; padding: 10px 0;">Gardens</a></li>
+                            <li {{ if URLContains "/water_schedules" }}class="uk-active" {{ end }}><a
+                                    href="/water_schedules?exclude_weather_data=true" style="font-size: 1.2rem; padding: 10px 0;">Water Schedules</a></li>
+                            <li {{ if URLContains "/water_routines" }}class="uk-active" {{ end }}><a
+                                    href="/water_routines" style="font-size: 1.2rem; padding: 10px 0;">Water Routines</a></li>
+                            <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
+                                    href="/weather_clients" style="font-size: 1.2rem; padding: 10px 0;">Weather Clients</a></li>
+                        </ul>
+                    </div>
                     <!-- Desktop navigation -->
                     <ul class="uk-navbar-nav uk-visible@s">
                         <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a>
@@ -71,22 +82,6 @@
         </div>
     </nav>
 
-    <!-- Mobile navigation offcanvas -->
-    <div id="mobile-nav" uk-offcanvas="overlay: true">
-        <div class="uk-offcanvas-bar">
-            <button class="uk-offcanvas-close" type="button" uk-close></button>
-            <ul class="uk-nav uk-nav-default">
-                <li class="uk-nav-header">Navigation</li>
-                <li {{ if URLContains "/gardens" }}class="uk-active" {{ end }}><a href="/gardens">Gardens</a></li>
-                <li {{ if URLContains "/water_schedules" }}class="uk-active" {{ end }}><a
-                        href="/water_schedules?exclude_weather_data=true">Water Schedules</a></li>
-                <li {{ if URLContains "/water_routines" }}class="uk-active" {{ end }}><a
-                        href="/water_routines">Water Routines</a></li>
-                <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
-                        href="/weather_clients">Weather Clients</a></li>
-            </ul>
-        </div>
-    </div>
     {{ end }}
 
     {{ define "end" }}
