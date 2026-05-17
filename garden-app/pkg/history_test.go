@@ -188,6 +188,69 @@ func TestHistoryProgress(t *testing.T) {
 				Error:    ErrSentButNotStarted,
 			},
 		},
+		{
+			"OneEvent_Cancelled",
+			[]WaterHistory{{
+				Duration:    Duration{Duration: 30 * time.Minute},
+				EventID:     "EventID",
+				Status:      WaterStatusCancelled,
+				SentAt:      now.Add(-2 * time.Minute),
+				StartedAt:   time.Time{},
+				CompletedAt: time.Time{},
+			}},
+			WaterHistoryProgress{},
+		},
+		{
+			"TwoEvents_Sent_Cancelled",
+			[]WaterHistory{
+				{
+					Duration:    Duration{Duration: 15 * time.Minute},
+					EventID:     "EventID_Sent",
+					Status:      WaterStatusSent,
+					SentAt:      now.Add(-2 * time.Minute),
+					StartedAt:   time.Time{},
+					CompletedAt: time.Time{},
+				},
+				{
+					Duration:    Duration{Duration: 30 * time.Minute},
+					EventID:     "EventID_Cancelled",
+					Status:      WaterStatusCancelled,
+					SentAt:      now.Add(-15 * time.Minute),
+					StartedAt:   time.Time{},
+					CompletedAt: time.Time{},
+				},
+			},
+			WaterHistoryProgress{
+				Queue: 1,
+			},
+		},
+		{
+			"ThreeEvents_Active_Cancelled",
+			[]WaterHistory{
+				{
+					Duration:    Duration{Duration: 30 * time.Minute},
+					EventID:     "EventID_Active",
+					Status:      WaterStatusStarted,
+					SentAt:      now.Add(-10 * time.Second),
+					StartedAt:   now.Add(-10 * time.Second),
+					CompletedAt: time.Time{},
+				},
+				{
+					Duration:    Duration{Duration: 30 * time.Minute},
+					EventID:     "EventID_Cancelled",
+					Status:      WaterStatusCancelled,
+					SentAt:      now.Add(-15 * time.Minute),
+					StartedAt:   time.Time{},
+					CompletedAt: time.Time{},
+				},
+			},
+			WaterHistoryProgress{
+				Duration: Duration{Duration: 30 * time.Minute},
+				Elapsed:  Duration{Duration: 10 * time.Second},
+				Progress: float32(10*time.Second) / float32(30*time.Minute),
+				Queue:    0,
+			},
+		},
 	}
 
 	for _, tt := range tests {

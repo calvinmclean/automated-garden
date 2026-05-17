@@ -2,6 +2,7 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"log/slog"
 	"math/rand"
@@ -56,6 +57,12 @@ type NestedConfig struct {
 	MQTTPort    int    `survey:"mqtt_port"`
 }
 
+type pendingEvent struct {
+	waterMsg   action.WaterMessage
+	startTime  time.Time
+	cancelFunc context.CancelFunc
+}
+
 // Controller struct holds the necessary data for running the mock garden-controller
 type Controller struct {
 	Config
@@ -68,14 +75,18 @@ type Controller struct {
 
 	quit chan os.Signal
 
+	pendingEvents map[string]*pendingEvent
+	eventsMu      sync.Mutex
+
 	assertionData
 }
 
 // NewController creates and initializes everything needed to run a Controller based on config
 func NewController(cfg Config) (*Controller, error) {
 	controller := &Controller{
-		Config: cfg,
-		quit:   make(chan os.Signal, 1),
+		Config:        cfg,
+		quit:          make(chan os.Signal, 1),
+		pendingEvents: make(map[string]*pendingEvent),
 	}
 
 	controller.logger = cfg.LogConfig.NewLogger()
@@ -271,7 +282,8 @@ func addNoise(baseValue float64, percentRange float64) float64 {
 	return baseValue + diff
 }
 
-// publishWaterEvent publishes completed water events
+// publishWaterEvent publishes start and terminal water events. It tracks pending events
+// so they can be cancelled by stop/stop_all handlers.
 func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic string) {
 	if !c.PublishWaterEvent {
 		c.pubLogger.Debug("publishing water events is disabled")
@@ -294,10 +306,44 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 		waterEventLogger.Error("unable to publish watering started event", "error", err)
 	}
 
+	ctx, cancel := context.WithCancel(context.Background()) //nolint:gosec // cancel is stored and called by stop handlers
+	c.eventsMu.Lock()
+	c.pendingEvents[waterMsg.EventID] = &pendingEvent{
+		waterMsg:   waterMsg,
+		startTime:  clock.Now(),
+		cancelFunc: cancel,
+	}
+	c.eventsMu.Unlock()
+
 	go func() {
-		time.Sleep(time.Duration(waterMsg.Duration) * time.Millisecond)
-		doneMsg := fmt.Sprintf("water,status=complete,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
-		err = c.mqttClient.Publish(dataTopic, []byte(doneMsg))
+		startTime := clock.Now()
+		timer := time.NewTimer(time.Duration(waterMsg.Duration) * time.Millisecond)
+		defer timer.Stop()
+
+		select {
+		case <-ctx.Done():
+		case <-timer.C:
+		}
+
+		c.eventsMu.Lock()
+		_, stillPending := c.pendingEvents[waterMsg.EventID]
+		if stillPending {
+			delete(c.pendingEvents, waterMsg.EventID)
+		}
+		c.eventsMu.Unlock()
+
+		var terminalMsg string
+		if stillPending && ctx.Err() != nil {
+			elapsed := clock.Since(startTime).Milliseconds()
+			if elapsed < 0 {
+				elapsed = 0
+			}
+			terminalMsg = fmt.Sprintf("water,status=cancelled,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, elapsed)
+		} else {
+			terminalMsg = fmt.Sprintf("water,status=complete,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
+		}
+
+		err = c.mqttClient.Publish(dataTopic, []byte(terminalMsg))
 		if err != nil {
 			waterEventLogger.Error("unable to publish watering event", "error", err)
 		}

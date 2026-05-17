@@ -72,6 +72,30 @@ func TestParseWaterMessage(t *testing.T) {
 			"",
 		},
 		{
+			"water,status=cancelled,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=30000",
+			action.WaterMessage{
+				Position:  0,
+				Duration:  30000,
+				ZoneID:    "zoneID",
+				EventID:   "eventID",
+				Start:     false,
+				Cancelled: true,
+			},
+			"",
+		},
+		{
+			"water,status=cancelled,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			action.WaterMessage{
+				Position:  0,
+				Duration:  0,
+				ZoneID:    "zoneID",
+				EventID:   "eventID",
+				Start:     false,
+				Cancelled: true,
+			},
+			"",
+		},
+		{
 			"water,zone=-1,zone_id=zoneID,id=eventID millis=0",
 			action.WaterMessage{},
 			`invalid integer for position: strconv.ParseUint: parsing "-1": invalid syntax`,
@@ -137,6 +161,7 @@ func TestHandleMessage(t *testing.T) {
 	zone := &pkg.Zone{
 		ID:       zoneID,
 		GardenID: garden.ID.ID,
+		Name:     "Zone",
 		Position: &zero,
 	}
 	err = storageClient.Zones.Set(context.Background(), zone)
@@ -305,6 +330,7 @@ func TestHandleMessageFake(t *testing.T) {
 	zone := &pkg.Zone{
 		ID:       zoneID,
 		GardenID: garden.ID.ID,
+		Name:     "Zone",
 		Position: &zero,
 	}
 	err = storageClient.Zones.Set(context.Background(), zone)
@@ -348,5 +374,29 @@ func TestHandleMessageFake(t *testing.T) {
 
 		lastMsg := fake_notification.LastMessage()
 		require.NotEmpty(t, lastMsg.Title)
+	})
+
+	t.Run("WateringCancelled_WithDuration_FakeSuccess", func(t *testing.T) {
+		defer fake_notification.Reset()
+
+		msg := fmt.Sprintf("water,status=cancelled,zone=0,id=eventID,zone_id=%s millis=30000", zoneID.String())
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		require.NoError(t, err)
+
+		lastMsg := fake_notification.LastMessage()
+		require.Equal(t, "Zone watering cancelled", lastMsg.Title)
+		require.Contains(t, lastMsg.Message, "Watered for 30s")
+	})
+
+	t.Run("WateringCancelled_ZeroDuration_FakeSuccess", func(t *testing.T) {
+		defer fake_notification.Reset()
+
+		msg := fmt.Sprintf("water,status=cancelled,zone=0,id=eventID,zone_id=%s millis=0", zoneID.String())
+		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		require.NoError(t, err)
+
+		lastMsg := fake_notification.LastMessage()
+		require.Equal(t, "Zone watering cancelled", lastMsg.Title)
+		require.NotContains(t, lastMsg.Message, "Watered for")
 	})
 }
