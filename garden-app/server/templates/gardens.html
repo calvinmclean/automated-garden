@@ -41,6 +41,10 @@
             {{ template "lightScheduleDetails" . }}
             {{ end }}
 
+            {{ if .FanSchedule }}
+            {{ template "fanScheduleDetails" . }}
+            {{ end }}
+
             {{ template "gardenTemperatureSection" . }}
             {{ if .Garden.HasTemperatureHumiditySensor }}
             <div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
@@ -183,6 +187,27 @@
 </p>
 {{ end }}
 
+{{ define "fanScheduleDetails" }}
+<p>
+    {{ $fanIcon := "ban" }}
+    {{ $fanTooltip := "" }}
+    {{ $textColor := "uk-text-muted" }}
+    {{ if .NextFanAction.IsActive }}
+    {{ $fanIcon = "play-circle" }}
+    {{ $fanTooltip = print "Fan ON - Running for " (FormatDuration .NextFanAction.DurationUntil) " more" }}
+    {{ $textColor = "uk-text-primary" }}
+    {{ else }}
+    {{ $fanIcon = "minus-circle" }}
+    {{ $fanTooltip = print "Fan OFF - Next run in " (FormatDuration .NextFanAction.DurationUntil) }}
+    {{ end }}
+    <span uk-icon="{{ $fanIcon }}" uk-tooltip="{{ $fanTooltip }}"></span>
+    <span class="{{ $textColor }}">
+        {{ if .NextFanAction.IsActive }}ON{{ else }}OFF{{ end }}
+    </span>
+    <span class="uk-text-meta">({{ .FanSchedule.Power }}% power)</span>
+</p>
+{{ end }}
+
 {{ define "gardenActionButton" }}
 <div class="uk-inline">
     <button class="uk-button uk-button-default" type="button">Actions</button>
@@ -194,6 +219,11 @@
             </li>
             <li>
                 {{ template "lightActionButton" (args "ID" .ID.String "State" "OFF") }}
+            </li>
+            {{ end }}
+            {{ if .FanSchedule }}
+            <li>
+                {{ template "fanActionButton" . }}
             </li>
             {{ end }}
             <li>
@@ -226,6 +256,16 @@
     <span uk-icon="download"></span>
     {{ end }}
     Light {{ .State }}
+</a>
+{{ end }}
+
+{{ define "fanActionButton" }}
+<a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none" id="fan-action-{{ .ID }}" {{
+    template "actionFeedback" "warning" }}>
+    <input type="hidden" name="fan.duration" value="{{ .FanSchedule.ActiveTime.Milliseconds }}">
+    <input type="hidden" name="fan.power" value="{{ .FanSchedule.PowerToPWM }}">
+    <span uk-icon="forward"></span>
+    Fan ON ({{ FormatDuration .FanSchedule.ActiveTime }} @ {{ .FanSchedule.Power }}%)
 </a>
 {{ end }}
 

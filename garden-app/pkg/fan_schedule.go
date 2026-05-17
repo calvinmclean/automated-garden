@@ -54,3 +54,42 @@ func (fs FanSchedule) PowerToPWM() uint8 {
 	//nolint:gosec
 	return uint8(*fs.Power * 255 / 100)
 }
+
+// IsActiveAtTime returns true if the fan should be running at the given time
+func (fs FanSchedule) IsActiveAtTime(now time.Time) bool {
+	_, willBeActive := fs.NextChange(now)
+	// NextChange returns the state after the transition, so current state is the opposite
+	return !willBeActive
+}
+
+// NextChange determines the next time the fan will change state and what the new state will be.
+// It returns the next transition time and true if the fan will be ON after the transition.
+func (fs FanSchedule) NextChange(now time.Time) (time.Time, bool) {
+	interval := fs.Interval()
+	if interval == 0 || fs.ActiveTime == nil {
+		return time.Time{}, false
+	}
+
+	var anchor time.Time
+	if fs.StartTime != nil {
+		anchor = fs.StartTime.OnDate(now)
+	} else {
+		anchor = time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	}
+
+	// If anchor is in the future, the first cycle hasn't started yet
+	if anchor.After(now) {
+		return anchor, true
+	}
+
+	elapsed := now.Sub(anchor)
+	cyclePos := elapsed % interval
+
+	if cyclePos < fs.ActiveTime.Duration {
+		// Currently ON, next change is when active time ends
+		return now.Add(fs.ActiveTime.Duration - cyclePos), false
+	}
+
+	// Currently OFF, next change is start of next cycle
+	return now.Add(interval - cyclePos), true
+}
