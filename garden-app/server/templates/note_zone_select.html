@@ -1,0 +1,10 @@
+{{ define "NoteZoneSelect" }}
+<select class="uk-select" id="note-zone" name="ZoneID">
+    <option value="">-- None --</option>
+    {{ range .Zones }}
+    <option value="{{ .ID }}" {{ if eq .GetID $.SelectedZoneID }}selected{{ end }}>
+        {{ .Name }}
+    </option>
+    {{ end }}
+</select>
+{{ end }}

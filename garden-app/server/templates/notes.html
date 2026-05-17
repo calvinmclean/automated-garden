@@ -1,0 +1,52 @@
+{{ define "NotesPage" }}
+{{ template "start" }}
+{{ template "Notes" . }}
+{{ template "end" }}
+{{ end }}
+
+{{ define "Notes" }}
+<div hx-swap="outerHTML" hx-get="/notes?refresh=true" hx-headers='{"Accept": "text/html"}'
+    hx-trigger="newNote from:body" uk-grid>
+    {{ range .Items }}
+    {{ template "NoteCard" . }}
+    {{ end }}
+</div>
+{{ end }}
+
+{{ define "NoteCard" }}
+<div class="uk-width-1-2@m" id="note-card-{{ .ID }}">
+    <div id="edit-modal-here"></div>
+    <div class="uk-card uk-card-default" style="margin: 5%;">
+        <div class="uk-card-header uk-text-center">
+            <h3 class="uk-card-title uk-margin-remove-bottom">
+                {{ .Title }}
+            </h3>
+            {{ template "cardEditButton" (print "/notes/" .ID "/components?type=edit_modal") }}
+        </div>
+        <div class="uk-card-body">
+            <p class="uk-text-small uk-text-break">{{ .Content }}</p>
+            {{ if or .GardenID .ZoneID }}
+            <div class="uk-margin-small-top uk-text-meta">
+                {{ if .GardenID }}
+                <span uk-icon="icon: location; ratio: 0.75"></span> Garden: {{ .GardenName }}
+                {{ end }}
+                {{ if and .GardenID .ZoneID }}<br>{{ end }}
+                {{ if .ZoneID }}
+                <span uk-icon="icon: location; ratio: 0.75"></span> Zone: {{ .ZoneName }}
+                {{ end }}
+            </div>
+            {{ end }}
+        </div>
+        <div class="uk-card-footer">
+            <div class="uk-clearfix">
+                <div class="uk-float-left uk-text-meta">
+                    {{ FormatDateTime .CreatedAt }}
+                </div>
+                <div class="uk-float-right">
+                    {{ template "deleteButton" ( args "HXDelete" (print "/notes/" .ID) "HXTarget" (print "#note-card-" .ID) ) }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{{ end }}

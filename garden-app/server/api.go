@@ -35,6 +35,7 @@ type API struct {
 	notificationClients *NotificationClientsAPI
 	waterSchedules      *WaterSchedulesAPI
 	waterRoutines       *WaterRoutineAPI
+	notes               *NotesAPI
 	settings            *SettingsAPI
 }
 
@@ -48,6 +49,7 @@ func NewAPI() *API {
 		notificationClients: NewNotificationClientsAPI(),
 		waterSchedules:      NewWaterSchedulesAPI(),
 		waterRoutines:       NewWaterRoutineAPI(),
+		notes:               NewNotesAPI(),
 		settings:            NewSettingsAPI(),
 	}
 	api.gardens.AddNestedAPI(api.zones)
@@ -68,6 +70,7 @@ func NewAPI() *API {
 		AddNestedAPI(api.notificationClients).
 		AddNestedAPI(api.waterSchedules).
 		AddNestedAPI(api.waterRoutines).
+		AddNestedAPI(api.notes).
 		AddCustomRoute(http.MethodGet, "/settings/components", babyapi.Handler(api.settings.handleSettingsComponents)).
 		AddCustomRoute(http.MethodGet, "/user_settings/{key}", babyapi.Handler(api.settings.handleGetUserSetting)).
 		AddCustomRoute(http.MethodPut, "/user_settings/{key}", babyapi.Handler(api.settings.handleUpdateUserSetting)).
@@ -79,6 +82,7 @@ This server is the cloud backend for remote irrigation controllers. It has the f
   - Zones: these are actual watering zones and can have multiple WaterSchedules
   - WaterSchedules: these schedules control watering frequency for Zones
   - WaterRoutines: group multiple zones for easy on-demand watering
+  - Notes: user-created notes that can optionally be tagged with Gardens and Zones
   - NotificationClients: settings to enable notifications with an external provider
 `),
 			server.WithLogging(),
@@ -195,6 +199,7 @@ func (api *API) setup(cfg Config, storageClient *storage.Client, influxdbClient 
 	api.weatherClients.setup(storageClient)
 	api.notificationClients.setup(storageClient)
 	api.waterRoutines.setup(storageClient, worker)
+	api.notes.setup(storageClient)
 	api.settings.Setup(storageClient)
 
 	// Add units middleware to handle user unit preferences
@@ -254,6 +259,19 @@ func validateAllStoredResources(storageClient *storage.Client) error {
 		err = wc.Bind(&http.Request{Method: http.MethodPut})
 		if err != nil {
 			return fmt.Errorf("invalid WeatherClient %q: %w", wc.ID, err)
+		}
+	}
+
+	for n, err := range storageClient.Notes.Search(context.Background(), "", nil) {
+		if err != nil {
+			return fmt.Errorf("unable to get all Notes: %w", err)
+		}
+		if n.ID.IsNil() {
+			return errors.New("invalid Note: missing required field 'id'")
+		}
+		err = n.Bind(&http.Request{Method: http.MethodPut})
+		if err != nil {
+			return fmt.Errorf("invalid Note %q: %w", n.ID, err)
 		}
 	}
 

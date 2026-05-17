@@ -1,0 +1,72 @@
+{{ define "NoteModal" }}
+<div id="modal" class="uk-modal" style="display: block">
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">
+            {{ if .Note.Title }}{{ .Note.Title }}{{ else }}Create Note{{ end }}
+        </h3>
+
+        <form
+            _="on submit take .uk-open from #modal"
+            hx-put="/notes/{{ .Note.ID }}"
+            hx-headers='{"Accept": "text/html"}'
+            hx-swap="none"
+        >
+            <input type="hidden" value="{{ .Note.ID }}" name="ID" />
+            <div class="uk-margin">
+                <label class="uk-form-label" for="note-title">Title</label>
+                <input
+                    id="note-title"
+                    class="uk-input"
+                    value="{{ .Note.Title }}"
+                    placeholder="Title"
+                    name="Title"
+                />
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label" for="note-content">Content</label>
+                <textarea
+                    id="note-content"
+                    class="uk-textarea"
+                    rows="5"
+                    placeholder="Content"
+                    name="Content"
+                >{{ .Note.Content }}</textarea>
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label" for="note-garden">Garden (optional)</label>
+                <select
+                    class="uk-select"
+                    id="note-garden"
+                    name="GardenID"
+                    hx-get="/notes/components?type=zone_select"
+                    hx-trigger="change"
+                    hx-target="#zone-select-container"
+                    hx-swap="innerHTML"
+                >
+                    <option value="">-- None --</option>
+                    {{ range .Gardens }}
+                    <option value="{{ .ID }}" {{ if eq (DerefString $.Note.GardenID) .GetID }}selected{{ end }}>
+                        {{ .Name }}
+                    </option>
+                    {{ end }}
+                </select>
+            </div>
+
+            <div class="uk-margin">
+                <label class="uk-form-label" for="note-zone">Zone (optional)</label>
+                <div id="zone-select-container">
+                    {{ template "NoteZoneSelect" (args "Zones" .Zones "SelectedZoneID" .SelectedZoneID) }}
+                </div>
+            </div>
+
+            {{ template "modalSubmitButton" }}
+            {{ if .Note.Title }}
+            {{ template "deleteButton" ( args "HXDelete" (print "/notes/" .Note.ID) "HXTarget" (print "#note-card-" .Note.ID) ) }}
+            {{ end }}
+            {{ template "modalCloseButton" }}
+        </form>
+    </div>
+</div>
+{{ end }}
