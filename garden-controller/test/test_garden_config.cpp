@@ -14,6 +14,8 @@ void test_loadAndSaveConfig() {
         { GPIO_NUM_12, GPIO_NUM_13, GPIO_NUM_14, GPIO_NUM_15 }, // pumpPins
         true, // light
         GPIO_NUM_2, // lightPin
+        true, // fan
+        GPIO_NUM_22, // fanPin
         true, // tempHumidity
         GPIO_NUM_21, // tempHumidityPin
         60 // tempHumidityInterval
@@ -36,6 +38,8 @@ void test_loadAndSaveConfig() {
 
     TEST_ASSERT_EQUAL(inputConfig.light, outputConfig.light);
     TEST_ASSERT_EQUAL(inputConfig.lightPin, outputConfig.lightPin);
+    TEST_ASSERT_EQUAL(inputConfig.fan, outputConfig.fan);
+    TEST_ASSERT_EQUAL(inputConfig.fanPin, outputConfig.fanPin);
     TEST_ASSERT_EQUAL(inputConfig.tempHumidity, outputConfig.tempHumidity);
     TEST_ASSERT_EQUAL(inputConfig.tempHumidityPin, outputConfig.tempHumidityPin);
     TEST_ASSERT_EQUAL(inputConfig.tempHumidityInterval, outputConfig.tempHumidityInterval);
@@ -48,6 +52,8 @@ void test_serializeConfig(void) {
         { GPIO_NUM_12, GPIO_NUM_13, GPIO_NUM_14, GPIO_NUM_15 }, // pumpPins
         true, // light
         GPIO_NUM_2, // lightPin
+        true, // fan
+        GPIO_NUM_22, // fanPin
         true, // tempHumidity
         GPIO_NUM_21, // tempHumidityPin
         60 // tempHumidityInterval
@@ -56,11 +62,11 @@ void test_serializeConfig(void) {
     String outputJSON;
     serializeConfig(inputConfig, outputJSON);
 
-    TEST_ASSERT_EQUAL_STRING("{\"num_zones\":4,\"valve_pins\":[4,5,6,7],\"pump_pins\":[12,13,14,15],\"light\":true,\"light_pin\":2,\"temp_humidity\":true,\"temp_humidity_pin\":21,\"temp_humidity_interval\":60}", outputJSON.c_str());
+    TEST_ASSERT_EQUAL_STRING("{\"num_zones\":4,\"valve_pins\":[4,5,6,7],\"pump_pins\":[12,13,14,15],\"light\":true,\"light_pin\":2,\"fan\":true,\"fan_pin\":22,\"temp_humidity\":true,\"temp_humidity_pin\":21,\"temp_humidity_interval\":60}", outputJSON.c_str());
 }
 
 void test_deserializeConfig(void) {
-    const char* inputJSON = "{\"num_zones\":4,\"valve_pins\":[4,5,6,7],\"pump_pins\":[12,13,14,15],\"light\":true,\"light_pin\":2,\"temp_humidity\":true,\"temp_humidity_pin\":21,\"temp_humidity_interval\":60}";
+    const char* inputJSON = "{\"num_zones\":4,\"valve_pins\":[4,5,6,7],\"pump_pins\":[12,13,14,15],\"light\":true,\"light_pin\":2,\"fan\":true,\"fan_pin\":22,\"temp_humidity\":true,\"temp_humidity_pin\":21,\"temp_humidity_interval\":60}";
     Config outputConfig;
 
     bool result = deserializeConfig(inputJSON, outputConfig);
@@ -73,6 +79,8 @@ void test_deserializeConfig(void) {
         { GPIO_NUM_12, GPIO_NUM_13, GPIO_NUM_14, GPIO_NUM_15 }, // pumpPins
         true, // light
         GPIO_NUM_2, // lightPin
+        true, // fan
+        GPIO_NUM_22, // fanPin
         true, // tempHumidity
         GPIO_NUM_21, // tempHumidityPin
         60 // tempHumidityInterval
@@ -87,6 +95,8 @@ void test_deserializeConfig(void) {
 
     TEST_ASSERT_EQUAL(expectedConfig.light, outputConfig.light);
     TEST_ASSERT_EQUAL(expectedConfig.lightPin, outputConfig.lightPin);
+    TEST_ASSERT_EQUAL(expectedConfig.fan, outputConfig.fan);
+    TEST_ASSERT_EQUAL(expectedConfig.fanPin, outputConfig.fanPin);
     TEST_ASSERT_EQUAL(expectedConfig.tempHumidity, outputConfig.tempHumidity);
     TEST_ASSERT_EQUAL(expectedConfig.tempHumidityPin, outputConfig.tempHumidityPin);
     TEST_ASSERT_EQUAL(expectedConfig.tempHumidityInterval, outputConfig.tempHumidityInterval);

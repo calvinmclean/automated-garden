@@ -72,6 +72,58 @@
                 </div>
             </div>
             
+            <div class="uk-margin" style="text-align: left;">
+                <button type="button" id="fan-schedule-toggle"
+                    class="uk-button {{ if .FanSchedule }}uk-button-primary{{ else }}uk-button-default{{ end }}"
+                    _="on click
+                        if #fan-schedule-fields.classList.contains('uk-hidden') then
+                            remove .uk-hidden from #fan-schedule-fields
+                            then remove @disabled from <#fan-schedule-fields input, #fan-schedule-fields select/>
+                            then add .uk-button-primary to me
+                            then remove .uk-button-default from me
+                        else
+                            set <#fan-schedule-fields input/>'s value to ''
+                            then add @disabled to <#fan-schedule-fields input, #fan-schedule-fields select/>
+                            then add .uk-hidden to #fan-schedule-fields
+                            then add .uk-button-default to me
+                            then remove .uk-button-primary from me">
+                    {{ if .FanSchedule }}Disable{{ else }}Enable{{ end }} Fan Schedule
+                </button>
+            </div>
+            <div id="fan-schedule-fields" class="{{ if not .FanSchedule }}uk-hidden{{ end }}">
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-fan-schedule-active-time">Fan Active Time</label>
+                    <input id="garden-fan-schedule-active-time" class="uk-input" type="text"
+                        value="{{ if and .FanSchedule .FanSchedule.ActiveTime }}{{ .FanSchedule.ActiveTime }}{{ end }}" placeholder="e.g. 30m"
+                        name="FanSchedule.ActiveTime">
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-fan-schedule-off-time">Fan Off Time</label>
+                    <input id="garden-fan-schedule-off-time" class="uk-input" type="text"
+                        value="{{ if and .FanSchedule .FanSchedule.OffTime }}{{ .FanSchedule.OffTime }}{{ end }}" placeholder="e.g. 2h30m"
+                        name="FanSchedule.OffTime">
+                </div>
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-fan-schedule-power">Fan Power (%)</label>
+                    <input id="garden-fan-schedule-power" class="uk-input" type="number" min="0" max="100"
+                        value="{{ if and .FanSchedule .FanSchedule.Power }}{{ .FanSchedule.Power }}{{ end }}" placeholder="0-100"
+                        name="FanSchedule.Power">
+                </div>
+                <div class="uk-margin">
+                    <input class="uk-checkbox" id="garden-fan-only-with-light" type="checkbox" name="FanSchedule.OnlyWithLight" value="true"
+                        {{ if and .FanSchedule .FanSchedule.OnlyWithLight }}checked{{ end }}>
+                    <label class="uk-form-label" for="garden-fan-only-with-light"> Only run when LightSchedule is active</label>
+                </div>
+                <div class="uk-margin">
+                    {{ if .FanSchedule }}
+                    {{ template "startTimeInput" (args "Name" "FanSchedule.StartTime" "StartTime"
+                    .FanSchedule.StartTime) }}
+                    {{ else }}
+                    {{ template "startTimeInput" (args "Name" "FanSchedule.StartTime") }}
+                    {{ end }}
+                </div>
+            </div>
+            
             <div class="uk-margin">
                 <label class="uk-form-label" for="notification-client-select">Notification Client</label>
                 <select id="notification-client-select" class="uk-select" name="NotificationClientID">
@@ -110,6 +162,19 @@
                                 <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
                                 <div uk-dropdown="pos: right-center">
                                     Notify when the Garden's light is turned on or off by the schedule
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="uk-width-1-2@m">
+                        <label>
+                            <div class="uk-inline">
+                                <input class="uk-checkbox" type="checkbox" name="NotificationSettings.FanSchedule"
+                                    value="true" {{ if and .NotificationSettings .NotificationSettings.FanSchedule }}checked{{ end }}>
+                                Fan schedule
+                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                                <div uk-dropdown="pos: right-center">
+                                    Notify when the Garden's fan is turned on by the schedule
                                 </div>
                             </div>
                         </label>
@@ -209,6 +274,15 @@
                     <input id="garden-config-light-pin" class="uk-input" type="number"
                         value="{{ if and .ControllerConfig .ControllerConfig.LightPin }}{{ .ControllerConfig.LightPin }}{{ end }}" placeholder="Light Pin"
                         name="ControllerConfig.LightPin">
+                </div>
+                {{ end }}
+
+                {{ if .FanSchedule }}
+                <div class="uk-margin">
+                    <label class="uk-form-label" for="garden-config-fan-pin">Fan Pin</label>
+                    <input id="garden-config-fan-pin" class="uk-input" type="number"
+                        value="{{ if and .ControllerConfig .ControllerConfig.FanPin }}{{ .ControllerConfig.FanPin }}{{ end }}" placeholder="Fan Pin"
+                        name="ControllerConfig.FanPin">
                 </div>
                 {{ end }}
 

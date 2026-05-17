@@ -79,6 +79,14 @@ func TestGardenPatch(t *testing.T) {
 			&Garden{TemperatureHumiditySensor: &falseBool},
 		},
 		{
+			"PatchFanSchedule",
+			&Garden{FanSchedule: &FanSchedule{
+				ActiveTime: &Duration{Duration: 30 * time.Minute},
+				OffTime:    &Duration{Duration: 2 * time.Hour},
+				Power:      pointer(uint(50)),
+			}},
+		},
+		{
 			"ControllerConfig",
 			&Garden{ControllerConfig: &ControllerConfig{
 				ValvePins:              []uint{1, 2},
@@ -106,6 +114,9 @@ func TestGardenPatch(t *testing.T) {
 			if g.LightSchedule != nil && *g.LightSchedule != *tt.newGarden.LightSchedule {
 				t.Errorf("Unexpected result for LightSchedule: expected=%v, actual=%v", tt.newGarden.LightSchedule, g.LightSchedule)
 			}
+			if g.FanSchedule != nil && *g.FanSchedule != *tt.newGarden.FanSchedule {
+				t.Errorf("Unexpected result for FanSchedule: expected=%v, actual=%v", tt.newGarden.FanSchedule, g.FanSchedule)
+			}
 			if g.Name != tt.newGarden.Name {
 				t.Errorf("Unexpected result for Name: expected=%v, actual=%v", tt.newGarden.Name, g.Name)
 			}
@@ -128,6 +139,22 @@ func TestGardenPatch(t *testing.T) {
 
 		if g.LightSchedule != nil {
 			t.Errorf("Expected nil LightSchedule, but got: %v", g.LightSchedule)
+		}
+	})
+
+	t.Run("RemoveFanSchedule", func(t *testing.T) {
+		g := &Garden{
+			FanSchedule: &FanSchedule{
+				ActiveTime: &Duration{Duration: 30 * time.Minute},
+				OffTime:    &Duration{Duration: 2 * time.Hour},
+				Power:      pointer(uint(50)),
+			},
+		}
+		err := g.Patch(&Garden{FanSchedule: &FanSchedule{}})
+		require.Nil(t, err)
+
+		if g.FanSchedule != nil {
+			t.Errorf("Expected nil FanSchedule, but got: %v", g.FanSchedule)
 		}
 	})
 

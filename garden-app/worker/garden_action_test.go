@@ -58,6 +58,18 @@ func TestGardenAction(t *testing.T) {
 			},
 		},
 		{
+			"SuccessfulGardenActionWithFanAction",
+			&action.GardenAction{
+				Fan: &action.FanAction{Duration: 1800000, Power: 127},
+			},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("Publish", "garden/command/fan", mock.Anything).Return(nil)
+			},
+			func(err error, t *testing.T) {
+				assert.NoError(t, err)
+			},
+		},
+		{
 			"SuccessfulGardenActionWithUpdateAction",
 			&action.GardenAction{
 				Update: &action.UpdateAction{Config: true},
@@ -166,6 +178,60 @@ func TestLightActionExecute(t *testing.T) {
 			tt.assert(err, t)
 
 			worker.Stop()
+			mqttClient.AssertExpectations(t)
+			influxdbClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestFanActionExecute(t *testing.T) {
+	garden := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	tests := []struct {
+		name      string
+		action    *action.FanAction
+		setupMock func(*mqtt.MockClient, *influxdb.MockClient)
+		assert    func(error, *testing.T)
+	}{
+		{
+			"Successful",
+			&action.FanAction{Duration: 1800000, Power: 127},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("Publish", "garden/command/fan", mock.Anything).Return(nil)
+			},
+			func(err error, t *testing.T) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			"PublishError",
+			&action.FanAction{Duration: 1800000, Power: 127},
+			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
+				mqttClient.On("Publish", "garden/command/fan", mock.Anything).Return(errors.New("publish error"))
+			},
+			func(err error, t *testing.T) {
+				if err == nil {
+					t.Error("Expected error, but nil was returned")
+				}
+				if err.Error() != "unable to publish FanAction: publish error" {
+					t.Errorf("Unexpected error string: %v", err)
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mqttClient := new(mqtt.MockClient)
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupMock(mqttClient, influxdbClient)
+
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteFanAction(garden, tt.action)
+			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
 		})

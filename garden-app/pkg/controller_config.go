@@ -13,6 +13,7 @@ type ControllerConfig struct {
 	ValvePins                   []uint    `json:"valve_pins,omitempty"`
 	PumpPins                    []uint    `json:"pump_pins,omitempty"`
 	LightPin                    *uint     `json:"light_pin,omitempty"`
+	FanPin                      *uint     `json:"fan_pin,omitempty"`
 	TemperatureHumidityPin      *uint     `json:"temperature_humidity_pin,omitempty"`
 	TemperatureHumidityInterval *Duration `json:"temperature_humidity_interval,omitempty"`
 }
@@ -27,6 +28,8 @@ type ControllerConfigMessage struct {
 	PumpPins                    []uint `json:"pump_pins"`
 	LightEnabled                bool   `json:"light"`
 	LightPin                    uint   `json:"light_pin"`
+	FanEnabled                  bool   `json:"fan"`
+	FanPin                      uint   `json:"fan_pin"`
 	TemperatureHumidityEnabled  bool   `json:"temp_humidity"`
 	TemperatureHumidityPin      uint   `json:"temp_humidity_pin"`
 	TemperatureHumidityInterval uint   `json:"temp_humidity_interval"`
@@ -47,6 +50,11 @@ func (c *ControllerConfig) ToMessage() ControllerConfigMessage {
 	if c.LightPin != nil {
 		message.LightEnabled = true
 		message.LightPin = *c.LightPin
+	}
+
+	if c.FanPin != nil {
+		message.FanEnabled = true
+		message.FanPin = *c.FanPin
 	}
 
 	if c.TemperatureHumidityPin != nil {
@@ -75,6 +83,9 @@ func (c *ControllerConfig) Patch(newVal *ControllerConfig) *babyapi.ErrResponse 
 	}
 	if newVal.LightPin != nil {
 		c.LightPin = newVal.LightPin
+	}
+	if newVal.FanPin != nil {
+		c.FanPin = newVal.FanPin
 	}
 	if newVal.TemperatureHumidityPin != nil {
 		c.TemperatureHumidityPin = newVal.TemperatureHumidityPin

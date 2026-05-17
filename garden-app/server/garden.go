@@ -103,10 +103,10 @@ func NewGardenAPI() *GardensAPI {
 		logger, _ := babyapi.GetLoggerFromContext(r.Context())
 		gardenID := api.GetIDParam(r)
 
-		// Remove scheduled light actions
-		logger.Info("removing scheduled LightActions for Garden")
+		// Remove scheduled light and fan actions
+		logger.Info("removing scheduled actions for Garden")
 		if err := api.worker.RemoveJobsByID(gardenID); err != nil {
-			logger.Error("unable to remove scheduled LightActions", "error", err)
+			logger.Error("unable to remove scheduled actions", "error", err)
 			return babyapi.InternalServerError(err)
 		}
 		return nil
@@ -151,12 +151,20 @@ func (api *GardensAPI) setup(config Config, storageClient *storage.Client, influ
 		if err != nil {
 			return fmt.Errorf("error getting gardens for light schedule initialization: %w", err)
 		}
-		if g.EndDated() || g.LightSchedule == nil {
+		if g.EndDated() {
 			continue
 		}
-		err = api.worker.ScheduleLightActions(g)
-		if err != nil {
-			return fmt.Errorf("unable to schedule LightAction for Garden %v: %v", g.ID, err)
+		if g.LightSchedule != nil {
+			err = api.worker.ScheduleLightActions(g)
+			if err != nil {
+				return fmt.Errorf("unable to schedule LightAction for Garden %v: %v", g.ID, err)
+			}
+		}
+		if g.FanSchedule != nil {
+			err = api.worker.ScheduleFanActions(g)
+			if err != nil {
+				return fmt.Errorf("unable to schedule FanAction for Garden %v: %v", g.ID, err)
+			}
 		}
 	}
 
@@ -177,8 +185,17 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 	// If LightSchedule is empty, remove the scheduled Job
 	if garden.LightSchedule == nil {
 		logger.Info("removing LightSchedule")
-		if err := api.worker.RemoveJobsByID(garden.ID.String()); err != nil {
+		if err := api.worker.RemoveJobsByTag(garden.ID.String(), "light"); err != nil {
 			logger.Error("unable to remove LightSchedule for Garden", "error", err)
+			return babyapi.InternalServerError(err)
+		}
+	}
+
+	// If FanSchedule is empty, remove the scheduled Job
+	if garden.FanSchedule == nil {
+		logger.Info("removing FanSchedule")
+		if err := api.worker.RemoveJobsByTag(garden.ID.String(), "fan"); err != nil {
+			logger.Error("unable to remove FanSchedule for Garden", "error", err)
 			return babyapi.InternalServerError(err)
 		}
 	}
@@ -196,6 +213,14 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 		logger.Info("updating/resetting LightSchedule for Garden")
 		if err := api.worker.ResetLightSchedule(garden); err != nil {
 			logger.Error("unable to update/reset LightSchedule", "light_schedule", garden.LightSchedule, "error", err)
+			return babyapi.InternalServerError(err)
+		}
+	}
+
+	if garden.FanSchedule != nil {
+		logger.Info("updating/resetting FanSchedule for Garden")
+		if err := api.worker.ResetFanSchedule(garden); err != nil {
+			logger.Error("unable to update/reset FanSchedule", "fan_schedule", garden.FanSchedule, "error", err)
 			return babyapi.InternalServerError(err)
 		}
 	}

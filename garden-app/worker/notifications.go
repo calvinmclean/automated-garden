@@ -23,6 +23,20 @@ func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState
 	w.sendNotification(g.GetNotificationClientID(), title, "Successfully executed LightAction", logger)
 }
 
+func (w *Worker) sendFanActionNotification(g *pkg.Garden, logger *slog.Logger) {
+	if g.GetNotificationClientID() == "" {
+		return
+	}
+
+	if !g.GetNotificationSettings().FanSchedule {
+		logger.Info("garden does not have fan_schedule notification enabled")
+		return
+	}
+
+	title := fmt.Sprintf("%s: Fan ON", g.Name)
+	w.sendNotification(g.GetNotificationClientID(), title, "Successfully executed FanAction", logger)
+}
+
 func (w *Worker) sendDownNotification(g *pkg.Garden, clientID, actionName string) {
 	health := w.GetGardenHealth(context.Background(), g)
 	if health == nil || health.LastContact == nil {

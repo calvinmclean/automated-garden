@@ -16,16 +16,21 @@ QueueHandle_t waterPublisherQueue;
 QueueHandle_t lightPublisherQueue;
 TaskHandle_t lightPublisherTaskHandle;
 
+QueueHandle_t fanPublisherQueue;
+TaskHandle_t fanPublisherTaskHandle;
+
 // command topics (subscribe)
 char waterCommandTopic[50];
 char stopCommandTopic[50];
 char stopAllCommandTopic[50];
 char lightCommandTopic[50];
+char fanCommandTopic[50];
 char updateConfigCommandTopic[50];
 
 // data topics (publish)
 char waterDataTopic[50];
 char lightDataTopic[50];
+char fanDataTopic[50];
 char healthDataTopic[50];
 char logDataTopic[50];
 
@@ -42,10 +47,12 @@ void setupMQTT() {
     snprintf(stopCommandTopic, sizeof(stopCommandTopic), "%s" MQTT_STOP_TOPIC, mqtt_topic_prefix);
     snprintf(stopAllCommandTopic, sizeof(stopAllCommandTopic), "%s" MQTT_STOP_ALL_TOPIC, mqtt_topic_prefix);
     snprintf(lightCommandTopic, sizeof(lightCommandTopic), "%s" MQTT_LIGHT_TOPIC, mqtt_topic_prefix);
+    snprintf(fanCommandTopic, sizeof(fanCommandTopic), "%s" MQTT_FAN_TOPIC, mqtt_topic_prefix);
     snprintf(updateConfigCommandTopic, sizeof(updateConfigCommandTopic), "%s" MQTT_UPDATE_CONFIG_TOPIC, mqtt_topic_prefix);
 
     snprintf(waterDataTopic, sizeof(waterDataTopic), "%s" MQTT_WATER_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(lightDataTopic, sizeof(lightDataTopic), "%s" MQTT_LIGHT_DATA_TOPIC, mqtt_topic_prefix);
+    snprintf(fanDataTopic, sizeof(fanDataTopic), "%s" MQTT_FAN_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(healthDataTopic, sizeof(healthDataTopic), "%s" MQTT_HEALTH_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(logDataTopic, sizeof(logDataTopic), "%s" MQTT_LOGGING_TOPIC, mqtt_topic_prefix);
 
@@ -70,6 +77,14 @@ void setupMQTT() {
             printf("error creating the lightPublisherQueue\n");
         }
         xTaskCreate(lightPublisherTask, "LightPublisherTask", 2048, NULL, 1, &lightPublisherTaskHandle);
+    }
+
+    if (config.fan) {
+        fanPublisherQueue = xQueueCreate(QUEUE_SIZE, sizeof(int));
+        if (fanPublisherQueue == NULL) {
+            printf("error creating the fanPublisherQueue\n");
+        }
+        xTaskCreate(fanPublisherTask, "FanPublisherTask", 2048, NULL, 1, &fanPublisherTaskHandle);
     }
 }
 
@@ -122,6 +137,28 @@ void lightPublisherTask(void* parameters) {
 }
 
 /*
+  fanPublisherTask reads from a queue to publish fan state as an InfluxDB
+  line protocol message to MQTT
+*/
+void fanPublisherTask(void* parameters) {
+    int power;
+    while (true) {
+        if (xQueueReceive(fanPublisherQueue, &power, portMAX_DELAY)) {
+            char message[50];
+            sprintf(message, "fan,garden=\"%s\" power=%d", mqtt_topic_prefix, power);
+            if (client.connected()) {
+                printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", fanDataTopic, message);
+                client.publish(fanDataTopic, message);
+            } else {
+                printf("unable to publish: not connected to MQTT broker\n");
+            }
+        }
+        vTaskDelay(5 / portTICK_PERIOD_MS);
+    }
+    vTaskDelete(NULL);
+}
+
+/*
   healthPublisherTask runs every minute and publishes a message to MQTT to record a health check-in
 */
 void healthPublisherTask(void* parameters) {
@@ -158,6 +195,10 @@ void mqttConnectTask(void* parameters) {
 
                 if (config.light) {
                     client.subscribe(lightCommandTopic, 1);
+                }
+
+                if (config.fan) {
+                    client.subscribe(fanCommandTopic, 1);
                 }
 
                 client.publish(logDataTopic, "logs message=\"garden-controller setup complete\"");
@@ -216,6 +257,21 @@ void handleLightCommand(char* message) {
     changeLight(le);
 }
 
+void handleFanCommand(char* message) {
+    DynamicJsonDocument doc(1024);
+    DeserializationError err = deserializeJson(doc, message);
+    if (err) {
+        printf("deserialize failed: %s\n", err.c_str());
+    }
+
+    FanEvent fe = {
+        doc["duration"] | ZERO,
+        (unsigned int)(doc["power"] | 0)
+    };
+    printf("received command to run fan for %lu at power %d\n", fe.duration, fe.power);
+    changeFan(fe);
+}
+
 void handleConfigCommand(char* message) {
     bool result = deserializeConfig((char*)message, config);
     if (!result) {
@@ -236,6 +292,7 @@ void handleConfigCommand(char* message) {
     - stopAllCommandTopic: ignores message, stops the currently-watering zone,
                            and clears the waterQueue
     - lightCommandTopic: accepts LightEvent JSON to control a grow light
+    - fanCommandTopic: accepts FanEvent JSON to control a fan
     - updateConfigCommandTopic: accepts Config JSON to update
 */
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
@@ -270,6 +327,8 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length) {
         stopAllWatering();
     } else if (strcmp(topic_c, lightCommandTopic) == 0) {
         handleLightCommand(message_c);
+    } else if (strcmp(topic_c, fanCommandTopic) == 0) {
+        handleFanCommand(message_c);
     } else if (strcmp(topic_c, updateConfigCommandTopic) == 0) {
         handleConfigCommand(message_c);
     } else {

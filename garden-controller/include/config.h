@@ -5,7 +5,7 @@
 // set for wifi connection. If these aren't set, WifiManager's captive portal is used instead.
 
 // Unique prefix for this controller. It is used for the root of MQTT topics and as the MQTT ClientID
-// #define TOPIC_PREFIX "test-garden"
+#define TOPIC_PREFIX "test-garden"
 
 /**
  * MQTT Configurations
@@ -16,7 +16,7 @@
  * MQTT_PORT
  *   Port for MQTT broker
  */
-// #define MQTT_ADDRESS "192.168.0.32"
-// #define MQTT_PORT 1883
+#define MQTT_ADDRESS "192.168.0.32"
+#define MQTT_PORT 1883
 
 #endif

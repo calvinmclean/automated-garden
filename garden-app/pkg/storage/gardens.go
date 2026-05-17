@@ -126,6 +126,18 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		}
 	}
 
+	var fanSchedule sql.NullString
+	if garden.FanSchedule != nil {
+		fanScheduleStr, err := json.Marshal(garden.FanSchedule)
+		if err != nil {
+			return fmt.Errorf("error marshaling fan schedule: %w", err)
+		}
+		fanSchedule = sql.NullString{
+			String: string(fanScheduleStr),
+			Valid:  true,
+		}
+	}
+
 	var maxZones int64
 	if garden.MaxZones != nil {
 		var err error
@@ -145,7 +157,7 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		createdAt = garden.CreatedAt.Format(time.RFC3339)
 	}
 
-	err := s.q.UpsertGarden(ctx, db.UpsertGardenParams{
+		err := s.q.UpsertGarden(ctx, db.UpsertGardenParams{
 		ID:                   garden.ID.String(),
 		Name:                 garden.Name,
 		TopicPrefix:          garden.TopicPrefix,
@@ -157,6 +169,7 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		NotificationSettings: notificationSettings,
 		ControllerConfig:     controllerConfig,
 		LightSchedule:        lightSchedule,
+		FanSchedule:          fanSchedule,
 	})
 	if err != nil {
 		var sqliteErr *sqlite.Error
@@ -254,6 +267,15 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 			return nil, fmt.Errorf("error unmarshaling light schedule: %w", err)
 		}
 		garden.LightSchedule = &lightSchedule
+	}
+
+	if dbGarden.FanSchedule.Valid && len(dbGarden.FanSchedule.String) > 0 {
+		var fanSchedule pkg.FanSchedule
+		err := json.Unmarshal([]byte(dbGarden.FanSchedule.String), &fanSchedule)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshaling fan schedule: %w", err)
+		}
+		garden.FanSchedule = &fanSchedule
 	}
 
 	return garden, nil

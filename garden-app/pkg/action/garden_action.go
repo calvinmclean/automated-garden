@@ -13,19 +13,20 @@ import (
 // received as one request
 type GardenAction struct {
 	Light  *LightAction  `json:"light" form:"light"`
+	Fan    *FanAction    `json:"fan" form:"fan"`
 	Stop   *StopAction   `json:"stop" form:"stop"`
 	Update *UpdateAction `json:"update" form:"update"`
 }
 
 // String returns a string representation of the GardenAction
 func (action *GardenAction) String() string {
-	return fmt.Sprintf("{LightAction: %+v, StopAction: %+v, UpdateAction: %+v}", action.Light, action.Stop, action.Update)
+	return fmt.Sprintf("{LightAction: %+v, FanAction: %+v, StopAction: %+v, UpdateAction: %+v}", action.Light, action.Fan, action.Stop, action.Update)
 }
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
 // It will verify that the request is valid
 func (action *GardenAction) Bind(_ *http.Request) error {
-	if action == nil || (action.Light == nil && action.Stop == nil && action.Update == nil) {
+	if action == nil || (action.Light == nil && action.Fan == nil && action.Stop == nil && action.Update == nil) {
 		return errors.New("missing required action fields")
 	}
 
@@ -52,4 +53,10 @@ type StopAction struct {
 // UpdateAction is used to send the Garden's current ControllerConfig to the controller
 type UpdateAction struct {
 	Config bool `json:"config" form:"config"`
+}
+
+// FanAction is an action for turning on a fan for the Garden with a specific duration and power level
+type FanAction struct {
+	Duration int64 `json:"duration" form:"duration"`
+	Power    uint8 `json:"power" form:"power"`
 }

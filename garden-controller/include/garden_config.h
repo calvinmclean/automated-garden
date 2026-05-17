@@ -12,6 +12,9 @@ struct Config {
     bool light;
     gpio_num_t lightPin;
 
+    bool fan;
+    gpio_num_t fanPin;
+
     bool tempHumidity;
     gpio_num_t tempHumidityPin;
     int tempHumidityInterval;
