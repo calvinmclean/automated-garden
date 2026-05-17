@@ -33,6 +33,7 @@ type ActiveWatering struct {
 type GardenResponse struct {
 	*pkg.Garden
 	NextLightAction         *NextLightAction         `json:"next_light_action,omitempty"`
+	NextFanAction           *NextFanAction           `json:"next_fan_action,omitempty"`
 	Health                  *pkg.GardenHealth        `json:"health,omitempty"`
 	TemperatureHumidityData *TemperatureHumidityData `json:"temperature_humidity_data,omitempty"`
 	NumZones                uint                     `json:"num_zones"`
@@ -47,6 +48,13 @@ type GardenResponse struct {
 type NextLightAction struct {
 	Time  *time.Time     `json:"time"`
 	State pkg.LightState `json:"state"`
+}
+
+// NextFanAction contains the time and state for the next scheduled FanAction
+type NextFanAction struct {
+	Time          *time.Time    `json:"time"`
+	IsActive      bool          `json:"is_active"`
+	DurationUntil *pkg.Duration `json:"duration_until"`
 }
 
 // TemperatureHumidityData has the temperature and humidity of the Garden
@@ -138,6 +146,20 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 		if loc != nil {
 			offsetTime := g.NextLightAction.Time.In(loc)
 			g.NextLightAction.Time = &offsetTime
+		}
+	}
+
+	if g.Garden.FanSchedule != nil {
+		nextFanTime, nextFanWillBeActive := g.Garden.FanSchedule.NextChange(clock.Now())
+		isActive := !nextFanWillBeActive
+		durationUntil := nextFanTime.Sub(clock.Now())
+		if durationUntil < 0 {
+			durationUntil = 0
+		}
+		g.NextFanAction = &NextFanAction{
+			Time:          &nextFanTime,
+			IsActive:      isActive,
+			DurationUntil: &pkg.Duration{Duration: durationUntil},
 		}
 	}
 

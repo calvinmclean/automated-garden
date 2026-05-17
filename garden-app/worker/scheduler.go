@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
@@ -216,6 +217,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		StartAt(onStartDate).
 		Tag("garden").
 		Tag(g.ID.String()).
+		Tag("light").
 		Tag(pkg.LightStateOn.String()).
 		Do(w.executeLightActionInScheduledJob, g, onAction, logger.With("source", "scheduled_job"))
 	if err != nil {
@@ -227,6 +229,7 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 		StartAt(offStartDate).
 		Tag("garden").
 		Tag(g.ID.String()).
+		Tag("light").
 		Tag(pkg.LightStateOff.String()).
 		Do(w.executeLightActionInScheduledJob, g, offAction, logger.With("source", "scheduled_job"))
 	if err != nil {
@@ -241,7 +244,7 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Debug("resetting LightSchedule")
 
-	if err := w.RemoveJobsByID(g.ID.String()); err != nil {
+	if err := w.RemoveJobsByTag(g.ID.String(), "light"); err != nil {
 		return err
 	}
 	if err := w.ScheduleLightActions(g); err != nil {
@@ -256,15 +259,30 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 
 // RemoveJobsByID will remove Jobs tagged with the specific xid
 func (w *Worker) RemoveJobsByID(id string) error {
-	jobs, err := w.scheduler.FindJobsByTag(id)
+	return w.RemoveJobsByTag(id)
+}
+
+// RemoveJobsByTag will remove Jobs tagged with the specific tags. All tags must match for a job to be removed.
+func (w *Worker) RemoveJobsByTag(tag string, extraTags ...string) error {
+	jobs, err := w.scheduler.FindJobsByTag(tag)
 	if err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
 	// Remove Jobs from metric
 	for _, j := range jobs {
-		scheduleJobsGauge.WithLabelValues(j.Tags()[0:2]...).Dec()
+		hasAll := true
+		for _, et := range extraTags {
+			if !slices.Contains(j.Tags(), et) {
+				hasAll = false
+				break
+			}
+		}
+		if hasAll {
+			scheduleJobsGauge.WithLabelValues(j.Tags()[0:2]...).Dec()
+		}
 	}
-	if err := w.scheduler.RemoveByTags(id); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
+	tags := append([]string{tag}, extraTags...)
+	if err := w.scheduler.RemoveByTags(tags...); err != nil && !errors.Is(err, gocron.ErrJobNotFoundWithTag) {
 		return err
 	}
 	return nil
@@ -316,4 +334,67 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 	}
 
 	w.sendLightActionNotification(g, input.State, actionLogger)
+}
+
+// ScheduleFanActions will schedule FanActions to turn the fan on based off the FanSchedule's
+// active time, off time, and interval. The scheduled Jobs are tagged with the Garden's ID so they can
+// easily be removed
+func (w *Worker) ScheduleFanActions(g *pkg.Garden) error {
+	logger := w.contextLogger(g, nil, nil)
+	logger.Info("creating scheduled Job for fan Garden", "fan_schedule", *g.FanSchedule)
+
+	startDate := clock.Now().AddDate(0, 0, -1)
+	startTime := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, time.UTC)
+
+	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Inc()
+	_, err := w.scheduler.
+		Every(g.FanSchedule.CycleDuration()).
+		StartAt(startTime).
+		Tag("garden").
+		Tag(g.ID.String()).
+		Tag("fan").
+		Do(w.executeFanActionInScheduledJob, g, logger.With("source", "scheduled_job"))
+	return err
+}
+
+// ResetFanSchedule will simply remove the existing Job and create a new one
+func (w *Worker) ResetFanSchedule(g *pkg.Garden) error {
+	logger := w.contextLogger(g, nil, nil)
+	logger.Debug("resetting FanSchedule")
+
+	if err := w.RemoveJobsByTag(g.ID.String(), "fan"); err != nil {
+		return err
+	}
+	return w.ScheduleFanActions(g)
+}
+
+func (w *Worker) executeFanActionInScheduledJob(g *pkg.Garden, actionLogger *slog.Logger) {
+	actionLogger.Info("executing FanAction")
+
+	if g.FanSchedule.OnlyWithLight && g.LightSchedule != nil {
+		if g.LightSchedule.ExpectedStateAtTime(clock.Now()) != pkg.LightStateOn {
+			actionLogger.Info("skipping FanAction because LightSchedule is not active")
+			return
+		}
+	}
+
+	if g.GetNotificationClientID() != "" {
+		w.sendDownNotification(g, g.GetNotificationClientID(), "Fan")
+	}
+
+	input := &action.FanAction{
+		Duration: g.FanSchedule.Duration.Duration.Milliseconds(),
+		Power:    g.FanSchedule.PowerToPWM(),
+	}
+
+	err := w.ExecuteFanAction(g, input)
+	if err != nil {
+		actionLogger.Error("error executing scheduled FanAction", "error", err)
+		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
+
+		if g.GetNotificationClientID() != "" {
+			w.sendNotification(g.GetNotificationClientID(), fmt.Sprintf("%s: Fan Action Error", g.Name), err.Error(), actionLogger)
+		}
+		return
+	}
 }
