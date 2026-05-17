@@ -7,9 +7,8 @@ import (
 
 // FanSchedule allows the user to control when a Garden's fan is turned on and off
 type FanSchedule struct {
-	ActiveTime *Duration `json:"active_time" yaml:"active_time"`
-	// TODO: rename to Interval
-	OffTime       *Duration  `json:"off_time" yaml:"off_time"`
+	ActiveTime    *Duration  `json:"active_time" yaml:"active_time"`
+	Interval      *Duration  `json:"interval" yaml:"interval"`
 	Power         *uint      `json:"power" yaml:"power"`
 	OnlyWithLight bool       `json:"only_with_light" yaml:"only_with_light"`
 	StartTime     *StartTime `json:"start_time,omitempty" yaml:"start_time,omitempty"`
@@ -25,8 +24,8 @@ func (fs *FanSchedule) Patch(newFanSchedule *FanSchedule) {
 	if newFanSchedule.ActiveTime != nil {
 		fs.ActiveTime = newFanSchedule.ActiveTime
 	}
-	if newFanSchedule.OffTime != nil {
-		fs.OffTime = newFanSchedule.OffTime
+	if newFanSchedule.Interval != nil {
+		fs.Interval = newFanSchedule.Interval
 	}
 	if newFanSchedule.Power != nil {
 		fs.Power = newFanSchedule.Power
@@ -37,12 +36,12 @@ func (fs *FanSchedule) Patch(newFanSchedule *FanSchedule) {
 	}
 }
 
-// Interval returns the total interval between fan cycle starts
-func (fs FanSchedule) Interval() time.Duration {
-	if fs.ActiveTime == nil || fs.OffTime == nil {
+// CycleDuration returns the total interval between fan cycle starts
+func (fs FanSchedule) CycleDuration() time.Duration {
+	if fs.ActiveTime == nil || fs.Interval == nil {
 		return 0
 	}
-	return fs.ActiveTime.Duration + fs.OffTime.Duration
+	return fs.Interval.Duration
 }
 
 // PowerToPWM converts the 0-100 power percentage to a 0-255 PWM value
@@ -65,8 +64,8 @@ func (fs FanSchedule) IsActiveAtTime(now time.Time) bool {
 // NextChange determines the next time the fan will change state and what the new state will be.
 // It returns the next transition time and true if the fan will be ON after the transition.
 func (fs FanSchedule) NextChange(now time.Time) (time.Time, bool) {
-	interval := fs.Interval()
-	if interval == 0 || fs.ActiveTime == nil {
+	cycleDuration := fs.CycleDuration()
+	if cycleDuration == 0 || fs.ActiveTime == nil {
 		return time.Time{}, false
 	}
 
@@ -83,7 +82,7 @@ func (fs FanSchedule) NextChange(now time.Time) (time.Time, bool) {
 	}
 
 	elapsed := now.Sub(anchor)
-	cyclePos := elapsed % interval
+	cyclePos := elapsed % cycleDuration
 
 	if cyclePos < fs.ActiveTime.Duration {
 		// Currently ON, next change is when active time ends
@@ -91,5 +90,5 @@ func (fs FanSchedule) NextChange(now time.Time) (time.Time, bool) {
 	}
 
 	// Currently OFF, next change is start of next cycle
-	return now.Add(interval - cyclePos), true
+	return now.Add(cycleDuration - cyclePos), true
 }

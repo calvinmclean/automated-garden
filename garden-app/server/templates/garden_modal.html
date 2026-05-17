@@ -98,10 +98,10 @@
                         name="FanSchedule.ActiveTime">
                 </div>
                 <div class="uk-margin">
-                    <label class="uk-form-label" for="garden-fan-schedule-off-time">Fan Interval</label>
-                    <input id="garden-fan-schedule-off-time" class="uk-input" type="text"
-                        value="{{ if and .FanSchedule .FanSchedule.OffTime }}{{ .FanSchedule.OffTime }}{{ end }}" placeholder="e.g. 2h30m"
-                        name="FanSchedule.OffTime">
+                    <label class="uk-form-label" for="garden-fan-schedule-interval">Fan Interval</label>
+                    <input id="garden-fan-schedule-interval" class="uk-input" type="text"
+                        value="{{ if and .FanSchedule .FanSchedule.Interval }}{{ .FanSchedule.Interval }}{{ end }}" placeholder="e.g. 2h30m"
+                        name="FanSchedule.Interval">
                 </div>
                 <div class="uk-margin">
                     <label class="uk-form-label" for="garden-fan-schedule-power">Fan Power (%)</label>

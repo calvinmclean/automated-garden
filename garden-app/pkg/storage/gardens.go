@@ -157,7 +157,7 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		createdAt = garden.CreatedAt.Format(time.RFC3339)
 	}
 
-		err := s.q.UpsertGarden(ctx, db.UpsertGardenParams{
+	err := s.q.UpsertGarden(ctx, db.UpsertGardenParams{
 		ID:                   garden.ID.String(),
 		Name:                 garden.Name,
 		TopicPrefix:          garden.TopicPrefix,

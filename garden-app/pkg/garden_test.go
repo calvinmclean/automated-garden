@@ -82,7 +82,7 @@ func TestGardenPatch(t *testing.T) {
 			"PatchFanSchedule",
 			&Garden{FanSchedule: &FanSchedule{
 				ActiveTime: &Duration{Duration: 30 * time.Minute},
-				OffTime:    &Duration{Duration: 2 * time.Hour},
+				Interval:   &Duration{Duration: 2 * time.Hour},
 				Power:      pointer(uint(50)),
 			}},
 		},
@@ -146,7 +146,7 @@ func TestGardenPatch(t *testing.T) {
 		g := &Garden{
 			FanSchedule: &FanSchedule{
 				ActiveTime: &Duration{Duration: 30 * time.Minute},
-				OffTime:    &Duration{Duration: 2 * time.Hour},
+				Interval:   &Duration{Duration: 2 * time.Hour},
 				Power:      pointer(uint(50)),
 			},
 		}

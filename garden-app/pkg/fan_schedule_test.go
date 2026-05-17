@@ -11,7 +11,7 @@ func TestFanSchedulePatch(t *testing.T) {
 	power50 := uint(50)
 	power75 := uint(75)
 	activeTime := &Duration{Duration: 30 * time.Minute}
-	offTime := &Duration{Duration: 2 * time.Hour}
+	interval := &Duration{Duration: 2 * time.Hour}
 	startTime := NewStartTime(time.Date(0, 1, 1, 8, 0, 0, 0, time.UTC))
 
 	tests := []struct {
@@ -23,8 +23,8 @@ func TestFanSchedulePatch(t *testing.T) {
 			&FanSchedule{ActiveTime: activeTime},
 		},
 		{
-			"PatchOffTime",
-			&FanSchedule{OffTime: offTime},
+			"PatchInterval",
+			&FanSchedule{Interval: interval},
 		},
 		{
 			"PatchPower",
@@ -50,9 +50,9 @@ func TestFanSchedulePatch(t *testing.T) {
 
 	t.Run("PatchMultipleFields", func(t *testing.T) {
 		fs := &FanSchedule{}
-		fs.Patch(&FanSchedule{ActiveTime: activeTime, OffTime: offTime, Power: &power50, OnlyWithLight: true})
+		fs.Patch(&FanSchedule{ActiveTime: activeTime, Interval: interval, Power: &power50, OnlyWithLight: true})
 		assert.Equal(t, activeTime, fs.ActiveTime)
-		assert.Equal(t, offTime, fs.OffTime)
+		assert.Equal(t, interval, fs.Interval)
 		assert.Equal(t, &power50, fs.Power)
 		assert.True(t, fs.OnlyWithLight)
 	})
@@ -66,7 +66,7 @@ func TestFanSchedulePatch(t *testing.T) {
 	})
 }
 
-func TestFanScheduleInterval(t *testing.T) {
+func TestFanScheduleCycleDuration(t *testing.T) {
 	tests := []struct {
 		name     string
 		schedule *FanSchedule
@@ -76,17 +76,17 @@ func TestFanScheduleInterval(t *testing.T) {
 			"ValidInterval",
 			&FanSchedule{
 				ActiveTime: &Duration{Duration: 30 * time.Minute},
-				OffTime:    &Duration{Duration: 2 * time.Hour},
+				Interval:   &Duration{Duration: 2 * time.Hour},
 			},
-			2*time.Hour + 30*time.Minute,
+			2 * time.Hour,
 		},
 		{
 			"NilActiveTime",
-			&FanSchedule{OffTime: &Duration{Duration: 2 * time.Hour}},
+			&FanSchedule{Interval: &Duration{Duration: 2 * time.Hour}},
 			0,
 		},
 		{
-			"NilOffTime",
+			"NilInterval",
 			&FanSchedule{ActiveTime: &Duration{Duration: 30 * time.Minute}},
 			0,
 		},
@@ -94,7 +94,7 @@ func TestFanScheduleInterval(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			assert.Equal(t, tt.expected, tt.schedule.Interval())
+			assert.Equal(t, tt.expected, tt.schedule.CycleDuration())
 		})
 	}
 }
@@ -127,7 +127,7 @@ func TestFanSchedulePowerToPWM(t *testing.T) {
 func TestFanScheduleNextChange(t *testing.T) {
 	loc := time.UTC
 	activeTime := &Duration{Duration: 30 * time.Minute}
-	offTime := &Duration{Duration: 2 * time.Hour}
+	interval := &Duration{Duration: 2 * time.Hour}
 
 	startTime8AM := NewStartTime(time.Date(0, 1, 1, 8, 0, 0, 0, loc))
 
@@ -141,7 +141,7 @@ func TestFanScheduleNextChange(t *testing.T) {
 	}{
 		{
 			"BeforeStartTime",
-			&FanSchedule{ActiveTime: activeTime, OffTime: offTime, StartTime: startTime8AM},
+			&FanSchedule{ActiveTime: activeTime, Interval: interval, StartTime: startTime8AM},
 			time.Date(2024, 1, 1, 7, 0, 0, 0, loc),
 			1 * time.Hour,
 			true,
@@ -149,7 +149,7 @@ func TestFanScheduleNextChange(t *testing.T) {
 		},
 		{
 			"DuringActivePeriod",
-			&FanSchedule{ActiveTime: activeTime, OffTime: offTime, StartTime: startTime8AM},
+			&FanSchedule{ActiveTime: activeTime, Interval: interval, StartTime: startTime8AM},
 			time.Date(2024, 1, 1, 8, 15, 0, 0, loc),
 			15 * time.Minute,
 			false,
@@ -157,23 +157,23 @@ func TestFanScheduleNextChange(t *testing.T) {
 		},
 		{
 			"DuringOffPeriod",
-			&FanSchedule{ActiveTime: activeTime, OffTime: offTime, StartTime: startTime8AM},
+			&FanSchedule{ActiveTime: activeTime, Interval: interval, StartTime: startTime8AM},
 			time.Date(2024, 1, 1, 9, 0, 0, 0, loc),
-			1*time.Hour + 30*time.Minute,
+			1 * time.Hour,
 			true,
 			false,
 		},
 		{
 			"NextCycleActive",
-			&FanSchedule{ActiveTime: activeTime, OffTime: offTime, StartTime: startTime8AM},
+			&FanSchedule{ActiveTime: activeTime, Interval: interval, StartTime: startTime8AM},
 			time.Date(2024, 1, 1, 10, 45, 0, 0, loc),
-			15 * time.Minute,
-			false,
+			1*time.Hour + 15*time.Minute,
 			true,
+			false,
 		},
 		{
 			"NoStartTimeDuringActive",
-			&FanSchedule{ActiveTime: activeTime, OffTime: offTime},
+			&FanSchedule{ActiveTime: activeTime, Interval: interval},
 			time.Date(2024, 1, 1, 0, 15, 0, 0, loc),
 			15 * time.Minute,
 			false,
@@ -181,9 +181,9 @@ func TestFanScheduleNextChange(t *testing.T) {
 		},
 		{
 			"NoStartTimeDuringOff",
-			&FanSchedule{ActiveTime: activeTime, OffTime: offTime},
+			&FanSchedule{ActiveTime: activeTime, Interval: interval},
 			time.Date(2024, 1, 1, 1, 0, 0, 0, loc),
-			1*time.Hour + 30*time.Minute,
+			1 * time.Hour,
 			true,
 			false,
 		},

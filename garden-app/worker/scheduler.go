@@ -327,11 +327,9 @@ func (w *Worker) ScheduleFanActions(g *pkg.Garden) error {
 		startDate = g.FanSchedule.StartTime.OnDate(now).UTC()
 	}
 
-	interval := g.FanSchedule.Interval()
-
 	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Inc()
 	_, err := w.scheduler.
-		Every(interval).
+		Every(g.FanSchedule.Interval.Duration).
 		StartAt(startDate).
 		Tag("garden").
 		Tag(g.ID.String()).

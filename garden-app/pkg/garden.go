@@ -127,7 +127,7 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 		g.FanSchedule.Patch(newGarden.FanSchedule)
 
 		if newGarden.FanSchedule.ActiveTime == nil &&
-			newGarden.FanSchedule.OffTime == nil &&
+			newGarden.FanSchedule.Interval == nil &&
 			newGarden.FanSchedule.Power == nil &&
 			newGarden.FanSchedule.StartTime == nil {
 			g.FanSchedule = nil
@@ -224,9 +224,9 @@ func (g *Garden) Bind(r *http.Request) error {
 		// consider empty FanSchedule as nil for removing from HTML form
 		if g.FanSchedule != nil {
 			activeTimeEmpty := g.FanSchedule.ActiveTime == nil || g.FanSchedule.ActiveTime.Duration == 0
-			offTimeEmpty := g.FanSchedule.OffTime == nil || g.FanSchedule.OffTime.Duration == 0
+			intervalEmpty := g.FanSchedule.Interval == nil || g.FanSchedule.Interval.Duration == 0
 			powerEmpty := g.FanSchedule.Power == nil || *g.FanSchedule.Power == 0
-			if activeTimeEmpty && offTimeEmpty && powerEmpty {
+			if activeTimeEmpty && intervalEmpty && powerEmpty {
 				g.FanSchedule = nil
 			}
 		}
@@ -234,8 +234,8 @@ func (g *Garden) Bind(r *http.Request) error {
 			if g.FanSchedule.ActiveTime == nil {
 				return errors.New("missing required fan_schedule.active_time field")
 			}
-			if g.FanSchedule.OffTime == nil {
-				return errors.New("missing required fan_schedule.off_time field")
+			if g.FanSchedule.Interval == nil {
+				return errors.New("missing required fan_schedule.interval field")
 			}
 			if g.FanSchedule.Power == nil {
 				return errors.New("missing required fan_schedule.power field")
