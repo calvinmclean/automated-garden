@@ -75,7 +75,8 @@ void setupMQTT() {
 
 /*
   waterPublisherTask reads from a queue to publish WaterEvents as an InfluxDB
-  line protocol message to MQTT
+  line protocol message to MQTT, then frees the heap-allocated strings that
+  were transferred by the producer.
 */
 void waterPublisherTask(void* parameters) {
     WaterEvent we;
@@ -84,8 +85,24 @@ void waterPublisherTask(void* parameters) {
     while (true) {
         if (xQueueReceive(waterPublisherQueue, &we, portMAX_DELAY)) {
             memset(message, '\0', sizeof(message));
+            const char* statusStr;
+            unsigned long millisVal;
+            switch (we.status) {
+                case WATER_START:
+                    statusStr = "start";
+                    millisVal = 0;
+                    break;
+                case WATER_COMPLETE:
+                    statusStr = "complete";
+                    millisVal = we.duration;
+                    break;
+                case WATER_CANCELLED:
+                    statusStr = "cancelled";
+                    millisVal = we.duration;
+                    break;
+            }
             snprintf(message, sizeof(message), "water,status=%s,zone=%d,id=%s,zone_id=%s millis=%lu",
-                     we.done ? "complete" : "start", we.position, we.id, we.zone_id, we.done ? we.duration : 0);
+                     statusStr, we.position, we.id, we.zone_id, millisVal);
 
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
@@ -93,6 +110,9 @@ void waterPublisherTask(void* parameters) {
             } else {
                 printf("unable to publish: not connected to MQTT broker\n");
             }
+
+            free(we.zone_id);
+            free(we.id);
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
@@ -196,7 +216,7 @@ void handleWaterCommand(char* message) {
         doc["duration"] | ZERO,
         strdup(doc["zone_id"] | "N/A"),
         strdup(doc["id"] | "N/A"),
-        false
+        WATER_START
     };
     printf("received command to water zone %d (%s) for %lu\n", we.position, we.zone_id, we.duration);
     waterZone(we);

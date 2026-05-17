@@ -62,10 +62,19 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	logger.Info("found zone")
 
 	var title, message string
-	if waterMessage.Start {
+	switch {
+	case waterMessage.Start:
 		title = fmt.Sprintf("%s started watering", zone.Name)
 		message = fmt.Sprintf("Garden: %s", garden.Name)
-	} else {
+	case waterMessage.Cancelled:
+		title = fmt.Sprintf("%s watering cancelled", zone.Name)
+		if waterMessage.Duration > 0 {
+			dur := time.Duration(waterMessage.Duration) * time.Millisecond
+			message = fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
+		} else {
+			message = fmt.Sprintf("Garden: %s", garden.Name)
+		}
+	default:
 		title = fmt.Sprintf("%s finished watering", zone.Name)
 		dur := time.Duration(waterMessage.Duration) * time.Millisecond
 		message = fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
@@ -109,6 +118,9 @@ func parseWaterMessage(msg []byte) (action.WaterMessage, error) {
 				result.Start = false
 			case "start":
 				result.Start = true
+			case "cancelled":
+				result.Cancelled = true
+				result.Start = false
 			default:
 				return action.WaterMessage{}, fmt.Errorf("invalid status: %q", val)
 			}

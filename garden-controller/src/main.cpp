@@ -53,40 +53,26 @@ void waterZoneTask(void* parameters) {
   WaterEvent we;
   while (true) {
     if (xQueueReceive(waterQueue, &we, 0)) {
-      // Copy ZoneID and EventID to re-use when sending the completed event
-      char* zone_id = strdup(we.zone_id);
-      char* event_id = strdup(we.id);
-
-      if (zone_id == nullptr) {
-          printf("memory allocation failed for zone_id\n");
-          return;
-      }
-      if (event_id == nullptr) {
-          printf("memory allocation failed for event_id\n");
-          return;
-      }
-
-      free(we.zone_id);
-      free(we.id);
-
-      WaterEvent event = {we.position, 0, zone_id, event_id, false};
-      // printf("DEBUG: waterZoneTask sends 1: zone_id=%s event_id=%s\n", zone_id, event_id);
-      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
+      // Transfer original strings to publisher for START event
+      WaterEvent startEvent = {we.position, 0, we.zone_id, we.id, WATER_START};
+      // printf("DEBUG: waterZoneTask sends 1: zone_id=%s event_id=%s\n", we.zone_id, we.id);
+      xQueueSend(waterPublisherQueue, &startEvent, portMAX_DELAY);
 
       unsigned long start = millis();
       zoneOn(we.position);
       // Delay for specified watering time with option to interrupt
-      xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
+      BaseType_t notified = xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
       zoneOff(we.position);
-      unsigned long stop = millis();
+      unsigned long elapsed = millis() - start;
 
-      event.done = true;
-      event.duration = stop - start;
-      // printf("DEBUG: waterZoneTask sends 2: zone_id=%s event_id=%s\n", zone_id, event_id);
-      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
+      // Make fresh copies for terminal event (publisher will free these)
+      char* zone_id_copy = strdup(we.zone_id);
+      char* event_id_copy = strdup(we.id);
 
-      free(zone_id);
-      free(event_id);
+      WaterStatus terminalStatus = (notified == pdTRUE) ? WATER_CANCELLED : WATER_COMPLETE;
+      WaterEvent terminalEvent = {we.position, elapsed, zone_id_copy, event_id_copy, terminalStatus};
+      // printf("DEBUG: waterZoneTask sends 2: zone_id=%s event_id=%s status=%s\n", zone_id_copy, event_id_copy, terminalStatus == WATER_COMPLETE ? "complete" : "cancelled");
+      xQueueSend(waterPublisherQueue, &terminalEvent, portMAX_DELAY);
     }
     vTaskDelay(5 / portTICK_PERIOD_MS);
   }
@@ -124,10 +110,17 @@ void stopWatering() {
 }
 
 /*
-  stopAllWatering will interrupt the WaterZoneTask and clear the remaining queue
+  stopAllWatering will interrupt the WaterZoneTask and clear the remaining queue.
+  Queued events are sent to the publisher as CANCELLED so the backend knows
+  they were discarded.
 */
 void stopAllWatering() {
-  xQueueReset(waterQueue);
+  WaterEvent we;
+  while (xQueueReceive(waterQueue, &we, 0)) {
+    WaterEvent cancelEvent = {we.position, 0, we.zone_id, we.id, WATER_CANCELLED};
+    xQueueSend(waterPublisherQueue, &cancelEvent, portMAX_DELAY);
+    // Ownership of we.zone_id and we.id transferred to publisher — DO NOT free
+  }
   xTaskNotify(waterZoneTaskHandle, 0, eNoAction);
 }
 

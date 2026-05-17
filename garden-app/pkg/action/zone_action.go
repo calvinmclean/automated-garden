@@ -50,6 +50,9 @@ type WaterMessage struct {
 	// Start is a boolean showing if this record is the start or finish event. It is excluded
 	// from JSON because it is just used when parsing incoming messages that log the start/finish
 	Start bool `json:"-"`
+
+	// Cancelled is set to true when parsing a message with status=cancelled
+	Cancelled bool `json:"-"`
 }
 
 // String returns a string representation of the WaterMessage
