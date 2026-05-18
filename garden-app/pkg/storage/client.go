@@ -39,6 +39,7 @@ type Client struct {
 	WeatherClientConfigs      babyapi.Storage[*weather.Config]
 	NotificationClientConfigs babyapi.Storage[*notifications.Client]
 	WaterRoutines             babyapi.Storage[*pkg.WaterRoutine]
+	Notes                     babyapi.Storage[*pkg.Note]
 
 	*AdditionalQueries
 }
@@ -76,6 +77,7 @@ func NewClient(config Config) (*Client, error) {
 		WeatherClientConfigs:      NewWeatherClientStorage(db),
 		NotificationClientConfigs: NewNotificationClientStorage(db),
 		WaterRoutines:             NewWaterRoutineStorage(db),
+		Notes:                     NewNoteStorage(db),
 		AdditionalQueries:         NewAdditionalQueries(db),
 	}, nil
 }

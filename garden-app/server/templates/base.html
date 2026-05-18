@@ -44,6 +44,8 @@
                                     href="/water_routines" style="font-size: 1.2rem; padding: 10px 0;">Water Routines</a></li>
                             <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
                                     href="/weather_clients" style="font-size: 1.2rem; padding: 10px 0;">Weather Clients</a></li>
+                            <li {{ if URLContains "/notes" }}class="uk-active" {{ end }}><a
+                                href="/notes" style="font-size: 1.2rem; padding: 10px 0;">Notes</a></li>
                         </ul>
                     </div>
                     <!-- Desktop navigation -->
@@ -56,6 +58,8 @@
                                 href="/water_routines">Water Routines</a></li>
                         <li {{ if URLContains "/weather_clients" }}class="uk-active" {{ end }}><a
                                 href="/weather_clients">Weather Clients</a></li>
+                        <li {{ if URLContains "/notes" }}class="uk-active" {{ end }}><a
+                                href="/notes">Notes</a></li>
                     </ul>
                 </div>
                 <div class="uk-navbar-right">
@@ -85,7 +89,7 @@
     {{ end }}
 
     {{ define "end" }}
-    
+
     <!-- OAuth Popup Handler -->
     <script>
         // Global flag to prevent duplicate handling
@@ -210,48 +214,48 @@
             if (inputMin === '' || inputMax === '' || factorMin === '' || factorMax === '' || !mode) {
                 return null;
             }
-            
+
             const iMin = parseFloat(inputMin);
             const iMax = parseFloat(inputMax);
             const fMin = parseFloat(factorMin);
             const fMax = parseFloat(factorMax);
-            
+
             if (isNaN(iMin) || isNaN(iMax) || isNaN(fMin) || isNaN(fMax)) {
                 return null;
             }
-            
+
             const interpolate = ScalingInterpolation[mode] || ScalingInterpolation.linear;
             const padding = { top: 10, right: 10, bottom: 25, left: 35 };
             const chartWidth = width - padding.left - padding.right;
             const chartHeight = height - padding.top - padding.bottom;
-            
+
             // Determine Y range (round to nice numbers)
             const yMin = Math.min(fMin, fMax);
             const yMax = Math.max(fMin, fMax);
             const yPadding = (yMax - yMin) * 0.1 || 0.5;
             const yRangeMin = Math.max(0, yMin - yPadding);
             const yRangeMax = yMax + yPadding;
-            
+
             // Generate points
             const numPoints = 30;
             let pathData = '';
-            
+
             for (let i = 0; i <= numPoints; i++) {
                 const t = i / numPoints;
                 const inputValue = iMin + t * (iMax - iMin);
                 const factorT = interpolate(t);
                 const factorValue = fMin + factorT * (fMax - fMin);
-                
+
                 const x = padding.left + t * chartWidth;
                 const y = padding.top + chartHeight - ((factorValue - yRangeMin) / (yRangeMax - yRangeMin)) * chartHeight;
-                
+
                 if (i === 0) {
                     pathData += `M ${x} ${y}`;
                 } else {
                     pathData += ` L ${x} ${y}`;
                 }
             }
-            
+
             // Format numbers nicely
             const fmt = (n) => {
                 if (Math.abs(n) >= 100) return Math.round(n).toString();
@@ -259,7 +263,7 @@
                 if (Math.abs(n) >= 1) return n.toFixed(2);
                 return n.toFixed(3);
             };
-            
+
             // Create SVG
             const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
             svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
@@ -267,13 +271,13 @@
             svg.style.width = '100%';
             svg.style.height = 'auto';
             svg.style.maxWidth = '350px';
-            
+
             // Grid lines (horizontal)
             const numGridLines = 4;
             for (let i = 0; i <= numGridLines; i++) {
                 const yVal = yRangeMin + (i / numGridLines) * (yRangeMax - yRangeMin);
                 const y = padding.top + chartHeight - (i / numGridLines) * chartHeight;
-                
+
                 const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
                 line.setAttribute('x1', padding.left);
                 line.setAttribute('y1', y);
@@ -282,7 +286,7 @@
                 line.setAttribute('stroke', '#e5e5e5');
                 line.setAttribute('stroke-width', '1');
                 svg.appendChild(line);
-                
+
                 // Y-axis label
                 const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
                 text.setAttribute('x', padding.left - 5);
@@ -293,7 +297,7 @@
                 text.textContent = fmt(yVal);
                 svg.appendChild(text);
             }
-            
+
             // Grid lines (vertical - just at min/max)
             [0, 1].forEach(t => {
                 const x = padding.left + t * chartWidth;
@@ -306,7 +310,7 @@
                 line.setAttribute('stroke-width', '1');
                 svg.appendChild(line);
             });
-            
+
             // X-axis labels
             const xLabels = [fmt(iMin), fmt(iMax)];
             xLabels.forEach((label, i) => {
@@ -320,7 +324,7 @@
                 text.textContent = label;
                 svg.appendChild(text);
             });
-            
+
             // Curve path
             const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
             path.setAttribute('d', pathData);
@@ -330,7 +334,7 @@
             path.setAttribute('stroke-linecap', 'round');
             path.setAttribute('stroke-linejoin', 'round');
             svg.appendChild(path);
-            
+
             // Axis lines
             const xAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             xAxis.setAttribute('x1', padding.left);
@@ -340,7 +344,7 @@
             xAxis.setAttribute('stroke', '#ccc');
             xAxis.setAttribute('stroke-width', '1');
             svg.appendChild(xAxis);
-            
+
             const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             yAxis.setAttribute('x1', padding.left);
             yAxis.setAttribute('y1', padding.top);
@@ -349,7 +353,7 @@
             yAxis.setAttribute('stroke', '#ccc');
             yAxis.setAttribute('stroke-width', '1');
             svg.appendChild(yAxis);
-            
+
             return svg;
         }
 
@@ -364,13 +368,13 @@
                     factorMax: document.getElementById('rain-factor-max')?.value,
                     mode: document.getElementById('rain-interpolation')?.value
                 };
-                
+
                 const rainSVG = generateScalingCurveSVG(
                     rainInputs.inputMin, rainInputs.inputMax,
                     rainInputs.factorMin, rainInputs.factorMax,
                     rainInputs.mode, 300, 150
                 );
-                
+
                 rainChartContainer.innerHTML = '';
                 if (rainSVG) {
                     rainChartContainer.appendChild(rainSVG);
@@ -378,7 +382,7 @@
                     rainChartContainer.innerHTML = '<div class="uk-text-muted uk-text-center" style="line-height: 150px;">Enter values to see curve</div>';
                 }
             }
-            
+
             // Temperature chart
             const tempChartContainer = document.getElementById('temperature-scaling-chart');
             if (tempChartContainer && !document.getElementById('temperature-fields').classList.contains('uk-hidden')) {
@@ -389,13 +393,13 @@
                     factorMax: document.getElementById('temperature-factor-max')?.value,
                     mode: document.getElementById('temperature-interpolation')?.value
                 };
-                
+
                 const tempSVG = generateScalingCurveSVG(
                     tempInputs.inputMin, tempInputs.inputMax,
                     tempInputs.factorMin, tempInputs.factorMax,
                     tempInputs.mode, 300, 150
                 );
-                
+
                 tempChartContainer.innerHTML = '';
                 if (tempSVG) {
                     tempChartContainer.appendChild(tempSVG);

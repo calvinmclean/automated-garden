@@ -48,6 +48,11 @@ const (
 	waterRoutinesPageTemplate            html.Template = "WaterRoutinesPage"
 	waterRoutinesTemplate                html.Template = "WaterRoutines"
 	waterRoutineModalTemplate            html.Template = "WaterRoutineModal"
+	notesPageTemplate                    html.Template = "NotesPage"
+	notesTemplate                        html.Template = "Notes"
+	noteCardTemplate                     html.Template = "NoteCard"
+	noteModalTemplate                    html.Template = "NoteModal"
+	noteZoneSelectTemplate               html.Template = "NoteZoneSelect"
 
 	// OAuth callback template
 	oauthCallbackTemplate   html.Template = "OAuthCallback"
@@ -179,6 +184,12 @@ func templateFuncs(r *http.Request) map[string]any {
 				return false
 			}
 			return *b
+		},
+		"DerefString": func(s *string) string {
+			if s == nil {
+				return ""
+			}
+			return *s
 		},
 		"IsNotNil": func(v any) bool {
 			return v != nil
