@@ -1,9 +1,12 @@
 #include "wifi_manager.h"
 #include "config.h"
-#include "wifi_config.h"
 
-char* mqtt_server = new char();
-char* mqtt_topic_prefix = new char();
+#if __has_include("wifi_config.h")
+#include "wifi_config.h"
+#endif
+
+char mqtt_server[41] = {0};
+char mqtt_topic_prefix[41] = {0};
 int mqtt_port;
 
 WiFiManagerParameter custom_mqtt_server("server", "mqtt server", "192.168.0.x", 40);
@@ -16,8 +19,8 @@ TaskHandle_t wifiManagerLoopTaskHandle;
 
 void saveParamsToConfig() {
   // read updated parameters
-  strcpy(mqtt_server, custom_mqtt_server.getValue());
-  strcpy(mqtt_topic_prefix, custom_mqtt_topic_prefix.getValue());
+  strlcpy(mqtt_server, custom_mqtt_server.getValue(), sizeof(mqtt_server));
+  strlcpy(mqtt_topic_prefix, custom_mqtt_topic_prefix.getValue(), sizeof(mqtt_topic_prefix));
   mqtt_port = atoi(custom_mqtt_port.getValue());
 
   DynamicJsonDocument json(1024);
@@ -62,8 +65,8 @@ void setupFS() {
     printf("failed to load mqtt json config\n");
     return;
   }
-  strcpy(mqtt_server, json["mqtt_server"]);
-  strcpy(mqtt_topic_prefix, json["mqtt_topic_prefix"]);
+  strlcpy(mqtt_server, json["mqtt_server"], sizeof(mqtt_server));
+  strlcpy(mqtt_topic_prefix, json["mqtt_topic_prefix"], sizeof(mqtt_topic_prefix));
   mqtt_port = json["mqtt_port"];
 
   printf("loaded mqtt config: %s %s %d\n", mqtt_server, mqtt_topic_prefix, mqtt_port);
@@ -80,8 +83,35 @@ void wifiManagerLoopTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
+static unsigned long lastDisconnectTime = 0;
+const unsigned long WIFI_RECONNECT_TIMEOUT_MS = 30000;
+
+void wifiConnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
+    lastDisconnectTime = 0;
+    printf("WiFi connected\n");
+
+    MDNS.end();
+    if (!MDNS.begin(mqtt_topic_prefix)) {
+        printf("error restarting mDNS after reconnect\n");
+    } else {
+        MDNS.addService("http", "tcp", 80);
+    }
+}
+
 void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
-    ESP.restart();
+    if (lastDisconnectTime == 0) {
+        lastDisconnectTime = millis();
+    }
+
+    unsigned long disconnectedFor = millis() - lastDisconnectTime;
+    printf("WiFi disconnected for %lu ms\n", disconnectedFor);
+
+    if (disconnectedFor > WIFI_RECONNECT_TIMEOUT_MS) {
+        printf("WiFi reconnect timeout reached, rebooting...\n");
+        ESP.restart();
+    }
+
+    WiFi.reconnect();
 }
 
 #if defined SSID && defined PASSWORD
@@ -97,8 +127,8 @@ void connectWifiDirect() {
 
     printf("Wifi connected...\n");
 
-    strcpy(mqtt_server, MQTT_ADDRESS);
-    strcpy(mqtt_topic_prefix, TOPIC_PREFIX);
+    strlcpy(mqtt_server, MQTT_ADDRESS, sizeof(mqtt_server));
+    strlcpy(mqtt_topic_prefix, TOPIC_PREFIX, sizeof(mqtt_topic_prefix));
     mqtt_port = MQTT_PORT;
 
     wifiManager.setEnableConfigPortal(false);
@@ -125,11 +155,11 @@ void setupWifiManager() {
   wifiManager.addParameter(&custom_mqtt_topic_prefix);
   wifiManager.addParameter(&custom_mqtt_port);
 
-  wifiManager.setHostname(mqtt_topic_prefix);
-
   // wifiManager.resetSettings();
 
   setupFS();
+
+  wifiManager.setHostname(mqtt_topic_prefix);
 
   // If SSID/PASSWORD are configured, connect regularly and use WifiManager for setup portal only
   #if defined SSID && defined PASSWORD
@@ -150,6 +180,8 @@ void setupWifiManager() {
     return;
   }
 
-  // Create event handler tp reconnect to WiFi
+  MDNS.addService("http", "tcp", 80);
+
+  WiFi.onEvent(wifiConnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
   WiFi.onEvent(wifiDisconnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }

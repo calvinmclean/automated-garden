@@ -9,8 +9,8 @@
 
 extern WiFiManager wifiManager;
 
-extern char* mqtt_server;
-extern char* mqtt_topic_prefix;
+extern char mqtt_server[41];
+extern char mqtt_topic_prefix[41];
 extern int mqtt_port;
 
 void setupWifiManager();
