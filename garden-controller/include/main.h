@@ -8,7 +8,15 @@
 
 enum WaterStatus { WATER_START, WATER_COMPLETE, WATER_CANCELLED };
 
-struct WaterEvent {
+struct WaterMessage {
+    int position;
+    unsigned long duration;
+    char* zone_id;
+    char* id;
+    WaterStatus status;
+};
+
+struct WaterStatusEvent {
     int position;
     unsigned long duration;
     char* zone_id;
@@ -20,7 +28,7 @@ struct LightEvent {
     const char* state;
 };
 
-void waterZone(WaterEvent we);
+void waterZone(WaterMessage we);
 void zoneOff(int id);
 void zoneOn(int id);
 void waterZoneTask(void* parameters);
