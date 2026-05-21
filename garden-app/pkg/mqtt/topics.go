@@ -10,6 +10,7 @@ const (
 	stopTopicTemplate    = "{{.Garden}}/command/stop"
 	stopAllTopicTemplate = "{{.Garden}}/command/stop_all"
 	lightTopicTemplate   = "{{.Garden}}/command/light"
+	fanTopicTemplate     = "{{.Garden}}/command/fan"
 	updateTopicTemplate  = "{{.Garden}}/command/update_config"
 )
 
@@ -31,6 +32,11 @@ func StopAllTopic(topicPrefix string) (string, error) {
 // LightTopic returns the topic string for changing the light state in a Garden
 func LightTopic(topicPrefix string) (string, error) {
 	return executeTopicTemplate(lightTopicTemplate, topicPrefix)
+}
+
+// FanTopic returns the topic string for controlling a fan in a Garden
+func FanTopic(topicPrefix string) (string, error) {
+	return executeTopicTemplate(fanTopicTemplate, topicPrefix)
 }
 
 // UpdateTopic returns the topic string for updating a controller

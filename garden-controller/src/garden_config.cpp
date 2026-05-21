@@ -14,6 +14,9 @@ void serializeConfig(const Config& config, String& jsonString) {
     doc["light"] = config.light;
     doc["light_pin"] = config.lightPin;
 
+    doc["fan"] = config.fan;
+    doc["fan_pin"] = config.fanPin;
+
     doc["temp_humidity"] = config.tempHumidity;
     doc["temp_humidity_pin"] = config.tempHumidityPin;
     doc["temp_humidity_interval"] = config.tempHumidityInterval;
@@ -40,6 +43,9 @@ bool deserializeConfig(const char* jsonString, Config& config) {
 
     config.light = doc["light"].as<bool>();
     config.lightPin = static_cast<gpio_num_t>(doc["light_pin"].as<int>());
+
+    config.fan = doc["fan"].as<bool>();
+    config.fanPin = static_cast<gpio_num_t>(doc["fan_pin"].as<int>());
 
     config.tempHumidity = doc["temp_humidity"].as<bool>();
     config.tempHumidityPin = static_cast<gpio_num_t>(doc["temp_humidity_pin"].as<int>());
@@ -117,6 +123,9 @@ void printConfig(Config& config) {
 
     printf("  Light: %s\n", config.light ? "Enabled" : "Disabled");
     printf("  Light Pin: %d\n", (int)config.lightPin);
+
+    printf("  Fan: %s\n", config.fan ? "Enabled" : "Disabled");
+    printf("  Fan Pin: %d\n", (int)config.fanPin);
 
     printf("  TempHumidity: %s\n", config.tempHumidity ? "Enabled" : "Disabled");
     printf("  TempHumidity Pin: %d\n", (int)config.tempHumidityPin);

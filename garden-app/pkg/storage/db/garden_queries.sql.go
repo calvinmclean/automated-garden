@@ -20,7 +20,7 @@ func (q *Queries) DeleteGarden(ctx context.Context, id string) error {
 }
 
 const getGarden = `-- name: GetGarden :one
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
+SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule, fan_schedule FROM gardens
 WHERE id = ? LIMIT 1
 `
 
@@ -39,12 +39,13 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (Garden, error) {
 		&i.NotificationSettings,
 		&i.ControllerConfig,
 		&i.LightSchedule,
+		&i.FanSchedule,
 	)
 	return i, err
 }
 
 const getGardenByTopicPrefix = `-- name: GetGardenByTopicPrefix :one
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
+SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule, fan_schedule FROM gardens
 WHERE topic_prefix = ? LIMIT 1
 `
 
@@ -63,12 +64,13 @@ func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string
 		&i.NotificationSettings,
 		&i.ControllerConfig,
 		&i.LightSchedule,
+		&i.FanSchedule,
 	)
 	return i, err
 }
 
 const listActiveGardens = `-- name: ListActiveGardens :many
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens WHERE end_date IS NULL
+SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule, fan_schedule FROM gardens WHERE end_date IS NULL
    OR end_date > ?
 `
 
@@ -93,6 +95,7 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 			&i.NotificationSettings,
 			&i.ControllerConfig,
 			&i.LightSchedule,
+			&i.FanSchedule,
 		); err != nil {
 			return nil, err
 		}
@@ -108,7 +111,7 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 }
 
 const listAllGardens = `-- name: ListAllGardens :many
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
+SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule, fan_schedule FROM gardens
 `
 
 func (q *Queries) ListAllGardens(ctx context.Context) ([]Garden, error) {
@@ -132,6 +135,7 @@ func (q *Queries) ListAllGardens(ctx context.Context) ([]Garden, error) {
 			&i.NotificationSettings,
 			&i.ControllerConfig,
 			&i.LightSchedule,
+			&i.FanSchedule,
 		); err != nil {
 			return nil, err
 		}
@@ -168,9 +172,9 @@ INSERT INTO gardens (
   max_zones, temp_humid_sensor,
   created_at, end_date,
   notification_client_id, notification_settings,
-  controller_config, light_schedule
+  controller_config, light_schedule, fan_schedule
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -181,7 +185,8 @@ DO UPDATE SET
   notification_client_id = EXCLUDED.notification_client_id,
   notification_settings = EXCLUDED.notification_settings,
   controller_config = EXCLUDED.controller_config,
-  light_schedule = EXCLUDED.light_schedule
+  light_schedule = EXCLUDED.light_schedule,
+  fan_schedule = EXCLUDED.fan_schedule
 `
 
 type UpsertGardenParams struct {
@@ -196,6 +201,7 @@ type UpsertGardenParams struct {
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
 	LightSchedule        sql.NullString
+	FanSchedule          sql.NullString
 }
 
 func (q *Queries) UpsertGarden(ctx context.Context, arg UpsertGardenParams) error {
@@ -211,6 +217,7 @@ func (q *Queries) UpsertGarden(ctx context.Context, arg UpsertGardenParams) erro
 		arg.NotificationSettings,
 		arg.ControllerConfig,
 		arg.LightSchedule,
+		arg.FanSchedule,
 	)
 	return err
 }

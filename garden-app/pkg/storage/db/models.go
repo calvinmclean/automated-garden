@@ -21,6 +21,7 @@ type Garden struct {
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
 	LightSchedule        sql.NullString
+	FanSchedule          sql.NullString
 }
 
 type Note struct {
