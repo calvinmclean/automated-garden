@@ -83,7 +83,7 @@ func (w *Worker) StartAsync() {
 
 	w.mqttClient.AddHandler(mqtt.TopicHandler{
 		Topic:   "+/data/water",
-		Handler: w.handleWaterCompleteMessage,
+		Handler: w.handleWaterCompleteStatusMessage,
 	})
 	w.mqttClient.AddHandler(mqtt.TopicHandler{
 		Topic:   "+/data/logs",
