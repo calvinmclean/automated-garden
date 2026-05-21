@@ -38,6 +38,13 @@ func (c *Controller) stopHandler(_ string) paho.MessageHandler {
 		c.assertionData.Unlock()
 
 		c.subLogger.Info("received StopAction", "topic", msg.Topic())
+
+		c.eventsMu.Lock()
+		for _, pe := range c.pendingEvents {
+			pe.cancelFunc()
+			break // only cancel the oldest (first) active event
+		}
+		c.eventsMu.Unlock()
 	}
 }
 
@@ -48,6 +55,12 @@ func (c *Controller) stopAllHandler(_ string) paho.MessageHandler {
 		c.assertionData.Unlock()
 
 		c.subLogger.Info("received StopAllAction", "topic", msg.Topic())
+
+		c.eventsMu.Lock()
+		for _, pe := range c.pendingEvents {
+			pe.cancelFunc()
+		}
+		c.eventsMu.Unlock()
 	})
 }
 

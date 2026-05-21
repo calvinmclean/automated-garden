@@ -6,19 +6,29 @@
 
 #include "garden_config.h"
 
-struct WaterEvent {
+enum WaterStatus { WATER_START, WATER_COMPLETE, WATER_CANCELLED };
+
+struct WaterMessage {
     int position;
     unsigned long duration;
     char* zone_id;
     char* id;
-    bool done;
+    WaterStatus status;
+};
+
+struct WaterStatusEvent {
+    int position;
+    unsigned long duration;
+    char* zone_id;
+    char* id;
+    WaterStatus status;
 };
 
 struct LightEvent {
     const char* state;
 };
 
-void waterZone(WaterEvent we);
+void waterZone(WaterMessage we);
 void zoneOff(int id);
 void zoneOn(int id);
 void waterZoneTask(void* parameters);

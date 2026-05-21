@@ -8,28 +8,29 @@ import (
 	"strings"
 	"time"
 
+	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
 )
 
-func (w *Worker) handleWaterCompleteMessage(_ mqtt.Client, msg mqtt.Message) {
-	err := w.doWaterCompleteMessage(msg.Topic(), msg.Payload())
+func (w *Worker) handleWaterCompleteStatusMessage(_ mqtt.Client, msg mqtt.Message) {
+	err := w.doWaterCompleteStatusMessage(msg.Topic(), msg.Payload())
 	if err != nil {
 		w.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
 	}
 }
 
-func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
+func (w *Worker) doWaterCompleteStatusMessage(topic string, payload []byte) error {
 	logger := w.logger.With("topic", topic)
 
-	waterMessage, err := parseWaterMessage(payload)
+	waterMessage, err := parseWaterStatusEvent(payload)
 	if err != nil {
 		return fmt.Errorf("error parsing message: %w", err)
 	}
 	logger = logger.With(
 		"event_id", waterMessage.EventID,
 		"zone_id", waterMessage.ZoneID,
-		"start", waterMessage.Start,
+		"status", waterMessage.Status,
 	)
 
 	garden, err := w.getGardenForTopic(topic)
@@ -46,11 +47,11 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 
 	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
-	if waterMessage.Start && !garden.GetNotificationSettings().WateringStarted {
+	if waterMessage.Status == pkg.WaterStatusStarted && !garden.GetNotificationSettings().WateringStarted {
 		logger.Info("skipping message since notification is not enabled for the start")
 		return nil
 	}
-	if !garden.GetNotificationSettings().WateringComplete {
+	if waterMessage.Status != pkg.WaterStatusStarted && !garden.GetNotificationSettings().WateringComplete {
 		logger.Info("skipping message since notification is not enabled")
 		return nil
 	}
@@ -62,10 +63,19 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	logger.Info("found zone")
 
 	var title, message string
-	if waterMessage.Start {
+	switch waterMessage.Status {
+	case pkg.WaterStatusStarted:
 		title = fmt.Sprintf("%s started watering", zone.Name)
 		message = fmt.Sprintf("Garden: %s", garden.Name)
-	} else {
+	case pkg.WaterStatusCancelled:
+		title = fmt.Sprintf("%s watering cancelled", zone.Name)
+		if waterMessage.Duration > 0 {
+			dur := time.Duration(waterMessage.Duration) * time.Millisecond
+			message = fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
+		} else {
+			message = fmt.Sprintf("Garden: %s", garden.Name)
+		}
+	default:
 		title = fmt.Sprintf("%s finished watering", zone.Name)
 		dur := time.Duration(waterMessage.Duration) * time.Millisecond
 		message = fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
@@ -74,10 +84,10 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	return w.sendNotificationForGarden(garden, title, message)
 }
 
-func parseWaterMessage(msg []byte) (action.WaterMessage, error) {
+func parseWaterStatusEvent(msg []byte) (action.WaterStatusEvent, error) {
 	p := parser{data: bytes.TrimPrefix(msg, []byte("water,"))}
 
-	result := action.WaterMessage{}
+	result := action.WaterStatusEvent{}
 
 	part, err := p.readNextPair()
 	for part != "" && err == nil {
@@ -90,13 +100,13 @@ func parseWaterMessage(msg []byte) (action.WaterMessage, error) {
 		case "zone":
 			zonePos, err := strconv.ParseUint(val, 10, 0)
 			if err != nil {
-				return action.WaterMessage{}, fmt.Errorf("invalid integer for position: %w", err)
+				return action.WaterStatusEvent{}, fmt.Errorf("invalid integer for position: %w", err)
 			}
 			result.Position = uint(zonePos)
 		case "millis":
 			dur, err := strconv.ParseInt(val, 10, 64)
 			if err != nil {
-				return action.WaterMessage{}, fmt.Errorf("invalid integer for millis: %w", err)
+				return action.WaterStatusEvent{}, fmt.Errorf("invalid integer for millis: %w", err)
 			}
 			result.Duration = dur
 		case "id":
@@ -104,20 +114,19 @@ func parseWaterMessage(msg []byte) (action.WaterMessage, error) {
 		case "zone_id":
 			result.ZoneID = strings.Trim(val, `"`)
 		case "status":
-			switch val {
-			case "complete":
-				result.Start = false
-			case "start":
-				result.Start = true
-			default:
-				return action.WaterMessage{}, fmt.Errorf("invalid status: %q", val)
-			}
+			result.Status = pkg.WaterStatus(val)
 		}
 
 		part, err = p.readNextPair()
 	}
 	if err != nil {
-		return action.WaterMessage{}, fmt.Errorf("error reading next pair: %w", err)
+		return action.WaterStatusEvent{}, fmt.Errorf("error reading next pair: %w", err)
+	}
+
+	if result.Status != "" && result.Status != pkg.WaterStatusStarted &&
+		result.Status != pkg.WaterStatusCompleted &&
+		result.Status != pkg.WaterStatusCancelled {
+		return action.WaterStatusEvent{}, fmt.Errorf("invalid status: %q", result.Status)
 	}
 
 	return result, nil

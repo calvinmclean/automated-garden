@@ -46,15 +46,21 @@ type WaterMessage struct {
 	Position uint   `json:"position"`
 	EventID  string `json:"id"`
 	Source   Source `json:"source"`
-
-	// Start is a boolean showing if this record is the start or finish event. It is excluded
-	// from JSON because it is just used when parsing incoming messages that log the start/finish
-	Start bool `json:"-"`
 }
 
 // String returns a string representation of the WaterMessage
 func (m *WaterMessage) String() string {
 	return fmt.Sprintf("%+v", *m)
+}
+
+// WaterStatusEvent is parsed from incoming MQTT water status messages
+// (start, complete, cancelled) published by the controller.
+type WaterStatusEvent struct {
+	Duration int64
+	ZoneID   string
+	Position uint
+	EventID  string
+	Status   pkg.WaterStatus
 }
 
 // Source shows how an action was triggered

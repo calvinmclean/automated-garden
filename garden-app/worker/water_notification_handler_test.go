@@ -23,15 +23,15 @@ func urlMethodMatcher(r *http.Request, cassetteReq cassette.Request) bool {
 	return r.Method == cassetteReq.Method && r.URL.String() == cassetteReq.URL
 }
 
-func TestParseWaterMessage(t *testing.T) {
+func TestParseWaterStatusEvent(t *testing.T) {
 	tests := []struct {
 		in       string
-		expected action.WaterMessage
+		expected action.WaterStatusEvent
 		error    string
 	}{
 		{
 			"water,zone=1,zone_id=\"zoneID\",id=\"eventID\" millis=6000",
-			action.WaterMessage{
+			action.WaterStatusEvent{
 				Position: 1,
 				Duration: 6000,
 				ZoneID:   "zoneID",
@@ -41,7 +41,7 @@ func TestParseWaterMessage(t *testing.T) {
 		},
 		{
 			"water,zone=100,zone_id=\"zoneID\",id=\"eventID\" millis=1",
-			action.WaterMessage{
+			action.WaterStatusEvent{
 				Position: 100,
 				Duration: 1,
 				ZoneID:   "zoneID",
@@ -51,46 +51,68 @@ func TestParseWaterMessage(t *testing.T) {
 		},
 		{
 			"water,status=complete,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
-			action.WaterMessage{
+			action.WaterStatusEvent{
 				Position: 0,
 				Duration: 0,
 				ZoneID:   "zoneID",
 				EventID:  "eventID",
-				Start:    false,
+				Status:   pkg.WaterStatusCompleted,
 			},
 			"",
 		},
 		{
 			"water,status=start,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
-			action.WaterMessage{
+			action.WaterStatusEvent{
 				Position: 0,
 				Duration: 0,
 				ZoneID:   "zoneID",
 				EventID:  "eventID",
-				Start:    true,
+				Status:   pkg.WaterStatusStarted,
+			},
+			"",
+		},
+		{
+			"water,status=cancelled,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=30000",
+			action.WaterStatusEvent{
+				Position: 0,
+				Duration: 30000,
+				ZoneID:   "zoneID",
+				EventID:  "eventID",
+				Status:   pkg.WaterStatusCancelled,
+			},
+			"",
+		},
+		{
+			"water,status=cancelled,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			action.WaterStatusEvent{
+				Position: 0,
+				Duration: 0,
+				ZoneID:   "zoneID",
+				EventID:  "eventID",
+				Status:   pkg.WaterStatusCancelled,
 			},
 			"",
 		},
 		{
 			"water,zone=-1,zone_id=zoneID,id=eventID millis=0",
-			action.WaterMessage{},
+			action.WaterStatusEvent{},
 			`invalid integer for position: strconv.ParseUint: parsing "-1": invalid syntax`,
 		},
 		{
 			"water,zone=0,zone_id=zoneID,id=eventID millis=X",
-			action.WaterMessage{},
+			action.WaterStatusEvent{},
 			"invalid integer for millis: strconv.ParseInt: parsing \"X\": invalid syntax",
 		},
 		{
 			"water,status=X,zone=0,zone_id=zoneID,id=eventID millis=1",
-			action.WaterMessage{},
+			action.WaterStatusEvent{},
 			`invalid status: "X"`,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.in, func(t *testing.T) {
-			waterMessage, err := parseWaterMessage([]byte(tt.in))
+			waterMessage, err := parseWaterStatusEvent([]byte(tt.in))
 			if tt.error == "" {
 				require.NoError(t, err)
 			} else {
@@ -111,7 +133,7 @@ func TestHandleMessage(t *testing.T) {
 	handler := NewWorker(storageClient, nil, nil, slog.Default())
 
 	t.Run("ErrorParsingMessage", func(t *testing.T) {
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte{})
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte{})
 		require.Error(t, err)
 		require.Equal(t, "error getting garden with topic-prefix \"garden\": error getting garden: resource not found", err.Error())
 	})
@@ -119,7 +141,7 @@ func TestHandleMessage(t *testing.T) {
 	zoneID := babyapi.NewID()
 	t.Run("ErrorGettingGarden", func(t *testing.T) {
 		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", msg)
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, "error getting garden with topic-prefix \"garden\": error getting garden: resource not found", err.Error())
 	})
@@ -137,6 +159,7 @@ func TestHandleMessage(t *testing.T) {
 	zone := &pkg.Zone{
 		ID:       zoneID,
 		GardenID: garden.ID.ID,
+		Name:     "Zone",
 		Position: &zero,
 	}
 	err = storageClient.Zones.Set(context.Background(), zone)
@@ -144,7 +167,7 @@ func TestHandleMessage(t *testing.T) {
 
 	t.Run("SuccessfulWithNoNotificationClients", func(t *testing.T) {
 		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", msg)
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.NoError(t, err)
 	})
 
@@ -166,13 +189,13 @@ func TestHandleMessage(t *testing.T) {
 
 	t.Run("WateringStarted_NotificationNotEnabled", func(t *testing.T) {
 		msg := fmt.Sprintf("water,status=start,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
 		require.NoError(t, err)
 	})
 
 	t.Run("WateringComplete_NotificationNotEnabled", func(t *testing.T) {
 		msg := fmt.Sprintf("water,status=complete,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
 		require.NoError(t, err)
 	})
 
@@ -188,7 +211,7 @@ func TestHandleMessage(t *testing.T) {
 	t.Run("ErrorGettingZone", func(t *testing.T) {
 		dneID := xid.New().String()
 		msg := fmt.Appendf(nil, "water,zone=1 millis=6000 zone_id=%s id=eventID", dneID)
-		err = handler.doWaterCompleteMessage("garden/data/water", msg)
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, fmt.Sprintf("error getting zone %s: resource not found", dneID), err.Error())
 	})
@@ -211,7 +234,7 @@ func TestHandleMessage(t *testing.T) {
 		http.DefaultClient = r.GetDefaultClient()
 
 		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", msg)
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to send notification")
 	})
@@ -243,7 +266,7 @@ func TestHandleMessage(t *testing.T) {
 		http.DefaultClient = r.GetDefaultClient()
 
 		msg := fmt.Sprintf("water,status=start,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
 		require.NoError(t, err)
 
 		require.Equal(t, 1, numMessages)
@@ -276,7 +299,7 @@ func TestHandleMessage(t *testing.T) {
 		http.DefaultClient = r.GetDefaultClient()
 
 		msg := fmt.Sprintf("water,status=complete,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
 		require.NoError(t, err)
 
 		require.Equal(t, 1, numMessages)
@@ -305,6 +328,7 @@ func TestHandleMessageFake(t *testing.T) {
 	zone := &pkg.Zone{
 		ID:       zoneID,
 		GardenID: garden.ID.ID,
+		Name:     "Zone",
 		Position: &zero,
 	}
 	err = storageClient.Zones.Set(context.Background(), zone)
@@ -332,7 +356,7 @@ func TestHandleMessageFake(t *testing.T) {
 		defer fake_notification.Reset()
 
 		msg := fmt.Sprintf("water,status=start,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
 		require.NoError(t, err)
 
 		lastMsg := fake_notification.LastMessage()
@@ -343,10 +367,34 @@ func TestHandleMessageFake(t *testing.T) {
 		defer fake_notification.Reset()
 
 		msg := fmt.Sprintf("water,status=complete,zone=0,id=eventID,zone_id=%s millis=6000", zoneID.String())
-		err = handler.doWaterCompleteMessage("garden/data/water", []byte(msg))
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
 		require.NoError(t, err)
 
 		lastMsg := fake_notification.LastMessage()
 		require.NotEmpty(t, lastMsg.Title)
+	})
+
+	t.Run("WateringCancelled_WithDuration_FakeSuccess", func(t *testing.T) {
+		defer fake_notification.Reset()
+
+		msg := fmt.Sprintf("water,status=cancelled,zone=0,id=eventID,zone_id=%s millis=30000", zoneID.String())
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
+		require.NoError(t, err)
+
+		lastMsg := fake_notification.LastMessage()
+		require.Equal(t, "Zone watering cancelled", lastMsg.Title)
+		require.Contains(t, lastMsg.Message, "Watered for 30s")
+	})
+
+	t.Run("WateringCancelled_ZeroDuration_FakeSuccess", func(t *testing.T) {
+		defer fake_notification.Reset()
+
+		msg := fmt.Sprintf("water,status=cancelled,zone=0,id=eventID,zone_id=%s millis=0", zoneID.String())
+		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte(msg))
+		require.NoError(t, err)
+
+		lastMsg := fake_notification.LastMessage()
+		require.Equal(t, "Zone watering cancelled", lastMsg.Title)
+		require.NotContains(t, lastMsg.Message, "Watered for")
 	})
 }

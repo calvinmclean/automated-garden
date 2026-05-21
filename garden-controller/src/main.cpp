@@ -43,50 +43,36 @@ void setupLight() {
 }
 
 /*
-  waterZoneTask will wait for WaterEvents on a queue and will then open the
+  waterZoneTask will wait for WaterMessages on a queue and will then open the
   valve for an amount of time. The delay before closing the valve is done with
   xTaskNotifyWait, allowing it to be interrupted with xTaskNotify. After the
-  valve is closed, the WaterEvent is pushed to the queue fro publisherTask
-  which will record the WaterEvent in InfluxDB via MQTT and Telegraf
+  valve is closed, the WaterStatusEvent is pushed to the queue for publisherTask
+  which will record the WaterStatusEvent in InfluxDB via MQTT and Telegraf
 */
 void waterZoneTask(void* parameters) {
-  WaterEvent we;
+  WaterMessage we;
   while (true) {
     if (xQueueReceive(waterQueue, &we, 0)) {
-      // Copy ZoneID and EventID to re-use when sending the completed event
-      char* zone_id = strdup(we.zone_id);
-      char* event_id = strdup(we.id);
-
-      if (zone_id == nullptr) {
-          printf("memory allocation failed for zone_id\n");
-          return;
-      }
-      if (event_id == nullptr) {
-          printf("memory allocation failed for event_id\n");
-          return;
-      }
-
-      free(we.zone_id);
-      free(we.id);
-
-      WaterEvent event = {we.position, 0, zone_id, event_id, false};
-      // printf("DEBUG: waterZoneTask sends 1: zone_id=%s event_id=%s\n", zone_id, event_id);
-      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
+      // Transfer original strings to publisher for START event
+      WaterStatusEvent startEvent = {we.position, 0, we.zone_id, we.id, WATER_START};
+      // printf("DEBUG: waterZoneTask sends 1: zone_id=%s event_id=%s\n", we.zone_id, we.id);
+      xQueueSend(waterPublisherQueue, &startEvent, portMAX_DELAY);
 
       unsigned long start = millis();
       zoneOn(we.position);
       // Delay for specified watering time with option to interrupt
-      xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
+      BaseType_t notified = xTaskNotifyWait(0x00, ULONG_MAX, NULL, we.duration / portTICK_PERIOD_MS);
       zoneOff(we.position);
-      unsigned long stop = millis();
+      unsigned long elapsed = millis() - start;
 
-      event.done = true;
-      event.duration = stop - start;
-      // printf("DEBUG: waterZoneTask sends 2: zone_id=%s event_id=%s\n", zone_id, event_id);
-      xQueueSend(waterPublisherQueue, &event, portMAX_DELAY);
+      // Make fresh copies for terminal event (publisher will free these)
+      char* zone_id_copy = strdup(we.zone_id);
+      char* event_id_copy = strdup(we.id);
 
-      free(zone_id);
-      free(event_id);
+      WaterStatus terminalStatus = (notified == pdTRUE) ? WATER_CANCELLED : WATER_COMPLETE;
+      WaterStatusEvent terminalEvent = {we.position, elapsed, zone_id_copy, event_id_copy, terminalStatus};
+      // printf("DEBUG: waterZoneTask sends 2: zone_id=%s event_id=%s status=%s\n", zone_id_copy, event_id_copy, terminalStatus == WATER_COMPLETE ? "complete" : "cancelled");
+      xQueueSend(waterPublisherQueue, &terminalEvent, portMAX_DELAY);
     }
     vTaskDelay(5 / portTICK_PERIOD_MS);
   }
@@ -124,24 +110,31 @@ void stopWatering() {
 }
 
 /*
-  stopAllWatering will interrupt the WaterZoneTask and clear the remaining queue
+  stopAllWatering will interrupt the WaterZoneTask and clear the remaining queue.
+  Queued events are sent to the publisher as CANCELLED so the backend knows
+  they were discarded.
 */
 void stopAllWatering() {
-  xQueueReset(waterQueue);
+  WaterMessage we;
+  while (xQueueReceive(waterQueue, &we, 0)) {
+    WaterStatusEvent cancelEvent = {we.position, 0, we.zone_id, we.id, WATER_CANCELLED};
+    xQueueSend(waterPublisherQueue, &cancelEvent, portMAX_DELAY);
+    // Ownership of we.zone_id and we.id transferred to publisher — DO NOT free
+  }
   xTaskNotify(waterZoneTaskHandle, 0, eNoAction);
 }
 
 /*
-  waterZone pushes a WaterEvent to the queue in order to water a single
+  waterZone pushes a WaterMessage to the queue in order to water a single
   zone. First it will make sure the ID is not out of bounds
 */
-void waterZone(WaterEvent we) {
+void waterZone(WaterMessage we) {
   // Exit if valveID is out of bounds
   if (we.position >= config.numZones || we.position < 0) {
     printf("position %d is out of range, aborting request\n", we.position);
     return;
   }
-  printf("pushing WaterEvent to queue: zone_id=%s, position=%d, time=%lu\n", we.zone_id, we.position, we.duration);
+  printf("pushing WaterMessage to queue: zone_id=%s, position=%d, time=%lu\n", we.zone_id, we.position, we.duration);
   xQueueSend(waterQueue, &we, portMAX_DELAY);
 }
 
@@ -200,7 +193,7 @@ void setup() {
       setupDHT22();
   }
 
-  waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterEvent));
+  waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterMessage));
   if (waterQueue == NULL) {
     printf("error creating the waterQueue\n");
   }
