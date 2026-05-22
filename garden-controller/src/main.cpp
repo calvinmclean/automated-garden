@@ -53,9 +53,10 @@ void waterZoneTask(void* parameters) {
   WaterMessage we;
   while (true) {
     if (xQueueReceive(waterQueue, &we, 0)) {
-      // Transfer original strings to publisher for START event
-      WaterStatusEvent startEvent = {we.position, 0, we.zone_id, we.id, WATER_START};
-      // printf("DEBUG: waterZoneTask sends 1: zone_id=%s event_id=%s\n", we.zone_id, we.id);
+      // Make copies for START event (publisher frees copies)
+      char* zone_id_start = strdup(we.zone_id);
+      char* event_id_start = strdup(we.id);
+      WaterStatusEvent startEvent = {we.position, 0, zone_id_start, event_id_start, WATER_START};
       xQueueSend(waterPublisherQueue, &startEvent, portMAX_DELAY);
 
       unsigned long start = millis();
@@ -65,13 +66,9 @@ void waterZoneTask(void* parameters) {
       zoneOff(we.position);
       unsigned long elapsed = millis() - start;
 
-      // Make fresh copies for terminal event (publisher will free these)
-      char* zone_id_copy = strdup(we.zone_id);
-      char* event_id_copy = strdup(we.id);
-
+      // Use originals for terminal event (publisher frees originals)
       WaterStatus terminalStatus = (notified == pdTRUE) ? WATER_CANCELLED : WATER_COMPLETE;
-      WaterStatusEvent terminalEvent = {we.position, elapsed, zone_id_copy, event_id_copy, terminalStatus};
-      // printf("DEBUG: waterZoneTask sends 2: zone_id=%s event_id=%s status=%s\n", zone_id_copy, event_id_copy, terminalStatus == WATER_COMPLETE ? "complete" : "cancelled");
+      WaterStatusEvent terminalEvent = {we.position, elapsed, we.zone_id, we.id, terminalStatus};
       xQueueSend(waterPublisherQueue, &terminalEvent, portMAX_DELAY);
     }
     vTaskDelay(5 / portTICK_PERIOD_MS);

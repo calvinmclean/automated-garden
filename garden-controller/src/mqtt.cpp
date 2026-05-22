@@ -218,7 +218,6 @@ void handleWaterCommand(char* message) {
         strdup(doc["id"] | "N/A"),
         WATER_START
     };
-    printf("received command to water zone %d (%s) for %lu\n", we.position, we.zone_id, we.duration);
     waterZone(we);
 }
 
