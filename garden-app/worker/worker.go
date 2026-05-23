@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"time"
@@ -47,8 +48,6 @@ type Worker struct {
 	// When Garden health messages are received, Timers are created to track their
 	// uptime and notify if they go down
 	downTimers map[string]clock.Timer
-	// Wait for any downtime notifications before shutting down
-	downtimeWG *sync.WaitGroup
 }
 
 // NewWorker creates a Worker with specified clients
@@ -67,13 +66,28 @@ func NewWorker(
 		scheduler:      scheduler,
 		logger:         logger.With("source", "worker"),
 		downTimers:     map[string]clock.Timer{},
-		downtimeWG:     &sync.WaitGroup{},
 	}
 }
 
 // StartAsync starts the Worker's background jobs
 func (w *Worker) StartAsync() {
 	w.scheduler.StartAsync()
+
+	// Sync light state for all gardens with a LightSchedule
+	if w.storageClient != nil {
+		for g, err := range w.storageClient.Gardens.Search(context.Background(), "", nil) {
+			if err != nil {
+				w.logger.Error("error getting garden for light state sync", "error", err)
+				continue
+			}
+			logger := w.contextLogger(g, nil, nil)
+
+			err := w.setExpectedLightState(g)
+			if err != nil {
+				logger.Error("error setting expected LightState", "error", err)
+			}
+		}
+	}
 
 	// Skip adding handler when mocked since it's not used
 	_, isMock := w.mqttClient.(*mqtt.MockClient)
@@ -108,8 +122,6 @@ func (w *Worker) Stop() {
 	if w.influxdbClient != nil {
 		w.influxdbClient.Close()
 	}
-
-	w.downtimeWG.Wait()
 
 	prometheus.Unregister(scheduleJobsGauge)
 	prometheus.Unregister(schedulerErrors)

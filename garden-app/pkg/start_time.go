@@ -42,6 +42,7 @@ func (st *StartTime) String() string {
 // OnDate takes the StartTime hour/minute/second and applies to the date on the input.
 // It preserves the calendar date (year/month/day) in the StartTime's timezone.
 func (st StartTime) OnDate(date time.Time) time.Time {
+	date = date.In(st.Time.Location())
 	return time.Date(
 		date.Year(),
 		date.Month(),

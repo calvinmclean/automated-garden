@@ -169,7 +169,12 @@ func GardenTestsWithID(t *testing.T, gardenID string) {
 
 			time.Sleep(100 * time.Millisecond)
 
-			c.AssertLightActions(t, action.LightAction{State: state})
+			// syncLightState may have sent an action at startup or during ResetLightSchedule,
+			// so the history may contain extra actions. Just assert the last action matches.
+			lightActions := c.GetLightActions()
+			require.NotEmpty(t, lightActions)
+			assert.Equal(t, state, lightActions[len(lightActions)-1].State)
+			c.ClearLightActions()
 		})
 	}
 	t.Run("ChangeLightScheduleStartTimeResetsLightSchedule", func(t *testing.T) {
@@ -204,28 +209,28 @@ func GardenTestsWithID(t *testing.T, gardenID string) {
 		// wait a little extra
 		time.Sleep(2*newStartTimeDelay + 500*time.Millisecond)
 
-		// Assert both LightActions
+		// syncLightState sends an immediate action when ResetLightSchedule is called.
+		// At the time of reset, the current time is before the new ON time, so it sends OFF.
+		// Then the scheduled ON and OFF run.
 		c.AssertLightActions(t,
+			action.LightAction{State: pkg.LightStateOff},
 			action.LightAction{State: pkg.LightStateOn},
 			action.LightAction{State: pkg.LightStateOff},
 		)
 	})
-	t.Run("GetGardenToCheckInfluxDBData", func(t *testing.T) {
+	t.Run("GetGarden", func(t *testing.T) {
 		var g server.GardenResponse
-		status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusOK, status)
 
 		// The health status timing can be inconsistent, so it should be retried
-		retries := 1
-		for g.Health.Status != pkg.HealthStatusUp && retries <= 5 {
-			time.Sleep(time.Duration(retries) * time.Second)
-
+		for range 50 {
 			status, err := makeRequest(http.MethodGet, "/gardens/"+gardenID, http.NoBody, &g)
 			assert.NoError(t, err)
 			assert.Equal(t, http.StatusOK, status)
 
-			retries++
+			if g.Health.Status == pkg.HealthStatusUp {
+				break
+			}
+			time.Sleep(time.Second)
 		}
 
 		assert.Equal(t, pkg.HealthStatusUp, g.Health.Status)
@@ -326,13 +331,8 @@ func ZoneTestsWithID(t *testing.T, gardenID string) {
 	})
 	t.Run("CheckWateringHistory", func(t *testing.T) {
 		// This test needs a few repeats to get a reliable pass, which is fine
-		retries := 0
-
 		var history server.ZoneWaterHistoryResponse
-		for retries < 100 && history.Count < 1 {
-			retries++
-			time.Sleep(300 * time.Millisecond)
-
+		for range 100 {
 			status, err := makeRequest(
 				http.MethodGet,
 				fmt.Sprintf("/gardens/%s/zones/%s/history", gardenID, zoneID),
@@ -341,6 +341,11 @@ func ZoneTestsWithID(t *testing.T, gardenID string) {
 			)
 			assert.NoError(t, err)
 			assert.Equal(t, http.StatusOK, status)
+
+			if history.Count >= 1 {
+				break
+			}
+			time.Sleep(300 * time.Millisecond)
 		}
 
 		require.Equal(t, 1, history.Count)

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"log/slog"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +19,25 @@ import (
 )
 
 const testDowntimeThreshold = 5 * time.Minute
+
+// safeBuffer wraps bytes.Buffer with a mutex so it can be used concurrently
+// as an io.Writer for slog handlers in tests.
+type safeBuffer struct {
+	mu sync.Mutex
+	b  bytes.Buffer
+}
+
+func (sb *safeBuffer) Write(p []byte) (n int, err error) {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.b.Write(p)
+}
+
+func (sb *safeBuffer) String() string {
+	sb.mu.Lock()
+	defer sb.mu.Unlock()
+	return sb.b.String()
+}
 
 func TestCheckHealthMessage(t *testing.T) {
 	tests := []struct {
@@ -95,8 +115,8 @@ func TestHandleHealthMessage(t *testing.T) {
 		defer fake.Reset()
 		mockClock := clock.MockTime()
 
-		var logBuffer bytes.Buffer
-		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		logBuffer := &safeBuffer{}
+		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 		topic := "garden/data/health"
 		w.handleHealthMessage(topic, `health garden="garden"`)
@@ -118,8 +138,8 @@ func TestHandleHealthMessage(t *testing.T) {
 		defer fake.Reset()
 		mockClock := clock.MockTime()
 
-		var logBuffer bytes.Buffer
-		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		logBuffer := &safeBuffer{}
+		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 		topic := "garden/data/health"
 
@@ -150,8 +170,8 @@ func TestHandleHealthMessage(t *testing.T) {
 		err = storageClient.Gardens.Set(context.Background(), garden)
 		require.NoError(t, err)
 
-		var logBuffer bytes.Buffer
-		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
+		logBuffer := &safeBuffer{}
+		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 		topic := "new-garden/data/health"
 		w.handleHealthMessage(topic, `health garden="new-garden"`)

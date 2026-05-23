@@ -44,13 +44,14 @@ func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) er
 }
 
 // setExpectedLightState is used when a GardenController connects/starts up. It sets the current
-// expected light state in case the last toggle was missed during downtime or turned off after crashing
+// expected light state in case the last toggle was missed during downtime or turned off after crashing.
+// It is also called by syncLightState when the server schedules/resets a LightSchedule.
 func (w *Worker) setExpectedLightState(garden *pkg.Garden) error {
 	if garden == nil {
 		return errors.New("nil Garden")
 	}
 
-	if garden.LightSchedule == nil {
+	if garden.LightSchedule == nil || w.mqttClient == nil {
 		return nil
 	}
 
@@ -59,7 +60,7 @@ func (w *Worker) setExpectedLightState(garden *pkg.Garden) error {
 		State: state,
 	})
 	if err != nil {
-		return fmt.Errorf("error executing LigthAction: %w", err)
+		return fmt.Errorf("error executing LightAction: %w", err)
 	}
 
 	return nil

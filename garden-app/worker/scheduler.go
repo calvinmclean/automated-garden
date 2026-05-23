@@ -189,8 +189,23 @@ func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger.Debug("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
 	now := clock.Now()
-	onStartDate := g.LightSchedule.StartTime.OnDate(now).UTC()
-	offStartDate := onStartDate.Add(g.LightSchedule.Duration.Duration)
+
+	// Use NextChange to determine correct StartAt for ON and OFF jobs.
+	// This handles the case where the current cycle started "yesterday"
+	// relative to now, so gocron's StartAt is on the correct interval.
+	nextTime, nextState := g.LightSchedule.NextChange(now)
+	var onStartDate, offStartDate time.Time
+	if nextState == pkg.LightStateOff {
+		// Currently in ON period: next change is OFF (today), ON started yesterday
+		offStartDate = nextTime.UTC()
+		onStartDate = offStartDate.Add(-g.LightSchedule.Duration.Duration)
+	} else {
+		// Currently in OFF period: next change is ON (today or tomorrow)
+		onStartDate = nextTime.UTC()
+		offStartDate = onStartDate.Add(g.LightSchedule.Duration.Duration)
+	}
+
+	logger.Debug("computed light schedule start dates", "on_start_date", onStartDate, "off_start_date", offStartDate)
 
 	// Schedule the LightAction execution for ON and OFF
 	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Add(2)
@@ -229,7 +244,14 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 	if err := w.RemoveJobsByID(g.ID.String()); err != nil {
 		return err
 	}
-	return w.ScheduleLightActions(g)
+	if err := w.ScheduleLightActions(g); err != nil {
+		return err
+	}
+	if err := w.setExpectedLightState(g); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // RemoveJobsByID will remove Jobs tagged with the specific xid
