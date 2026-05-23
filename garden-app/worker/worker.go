@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"log/slog"
 	"sync"
 	"time"
@@ -74,6 +75,22 @@ func NewWorker(
 // StartAsync starts the Worker's background jobs
 func (w *Worker) StartAsync() {
 	w.scheduler.StartAsync()
+
+	// Sync light state for all gardens with a LightSchedule
+	if w.storageClient != nil {
+		for g, err := range w.storageClient.Gardens.Search(context.Background(), "", nil) {
+			if err != nil {
+				w.logger.Error("error getting garden for light state sync", "error", err)
+				continue
+			}
+			logger := w.contextLogger(g, nil, nil)
+
+			err := w.setExpectedLightState(g)
+			if err != nil {
+				logger.Error("error setting expected LightState", "error", err)
+			}
+		}
+	}
 
 	// Skip adding handler when mocked since it's not used
 	_, isMock := w.mqttClient.(*mqtt.MockClient)

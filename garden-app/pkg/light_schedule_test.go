@@ -255,3 +255,78 @@ func TestExpectedStateAtTime(t *testing.T) {
 		})
 	}
 }
+
+// TestNextChange_Boundaries tests that NextChange and ExpectedStateAtTime handle
+// exact ON/OFF boundary times correctly. These are regression tests for a bug where
+// boundary times returned Toggle instead of the correct next state.
+func TestNextChange_Boundaries(t *testing.T) {
+	// Use a schedule similar to the user's: 19:00 UTC-7 ON, 14h duration
+	// ON  = 02:00 UTC, OFF = 16:00 UTC
+	tz := time.FixedZone("UTC-7", -7*60*60)
+	ls := LightSchedule{
+		StartTime: &StartTime{Time: time.Date(0, 0, 0, 19, 0, 0, 0, tz)},
+		Duration:  &Duration{Duration: 14 * time.Hour},
+	}
+
+	tests := []struct {
+		name            string
+		now             time.Time
+		expectedTime    time.Time
+		expectedState   LightState
+		expectedCurrent LightState
+	}{
+		{
+			name:            "AtExactOnTime",
+			now:             time.Date(2026, 5, 22, 2, 0, 0, 0, time.UTC),
+			expectedTime:    time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+			expectedState:   LightStateOff,
+			expectedCurrent: LightStateOn,
+		},
+		{
+			name:            "AtExactOffTime",
+			now:             time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+			expectedTime:    time.Date(2026, 5, 23, 2, 0, 0, 0, time.UTC),
+			expectedState:   LightStateOn,
+			expectedCurrent: LightStateOff,
+		},
+		{
+			name:            "OneSecondBeforeOn",
+			now:             time.Date(2026, 5, 22, 1, 59, 59, 0, time.UTC),
+			expectedTime:    time.Date(2026, 5, 22, 2, 0, 0, 0, time.UTC),
+			expectedState:   LightStateOn,
+			expectedCurrent: LightStateOff,
+		},
+		{
+			name:            "OneSecondAfterOn",
+			now:             time.Date(2026, 5, 22, 2, 0, 1, 0, time.UTC),
+			expectedTime:    time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+			expectedState:   LightStateOff,
+			expectedCurrent: LightStateOn,
+		},
+		{
+			name:            "OneSecondBeforeOff",
+			now:             time.Date(2026, 5, 22, 15, 59, 59, 0, time.UTC),
+			expectedTime:    time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+			expectedState:   LightStateOff,
+			expectedCurrent: LightStateOn,
+		},
+		{
+			name:            "OneSecondAfterOff",
+			now:             time.Date(2026, 5, 22, 16, 0, 1, 0, time.UTC),
+			expectedTime:    time.Date(2026, 5, 23, 2, 0, 0, 0, time.UTC),
+			expectedState:   LightStateOn,
+			expectedCurrent: LightStateOff,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			nextTime, nextState := ls.NextChange(tt.now)
+			assert.True(t, tt.expectedTime.Equal(nextTime), "NextChange time mismatch: expected %v, got %v", tt.expectedTime, nextTime)
+			assert.Equal(t, tt.expectedState, nextState, "NextChange state mismatch")
+
+			currentState := ls.ExpectedStateAtTime(tt.now)
+			assert.Equal(t, tt.expectedCurrent, currentState, "ExpectedStateAtTime mismatch")
+		})
+	}
+}

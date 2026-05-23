@@ -87,6 +87,8 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
 
+	// Allow light action sync during StartAsync (test doesn't care about light behavior)
+	mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
@@ -131,6 +133,8 @@ func TestScheduleWaterAction(t *testing.T) {
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
 
+	// Allow light action sync during StartAsync (test doesn't care about light behavior)
+	mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
 	mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
@@ -230,6 +234,8 @@ func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
 			assert.NoError(t, err)
 
 			mqttClient := new(mqtt.MockClient)
+			// Allow light action sync during StartAsync (test doesn't care about light behavior)
+			mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
 			mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
 			mqttClient.On("Disconnect", uint(100)).Return()
 
@@ -308,6 +314,8 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 			assert.NoError(t, err)
 
 			mqttClient := new(mqtt.MockClient)
+			// Allow light action sync during StartAsync (test doesn't care about light behavior)
+			mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
 			mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(errors.New("publish error"))
 			mqttClient.On("Disconnect", uint(100)).Return()
 
@@ -823,4 +831,247 @@ func TestGetNextWaterScheduleWithMultiple(t *testing.T) {
 
 	next = worker.GetNextActiveWaterSchedule([]*pkg.WaterSchedule{})
 	assert.Nil(t, next)
+}
+
+// TestScheduleLightActions_NextRun tests that gocron NextRun values are computed
+// correctly for different mock times relative to the LightSchedule's ON/OFF times.
+// This documents gocron's behavior where StartAt in the past is skipped to the next interval.
+func TestScheduleLightActions_NextRun(t *testing.T) {
+	// Use a schedule similar to the user's: 19:00 UTC-7 ON, 14h duration
+	// ON  = 02:00 UTC, OFF = 16:00 UTC
+	tz := time.FixedZone("UTC-7", -7*60*60)
+
+	tests := []struct {
+		name            string
+		now             time.Time
+		expectedOnNext  time.Time
+		expectedOffNext time.Time
+	}{
+		{
+			name:            "BeforeOnTime",
+			now:             time.Date(2026, 5, 22, 1, 0, 0, 0, time.UTC),
+			expectedOnNext:  time.Date(2026, 5, 22, 2, 0, 0, 0, time.UTC),
+			expectedOffNext: time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+		},
+		{
+			name:            "DuringOnPeriod",
+			now:             time.Date(2026, 5, 22, 3, 0, 0, 0, time.UTC),
+			expectedOnNext:  time.Date(2026, 5, 23, 2, 0, 0, 0, time.UTC),
+			expectedOffNext: time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+		},
+		{
+			name:            "AfterOffTime",
+			now:             time.Date(2026, 5, 22, 17, 0, 0, 0, time.UTC),
+			expectedOnNext:  time.Date(2026, 5, 23, 2, 0, 0, 0, time.UTC),
+			expectedOffNext: time.Date(2026, 5, 23, 16, 0, 0, 0, time.UTC),
+		},
+		{
+			name:            "AtExactOnTime",
+			now:             time.Date(2026, 5, 22, 2, 0, 0, 0, time.UTC),
+			expectedOnNext:  time.Date(2026, 5, 23, 2, 0, 0, 0, time.UTC),
+			expectedOffNext: time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+		},
+		{
+			name:            "AtExactOffTime",
+			now:             time.Date(2026, 5, 22, 16, 0, 0, 0, time.UTC),
+			expectedOnNext:  time.Date(2026, 5, 23, 2, 0, 0, 0, time.UTC),
+			expectedOffNext: time.Date(2026, 5, 23, 16, 0, 0, 0, time.UTC),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClock := clock.MockTime()
+			mockClock.Set(tt.now)
+			t.Cleanup(clock.Reset)
+
+			storageClient, err := storage.NewClient(storage.Config{
+				ConnectionString: ":memory:",
+			})
+			require.NoError(t, err)
+			defer weather.ResetCache()
+
+			influxdbClient := new(influxdb.MockClient)
+			mqttClient := new(mqtt.MockClient)
+			mqttClient.On("Disconnect", uint(100)).Return()
+			influxdbClient.On("Close").Return()
+
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+			worker.StartAsync()
+
+			g := &pkg.Garden{
+				ID:          babyapi.NewID(),
+				Name:        "test-garden",
+				TopicPrefix: "test-garden",
+				LightSchedule: &pkg.LightSchedule{
+					Duration:  &pkg.Duration{Duration: 14 * time.Hour},
+					StartTime: &pkg.StartTime{Time: time.Date(0, 0, 0, 19, 0, 0, 0, tz)},
+				},
+			}
+
+			err = worker.ScheduleLightActions(g)
+			require.NoError(t, err)
+
+			// Find jobs by tags
+			var onJob, offJob interface{ NextRun() time.Time }
+			for _, job := range worker.scheduler.Jobs() {
+				tags := job.Tags()
+				for _, tag := range tags {
+					if tag == g.ID.String() {
+						for _, t := range tags {
+							if t == pkg.LightStateOn.String() {
+								onJob = job
+							}
+							if t == pkg.LightStateOff.String() {
+								offJob = job
+							}
+						}
+					}
+				}
+			}
+
+			require.NotNil(t, onJob, "ON job not found")
+			require.NotNil(t, offJob, "OFF job not found")
+
+			assert.True(t, tt.expectedOnNext.Equal(onJob.NextRun()), "ON NextRun mismatch: expected %v, got %v", tt.expectedOnNext, onJob.NextRun())
+			assert.True(t, tt.expectedOffNext.Equal(offJob.NextRun()), "OFF NextRun mismatch: expected %v, got %v", tt.expectedOffNext, offJob.NextRun())
+
+			worker.Stop()
+			influxdbClient.AssertExpectations(t)
+			mqttClient.AssertExpectations(t)
+		})
+	}
+}
+
+// TestScheduleLightActions_OffInOneMinute tests the exact scenario reported by the user:
+// Schedule: 11 PM ON, 12h duration. Now is 10:59 AM.
+// Light is currently ON (since 11 PM yesterday). OFF is in 1 minute at 11 AM today.
+func TestScheduleLightActions_OffInOneMinute(t *testing.T) {
+	mockClock := clock.MockTime()
+	// 10:59 AM UTC
+	mockClock.Set(time.Date(2026, 5, 22, 10, 59, 0, 0, time.UTC))
+	t.Cleanup(clock.Reset)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+	defer weather.ResetCache()
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	g := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "test-garden",
+		TopicPrefix: "test-garden",
+		LightSchedule: &pkg.LightSchedule{
+			Duration:  &pkg.Duration{Duration: 12 * time.Hour},
+			StartTime: &pkg.StartTime{Time: time.Date(0, 0, 0, 23, 0, 0, 0, time.UTC)},
+		},
+	}
+
+	err = worker.ScheduleLightActions(g)
+	require.NoError(t, err)
+
+	// Find jobs by tags
+	var onJob, offJob interface{ NextRun() time.Time }
+	for _, job := range worker.scheduler.Jobs() {
+		tags := job.Tags()
+		for _, tag := range tags {
+			if tag == g.ID.String() {
+				for _, t := range tags {
+					if t == pkg.LightStateOn.String() {
+						onJob = job
+					}
+					if t == pkg.LightStateOff.String() {
+						offJob = job
+					}
+				}
+			}
+		}
+	}
+
+	require.NotNil(t, onJob, "ON job not found")
+	require.NotNil(t, offJob, "OFF job not found")
+
+	// OFF should run at 11:00 AM today (in 1 minute)
+	expectedOffNext := time.Date(2026, 5, 22, 11, 0, 0, 0, time.UTC)
+	assert.True(t, expectedOffNext.Equal(offJob.NextRun()), "OFF NextRun mismatch: expected %v, got %v", expectedOffNext, offJob.NextRun())
+
+	// ON should run at 11:00 PM today (12 hours after OFF)
+	expectedOnNext := time.Date(2026, 5, 22, 23, 0, 0, 0, time.UTC)
+	assert.True(t, expectedOnNext.Equal(onJob.NextRun()), "ON NextRun mismatch: expected %v, got %v", expectedOnNext, onJob.NextRun())
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
+// TestResetLightSchedule_SyncsStateDuringOnPeriod tests that when ResetLightSchedule is
+// called while the light should be ON (but the scheduled ON job is in the past and would be
+// skipped by gocron), an immediate ON action is executed to sync the state.
+func TestResetLightSchedule_SyncsStateDuringOnPeriod(t *testing.T) {
+	mockClock := clock.MockTime()
+	// Set to 20:00 UTC-7 (May 21) = 03:00 UTC (May 22), which is during the ON period
+	mockClock.Set(time.Date(2026, 5, 22, 3, 0, 0, 0, time.UTC))
+	t.Cleanup(clock.Reset)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+	defer weather.ResetCache()
+
+	tz := time.FixedZone("UTC-7", -7*60*60)
+	g := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "test-garden",
+		TopicPrefix: "test-garden",
+		LightSchedule: &pkg.LightSchedule{
+			Duration:  &pkg.Duration{Duration: 14 * time.Hour},
+			StartTime: &pkg.StartTime{Time: time.Date(0, 0, 0, 19, 0, 0, 0, tz)},
+		},
+	}
+
+	mqttClient := new(mqtt.MockClient)
+	// Expect immediate ON sync because we're in the ON period
+	mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
+	mqttClient.On("Disconnect", uint(100)).Return()
+
+	influxdbClient := new(influxdb.MockClient)
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	err = worker.ResetLightSchedule(g)
+	require.NoError(t, err)
+
+	// Verify ON job was skipped to tomorrow (gocron behavior when StartAt is in the past)
+	var onJob interface{ NextRun() time.Time }
+	for _, job := range worker.scheduler.Jobs() {
+		tags := job.Tags()
+		for _, tag := range tags {
+			if tag == g.ID.String() {
+				for _, t := range tags {
+					if t == pkg.LightStateOn.String() {
+						onJob = job
+					}
+				}
+			}
+		}
+	}
+	require.NotNil(t, onJob, "ON job not found")
+	expectedOnNext := time.Date(2026, 5, 23, 2, 0, 0, 0, time.UTC)
+	assert.True(t, expectedOnNext.Equal(onJob.NextRun()), "ON NextRun should be tomorrow: expected %v, got %v", expectedOnNext, onJob.NextRun())
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
 }

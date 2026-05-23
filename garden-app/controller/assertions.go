@@ -65,3 +65,19 @@ func (c *Controller) AssertLightActions(t *testing.T, expected ...action.LightAc
 	c.assertionData.lightActions = []action.LightAction{}
 	c.assertionData.Unlock()
 }
+
+// GetLightActions returns the recorded light actions without clearing them
+func (c *Controller) GetLightActions() []action.LightAction {
+	c.assertionData.Lock()
+	defer c.assertionData.Unlock()
+	result := make([]action.LightAction, len(c.assertionData.lightActions))
+	copy(result, c.assertionData.lightActions)
+	return result
+}
+
+// ClearLightActions clears the recorded light actions
+func (c *Controller) ClearLightActions() {
+	c.assertionData.Lock()
+	c.assertionData.lightActions = []action.LightAction{}
+	c.assertionData.Unlock()
+}

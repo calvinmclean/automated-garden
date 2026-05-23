@@ -169,7 +169,12 @@ func GardenTestsWithID(t *testing.T, gardenID string) {
 
 			time.Sleep(100 * time.Millisecond)
 
-			c.AssertLightActions(t, action.LightAction{State: state})
+			// syncLightState may have sent an action at startup or during ResetLightSchedule,
+			// so the history may contain extra actions. Just assert the last action matches.
+			lightActions := c.GetLightActions()
+			require.NotEmpty(t, lightActions)
+			assert.Equal(t, state, lightActions[len(lightActions)-1].State)
+			c.ClearLightActions()
 		})
 	}
 	t.Run("ChangeLightScheduleStartTimeResetsLightSchedule", func(t *testing.T) {
@@ -204,8 +209,11 @@ func GardenTestsWithID(t *testing.T, gardenID string) {
 		// wait a little extra
 		time.Sleep(2*newStartTimeDelay + 500*time.Millisecond)
 
-		// Assert both LightActions
+		// syncLightState sends an immediate action when ResetLightSchedule is called.
+		// At the time of reset, the current time is before the new ON time, so it sends OFF.
+		// Then the scheduled ON and OFF run.
 		c.AssertLightActions(t,
+			action.LightAction{State: pkg.LightStateOff},
 			action.LightAction{State: pkg.LightStateOn},
 			action.LightAction{State: pkg.LightStateOff},
 		)

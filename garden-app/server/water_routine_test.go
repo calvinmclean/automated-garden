@@ -21,6 +21,7 @@ import (
 	"github.com/calvinmclean/babyapi"
 	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func TestWaterRoutine(t *testing.T) {
@@ -69,6 +70,8 @@ func TestWaterRoutine(t *testing.T) {
 
 	api := NewWaterRoutineAPI()
 	mqttClient := new(mqtt.MockClient)
+	// Allow light action sync during StartAsync (test doesn't care about light behavior)
+	mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
 	api.setup(storageClient, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
 
 	api.worker.StartAsync()
