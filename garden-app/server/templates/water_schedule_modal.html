@@ -39,7 +39,7 @@
             <div class="uk-margin">
                 <label class="uk-form-label" for="start-date">Start Date</label>
                 <input id="start-date" class="uk-input" type="date"
-                    value="{{ if .StartDate }}{{ FormatDate .StartDate }}{{ end }}"
+                    value="{{ if .StartDate }}{{ .StartDate.String }}{{ end }}"
                     name="StartDate">
                 {{ if not .Duration }}
                 <div class="uk-text-small uk-text-muted">Optional - defaults to today if not set</div>
