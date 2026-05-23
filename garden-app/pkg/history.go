@@ -14,6 +14,7 @@ const (
 	WaterStatusSent      WaterStatus = "sent"
 	WaterStatusStarted   WaterStatus = "start"
 	WaterStatusCompleted WaterStatus = "complete"
+	WaterStatusCancelled WaterStatus = "cancelled"
 )
 
 var (
@@ -133,6 +134,10 @@ func CalculateWaterProgress(history []WaterHistory) WaterHistoryProgress {
 				Elapsed:  Duration{Duration: elapsed},
 				Progress: 1.0,
 				Queue:    queue,
+			}
+		case WaterStatusCancelled:
+			return WaterHistoryProgress{
+				Queue: queue,
 			}
 		case WaterStatusSent:
 			prev = event

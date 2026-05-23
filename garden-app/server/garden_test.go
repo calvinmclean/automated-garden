@@ -1169,6 +1169,75 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 			expectedQueue:    2,
 			expectedZoneName: "Zone 1",
 		},
+		{
+			name: "CancelledEventClearsQueue",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
+				// First zone has a cancelled event with a queued item after it
+				// History is returned oldest-first and reversed, so mock oldest-first
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-5 * time.Minute)},
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-1 * time.Minute)},
+					}, nil)
+				// Second zone has no activity
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{}, nil)
+			},
+			expectedActive:   false,
+			expectedQueue:    1,
+			expectedZoneName: "",
+		},
+		{
+			name: "ActiveWateringAfterCancelledWithQueue",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
+				// First zone: cancelled (oldest), then active started, then queued sent
+				// History is returned oldest-first and reversed, so mock oldest-first
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-10 * time.Minute)},
+						{
+							Status:    pkg.WaterStatusStarted,
+							StartedAt: now.Add(-30 * time.Second),
+							Duration:  pkg.Duration{Duration: 60 * time.Second},
+						},
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-5 * time.Second)},
+					}, nil)
+				// Second zone has no activity
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{}, nil)
+			},
+			expectedActive:   true,
+			expectedQueue:    1,
+			expectedZoneName: "Zone 1",
+		},
+		{
+			name: "CancelledHidesPreviousStarted",
+			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
+				// Mock health check
+				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
+				// First zone: started (older) then cancelled (newer). After reverse, cancelled is first.
+				// CalculateWaterProgress should return empty since cancelled is terminal.
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{
+						{
+							Status:    pkg.WaterStatusStarted,
+							StartedAt: now.Add(-2 * time.Minute),
+							Duration:  pkg.Duration{Duration: 60 * time.Second},
+						},
+						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-1 * time.Minute)},
+					}, nil)
+				// Second zone has no activity
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					Return([]pkg.WaterHistory{}, nil)
+			},
+			expectedActive:   false,
+			expectedQueue:    0,
+			expectedZoneName: "",
+		},
 	}
 
 	for _, tt := range tests {
