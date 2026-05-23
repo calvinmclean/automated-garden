@@ -305,7 +305,7 @@ func (api *ZonesAPI) waterHistory(_ http.ResponseWriter, r *http.Request, zone *
 		return nil, apiErr
 	}
 
-	return NewZoneWaterHistoryResponse(history, getLocationFromRequest(r)), nil
+	return NewZoneWaterHistoryResponse(history), nil
 }
 
 func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone, logger *slog.Logger) ([]pkg.WaterHistory, *babyapi.ErrResponse) {

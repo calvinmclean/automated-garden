@@ -130,13 +130,11 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 			State: nextLightState,
 		}
 
-		loc := getLocationFromRequest(r)
-		if loc == nil {
-			loc = g.LightSchedule.StartTime.Time.Location()
+		loc := g.Garden.LightSchedule.StartTime.Time.Location()
+		if loc != nil {
+			offsetTime := g.NextLightAction.Time.In(loc)
+			g.NextLightAction.Time = &offsetTime
 		}
-
-		offsetTime := g.NextLightAction.Time.In(loc)
-		g.NextLightAction.Time = &offsetTime
 	}
 
 	return nil

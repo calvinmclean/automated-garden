@@ -101,8 +101,11 @@ func templateFuncs(r *http.Request) map[string]any {
 			}
 			return date.Format("on Monday, 02 Jan at 3:04PM")
 		},
-		"FormatDateTime": func(date *time.Time) string {
-			return date.Local().Format(time.DateTime)
+		"FormatRFC3339NonZero": func(date *time.Time) string {
+			if date == nil || date.IsZero() {
+				return ""
+			}
+			return date.Format(time.RFC3339)
 		},
 		"FormatDate": func(t *time.Time) string {
 			if t == nil {

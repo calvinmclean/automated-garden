@@ -224,7 +224,6 @@ func TestGetZone(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s?exclude_weather_data=%t", garden.ID, zone.ID, tt.excludeWeatherData), http.NoBody)
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
@@ -288,7 +287,6 @@ func TestZoneAction(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -364,7 +362,6 @@ func TestZoneActionForm(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones/%s/action", garden.ID, zone.ID), bytes.NewBufferString(tt.body))
 			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -424,7 +421,6 @@ func TestUpdateZone(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/gardens/%s/zones/%s", garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
@@ -524,7 +520,6 @@ func TestGetAllZones(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones%s", garden.ID, tt.targetURL), http.NoBody)
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, http.StatusOK, w.Code)
@@ -676,7 +671,6 @@ func TestCreateZone(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("/gardens/%s/zones", tt.garden.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -830,7 +824,6 @@ func TestUpdateZonePUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, zone.ID), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -992,7 +985,6 @@ func TestCreateZonePUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("/gardens/%s/zones/%s", tt.garden.ID, tt.id), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, tt.garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -1138,14 +1130,12 @@ func TestWaterHistory(t *testing.T) {
 		err = storageClient.Zones.Set(context.Background(), zone)
 		assert.NoError(t, err)
 
-		// Use X-TZ-Offset: 420 (UTC-7 / America/Phoenix) to convert from UTC to Phoenix time
 		r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s/history", garden.ID, zone.ID), http.NoBody)
-		r.Header.Set("X-TZ-Offset", "420")
 		w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 		assert.Equal(t, http.StatusOK, w.Code)
-		// The UTC time should be converted to -07:00 offset (18:24:52 - 7 hours = 11:24:52 local time)
-		expected := `{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`
+		// The UTC time is now returned as-is; frontend converts to local time
+		expected := `{"history":[{"duration":"3s","event_id":"00000000000000000000","status":"complete","source":"command","sent_at":"2021-10-03T18:24:52.891386Z","started_at":"2021-10-03T18:24:52.891386Z","completed_at":"2021-10-03T18:24:52.891386Z"}],"count":1,"average":"3s","total":"3s"}`
 		assert.Equal(t, expected, strings.TrimSpace(w.Body.String()))
 
 		influxdbClient.AssertExpectations(t)
@@ -1173,7 +1163,6 @@ func TestWaterHistory(t *testing.T) {
 			assert.NoError(t, err)
 
 			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/zones/%s/history%s", garden.ID, zone.ID, tt.queryParams), http.NoBody)
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestWithParentRoute(t, zr.API, garden, "Gardens", "/gardens", r)
 
 			assert.Equal(t, tt.status, w.Code)
