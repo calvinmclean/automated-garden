@@ -200,14 +200,12 @@ func TestCreateGarden(t *testing.T) {
 				firstGarden := `{"name": "first-garden", "topic_prefix": "test-garden", "max_zones": 2}`
 				r1 := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(firstGarden))
 				r1.Header.Set("Content-Type", "application/json")
-				r1.Header.Set("X-TZ-Offset", "420")
 				w1 := babytest.TestRequest[*pkg.Garden](t, gr.API, r1)
 				assert.Equal(t, http.StatusCreated, w1.Code)
 			}
 
 			r := httptest.NewRequest(http.MethodPost, "/gardens", strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -239,7 +237,6 @@ func TestCreateGarden_AutoCreateZones(t *testing.T) {
 		body := `{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 4, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`
 		r := httptest.NewRequest(http.MethodPost, "/gardens?create_zones=true", strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("X-TZ-Offset", "420")
 		w := babytest.TestRequest(t, gr.API, r)
 
 		assert.Equal(t, http.StatusCreated, w.Code)
@@ -367,7 +364,6 @@ func TestUpdateGardenPUT(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPut, "/gardens/"+garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.code, w.Code)
@@ -598,7 +594,6 @@ func TestUpdateGarden(t *testing.T) {
 
 			r := httptest.NewRequest(http.MethodPatch, "/gardens/"+tt.garden.ID.String(), strings.NewReader(tt.body))
 			r.Header.Set("Content-Type", "application/json")
-			r.Header.Set("X-TZ-Offset", "420")
 			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, w.Code)

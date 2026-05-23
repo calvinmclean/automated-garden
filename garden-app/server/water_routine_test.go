@@ -83,7 +83,6 @@ func TestWaterRoutine(t *testing.T) {
 
 		r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", waterRoutineBasePath, wr.GetID()), bytes.NewReader(body))
 		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("X-TZ-Offset", "420")
 		w := babytest.TestRequest(t, api.API, r)
 
 		assert.Equal(t, http.StatusOK, w.Code)
@@ -94,7 +93,6 @@ func TestWaterRoutine(t *testing.T) {
 
 		r := httptest.NewRequest(http.MethodPost, waterRoutineBasePath, strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("X-TZ-Offset", "420")
 		w := babytest.TestRequest(t, api.API, r)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -108,7 +106,6 @@ func TestWaterRoutine(t *testing.T) {
 
 		r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", waterRoutineBasePath, newID), strings.NewReader(body))
 		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("X-TZ-Offset", "420")
 		w := babytest.TestRequest(t, api.API, r)
 
 		assert.Equal(t, http.StatusBadRequest, w.Code)
@@ -123,7 +120,6 @@ func TestWaterRoutine(t *testing.T) {
 
 		r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/run", waterRoutineBasePath, wr.GetID()), http.NoBody)
 		r.Header.Set("Content-Type", "application/json")
-		r.Header.Set("X-TZ-Offset", "420")
 		w := babytest.TestRequest(t, api.API, r)
 
 		assert.Equal(t, http.StatusAccepted, w.Code)
