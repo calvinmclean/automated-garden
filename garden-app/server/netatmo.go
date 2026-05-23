@@ -46,7 +46,7 @@ func (api *WeatherClientsAPI) startOAuth(_ http.ResponseWriter, r *http.Request,
 		url.QueryEscape(state),
 	)
 
-	logger.Info("starting OAuth flow for Netatmo", "weather_client_id", wc.GetID())
+	logger.Debug("starting OAuth flow for Netatmo", "weather_client_id", wc.GetID())
 
 	// Use HX-Trigger to tell HTMX to open the OAuth popup via JavaScript
 	return &OAuthStartResponse{AuthURL: authURL}, nil
@@ -133,7 +133,7 @@ func (api *WeatherClientsAPI) handleOAuthCallback(_ http.ResponseWriter, r *http
 		})
 	}
 
-	logger.Info("successfully authenticated with Netatmo", "weather_client_id", wcID)
+	logger.Debug("successfully authenticated with Netatmo", "weather_client_id", wcID)
 
 	return oauthCallbackTemplate.Renderer(&OAuthCallbackData{
 		Success: true,

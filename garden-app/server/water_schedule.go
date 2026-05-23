@@ -79,7 +79,7 @@ func NewWaterSchedulesAPI() *WaterSchedulesAPI {
 		id := api.GetIDParam(r)
 
 		// Remove scheduled WaterActions
-		logger.Info("removing scheduled WaterActions for WaterSchedule")
+		logger.Debug("removing scheduled WaterActions for WaterSchedule")
 		err := api.worker.RemoveJobsByID(id)
 		if err != nil {
 			return babyapi.InternalServerError(fmt.Errorf("unable to remove scheduled WaterActions: %w", err))

@@ -82,7 +82,7 @@ func (w *Worker) CalculateETDuration(ws *pkg.WaterSchedule) (time.Duration, bool
 		return 0, false
 	}
 
-	w.logger.Info("calculated ET-based watering duration",
+	w.logger.Debug("calculated ET-based watering duration",
 		"duration", duration,
 		"avg_et", avgET,
 		"species", etConfig.Species,
@@ -104,7 +104,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 		etDuration, ok := w.CalculateETDuration(ws)
 		if ok {
 			baseDuration = etDuration
-			w.logger.Info("using ET-calculated duration as base", "et_duration", etDuration)
+			w.logger.Debug("using ET-calculated duration as base", "et_duration", etDuration)
 		}
 	}
 
@@ -125,7 +125,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 					"avg_high_temp", avgHighTemp,
 					"time_period", ws.Interval.String(),
 					"scale_factor", tempScaleFactor,
-				).Info("weather client calculated the average daily high temperature and resulting scale factor")
+				).Debug("weather client calculated the average daily high temperature and resulting scale factor")
 			}
 		}
 	}
@@ -146,13 +146,13 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 					"total_rain", totalRain,
 					"time_period", ws.Interval.String(),
 					"scale_factor", rainScaleFactor,
-				).Info("weather client detected rain and resulting scale factor")
+				).Debug("weather client detected rain and resulting scale factor")
 				scaleFactor *= rainScaleFactor
 			}
 		}
 	}
 
-	w.logger.Info("compounded scale factor", "compound_scale_factor", scaleFactor, "base_duration", baseDuration)
+	w.logger.Debug("compounded scale factor", "compound_scale_factor", scaleFactor, "base_duration", baseDuration)
 
 	result := time.Duration(float64(baseDuration) * scaleFactor)
 	if result.Milliseconds() == 0 {

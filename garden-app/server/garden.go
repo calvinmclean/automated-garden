@@ -104,7 +104,7 @@ func NewGardenAPI() *GardensAPI {
 		gardenID := api.GetIDParam(r)
 
 		// Remove scheduled light actions
-		logger.Info("removing scheduled LightActions for Garden")
+		logger.Debug("removing scheduled LightActions for Garden")
 		if err := api.worker.RemoveJobsByID(gardenID); err != nil {
 			logger.Error("unable to remove scheduled LightActions", "error", err)
 			return babyapi.InternalServerError(err)
@@ -176,7 +176,7 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 
 	// If LightSchedule is empty, remove the scheduled Job
 	if garden.LightSchedule == nil {
-		logger.Info("removing LightSchedule")
+		logger.Debug("removing LightSchedule")
 		if err := api.worker.RemoveJobsByID(garden.ID.String()); err != nil {
 			logger.Error("unable to remove LightSchedule for Garden", "error", err)
 			return babyapi.InternalServerError(err)
@@ -193,7 +193,7 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 
 	if garden.LightSchedule != nil {
 		// Update the light schedule for the Garden (if it exists)
-		logger.Info("updating/resetting LightSchedule for Garden")
+		logger.Debug("updating/resetting LightSchedule for Garden")
 		if err := api.worker.ResetLightSchedule(garden); err != nil {
 			logger.Error("unable to update/reset LightSchedule", "light_schedule", garden.LightSchedule, "error", err)
 			return babyapi.InternalServerError(err)

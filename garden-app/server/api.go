@@ -125,7 +125,7 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 	}
 
 	// Initialize Storage Client
-	logger.Info("initializing storage client", "driver", "sqlite")
+	logger.Debug("initializing storage client", "driver", "sqlite")
 	storageClient, err := storage.NewClient(cfg.StorageConfig)
 	if err != nil {
 		return fmt.Errorf("unable to initialize storage client: %v", err)
@@ -143,7 +143,7 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 		"client_id", cfg.MQTTConfig.ClientID,
 		"broker", cfg.MQTTConfig.Broker,
 		"port", cfg.MQTTConfig.Port,
-	).Info("initializing MQTT client")
+	).Debug("initializing MQTT client")
 	mqttClient, err := mqtt.NewClient(cfg.MQTTConfig, mqtt.DefaultHandler(logger))
 	if err != nil {
 		return fmt.Errorf("unable to initialize MQTT client: %v", err)
@@ -154,11 +154,11 @@ func (api *API) Setup(cfg Config, validateData bool) error {
 		"address", cfg.InfluxDBConfig.Address,
 		"org", cfg.InfluxDBConfig.Org,
 		"bucket", cfg.InfluxDBConfig.Bucket,
-	).Info("initializing InfluxDB client")
+	).Debug("initializing InfluxDB client")
 	influxdbClient := influxdb.NewClient(cfg.InfluxDBConfig)
 
 	// Initialize Scheduler
-	logger.Info("initializing scheduler")
+	logger.Debug("initializing scheduler")
 	worker := worker.NewWorker(storageClient, influxdbClient, mqttClient, cfg.LogConfig.NewLogger())
 
 	err = api.setup(cfg, storageClient, influxdbClient, worker)

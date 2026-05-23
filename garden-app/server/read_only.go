@@ -10,7 +10,7 @@ func readOnlyMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodGet {
 			logger, _ := babyapi.GetLoggerFromContext(r.Context())
-			logger.Info("received non-get request to read-only API")
+			logger.Debug("received non-get request to read-only API")
 			return
 		}
 		next.ServeHTTP(w, r)

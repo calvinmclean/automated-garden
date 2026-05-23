@@ -22,7 +22,7 @@ const (
 // easily be removed
 func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 	logger := w.contextLogger(nil, nil, waterSchedule)
-	logger.Info("creating scheduled Job for WaterSchedule")
+	logger.Debug("creating scheduled Job for WaterSchedule")
 
 	startDate := clock.Now()
 	if waterSchedule.StartDate != nil {
@@ -186,7 +186,7 @@ func (w *Worker) GetNextWaterTime(ws *pkg.WaterSchedule) *time.Time {
 // easily be removed
 func (w *Worker) ScheduleLightActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
-	logger.Info("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
+	logger.Debug("creating scheduled Jobs for lighting Garden", "light_schedule", *g.LightSchedule)
 
 	now := clock.Now()
 	onStartDate := g.LightSchedule.StartTime.OnDate(now).UTC()

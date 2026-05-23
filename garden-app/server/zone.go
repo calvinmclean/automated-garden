@@ -167,7 +167,7 @@ func (api *ZonesAPI) zoneAction(_ http.ResponseWriter, r *http.Request, zone *pk
 		logger.Error("invalid request for ZoneAction", "error", err)
 		return nil, babyapi.ErrInvalidRequest(err)
 	}
-	logger.Info("zone action", "action", zoneAction)
+	logger.Debug("zone action", "action", zoneAction)
 
 	if zoneAction.Water != nil {
 		zoneAction.Water.Source = action.SourceCommand
@@ -298,7 +298,7 @@ func limitQueryParam(r *http.Request) (uint64, error) {
 // WaterHistory responds with the Zone's recent water events read from InfluxDB
 func (api *ZonesAPI) waterHistory(_ http.ResponseWriter, r *http.Request, zone *pkg.Zone) (render.Renderer, *babyapi.ErrResponse) {
 	logger, _ := babyapi.GetLoggerFromContext(r.Context())
-	logger.Info("received request to get Zone water history")
+	logger.Debug("received request to get Zone water history")
 
 	history, apiErr := api.getWaterHistoryFromRequest(r, zone, logger)
 	if apiErr != nil {

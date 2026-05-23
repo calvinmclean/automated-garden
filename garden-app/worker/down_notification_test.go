@@ -96,7 +96,7 @@ func TestHandleHealthMessage(t *testing.T) {
 		mockClock := clock.MockTime()
 
 		var logBuffer bytes.Buffer
-		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, nil)))
+		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 		topic := "garden/data/health"
 		w.handleHealthMessage(topic, `health garden="garden"`)
@@ -119,7 +119,7 @@ func TestHandleHealthMessage(t *testing.T) {
 		mockClock := clock.MockTime()
 
 		var logBuffer bytes.Buffer
-		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, nil)))
+		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 		topic := "garden/data/health"
 
@@ -151,7 +151,7 @@ func TestHandleHealthMessage(t *testing.T) {
 		require.NoError(t, err)
 
 		var logBuffer bytes.Buffer
-		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, nil)))
+		w := NewWorker(storageClient, nil, nil, slog.New(slog.NewTextHandler(&logBuffer, &slog.HandlerOptions{Level: slog.LevelDebug})))
 
 		topic := "new-garden/data/health"
 		w.handleHealthMessage(topic, `health garden="new-garden"`)

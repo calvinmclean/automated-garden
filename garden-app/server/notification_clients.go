@@ -149,7 +149,7 @@ type TestNotificationClientRequest struct {
 
 func (api *NotificationClientsAPI) testNotificationClient(_ http.ResponseWriter, r *http.Request) render.Renderer {
 	logger, _ := babyapi.GetLoggerFromContext(r.Context())
-	logger.Info("received request to test NotificationClient")
+	logger.Debug("received request to test NotificationClient")
 
 	notificationClient, httpErr := api.GetRequestedResource(r)
 	if httpErr != nil {

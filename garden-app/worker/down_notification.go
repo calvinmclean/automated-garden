@@ -37,7 +37,7 @@ func (w *Worker) handleHealthMessage(topic, payload string) {
 	if !ok {
 		timer := w.newDownTimer(downtime.Duration, topic)
 		w.downTimers[topic] = timer
-		logger.Info("created new timer")
+		logger.Debug("created new timer")
 	} else {
 		timer.Reset(downtime.Duration)
 	}
@@ -57,7 +57,7 @@ func (w *Worker) newDownTimer(d time.Duration, topic string) clock.Timer {
 			return
 		}
 
-		logger.Info("successfully sent down notification")
+		logger.Debug("successfully sent down notification")
 	})
 }
 

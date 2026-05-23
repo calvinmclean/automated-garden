@@ -37,21 +37,21 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 		return err
 	}
 	logger = logger.With("garden_id", garden.GetID())
-	logger.Info("found garden with topic-prefix")
+	logger.Debug("found garden with topic-prefix")
 
 	if garden.GetNotificationClientID() == "" {
-		logger.Info("garden does not have notification client", "garden_id", garden.GetID())
+		logger.Debug("garden does not have notification client", "garden_id", garden.GetID())
 		return nil
 	}
 
 	logger = logger.With(notificationClientIDLogField, garden.GetNotificationClientID())
 
 	if waterMessage.Start && !garden.GetNotificationSettings().WateringStarted {
-		logger.Info("skipping message since notification is not enabled for the start")
+		logger.Debug("skipping message since notification is not enabled for the start")
 		return nil
 	}
 	if !garden.GetNotificationSettings().WateringComplete {
-		logger.Info("skipping message since notification is not enabled")
+		logger.Debug("skipping message since notification is not enabled")
 		return nil
 	}
 
@@ -59,7 +59,7 @@ func (w *Worker) doWaterCompleteMessage(topic string, payload []byte) error {
 	if err != nil {
 		return fmt.Errorf("error getting zone %s: %w", waterMessage.ZoneID, err)
 	}
-	logger.Info("found zone")
+	logger.Debug("found zone")
 
 	var title, message string
 	if waterMessage.Start {

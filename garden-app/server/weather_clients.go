@@ -183,7 +183,7 @@ func (api *WeatherClientsAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 					wc.Options = map[string]any{}
 				}
 				wc.Options["authentication"] = auth
-				logger.Info("preserved authentication for WeatherClient", "id", wc.GetID())
+				logger.Debug("preserved authentication for WeatherClient", "id", wc.GetID())
 			}
 		}
 	}
@@ -222,7 +222,7 @@ func (api *WeatherClientsAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Re
 
 func (api *WeatherClientsAPI) testWeatherClient(_ http.ResponseWriter, r *http.Request) render.Renderer {
 	logger, _ := babyapi.GetLoggerFromContext(r.Context())
-	logger.Info("received request to test WeatherClient")
+	logger.Debug("received request to test WeatherClient")
 
 	weatherClient, httpErr := api.GetRequestedResource(r)
 	if httpErr != nil {

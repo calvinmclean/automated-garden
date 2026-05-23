@@ -32,7 +32,7 @@ func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) er
 		return err
 	}
 	logger = logger.With("garden_id", garden.GetID())
-	logger.Info("found garden with topic-prefix")
+	logger.Debug("found garden with topic-prefix")
 
 	err = w.setExpectedLightState(garden)
 	if err != nil {

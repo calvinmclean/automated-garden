@@ -178,7 +178,7 @@ func (api *WaterRoutineAPI) runWatering(_ http.ResponseWriter, r *http.Request, 
 				Source:        action.SourceWaterRoutine,
 			},
 		}
-		stepLogger.Info("zone action", "action", zoneAction)
+		stepLogger.Debug("zone action", "action", zoneAction)
 
 		if err := api.worker.ExecuteZoneAction(garden, zone, zoneAction); err != nil {
 			stepLogger.Error("unable to execute ZoneAction", "error", err)

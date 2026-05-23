@@ -15,7 +15,7 @@ func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState
 	}
 
 	if !g.GetNotificationSettings().LightSchedule {
-		logger.Info("garden does not have light_schedule notification enabled")
+		logger.Debug("garden does not have light_schedule notification enabled")
 		return
 	}
 
@@ -95,5 +95,5 @@ func (w *Worker) sendNotification(clientID, title, msg string, logger *slog.Logg
 		return
 	}
 
-	ncLogger.Info("successfully send notification")
+	ncLogger.Debug("successfully send notification")
 }
