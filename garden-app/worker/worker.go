@@ -48,8 +48,6 @@ type Worker struct {
 	// When Garden health messages are received, Timers are created to track their
 	// uptime and notify if they go down
 	downTimers map[string]clock.Timer
-	// Wait for any downtime notifications before shutting down
-	downtimeWG *sync.WaitGroup
 }
 
 // NewWorker creates a Worker with specified clients
@@ -68,7 +66,6 @@ func NewWorker(
 		scheduler:      scheduler,
 		logger:         logger.With("source", "worker"),
 		downTimers:     map[string]clock.Timer{},
-		downtimeWG:     &sync.WaitGroup{},
 	}
 }
 
@@ -125,8 +122,6 @@ func (w *Worker) Stop() {
 	if w.influxdbClient != nil {
 		w.influxdbClient.Close()
 	}
-
-	w.downtimeWG.Wait()
 
 	prometheus.Unregister(scheduleJobsGauge)
 	prometheus.Unregister(schedulerErrors)
