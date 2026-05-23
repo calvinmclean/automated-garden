@@ -273,10 +273,24 @@
 
 {{ define "gardenInfoPopover" }}
 <div class="uk-inline">
-    <span class="uk-margin-small-right" uk-icon="info"></span>
-    <div uk-dropdown>
-        <p><b>{{ .ID }}</b></p>
-        <p>Topic prefix: {{ .TopicPrefix }}</p>
+    <a class="uk-icon-button" uk-icon="info"></a>
+    <div uk-dropdown="pos: bottom-left" style="min-width: 200px;">
+
+        <p class="uk-text-bold uk-margin-remove-bottom">{{ .ID }}</p>
+        <code class="uk-text-meta">{{ .TopicPrefix }}</code>
+
+        {{ if .ControllerInfo }}
+        <ul class="uk-list uk-list-divider uk-margin-small-top uk-margin-remove-bottom">
+            <li><code class="uk-text-small">{{ .ControllerInfo.MACAddress }}</code></li>
+            <li><code class="uk-text-small">{{ .ControllerInfo.IPAddress }}</code></li>
+            <li><code class="uk-text-small">{{ .ControllerInfo.FirmwareVersion }}</code></li>
+        </ul>
+        <p class="uk-text-meta uk-margin-small-top uk-margin-remove-bottom">
+            Updated {{ FormatUpcomingDate .ControllerInfo.UpdatedAt }}
+        </p>
+        {{ else }}
+        <p class="uk-text-meta uk-text-italic uk-margin-small-top uk-margin-remove-bottom">No controller info available</p>
+        {{ end }}
     </div>
 </div>
 {{ end }}

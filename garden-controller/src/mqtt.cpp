@@ -1,6 +1,7 @@
 #include "mqtt.h"
 #include "main.h"
 #include "wifi_manager.h"
+#include "controller_info.h"
 
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
@@ -28,6 +29,7 @@ char waterDataTopic[50];
 char lightDataTopic[50];
 char healthDataTopic[50];
 char logDataTopic[50];
+char infoDataTopic[50];
 
 #define ZERO (unsigned long int) 0
 
@@ -48,6 +50,7 @@ void setupMQTT() {
     snprintf(lightDataTopic, sizeof(lightDataTopic), "%s" MQTT_LIGHT_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(healthDataTopic, sizeof(healthDataTopic), "%s" MQTT_HEALTH_DATA_TOPIC, mqtt_topic_prefix);
     snprintf(logDataTopic, sizeof(logDataTopic), "%s" MQTT_LOGGING_TOPIC, mqtt_topic_prefix);
+    snprintf(infoDataTopic, sizeof(infoDataTopic), "%s" MQTT_INFO_DATA_TOPIC, mqtt_topic_prefix);
 
     // printf("Topics:\n");
     // printf("  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n  %s\n", waterCommandTopic,stopCommandTopic,stopAllCommandTopic,lightCommandTopic,updateConfigCommandTopic,waterDataTopic,lightDataTopic,healthDataTopic,logDataTopic);
@@ -181,6 +184,7 @@ void mqttConnectTask(void* parameters) {
                 }
 
                 client.publish(logDataTopic, "logs message=\"garden-controller setup complete\"");
+                publishControllerInfo();
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }
@@ -257,6 +261,15 @@ void handleConfigCommand(char* message) {
     - lightCommandTopic: accepts LightEvent JSON to control a grow light
     - updateConfigCommandTopic: accepts Config JSON to update
 */
+void publishInfoMessage(const char* message) {
+    if (client.connected()) {
+        printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", infoDataTopic, message);
+        client.publish(infoDataTopic, message);
+    } else {
+        printf("unable to publish controller info: not connected to MQTT broker\n");
+    }
+}
+
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     if (length == 0) {
         return;

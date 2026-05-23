@@ -50,7 +50,22 @@ func (a *AdditionalQueries) GetZonesUsingWaterSchedule(id string) ([]*pkg.ZoneAn
 			return nil, fmt.Errorf("error getting garden: %w", err)
 		}
 
-		garden, err := dbGardenToGarden(dbGarden)
+		garden, err := gardenFromRow(
+			db.Garden{
+				ID:                   dbGarden.ID,
+				Name:                 dbGarden.Name,
+				TopicPrefix:          dbGarden.TopicPrefix,
+				MaxZones:             dbGarden.MaxZones,
+				TempHumidSensor:      dbGarden.TempHumidSensor,
+				CreatedAt:            dbGarden.CreatedAt,
+				EndDate:              dbGarden.EndDate,
+				NotificationClientID: dbGarden.NotificationClientID,
+				NotificationSettings: dbGarden.NotificationSettings,
+				ControllerConfig:     dbGarden.ControllerConfig,
+				LightSchedule:        dbGarden.LightSchedule,
+			},
+			dbGarden.MacAddress, dbGarden.IpAddress, dbGarden.FirmwareVersion, dbGarden.UpdatedAt,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("invalid garden: %w", err)
 		}

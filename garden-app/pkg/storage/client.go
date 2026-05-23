@@ -40,6 +40,7 @@ type Client struct {
 	NotificationClientConfigs babyapi.Storage[*notifications.Client]
 	WaterRoutines             babyapi.Storage[*pkg.WaterRoutine]
 	Notes                     babyapi.Storage[*pkg.Note]
+	ControllerInfo            *ControllerInfoStorage
 
 	*AdditionalQueries
 }
@@ -78,6 +79,7 @@ func NewClient(config Config) (*Client, error) {
 		NotificationClientConfigs: NewNotificationClientStorage(db),
 		WaterRoutines:             NewWaterRoutineStorage(db),
 		Notes:                     NewNoteStorage(db),
+		ControllerInfo:            NewControllerInfoStorage(db),
 		AdditionalQueries:         NewAdditionalQueries(db),
 	}, nil
 }

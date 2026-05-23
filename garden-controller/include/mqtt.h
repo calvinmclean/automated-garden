@@ -17,6 +17,7 @@
 #define MQTT_WATER_DATA_TOPIC "/data/water"
 #define MQTT_LOGGING_TOPIC "/data/logs"
 #define MQTT_HEALTH_DATA_TOPIC "/data/health"
+#define MQTT_INFO_DATA_TOPIC "/data/info"
 #define MQTT_TEMPERATURE_DATA_TOPIC "/data/temperature"
 #define MQTT_HUMIDITY_DATA_TOPIC "/data/humidity"
 
@@ -35,5 +36,7 @@ void processIncomingMessage(char* topic, byte* message, unsigned int length);
 
 extern QueueHandle_t waterPublisherQueue;
 extern QueueHandle_t lightPublisherQueue;
+
+void publishInfoMessage(const char* message);
 
 #endif

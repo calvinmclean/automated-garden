@@ -32,6 +32,8 @@ type Garden struct {
 	NotificationClientID      *string               `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
 	NotificationSettings      *NotificationSettings `json:"notification_settings,omitempty" yaml:"notification_settings,omitempty"`
 	ControllerConfig          *ControllerConfig     `json:"controller_config,omitempty" yaml:"controller_config,omitempty"`
+	// ControllerInfo is populated via LEFT JOIN when reading from storage and is not persisted directly on the Garden
+	ControllerInfo *ControllerInfo `json:"controller_info,omitempty" yaml:"controller_info,omitempty"`
 }
 
 type NotificationSettings struct {
