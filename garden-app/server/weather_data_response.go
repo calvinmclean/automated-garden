@@ -58,7 +58,6 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 				logger.Debug("getting rain data for WaterSchedule")
 				rainMM, err := getRainData(taskCtx, ws, storageClient)
 				if err != nil || rainMM == nil {
-					logger.Warn("unable to get rain data for WaterSchedule", "error", err)
 					return err
 				}
 				inches := units.MmToInches(*rainMM)
@@ -78,7 +77,6 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 				logger.Debug("getting average high temperature for WaterSchedule")
 				celsius, err := getTemperatureData(taskCtx, ws, storageClient)
 				if err != nil || celsius == nil {
-					logger.Warn("unable to get average high temperature from weather client", "error", err)
 					return err
 				}
 				weatherData.Temperature = &TemperatureData{
@@ -99,6 +97,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 				etMM, err := getEvapotranspirationData(taskCtx, ws, storageClient)
 				if err != nil || etMM == nil {
 					// ET is optional, so don't warn on error
+					logger.Warn("unable to get ET data from weather client", "error", err)
 					return nil
 				}
 				inches := units.MmToInches(*etMM)

@@ -226,7 +226,7 @@ func (c *Client) refreshToken() error {
 
 	// Use singleflight to deduplicate concurrent refresh requests using the same refresh token
 	// This prevents race conditions where multiple clients with the same token try to refresh simultaneously
-	_, err, _ := refreshFlight.Do(c.Authentication.RefreshToken, func() (interface{}, error) {
+	_, err, _ := refreshFlight.Do(c.StationID, func() (interface{}, error) {
 		return nil, c.doRefreshToken()
 	})
 
