@@ -4,7 +4,7 @@
 <h1 class="uk-heading-small uk-text-center">{{ .Response.Zone.Name }}</h1>
 <div uk-grid>
     {{ template "zoneInfo" .Response }}
-    {{ template "waterHistoryTable" .Response }}
+    {{ template "waterHistoryTableSection" . }}
 </div>
 {{ template "end" }}
 {{ end }}
@@ -40,48 +40,58 @@
 </div>
 {{ end }}
 
-{{ define "waterHistoryTable" }}
-<div class="uk-card uk-width-1-1">
+{{ define "waterHistoryTableSection" }}
+<div id="water-history-table" class="uk-card uk-width-1-1">
     <div class="uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top">
         <div class="uk-card-header uk-text-center">
             <h2>Water History</h2>
         </div>
-        <table class="uk-table uk-table-striped uk-margin-left uk-margin-right">
-            <colgroup>
-                <col>
-                <col>
-            </colgroup>
-            <thead>
-                <tr>
-                    <th>Status</th>
-                    <th>Source</th>
-                    <th>Duration</th>
-                    <th>Sent</th>
-                    <th>Started</th>
-                    <th>Completed</th>
-                </tr>
-            </thead>
-
-            <tbody>
-                {{ if .HistoryError }}
-                <tr>
-                    <td>{{ .HistoryError }}</td>
-                    <td></td>
-                </tr>
-                {{ end }}
-                {{ range .History.History }}
-                <tr>
-                    <td>{{ .Status }}</td>
-                    <td>{{ .Source }}</td>
-                    <td>{{ .Duration }}</td>
-                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .SentAt }}</span></td>
-                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .StartedAt }}</span></td>
-                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .CompletedAt }}</span></td>
-                </tr>
-                {{ end }}
-            </tbody>
-        </table>
+        <div class="uk-text-center uk-margin-top">
+            <div uk-spinner></div>
+        </div>
     </div>
+</div>
+<div hx-get="/gardens/{{ .Response.GardenID }}/zones/{{ .Response.ID }}/history?limit=10&range=720h"
+     hx-headers='{"Accept": "text/html"}'
+     hx-trigger="load" hx-swap="innerHTML" hx-target="#water-history-table"
+     hx-on::response-error="this.previousElementSibling.innerHTML = '<div class=\'uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top\'><div class=\'uk-card-header uk-text-center\'><h2>Water History</h2></div><div class=\'uk-alert-danger uk-alert\' uk-alert><p>Failed to load water history</p></div></div>'">
+</div>
+{{ end }}
+
+{{ define "waterHistoryTable" }}
+<div class="uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top">
+    <div class="uk-card-header uk-text-center">
+        <h2>Water History</h2>
+    </div>
+    <table class="uk-table uk-table-striped uk-margin-left uk-margin-right">
+        <colgroup>
+            <col>
+            <col>
+        </colgroup>
+        <thead>
+            <tr>
+                <th>Status</th>
+                <th>Source</th>
+                <th>Duration</th>
+                <th>Sent</th>
+                <th>Started</th>
+                <th>Completed</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {{ range .History }}
+            <tr>
+                <td>{{ .Status }}</td>
+                <td>{{ .Source }}</td>
+                <td>{{ .Duration }}</td>
+                <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .SentAt }}</span></td>
+                <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .StartedAt }}</span></td>
+                <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .CompletedAt }}</span></td>
+            </tr>
+            {{ end }}
+        </tbody>
+    </table>
 </div>
 {{ end }}
 

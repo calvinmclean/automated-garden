@@ -20,7 +20,7 @@
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header">
             <h3 class="uk-card-title uk-margin-remove-bottom uk-text-center">
-                <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}?limit=10&range=720h">{{ .Name }}</a>
+                <a href="/gardens/{{ .GardenID }}/zones/{{ .ID }}">{{ .Name }}</a>
             </h3>
             {{
             template "cardEditButton"
@@ -29,49 +29,56 @@
         </div>
         <div class="uk-card-body">
             {{ template "nextWaterDetail" .NextWater }}
-            {{ if .Progress }}
-            <div class="uk-margin-small-top">
-                {{ if .Progress.IsActive }}
-                <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
-                    Watering In Progress
-                    {{ if .Progress.Error }}
-                    <span class="uk-label uk-label-danger" uk-tooltip="{{ .Progress.Error }}">
-                        <span uk-icon="icon: warning; ratio: 0.75" class="uk-margin-small-top uk-margin-small-bottom"></span>
-                    </span>
+            <div id="zone-progress-{{ .ID }}">
+                {{ if .Progress }}
+                <div class="uk-margin-small-top">
+                    {{ if .Progress.IsActive }}
+                    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+                        Watering In Progress
+                        {{ if .Progress.Error }}
+                        <span class="uk-label uk-label-danger" uk-tooltip="{{ .Progress.Error }}">
+                            <span uk-icon="icon: warning; ratio: 0.75" class="uk-margin-small-top uk-margin-small-bottom"></span>
+                        </span>
+                        {{ end }}
+                        {{ if .Progress.Queue }}
+                        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+                            {{ .Progress.Queue }}
+                        </span>
+                        {{ end }}
+                    </p>
+                    <progress
+                        id="{{ .ID }}-progressbar"
+                        class="uk-progress"
+                        value="{{ .Progress.Progress }}"
+                        max="1"
+                        uk-tooltip="Watered for {{ FormatDuration .Progress.Elapsed }} of {{ FormatDuration .Progress.Duration }} ({{ .Progress.Percent }})"></progress>
+                    <script>
+                        UIkit.util.ready(function () {
+                            var bar = document.getElementById('{{ .ID }}-progressbar');
+                            var oneSecValue = {{ .Progress.OneSecondProgress }};
+                            var animate = setInterval(function () {
+                                bar.value += oneSecValue;
+                                if (bar.value >= bar.max) {
+                                    clearInterval(animate);
+                                }
+                            }, 1000);
+                        });
+                    </script>
+                    {{ else if .Progress.Queue }}
+                    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+                        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+                            {{ .Progress.Queue }} Queued
+                        </span>
+                    </p>
                     {{ end }}
-                    {{ if .Progress.Queue }}
-                    <span class="uk-label uk-label-warning" uk-tooltip="Queue">
-                        {{ .Progress.Queue }}
-                    </span>
-                    {{ end }}
-                </p>
-                <progress
-                    id="{{ .ID }}-progressbar"
-                    class="uk-progress"
-                    value="{{ .Progress.Progress }}"
-                    max="1"
-                    uk-tooltip="Watered for {{ FormatDuration .Progress.Elapsed }} of {{ FormatDuration .Progress.Duration }} ({{ .Progress.Percent }})"></progress>
-                <script>
-                    UIkit.util.ready(function () {
-                        var bar = document.getElementById('{{ .ID }}-progressbar');
-                        var oneSecValue = {{ .Progress.OneSecondProgress }};
-                        var animate = setInterval(function () {
-                            bar.value += oneSecValue;
-                            if (bar.value >= bar.max) {
-                                clearInterval(animate);
-                            }
-                        }, 1000);
-                    });
-                </script>
-                {{ else if .Progress.Queue }}
-                <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
-                    <span class="uk-label uk-label-warning" uk-tooltip="Queue">
-                        {{ .Progress.Queue }} Queued
-                    </span>
-                </p>
+                </div>
+                {{ else }}
+                <div class="uk-text-center uk-margin-small-top">
+                    <div uk-spinner="ratio: 0.5"></div>
+                </div>
+                {{ template "zoneProgressLazyLoadTrigger" . }}
                 {{ end }}
             </div>
-            {{ end }}
         </div>
         <div class="uk-card-footer">
             <div class="uk-clearfix">
@@ -177,6 +184,13 @@
 </div>
 {{ end }}
 
+{{ define "zoneProgressLazyLoadTrigger" }}
+<div hx-get="/gardens/{{ .GardenID }}/zones/{{ .ID }}?swap_progress=true"
+     hx-headers='{"Accept": "text/html"}'
+     hx-trigger="load" hx-swap="innerHTML" hx-target="#zone-progress-{{ .ID }}">
+</div>
+{{ end }}
+
 {{ define "skipWateringButton" }}
 {{ $skipCount := DerefUint .SkipCount }}
 {{ $isSkipping := gt $skipCount 0 }}
@@ -200,4 +214,50 @@
     Skip
     {{ end }}
 </button>
+{{ end }}
+
+{{ define "ZoneProgressSection" }}
+{{ if .Progress }}
+<div class="uk-margin-small-top">
+    {{ if .Progress.IsActive }}
+    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+        Watering In Progress
+        {{ if .Progress.Error }}
+        <span class="uk-label uk-label-danger" uk-tooltip="{{ .Progress.Error }}">
+            <span uk-icon="icon: warning; ratio: 0.75" class="uk-margin-small-top uk-margin-small-bottom"></span>
+        </span>
+        {{ end }}
+        {{ if .Progress.Queue }}
+        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+            {{ .Progress.Queue }}
+        </span>
+        {{ end }}
+    </p>
+    <progress
+        id="{{ .ID }}-progressbar"
+        class="uk-progress"
+        value="{{ .Progress.Progress }}"
+        max="1"
+        uk-tooltip="Watered for {{ FormatDuration .Progress.Elapsed }} of {{ FormatDuration .Progress.Duration }} ({{ .Progress.Percent }})"></progress>
+    <script>
+        UIkit.util.ready(function () {
+            var bar = document.getElementById('{{ .ID }}-progressbar');
+            var oneSecValue = {{ .Progress.OneSecondProgress }};
+            var animate = setInterval(function () {
+                bar.value += oneSecValue;
+                if (bar.value >= bar.max) {
+                    clearInterval(animate);
+                }
+            }, 1000);
+        });
+    </script>
+    {{ else if .Progress.Queue }}
+    <p class="uk-text uk-text-center uk-text-light uk-margin-remove-bottom">
+        <span class="uk-label uk-label-warning" uk-tooltip="Queue">
+            {{ .Progress.Queue }} Queued
+        </span>
+    </p>
+    {{ end }}
+</div>
+{{ end }}
 {{ end }}

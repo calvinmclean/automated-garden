@@ -23,10 +23,8 @@ type ZoneResponse struct {
 	NextWater   NextWaterDetails `json:"next_water,omitzero"`
 	Links       []Link           `json:"links,omitempty"`
 
-	// History is only used in HTML responses and is excluded from JSON
-	History      ZoneWaterHistoryResponse  `json:"-"`
-	HistoryError string                    `json:"-"`
-	Progress     *pkg.WaterHistoryProgress `json:"-"`
+	// Progress is only used in HTML responses and is excluded from JSON
+	Progress *pkg.WaterHistoryProgress `json:"-"`
 
 	api *ZonesAPI
 }
@@ -42,6 +40,10 @@ func (api *ZonesAPI) NewZoneResponse(zone *pkg.Zone, links ...Link) *ZoneRespons
 }
 
 func (zr *ZoneResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	if r.URL.Query().Get("swap_progress") == "true" {
+		return zoneProgressSectionTemplate.Render(r, zr)
+	}
+
 	if r.Header.Get("HX-Request") == "true" && !strings.Contains(r.URL.Path, "/action") {
 		referer := r.Header.Get("Referer")
 		if strings.Contains(referer, "/zones/") && !strings.HasSuffix(referer, "/zones") {
@@ -110,23 +112,22 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	// Prepare tasks for concurrent execution
 	var tasks []concurrent.TaskFunc
 
-	// Add water history task for HTML responses
-	if render.GetAcceptedContentType(r) == render.ContentTypeHTML {
+	// Add progress task for HTML responses when swap_progress is requested
+	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.URL.Query().Get("swap_progress") == "true" {
 		tasks = append(tasks, concurrent.TaskFunc{
-			Name: "water-history",
+			Name: "progress",
 			Fn: func(_ context.Context) error {
 				history, apiErr := zr.api.getWaterHistoryFromRequest(r, zr.Zone, logger)
 				if apiErr != nil {
-					logger.Error("error getting water history", "error", apiErr)
-					zr.HistoryError = apiErr.ErrorText
-					return nil // Don't fail the whole request for history errors
+					logger.Error("error getting water history for progress", "error", apiErr)
+					return nil // Don't fail the whole request for progress errors
 				}
-				zr.History = NewZoneWaterHistoryResponse(history)
+				resp := NewZoneWaterHistoryResponse(history)
 
 				// Reverse history for better presentation in UI
-				slices.Reverse(zr.History.History)
+				slices.Reverse(resp.History)
 
-				progress := pkg.CalculateWaterProgress(zr.History.History)
+				progress := pkg.CalculateWaterProgress(resp.History)
 				if progress != (pkg.WaterHistoryProgress{}) {
 					zr.Progress = &progress
 				}
@@ -274,6 +275,11 @@ func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryRes
 // the JSON response
 func (resp ZoneWaterHistoryResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
+}
+
+// HTML renders the water history table for HTMX lazy loading
+func (resp ZoneWaterHistoryResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	return waterHistoryTableTemplate.Render(r, resp)
 }
 
 type ZoneActionResponse struct{}
