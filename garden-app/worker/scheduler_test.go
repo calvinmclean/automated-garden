@@ -2,13 +2,16 @@ package worker
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"log/slog"
+	"slices"
 	"testing"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
@@ -1074,4 +1077,299 @@ func TestResetLightSchedule_SyncsStateDuringOnPeriod(t *testing.T) {
 	worker.Stop()
 	influxdbClient.AssertExpectations(t)
 	mqttClient.AssertExpectations(t)
+}
+
+func TestScheduleFanActions(t *testing.T) {
+	mockClock := clock.MockTime()
+	mockClock.Set(time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC))
+	t.Cleanup(clock.Reset)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+	defer weather.ResetCache()
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	power := uint(50)
+	g := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "test-garden",
+		TopicPrefix: "test-garden",
+		FanSchedule: &pkg.FanSchedule{
+			Duration: &pkg.Duration{Duration: 30 * time.Minute},
+			Interval: &pkg.Duration{Duration: 2 * time.Hour},
+			Power:    &power,
+		},
+	}
+
+	err = worker.ScheduleFanActions(g)
+	assert.NoError(t, err)
+
+	// Find job by tags
+	var fanJob interface{ Tags() []string }
+	found := false
+	for _, job := range worker.scheduler.Jobs() {
+		tags := job.Tags()
+		if slices.Contains(tags, g.ID.String()) && slices.Contains(tags, "fan") {
+			fanJob = job
+			found = true
+			break
+		}
+	}
+	assert.True(t, found, "fan job not found")
+	require.NotNil(t, fanJob)
+	assert.Contains(t, fanJob.Tags(), "garden")
+	assert.Contains(t, fanJob.Tags(), "fan")
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
+func TestResetFanSchedule(t *testing.T) {
+	mockClock := clock.MockTime()
+	mockClock.Set(time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC))
+	t.Cleanup(clock.Reset)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+	defer weather.ResetCache()
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	power := uint(50)
+	g := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "test-garden",
+		TopicPrefix: "test-garden",
+		FanSchedule: &pkg.FanSchedule{
+			Duration: &pkg.Duration{Duration: 30 * time.Minute},
+			Interval: &pkg.Duration{Duration: 2 * time.Hour},
+			Power:    &power,
+		},
+	}
+
+	// Initial schedule
+	err = worker.ScheduleFanActions(g)
+	assert.NoError(t, err)
+
+	countJobs := func() int {
+		count := 0
+		for _, job := range worker.scheduler.Jobs() {
+			tags := job.Tags()
+			if slices.Contains(tags, g.ID.String()) && slices.Contains(tags, "fan") {
+				count++
+			}
+		}
+		return count
+	}
+
+	assert.Equal(t, 1, countJobs(), "expected 1 fan job after initial schedule")
+
+	// Reset should remove old and create new
+	newPower := uint(75)
+	g.FanSchedule.Power = &newPower
+	err = worker.ResetFanSchedule(g)
+	assert.NoError(t, err)
+
+	assert.Equal(t, 1, countJobs(), "expected 1 fan job after reset")
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
+func TestExecuteFanAction(t *testing.T) {
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+	defer weather.ResetCache()
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+	// Expect fan command published with correct JSON
+	mqttClient.On("Publish", "test-garden/command/fan", []byte(`{"duration":1800000,"power":127}`)).Return(nil)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	g := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "test-garden",
+		TopicPrefix: "test-garden",
+	}
+
+	input := &action.FanAction{
+		Duration: 30 * time.Minute.Milliseconds(),
+		Power:    127,
+	}
+
+	err = worker.ExecuteFanAction(g, input)
+	assert.NoError(t, err)
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
+func TestExecuteFanAction_MQTTPublishError(t *testing.T) {
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+	defer weather.ResetCache()
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Publish", "test-garden/command/fan", []byte(`{"duration":60000,"power":255}`)).Return(errors.New("mqtt publish error"))
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	g := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "test-garden",
+		TopicPrefix: "test-garden",
+	}
+
+	input := &action.FanAction{
+		Duration: time.Minute.Milliseconds(),
+		Power:    255,
+	}
+
+	err = worker.ExecuteFanAction(g, input)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "mqtt publish error")
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
+func TestExecuteFanActionInScheduledJob_OnlyWithLight(t *testing.T) {
+	tests := []struct {
+		name          string
+		lightSchedule *pkg.LightSchedule
+		mockNow       time.Time
+		onlyWithLight bool
+		expectPublish bool
+		expectedPower uint8
+		expectedDurMs int64
+	}{
+		{
+			name: "OnlyWithLight_LightOn",
+			lightSchedule: &pkg.LightSchedule{
+				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
+				StartTime: &pkg.StartTime{Time: time.Date(0, 0, 0, 19, 0, 0, 0, time.FixedZone("UTC-7", -7*60*60))},
+			},
+			mockNow:       time.Date(2026, 5, 22, 3, 0, 0, 0, time.UTC), // 20:00 UTC-7 (ON period)
+			onlyWithLight: true,
+			expectPublish: true,
+			expectedPower: 127,
+			expectedDurMs: 30 * time.Minute.Milliseconds(),
+		},
+		{
+			name: "OnlyWithLight_LightOff",
+			lightSchedule: &pkg.LightSchedule{
+				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
+				StartTime: &pkg.StartTime{Time: time.Date(0, 0, 0, 19, 0, 0, 0, time.FixedZone("UTC-7", -7*60*60))},
+			},
+			mockNow:       time.Date(2026, 5, 22, 18, 0, 0, 0, time.UTC), // 11:00 UTC-7 (OFF period)
+			onlyWithLight: true,
+			expectPublish: false,
+		},
+		{
+			name: "AlwaysRun",
+			lightSchedule: &pkg.LightSchedule{
+				Duration:  &pkg.Duration{Duration: 14 * time.Hour},
+				StartTime: &pkg.StartTime{Time: time.Date(0, 0, 0, 19, 0, 0, 0, time.FixedZone("UTC-7", -7*60*60))},
+			},
+			mockNow:       time.Date(2026, 5, 22, 18, 0, 0, 0, time.UTC), // OFF period but OnlyWithLight=false
+			onlyWithLight: false,
+			expectPublish: true,
+			expectedPower: 127,
+			expectedDurMs: 30 * time.Minute.Milliseconds(),
+		},
+		{
+			name:          "OnlyWithLight_NoLightSchedule",
+			lightSchedule: nil,
+			mockNow:       time.Date(2026, 5, 22, 18, 0, 0, 0, time.UTC),
+			onlyWithLight: true,
+			expectPublish: true,
+			expectedPower: 127,
+			expectedDurMs: 30 * time.Minute.Milliseconds(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mockClock := clock.MockTime()
+			mockClock.Set(tt.mockNow)
+			t.Cleanup(clock.Reset)
+
+			storageClient, err := storage.NewClient(storage.Config{
+				ConnectionString: ":memory:",
+			})
+			assert.NoError(t, err)
+			defer weather.ResetCache()
+
+			influxdbClient := new(influxdb.MockClient)
+			mqttClient := new(mqtt.MockClient)
+			if tt.expectPublish {
+				expectedMsg, _ := json.Marshal(&action.FanAction{
+					Duration: tt.expectedDurMs,
+					Power:    tt.expectedPower,
+				})
+				mqttClient.On("Publish", "test-garden/command/fan", expectedMsg).Return(nil)
+			}
+			mqttClient.On("Disconnect", uint(100)).Return()
+			influxdbClient.On("Close").Return()
+
+			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+			worker.StartAsync()
+
+			power := uint(50)
+			g := &pkg.Garden{
+				ID:            babyapi.NewID(),
+				Name:          "test-garden",
+				TopicPrefix:   "test-garden",
+				LightSchedule: tt.lightSchedule,
+				FanSchedule: &pkg.FanSchedule{
+					Duration:      &pkg.Duration{Duration: 30 * time.Minute},
+					Interval:      &pkg.Duration{Duration: 2 * time.Hour},
+					Power:         &power,
+					OnlyWithLight: tt.onlyWithLight,
+				},
+			}
+
+			// Directly invoke the scheduled job handler
+			logger := slog.Default()
+			worker.executeFanActionInScheduledJob(g, logger)
+
+			worker.Stop()
+			influxdbClient.AssertExpectations(t)
+			mqttClient.AssertExpectations(t)
+		})
+	}
 }
