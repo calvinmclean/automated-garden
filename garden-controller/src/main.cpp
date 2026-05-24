@@ -78,7 +78,7 @@ void setupFan() {
 void waterZoneTask(void* parameters) {
   WaterMessage we;
   while (true) {
-    if (xQueueReceive(waterQueue, &we, 0)) {
+    if (xQueueReceive(waterQueue, &we, portMAX_DELAY)) {
       // Make copies for START event (publisher frees copies)
       char* zone_id_start = strdup(we.zone_id);
       char* event_id_start = strdup(we.id);
@@ -97,7 +97,6 @@ void waterZoneTask(void* parameters) {
       WaterStatusEvent terminalEvent = {we.position, elapsed, we.zone_id, we.id, terminalStatus};
       xQueueSend(waterPublisherQueue, &terminalEvent, portMAX_DELAY);
     }
-    vTaskDelay(5 / portTICK_PERIOD_MS);
   }
   vTaskDelete(NULL);
 }
@@ -190,7 +189,7 @@ void changeLight(LightEvent le) {
 void fanTask(void* parameters) {
   FanEvent fe;
   while (true) {
-    if (xQueueReceive(fanQueue, &fe, 0)) {
+    if (xQueueReceive(fanQueue, &fe, portMAX_DELAY)) {
       printf("running fan at power %d for %lu ms\n", fe.power, fe.duration);
       fan_power = fe.power;
       ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, fan_power);
@@ -210,7 +209,6 @@ void fanTask(void* parameters) {
       // Publish off state
       xQueueSend(fanPublisherQueue, &fan_power, portMAX_DELAY);
     }
-    vTaskDelay(5 / portTICK_PERIOD_MS);
   }
   vTaskDelete(NULL);
 }
@@ -230,11 +228,10 @@ void reboot(unsigned long duration) {
 void rebootTask(void* parameters) {
   unsigned long delay;
   while (true) {
-    if (xQueueReceive(rebootQueue, &delay, 0)) {
+    if (xQueueReceive(rebootQueue, &delay, portMAX_DELAY)) {
       xTaskNotifyWait(0x00, ULONG_MAX, NULL, delay / portTICK_PERIOD_MS);
       ESP.restart();
     }
-    vTaskDelay(5 / portTICK_PERIOD_MS);
   }
   vTaskDelete(NULL);
 }
