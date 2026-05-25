@@ -430,7 +430,7 @@ func parseFormDuration(r *http.Request, name string, defaultValue time.Duration)
 	if valueStr == "" {
 		return defaultValue
 	}
-	value, err := time.ParseDuration(valueStr)
+	value, err := pkg.ParseDurationWithDays(valueStr)
 	if err != nil {
 		return defaultValue
 	}

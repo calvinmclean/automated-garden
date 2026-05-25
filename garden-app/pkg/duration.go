@@ -117,7 +117,7 @@ func parseString(input string) (time.Duration, string, error) {
 	input = strings.Trim(input, `"`)
 
 	if !strings.HasPrefix(input, cronPrefix) {
-		d, err := parseDurationWithDays(input)
+		d, err := ParseDurationWithDays(input)
 		if err != nil {
 			return 0, "", fmt.Errorf("invalid format for time.Duration: %w", err)
 		}
@@ -133,10 +133,10 @@ func parseString(input string) (time.Duration, string, error) {
 	return 0, cronStr, nil
 }
 
-// parseDurationWithDays parses a duration string that may contain days (d) suffix.
+// ParseDurationWithDays parses a duration string that may contain days (d) suffix.
 // It converts days to hours and delegates the rest to time.ParseDuration.
 // Examples: "5d" -> 120h, "5d1h" -> 121h, "2d30m" -> 48h30m, "1h30m" -> 1h30m
-func parseDurationWithDays(input string) (time.Duration, error) {
+func ParseDurationWithDays(input string) (time.Duration, error) {
 	daysStr, remainder, found := strings.Cut(input, "d")
 	if !found {
 		return time.ParseDuration(input)
