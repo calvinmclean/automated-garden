@@ -90,14 +90,14 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 			Name: "evapotranspiration-data",
 			Fn: func(taskCtx context.Context) error {
 				// Only fetch ET if temperature control is enabled (to get the weather client)
-				if !ws.HasTemperatureControl() {
+				if !ws.HasEvapotranspirationControl() {
 					return nil
 				}
 				logger.Debug("getting evapotranspiration data for WaterSchedule")
 				etMM, err := getEvapotranspirationData(taskCtx, ws, storageClient)
 				if err != nil || etMM == nil {
 					// ET is optional, so don't warn on error
-					logger.Warn("unable to get ET data from weather client", "error", err)
+					logger.Warn("unable to get ET data from weather client", "error", err, "water_schedule", ws.GetID())
 					return nil
 				}
 				inches := units.MmToInches(*etMM)
@@ -127,7 +127,7 @@ func getRainData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *stor
 
 	totalRain, err := weatherClient.GetTotalRain(ctx, ws.Interval.Duration)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get rain data from weather client: %w", err)
+		return nil, fmt.Errorf("unable to get rain data from weather client %q: %w", ws.WeatherControl.Rain.ClientID, err)
 	}
 	return &totalRain, nil
 }
@@ -140,13 +140,13 @@ func getTemperatureData(ctx context.Context, ws *pkg.WaterSchedule, storageClien
 
 	avgTemperature, err := weatherClient.GetAverageHighTemperature(ctx, ws.Interval.Duration)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get average high temperature from weather client: %w", err)
+		return nil, fmt.Errorf("unable to get average high temperature from weather client %q: %w", ws.WeatherControl.Temperature.ClientID, err)
 	}
 	return &avgTemperature, nil
 }
 
 func getEvapotranspirationData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
-	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
+	weatherClient, err := storageClient.GetWeatherClient(ws.WeatherControl.Evapotranspiration.ClientID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting WeatherClient for ET data: %w", err)
 	}
@@ -159,7 +159,7 @@ func getEvapotranspirationData(ctx context.Context, ws *pkg.WaterSchedule, stora
 
 	avgET, err := etClient.GetAverageEvapotranspiration(ctx, ws.Interval.Duration)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get evapotranspiration data from weather client: %w", err)
+		return nil, fmt.Errorf("unable to get evapotranspiration data from weather client %q: %w", ws.WeatherControl.Temperature.ClientID, err)
 	}
 	return &avgET, nil
 }
