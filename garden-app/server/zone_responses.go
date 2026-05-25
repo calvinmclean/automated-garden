@@ -249,6 +249,9 @@ type ZoneWaterHistoryResponse struct {
 
 // NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
 func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryResponse {
+	// Reverse history to show latest in UI
+	slices.Reverse(history)
+
 	total := time.Duration(0)
 	count := 0
 	for _, h := range history {
