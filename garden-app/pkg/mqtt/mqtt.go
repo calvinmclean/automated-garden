@@ -88,6 +88,10 @@ func NewClient(config Config, defaultHandler mqtt.MessageHandler, handlers ...To
 
 func (c *client) AddHandler(handler TopicHandler) {
 	c.handlers = append(c.handlers, handler)
+	if c.Client != nil && c.Client.IsConnected() {
+		token := c.Client.Subscribe(handler.Topic, QOS, handler.Handler)
+		_ = token.Wait()
+	}
 }
 
 // Connect uses the MQTT Client's Connect function but returns the error instead of Token
