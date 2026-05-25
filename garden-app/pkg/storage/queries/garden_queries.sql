@@ -1,13 +1,20 @@
 -- name: GetGarden :one
-SELECT * FROM gardens
-WHERE id = ? LIMIT 1;
+SELECT g.*, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
+WHERE g.id = ? LIMIT 1;
 
 -- name: ListAllGardens :many
-SELECT * FROM gardens;
+SELECT g.*, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id;
 
 -- name: ListActiveGardens :many
-SELECT * FROM gardens WHERE end_date IS NULL
-   OR end_date > ?;
+SELECT g.*, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
+WHERE g.end_date IS NULL
+   OR g.end_date > ?;
 
 -- name: UpsertGarden :exec
 INSERT INTO gardens (
@@ -39,5 +46,7 @@ WHERE id = ?;
 DELETE FROM gardens WHERE id = ?;
 
 -- name: GetGardenByTopicPrefix :one
-SELECT * FROM gardens
-WHERE topic_prefix = ? LIMIT 1;
+SELECT g.*, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
+WHERE g.topic_prefix = ? LIMIT 1;

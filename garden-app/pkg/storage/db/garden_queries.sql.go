@@ -20,13 +20,33 @@ func (q *Queries) DeleteGarden(ctx context.Context, id string) error {
 }
 
 const getGarden = `-- name: GetGarden :one
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
-WHERE id = ? LIMIT 1
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
+WHERE g.id = ? LIMIT 1
 `
 
-func (q *Queries) GetGarden(ctx context.Context, id string) (Garden, error) {
+type GetGardenRow struct {
+	ID                   string
+	Name                 string
+	TopicPrefix          string
+	MaxZones             int64
+	TempHumidSensor      bool
+	CreatedAt            string
+	EndDate              sql.NullString
+	NotificationClientID sql.NullString
+	NotificationSettings sql.NullString
+	ControllerConfig     sql.NullString
+	LightSchedule        sql.NullString
+	MacAddress           sql.NullString
+	IpAddress            sql.NullString
+	FirmwareVersion      sql.NullString
+	UpdatedAt            sql.NullString
+}
+
+func (q *Queries) GetGarden(ctx context.Context, id string) (GetGardenRow, error) {
 	row := q.db.QueryRowContext(ctx, getGarden, id)
-	var i Garden
+	var i GetGardenRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -39,18 +59,42 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (Garden, error) {
 		&i.NotificationSettings,
 		&i.ControllerConfig,
 		&i.LightSchedule,
+		&i.MacAddress,
+		&i.IpAddress,
+		&i.FirmwareVersion,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const getGardenByTopicPrefix = `-- name: GetGardenByTopicPrefix :one
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
-WHERE topic_prefix = ? LIMIT 1
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
+WHERE g.topic_prefix = ? LIMIT 1
 `
 
-func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string) (Garden, error) {
+type GetGardenByTopicPrefixRow struct {
+	ID                   string
+	Name                 string
+	TopicPrefix          string
+	MaxZones             int64
+	TempHumidSensor      bool
+	CreatedAt            string
+	EndDate              sql.NullString
+	NotificationClientID sql.NullString
+	NotificationSettings sql.NullString
+	ControllerConfig     sql.NullString
+	LightSchedule        sql.NullString
+	MacAddress           sql.NullString
+	IpAddress            sql.NullString
+	FirmwareVersion      sql.NullString
+	UpdatedAt            sql.NullString
+}
+
+func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string) (GetGardenByTopicPrefixRow, error) {
 	row := q.db.QueryRowContext(ctx, getGardenByTopicPrefix, topicPrefix)
-	var i Garden
+	var i GetGardenByTopicPrefixRow
 	err := row.Scan(
 		&i.ID,
 		&i.Name,
@@ -63,24 +107,49 @@ func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string
 		&i.NotificationSettings,
 		&i.ControllerConfig,
 		&i.LightSchedule,
+		&i.MacAddress,
+		&i.IpAddress,
+		&i.FirmwareVersion,
+		&i.UpdatedAt,
 	)
 	return i, err
 }
 
 const listActiveGardens = `-- name: ListActiveGardens :many
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens WHERE end_date IS NULL
-   OR end_date > ?
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
+WHERE g.end_date IS NULL
+   OR g.end_date > ?
 `
 
-func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString) ([]Garden, error) {
+type ListActiveGardensRow struct {
+	ID                   string
+	Name                 string
+	TopicPrefix          string
+	MaxZones             int64
+	TempHumidSensor      bool
+	CreatedAt            string
+	EndDate              sql.NullString
+	NotificationClientID sql.NullString
+	NotificationSettings sql.NullString
+	ControllerConfig     sql.NullString
+	LightSchedule        sql.NullString
+	MacAddress           sql.NullString
+	IpAddress            sql.NullString
+	FirmwareVersion      sql.NullString
+	UpdatedAt            sql.NullString
+}
+
+func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString) ([]ListActiveGardensRow, error) {
 	rows, err := q.db.QueryContext(ctx, listActiveGardens, endDate)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Garden
+	var items []ListActiveGardensRow
 	for rows.Next() {
-		var i Garden
+		var i ListActiveGardensRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -93,6 +162,10 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 			&i.NotificationSettings,
 			&i.ControllerConfig,
 			&i.LightSchedule,
+			&i.MacAddress,
+			&i.IpAddress,
+			&i.FirmwareVersion,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -108,18 +181,38 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 }
 
 const listAllGardens = `-- name: ListAllGardens :many
-SELECT id, name, topic_prefix, max_zones, temp_humid_sensor, created_at, end_date, notification_client_id, notification_settings, controller_config, light_schedule FROM gardens
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+FROM gardens g
+LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 `
 
-func (q *Queries) ListAllGardens(ctx context.Context) ([]Garden, error) {
+type ListAllGardensRow struct {
+	ID                   string
+	Name                 string
+	TopicPrefix          string
+	MaxZones             int64
+	TempHumidSensor      bool
+	CreatedAt            string
+	EndDate              sql.NullString
+	NotificationClientID sql.NullString
+	NotificationSettings sql.NullString
+	ControllerConfig     sql.NullString
+	LightSchedule        sql.NullString
+	MacAddress           sql.NullString
+	IpAddress            sql.NullString
+	FirmwareVersion      sql.NullString
+	UpdatedAt            sql.NullString
+}
+
+func (q *Queries) ListAllGardens(ctx context.Context) ([]ListAllGardensRow, error) {
 	rows, err := q.db.QueryContext(ctx, listAllGardens)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
-	var items []Garden
+	var items []ListAllGardensRow
 	for rows.Next() {
-		var i Garden
+		var i ListAllGardensRow
 		if err := rows.Scan(
 			&i.ID,
 			&i.Name,
@@ -132,6 +225,10 @@ func (q *Queries) ListAllGardens(ctx context.Context) ([]Garden, error) {
 			&i.NotificationSettings,
 			&i.ControllerConfig,
 			&i.LightSchedule,
+			&i.MacAddress,
+			&i.IpAddress,
+			&i.FirmwareVersion,
+			&i.UpdatedAt,
 		); err != nil {
 			return nil, err
 		}

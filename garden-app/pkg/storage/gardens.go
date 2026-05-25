@@ -34,7 +34,7 @@ func NewGardenStorage(sqlDB *sql.DB) *GardenStorage {
 
 // Get retrieves a Garden from storage by ID
 func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error) {
-	dbGarden, err := s.q.GetGarden(ctx, id)
+	row, err := s.q.GetGarden(ctx, id)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, babyapi.ErrNotFound
@@ -42,7 +42,22 @@ func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error)
 		return nil, fmt.Errorf("error getting garden: %w", err)
 	}
 
-	return dbGardenToGarden(dbGarden)
+	return gardenFromRow(
+		db.Garden{
+			ID:                   row.ID,
+			Name:                 row.Name,
+			TopicPrefix:          row.TopicPrefix,
+			MaxZones:             row.MaxZones,
+			TempHumidSensor:      row.TempHumidSensor,
+			CreatedAt:            row.CreatedAt,
+			EndDate:              row.EndDate,
+			NotificationClientID: row.NotificationClientID,
+			NotificationSettings: row.NotificationSettings,
+			ControllerConfig:     row.ControllerConfig,
+			LightSchedule:        row.LightSchedule,
+		},
+		row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
+	)
 }
 
 // Search returns all Gardens from storage
@@ -50,29 +65,74 @@ func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) iter
 	return func(yield func(*pkg.Garden, error) bool) {
 		getEndDated := q.Get("end_dated") == "true"
 
-		listGardens := s.q.ListAllGardens
-		if !getEndDated {
-			listGardens = func(ctx context.Context) ([]db.Garden, error) {
-				return s.q.ListActiveGardens(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
-			}
+		var rows any
+		var err error
+		if getEndDated {
+			rows, err = s.q.ListAllGardens(ctx)
+		} else {
+			rows, err = s.q.ListActiveGardens(ctx, sql.NullString{String: time.Now().Format(time.RFC3339), Valid: true})
 		}
-
-		dbGardens, err := listGardens(ctx)
 		if err != nil {
 			yield(nil, fmt.Errorf("error listing gardens: %w", err))
 			return
 		}
 
-		for _, dbGarden := range dbGardens {
-			garden, err := dbGardenToGarden(dbGarden)
-			if err != nil {
-				if !yield(nil, fmt.Errorf("invalid garden: %w", err)) {
+		switch v := rows.(type) {
+		case []db.ListAllGardensRow:
+			for _, row := range v {
+				garden, err := gardenFromRow(
+					db.Garden{
+						ID:                   row.ID,
+						Name:                 row.Name,
+						TopicPrefix:          row.TopicPrefix,
+						MaxZones:             row.MaxZones,
+						TempHumidSensor:      row.TempHumidSensor,
+						CreatedAt:            row.CreatedAt,
+						EndDate:              row.EndDate,
+						NotificationClientID: row.NotificationClientID,
+						NotificationSettings: row.NotificationSettings,
+						ControllerConfig:     row.ControllerConfig,
+						LightSchedule:        row.LightSchedule,
+					},
+					row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
+				)
+				if err != nil {
+					if !yield(nil, fmt.Errorf("invalid garden: %w", err)) {
+						return
+					}
+					continue
+				}
+				if !yield(garden, nil) {
 					return
 				}
-				continue
 			}
-			if !yield(garden, nil) {
-				return
+		case []db.ListActiveGardensRow:
+			for _, row := range v {
+				garden, err := gardenFromRow(
+					db.Garden{
+						ID:                   row.ID,
+						Name:                 row.Name,
+						TopicPrefix:          row.TopicPrefix,
+						MaxZones:             row.MaxZones,
+						TempHumidSensor:      row.TempHumidSensor,
+						CreatedAt:            row.CreatedAt,
+						EndDate:              row.EndDate,
+						NotificationClientID: row.NotificationClientID,
+						NotificationSettings: row.NotificationSettings,
+						ControllerConfig:     row.ControllerConfig,
+						LightSchedule:        row.LightSchedule,
+					},
+					row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
+				)
+				if err != nil {
+					if !yield(nil, fmt.Errorf("invalid garden: %w", err)) {
+						return
+					}
+					continue
+				}
+				if !yield(garden, nil) {
+					return
+				}
 			}
 		}
 	}
@@ -180,7 +240,7 @@ func (s *GardenStorage) Delete(ctx context.Context, id string) error {
 
 // GetByTopicPrefix retrieves a Garden by its TopicPrefix
 func (s *GardenStorage) GetByTopicPrefix(ctx context.Context, topicPrefix string) (*pkg.Garden, error) {
-	dbGarden, err := s.q.GetGardenByTopicPrefix(ctx, topicPrefix)
+	row, err := s.q.GetGardenByTopicPrefix(ctx, topicPrefix)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, babyapi.ErrNotFound
@@ -188,7 +248,57 @@ func (s *GardenStorage) GetByTopicPrefix(ctx context.Context, topicPrefix string
 		return nil, fmt.Errorf("error getting garden by topic_prefix: %w", err)
 	}
 
-	return dbGardenToGarden(dbGarden)
+	return gardenFromRow(
+		db.Garden{
+			ID:                   row.ID,
+			Name:                 row.Name,
+			TopicPrefix:          row.TopicPrefix,
+			MaxZones:             row.MaxZones,
+			TempHumidSensor:      row.TempHumidSensor,
+			CreatedAt:            row.CreatedAt,
+			EndDate:              row.EndDate,
+			NotificationClientID: row.NotificationClientID,
+			NotificationSettings: row.NotificationSettings,
+			ControllerConfig:     row.ControllerConfig,
+			LightSchedule:        row.LightSchedule,
+		},
+		row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
+	)
+}
+
+func gardenFromRow(
+	dbGarden db.Garden,
+	macAddress, ipAddress, firmwareVersion, updatedAt sql.NullString,
+) (*pkg.Garden, error) {
+	garden, err := dbGardenToGarden(dbGarden)
+	if err != nil {
+		return nil, err
+	}
+	garden.ControllerInfo = controllerInfoFromRow(macAddress, ipAddress, firmwareVersion, updatedAt)
+	return garden, nil
+}
+
+func controllerInfoFromRow(macAddress, ipAddress, firmwareVersion, updatedAt sql.NullString) *pkg.ControllerInfo {
+	if !macAddress.Valid && !ipAddress.Valid && !firmwareVersion.Valid {
+		return nil
+	}
+
+	info := &pkg.ControllerInfo{}
+	if macAddress.Valid {
+		info.MACAddress = macAddress.String
+	}
+	if ipAddress.Valid {
+		info.IPAddress = ipAddress.String
+	}
+	if firmwareVersion.Valid {
+		info.FirmwareVersion = firmwareVersion.String
+	}
+	if updatedAt.Valid && updatedAt.String != "" {
+		if t, err := time.Parse(time.RFC3339, updatedAt.String); err == nil {
+			info.UpdatedAt = &t
+		}
+	}
+	return info
 }
 
 func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {

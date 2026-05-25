@@ -107,6 +107,10 @@ func (w *Worker) StartAsync() {
 		Topic:   "+/data/health",
 		Handler: w.healthMessageHandler,
 	})
+	w.mqttClient.AddHandler(mqtt.TopicHandler{
+		Topic:   "+/data/info",
+		Handler: w.handleControllerInfoMessage,
+	})
 
 	if err := w.mqttClient.Connect(); err != nil {
 		w.logger.Error("failed to connect to MQTT broker", "error", err)

@@ -23,6 +23,14 @@ type Garden struct {
 	LightSchedule        sql.NullString
 }
 
+type GardenControllerInfo struct {
+	GardenID        string
+	MacAddress      sql.NullString
+	IpAddress       sql.NullString
+	FirmwareVersion sql.NullString
+	UpdatedAt       string
+}
+
 type Note struct {
 	ID        string
 	Title     string
