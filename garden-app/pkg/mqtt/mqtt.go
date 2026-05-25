@@ -127,6 +127,6 @@ func DefaultHandler(logger *slog.Logger) mqtt.MessageHandler {
 		logger.With(
 			"topic", msg.Topic(),
 			"message", string(msg.Payload()),
-		).Debug("default handler called with message")
+		).Warn("default handler called with message")
 	}
 }
