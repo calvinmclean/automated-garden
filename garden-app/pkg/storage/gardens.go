@@ -210,11 +210,6 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		}
 	}
 
-	var tempHumidSensor bool
-	if garden.TemperatureHumiditySensor != nil {
-		tempHumidSensor = *garden.TemperatureHumiditySensor
-	}
-
 	createdAt := time.Now().Format(time.RFC3339)
 	if garden.CreatedAt != nil {
 		createdAt = garden.CreatedAt.Format(time.RFC3339)
@@ -225,7 +220,6 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		Name:                 garden.Name,
 		TopicPrefix:          garden.TopicPrefix,
 		MaxZones:             maxZones,
-		TempHumidSensor:      tempHumidSensor,
 		CreatedAt:            createdAt,
 		EndDate:              endDate,
 		NotificationClientID: notificationClientID,
@@ -341,8 +335,6 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 		return nil, fmt.Errorf("invalid MaxZones: %w", err)
 	}
 	garden.MaxZones = &mz
-
-	garden.TemperatureHumiditySensor = &dbGarden.TempHumidSensor
 
 	if dbGarden.EndDate.Valid {
 		endDate, err := time.Parse(time.RFC3339, dbGarden.EndDate.String)

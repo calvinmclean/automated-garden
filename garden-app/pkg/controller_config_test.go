@@ -28,12 +28,11 @@ func TestControllerConfigPatch(t *testing.T) {
 			&ControllerConfig{FanPin: pointer(uint(1))},
 		},
 		{
-			"TemperatureHumidityPin",
-			&ControllerConfig{TemperatureHumidityPin: pointer(uint(1))},
-		},
-		{
-			"TemperatureHumidityInterval",
-			&ControllerConfig{TemperatureHumidityInterval: &Duration{Duration: 1 * time.Second}},
+			"Sensors",
+			&ControllerConfig{Sensors: []SensorConfig{
+				{Name: "Ambient", Type: "DHT22", Pin: 21, Interval: Duration{Duration: 5 * time.Second}},
+				{Name: "Reservoir", Type: "DS18B20", Pin: 22, Interval: Duration{Duration: 5 * time.Second}},
+			}},
 		},
 		{
 			"ValvePinsEmpty",
@@ -86,6 +85,23 @@ func TestControllerConfigPatch(t *testing.T) {
 
 		assert.ElementsMatch(t, []uint{5}, c.PumpPins)
 	})
+
+	t.Run("InvalidSensorType", func(t *testing.T) {
+		c := &ControllerConfig{}
+		err := c.Patch(&ControllerConfig{Sensors: []SensorConfig{
+			{Name: "Bad", Type: "BMP280", Pin: 1},
+		}})
+		require.Error(t, err)
+	})
+
+	t.Run("DuplicateDHT22Pin", func(t *testing.T) {
+		c := &ControllerConfig{}
+		err := c.Patch(&ControllerConfig{Sensors: []SensorConfig{
+			{Name: "A", Type: "DHT22", Pin: 21},
+			{Name: "B", Type: "DHT22", Pin: 21},
+		}})
+		require.Error(t, err)
+	})
 }
 
 func TestToMessage(t *testing.T) {
@@ -97,82 +113,66 @@ func TestToMessage(t *testing.T) {
 		{
 			"FullConfig",
 			&ControllerConfig{
-				ValvePins:                   []uint{1},
-				PumpPins:                    []uint{1},
-				LightPin:                    pointer(uint(1)),
-				FanPin:                      pointer(uint(2)),
-				TemperatureHumidityPin:      pointer(uint(1)),
-				TemperatureHumidityInterval: &Duration{Duration: time.Second},
+				ValvePins: []uint{1},
+				PumpPins:  []uint{1},
+				LightPin:  pointer(uint(1)),
+				FanPin:    pointer(uint(2)),
+				Sensors: []SensorConfig{
+					{Name: "Ambient", Type: "DHT22", Pin: 21, Interval: Duration{Duration: time.Second}},
+					{Name: "Reservoir", Type: "DS18B20", Pin: 22, Interval: Duration{Duration: 2 * time.Second}},
+				},
 			},
 			ControllerConfigMessage{
-				NumZones:                    1,
-				ValvePins:                   []uint{1},
-				PumpPins:                    []uint{1},
-				LightEnabled:                true,
-				LightPin:                    uint(1),
-				FanEnabled:                  true,
-				FanPin:                      uint(2),
-				TemperatureHumidityEnabled:  true,
-				TemperatureHumidityPin:      uint(1),
-				TemperatureHumidityInterval: 1000,
+				NumZones:     1,
+				ValvePins:    []uint{1},
+				PumpPins:     []uint{1},
+				LightEnabled: true,
+				LightPin:     uint(1),
+				FanEnabled:   true,
+				FanPin:       uint(2),
+				Sensors: []SensorConfigMessage{
+					{Type: "DHT22", Pin: 21, Interval: 1000},
+					{Type: "DS18B20", Pin: 22, Interval: 2000},
+				},
 			},
 		},
 		{
-			"DefaultTemperatureHumidityInterval",
+			"DefaultSensorInterval",
 			&ControllerConfig{
-				ValvePins:              []uint{1},
-				PumpPins:               []uint{1},
-				LightPin:               pointer(uint(1)),
-				FanPin:                 pointer(uint(2)),
-				TemperatureHumidityPin: pointer(uint(1)),
+				ValvePins: []uint{1},
+				PumpPins:  []uint{1},
+				LightPin:  pointer(uint(1)),
+				FanPin:    pointer(uint(2)),
+				Sensors: []SensorConfig{
+					{Name: "Ambient", Type: "DHT22", Pin: 21},
+				},
 			},
 			ControllerConfigMessage{
-				NumZones:                    1,
-				ValvePins:                   []uint{1},
-				PumpPins:                    []uint{1},
-				LightEnabled:                true,
-				LightPin:                    uint(1),
-				FanEnabled:                  true,
-				FanPin:                      uint(2),
-				TemperatureHumidityEnabled:  true,
-				TemperatureHumidityPin:      uint(1),
-				TemperatureHumidityInterval: 5000,
+				NumZones:     1,
+				ValvePins:    []uint{1},
+				PumpPins:     []uint{1},
+				LightEnabled: true,
+				LightPin:     uint(1),
+				FanEnabled:   true,
+				FanPin:       uint(2),
+				Sensors: []SensorConfigMessage{
+					{Type: "DHT22", Pin: 21, Interval: 5000},
+				},
 			},
 		},
 		{
-			"NoLightPin",
-			&ControllerConfig{
-				ValvePins:                   []uint{1},
-				PumpPins:                    []uint{1},
-				FanPin:                      pointer(uint(2)),
-				TemperatureHumidityPin:      pointer(uint(1)),
-				TemperatureHumidityInterval: &Duration{Duration: time.Second},
-			},
-			ControllerConfigMessage{
-				NumZones:                    1,
-				ValvePins:                   []uint{1},
-				PumpPins:                    []uint{1},
-				LightEnabled:                false,
-				FanEnabled:                  true,
-				FanPin:                      uint(2),
-				TemperatureHumidityEnabled:  true,
-				TemperatureHumidityPin:      uint(1),
-				TemperatureHumidityInterval: 1000,
-			},
-		},
-		{
-			"NoTemperatureHumidityPin",
+			"NoSensors",
 			&ControllerConfig{
 				ValvePins: []uint{1},
 				PumpPins:  []uint{1},
 			},
 			ControllerConfigMessage{
-				NumZones:                   1,
-				ValvePins:                  []uint{1},
-				PumpPins:                   []uint{1},
-				LightEnabled:               false,
-				FanEnabled:                 false,
-				TemperatureHumidityEnabled: false,
+				NumZones:     1,
+				ValvePins:    []uint{1},
+				PumpPins:     []uint{1},
+				LightEnabled: false,
+				FanEnabled:   false,
+				Sensors:      []SensorConfigMessage{},
 			},
 		},
 	}

@@ -19,18 +19,17 @@ WHERE g.end_date IS NULL
 -- name: UpsertGarden :exec
 INSERT INTO gardens (
   id, name, topic_prefix,
-  max_zones, temp_humid_sensor,
+  max_zones,
   created_at, end_date,
   notification_client_id, notification_settings,
   controller_config, light_schedule, fan_schedule
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
   topic_prefix = EXCLUDED.topic_prefix,
   max_zones = EXCLUDED.max_zones,
-  temp_humid_sensor = EXCLUDED.temp_humid_sensor,
   end_date = EXCLUDED.end_date,
   notification_client_id = EXCLUDED.notification_client_id,
   notification_settings = EXCLUDED.notification_settings,
