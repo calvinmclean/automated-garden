@@ -234,8 +234,7 @@ func (c *Controller) publishHealthData() {
 }
 
 func (c *Controller) publishTemperatureHumidityData() {
-	temperatureTopic := fmt.Sprintf("%s/data/temperature", c.TopicPrefix)
-	humidityTopic := fmt.Sprintf("%s/data/humidity", c.TopicPrefix)
+	sensorTopic := fmt.Sprintf("%s/data/sensor", c.TopicPrefix)
 
 	temperature := c.TemperatureValue
 	humidity := c.HumidityValue
@@ -245,19 +244,17 @@ func (c *Controller) publishTemperatureHumidityData() {
 	}
 
 	logger := c.pubLogger.With(
+		"topic", sensorTopic,
+		"sensor_id", 0,
 		"temperature", temperature,
 		"humidity", humidity,
 	)
-	logger.Info("publishing temperature and humidity data")
+	logger.Info("publishing sensor data")
 
-	err := c.mqttClient.Publish(temperatureTopic, fmt.Appendf(nil, "temperature value=%f", temperature))
+	message := fmt.Appendf(nil, "sensor,sensor_id=0 temperature=%f,humidity=%f", temperature, humidity)
+	err := c.mqttClient.Publish(sensorTopic, message)
 	if err != nil {
-		logger.Error("unable to publish temperature data", "error", err)
-	}
-
-	err = c.mqttClient.Publish(humidityTopic, fmt.Appendf(nil, "humidity value=%f", humidity))
-	if err != nil {
-		logger.Error("unable to publish humidity data", "error", err)
+		logger.Error("unable to publish sensor data", "error", err)
 	}
 }
 
