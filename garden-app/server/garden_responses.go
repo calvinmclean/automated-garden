@@ -196,15 +196,17 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 	if g.Garden.ControllerConfig != nil {
 		for i, sensor := range g.Garden.ControllerConfig.Sensors {
 			i, sensor := i, sensor // capture loop variables
+			//nolint:gosec // sensor index comes from a slice range and is non-negative
+			sensorID := uint(i)
 			tasks = append(tasks, concurrent.TaskFunc{
-				Name: "sensor-" + fmt.Sprint(i),
+				Name: "sensor-" + fmt.Sprint(sensorID),
 				Fn: func(taskCtx context.Context) error {
-					reading, err := g.api.influxdbClient.GetSensorReading(taskCtx, g.Garden.TopicPrefix, uint(i))
+					reading, err := g.api.influxdbClient.GetSensorReading(taskCtx, g.Garden.TopicPrefix, sensorID)
 					if err != nil {
 						return err
 					}
 					data := SensorData{
-						ID:   uint(i),
+						ID:   sensorID,
 						Name: sensor.Name,
 						Type: sensor.Type,
 					}

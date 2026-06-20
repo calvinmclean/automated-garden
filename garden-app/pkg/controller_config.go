@@ -14,7 +14,7 @@ import (
 // The index in ControllerConfig.Sensors is used as the sensor_id in MQTT messages.
 type SensorConfig struct {
 	Name     string   `json:"name"`
-	Type     string   `json:"type"`     // "DHT22" or "DS18B20"
+	Type     string   `json:"type"` // "DHT22" or "DS18B20"
 	Pin      uint     `json:"pin"`
 	Interval Duration `json:"interval"` // user-facing duration; converted to ms for firmware
 }
@@ -45,14 +45,14 @@ type ControllerConfig struct {
 // This is defined here instead of where it's used because this makes it easier to keep consistent
 // with the ControllerConfig type
 type ControllerConfigMessage struct {
-	NumZones  uint                  `json:"num_zones"`
-	ValvePins []uint                `json:"valve_pins"`
-	PumpPins  []uint                `json:"pump_pins"`
-	LightEnabled bool                `json:"light"`
-	LightPin  uint                  `json:"light_pin"`
-	FanEnabled bool                 `json:"fan"`
-	FanPin    uint                  `json:"fan_pin"`
-	Sensors   []SensorConfigMessage `json:"sensors"`
+	NumZones     uint                  `json:"num_zones"`
+	ValvePins    []uint                `json:"valve_pins"`
+	PumpPins     []uint                `json:"pump_pins"`
+	LightEnabled bool                  `json:"light"`
+	LightPin     uint                  `json:"light_pin"`
+	FanEnabled   bool                  `json:"fan"`
+	FanPin       uint                  `json:"fan_pin"`
+	Sensors      []SensorConfigMessage `json:"sensors"`
 }
 
 // SensorConfigMessage is the firmware-facing representation of a SensorConfig.

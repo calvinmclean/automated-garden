@@ -176,5 +176,3 @@ func TestGardenPatch(t *testing.T) {
 		}
 	})
 }
-
-
