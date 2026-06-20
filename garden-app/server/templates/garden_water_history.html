@@ -1,11 +1,5 @@
 {{ define "GardenWaterHistoryPage" }}
 {{ template "start" }}
-<h1 class="uk-heading-small uk-text-center">{{ .Garden.Name }} Water History</h1>
-<div class="uk-margin-left uk-margin-right">
-    <a href="/gardens/{{ .Garden.ID }}/zones?exclude_weather_data=true" class="uk-button uk-button-default uk-margin-bottom">
-        <span uk-icon="icon: arrow-left"></span> Back to Garden
-    </a>
-</div>
 {{ template "gardenWaterHistoryTableSection" . }}
 {{ template "end" }}
 {{ end }}
@@ -13,9 +7,6 @@
 {{ define "gardenWaterHistoryTableSection" }}
 <div id="garden-water-history-table" class="uk-card uk-width-1-1">
     <div class="uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top">
-        <div class="uk-card-header uk-text-center">
-            <h2>Water History</h2>
-        </div>
         <div class="uk-text-center uk-margin-top">
             <div uk-spinner></div>
         </div>
@@ -24,15 +15,12 @@
 <div hx-get="/gardens/{{ .Garden.ID }}/water_history?table=true&limit=20&range=720h"
      hx-headers='{"Accept": "text/html"}'
      hx-trigger="load" hx-swap="innerHTML" hx-target="#garden-water-history-table"
-     hx-on::response-error="this.previousElementSibling.innerHTML = '<div class=\'uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top\'><div class=\'uk-card-header uk-text-center\'><h2>Water History</h2></div><div class=\'uk-alert-danger uk-alert\' uk-alert><p>Failed to load water history</p></div></div>'">
+     hx-on::response-error="this.previousElementSibling.innerHTML = '<div class=\'uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top\'><div class=\'uk-alert-danger uk-alert\' uk-alert><p>Failed to load water history</p></div></div>'">
 </div>
 {{ end }}
 
 {{ define "gardenWaterHistoryTable" }}
 <div class="uk-card uk-card-body uk-card-default uk-margin-left uk-margin-right uk-margin-top">
-    <div class="uk-card-header uk-text-center">
-        <h2>Water History</h2>
-    </div>
     <div class="uk-overflow-auto">
         <table class="uk-table uk-table-striped uk-margin-left uk-margin-right">
             <colgroup>

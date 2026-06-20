@@ -5,6 +5,7 @@ package integrationtests
 import (
 	"fmt"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
 	"time"
@@ -38,6 +39,11 @@ func TestSeedManualData(t *testing.T) {
 	// via the Taskfile. Use an absolute path so both contexts point to the same file.
 	dbPath, err := filepath.Abs("../manual_test.db")
 	require.NoError(t, err)
+
+	if _, statErr := os.Stat(dbPath); statErr == nil {
+		t.Skipf("manual test DB already exists at %s; skipping seeding", dbPath)
+	}
+
 	serverConfig.StorageConfig.ConnectionString = dbPath
 
 	var controllerConfig controller.Config
