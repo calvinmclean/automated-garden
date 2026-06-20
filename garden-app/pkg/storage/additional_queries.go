@@ -56,7 +56,6 @@ func (a *AdditionalQueries) GetZonesUsingWaterSchedule(id string) ([]*pkg.ZoneAn
 				Name:                 dbGarden.Name,
 				TopicPrefix:          dbGarden.TopicPrefix,
 				MaxZones:             dbGarden.MaxZones,
-				TempHumidSensor:      dbGarden.TempHumidSensor,
 				CreatedAt:            dbGarden.CreatedAt,
 				EndDate:              dbGarden.EndDate,
 				NotificationClientID: dbGarden.NotificationClientID,
