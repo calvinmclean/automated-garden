@@ -1049,7 +1049,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				for _, zone := range zones {
-					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 						Return([]pkg.WaterHistory{}, nil)
 				}
 			},
@@ -1063,7 +1063,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone is actively watering (started 30 seconds ago, duration 60 seconds)
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
 						{
 							Status:    pkg.WaterStatusStarted,
@@ -1072,7 +1072,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 						},
 					}, nil)
 				// Second zone has no activity
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{}, nil)
 			},
 			expectedActive:   true,
@@ -1085,13 +1085,13 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone has 2 queued items
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
 						{Status: pkg.WaterStatusSent, SentAt: now.Add(-5 * time.Minute)},
 						{Status: pkg.WaterStatusSent, SentAt: now.Add(-4 * time.Minute)},
 					}, nil)
 				// Second zone has 1 queued item
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
 						{Status: pkg.WaterStatusSent, SentAt: now.Add(-3 * time.Minute)},
 					}, nil)
@@ -1107,7 +1107,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone is actively watering with 2 queued items (events are processed in order)
 				// When Started is found first, queue=0 from that zone
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
 						{
 							Status:    pkg.WaterStatusStarted,
@@ -1116,7 +1116,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 						},
 					}, nil)
 				// Second zone has 1 queued item
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
 						{Status: pkg.WaterStatusSent, SentAt: now.Add(-30 * time.Second)},
 					}, nil)
@@ -1131,7 +1131,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				for _, zone := range zones {
-					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+					influxdbClient.On("GetWaterHistory", mock.Anything, zone.GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 						Return([]pkg.WaterHistory{}, errors.New("influxdb connection error"))
 				}
 			},
@@ -1145,7 +1145,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
 				// First zone is actively watering
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
 						{
 							Status:    pkg.WaterStatusStarted,
@@ -1154,7 +1154,7 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 						},
 					}, nil)
 				// Second zone is queued
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
 						{Status: pkg.WaterStatusSent, SentAt: now.Add(-1 * time.Minute)},
 						{Status: pkg.WaterStatusSent, SentAt: now.Add(-2 * time.Minute)},
@@ -1169,15 +1169,14 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
-				// First zone has a cancelled event with a queued item after it
-				// History is returned oldest-first and reversed, so mock oldest-first
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				// First zone has a queued item (newest) and a cancelled event before it
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
-						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-5 * time.Minute)},
 						{Status: pkg.WaterStatusSent, SentAt: now.Add(-1 * time.Minute)},
+						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-5 * time.Minute)},
 					}, nil)
 				// Second zone has no activity
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{}, nil)
 			},
 			expectedActive:   false,
@@ -1189,20 +1188,19 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
-				// First zone: cancelled (oldest), then active started, then queued sent
-				// History is returned oldest-first and reversed, so mock oldest-first
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				// First zone: queued sent (newest), active started, then cancelled (oldest)
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
-						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-10 * time.Minute)},
+						{Status: pkg.WaterStatusSent, SentAt: now.Add(-5 * time.Second)},
 						{
 							Status:    pkg.WaterStatusStarted,
 							StartedAt: now.Add(-30 * time.Second),
 							Duration:  pkg.Duration{Duration: 60 * time.Second},
 						},
-						{Status: pkg.WaterStatusSent, SentAt: now.Add(-5 * time.Second)},
+						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-10 * time.Minute)},
 					}, nil)
 				// Second zone has no activity
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{}, nil)
 			},
 			expectedActive:   true,
@@ -1214,19 +1212,18 @@ func TestGardenResponseGetActiveWatering(t *testing.T) {
 			setupInfluxDB: func(influxdbClient *influxdb.MockClient, topicPrefix string, zones []*pkg.Zone) {
 				// Mock health check
 				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(now, nil)
-				// First zone: started (older) then cancelled (newer). After reverse, cancelled is first.
-				// CalculateWaterProgress should return empty since cancelled is terminal.
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				// First zone: cancelled (newer) then started (older). CalculateWaterProgress should return empty since cancelled is terminal.
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[0].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{
+						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-1 * time.Minute)},
 						{
 							Status:    pkg.WaterStatusStarted,
 							StartedAt: now.Add(-2 * time.Minute),
 							Duration:  pkg.Duration{Duration: 60 * time.Second},
 						},
-						{Status: pkg.WaterStatusCancelled, SentAt: now.Add(-1 * time.Minute)},
 					}, nil)
 				// Second zone has no activity
-				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5)).
+				influxdbClient.On("GetWaterHistory", mock.Anything, zones[1].GetID(), topicPrefix, 72*time.Hour, uint64(5), true).
 					Return([]pkg.WaterHistory{}, nil)
 			},
 			expectedActive:   false,

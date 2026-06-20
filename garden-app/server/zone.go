@@ -330,7 +330,7 @@ func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone,
 	logger.Debug("using limit", "limit", limit)
 
 	logger.Debug("getting water history from InfluxDB")
-	history, err := api.influxdbClient.GetWaterHistory(r.Context(), zone.GetID(), garden.TopicPrefix, timeRange, limit)
+	history, err := api.influxdbClient.GetWaterHistory(r.Context(), zone.GetID(), garden.TopicPrefix, timeRange, limit, true)
 	if err != nil {
 		logger.Error("unable to get water history from InfluxDB", "error", err)
 		return nil, babyapi.InternalServerError(err)

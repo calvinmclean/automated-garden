@@ -41,7 +41,7 @@ waterEvents = from(bucket: "garden")
   |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
   |> keep(columns: ["_time", "zone_id", "id", "status", "_value"])
 
-union(tables: [waterCommands, waterEvents])
+  union(tables: [waterCommands, waterEvents])
   |> group(columns: ["zone_id", "id"])
   |> sort(columns: ["_time"], desc: false)
   |> reduce(
@@ -57,6 +57,10 @@ union(tables: [waterCommands, waterEvents])
       }),
       identity: {event_id: "", zone_id: "", status: "", source: "", sent_at: time(v:0), started_at: time(v:0), completed_at: time(v:0), _value: 0.0}
     )
+  {{- if .Descending }}
+  |> group()
+  |> sort(columns: ["event_id"], desc: true)
+  {{- end }}
   {{- if .Limit }}
   |> limit(n: {{.Limit}})
   {{- end }}
@@ -85,7 +89,7 @@ var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
 	GetLastContact(context.Context, string) (time.Time, error)
-	GetWaterHistory(context.Context, string, string, time.Duration, uint64) ([]pkg.WaterHistory, error)
+	GetWaterHistory(context.Context, string, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
 	GetTemperatureAndHumidity(context.Context, string) (float64, float64, error)
 	influxdb2.Client
 }
@@ -107,6 +111,7 @@ type queryData struct {
 	ZoneID      string
 	TopicPrefix string
 	Limit       uint64
+	Descending  bool
 }
 
 // Render executes the specified template with the queryData to create a string
@@ -166,7 +171,7 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (t
 }
 
 // GetWaterHistory gets recent water events for a specific Zone
-func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicPrefix string, timeRange time.Duration, limit uint64) ([]pkg.WaterHistory, error) {
+func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicPrefix string, timeRange time.Duration, limit uint64, desc bool) ([]pkg.WaterHistory, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetWaterHistory"))
 	defer timer.ObserveDuration()
 
@@ -177,6 +182,7 @@ func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicP
 		TopicPrefix: topicPrefix,
 		ZoneID:      zoneID,
 		Limit:       limit,
+		Descending:  desc,
 	}.Render(waterHistoryQueryTemplate)
 	if err != nil {
 		return nil, err

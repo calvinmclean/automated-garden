@@ -200,11 +200,10 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 		tasks = append(tasks, concurrent.TaskFunc{
 			Name: "zone-water-history-" + zone.GetID(),
 			Fn: func(taskCtx context.Context) error {
-				history, err := g.api.influxdbClient.GetWaterHistory(taskCtx, zone.GetID(), g.TopicPrefix, 72*time.Hour, 5)
+				history, err := g.api.influxdbClient.GetWaterHistory(taskCtx, zone.GetID(), g.TopicPrefix, 72*time.Hour, 5, true)
 				if err != nil {
 					return err
 				}
-				slices.Reverse(history)
 				results[i] = zoneResult{zone: zone, progress: pkg.CalculateWaterProgress(history)}
 				return nil
 			},
