@@ -1,0 +1,26 @@
+web_server:
+  port: 8080
+mqtt:
+  broker: "localhost"
+  port: 1883
+  client_id: "garden-manual"
+influxdb:
+  address: "http://localhost:8086"
+  token: "my-secret-token"
+  org: "garden"
+  bucket: "garden"
+storage:
+  connection_string: "manual_test.db"
+
+controller:
+  topic_prefix: "test"
+  num_zones: 3
+  publish_water_event: true
+  publish_health: true
+  health_interval: 500ms
+  publish_temperature_humidity: true
+  temperature_humidity_interval: 100ms
+  temperature_value: 50
+  humidity_value: 50
+  temperature_humidity_disable_noise: true
+  enable_ui: false

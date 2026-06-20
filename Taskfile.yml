@@ -12,6 +12,24 @@ tasks:
       - sleep 15
       - go test -timeout=2m -race -covermode=atomic -coverprofile=integration_coverage.out -coverpkg=./... ./integration_tests
 
+  manual-test-up:
+    aliases: ["mtu"]
+    desc: Start docker test stack, seed data, and run the server for manual testing. Ctrl-C to stop the server; run manual-test-down to clean up docker.
+    dir: ./garden-app
+    cmds:
+      - rm -f manual_test.db
+      - docker compose -f ../deploy/docker-compose.yml --profile test up -d
+      - sleep 15
+      - go test -tags=manual -timeout=2m -race -run TestSeedManualData ./integration_tests
+      - go run main.go serve --config integration_tests/testdata/manual_config.yml
+
+  manual-test-down:
+    aliases: ["mtd"]
+    desc: Stop docker test stack used for manual testing.
+    dir: ./garden-app
+    cmds:
+      - docker compose -f ../deploy/docker-compose.yml --profile test down
+
   unit-test:
     aliases: ["ut"]
     desc: Run unit tests for Go app
