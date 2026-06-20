@@ -60,6 +60,7 @@ func NewGardenAPI() *GardensAPI {
 	api.SetOnCreateOrUpdate(api.onCreateOrUpdate)
 
 	api.AddCustomIDRoute(http.MethodPost, "/action", api.GetRequestedResourceAndDo(api.gardenAction))
+	api.AddCustomIDRoute(http.MethodGet, "/water_history", api.GetRequestedResourceAndDo(api.gardenWaterHistory))
 
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
@@ -257,6 +258,46 @@ func (api *GardensAPI) gardenAction(_ http.ResponseWriter, r *http.Request, gard
 
 	render.Status(r, http.StatusAccepted)
 	return &GardenActionResponse{}, nil
+}
+
+// gardenWaterHistory responds with recent water events for all Zones in a Garden
+func (api *GardensAPI) gardenWaterHistory(_ http.ResponseWriter, r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+	logger, _ := babyapi.GetLoggerFromContext(r.Context())
+	logger.Debug("received request to get Garden water history")
+
+	timeRange, err := rangeQueryParam(r)
+	if err != nil {
+		logger.Error("unable to parse time range", "error", err)
+		return nil, babyapi.ErrInvalidRequest(err)
+	}
+	logger.Debug("using time range", "time_range", timeRange)
+
+	limit, err := limitQueryParam(r, 20)
+	if err != nil {
+		logger.Error("unable to parse limit", "error", err)
+		return nil, babyapi.ErrInvalidRequest(err)
+	}
+	logger.Debug("using limit", "limit", limit)
+
+	logger.Debug("getting garden water history from InfluxDB")
+	history, err := api.influxdbClient.GetGardenWaterHistory(r.Context(), garden.TopicPrefix, timeRange, limit, true)
+	if err != nil {
+		logger.Error("unable to get garden water history from InfluxDB", "error", err)
+		return nil, babyapi.InternalServerError(err)
+	}
+	logger.Debug("garden water history", "history", history)
+
+	zones, err := api.getAllZones(r.Context(), garden.ID.String(), false)
+	if err != nil {
+		logger.Error("unable to get zones for garden water history", "error", err)
+		return nil, babyapi.InternalServerError(err)
+	}
+	zoneNames := make(map[string]string, len(zones))
+	for _, zone := range zones {
+		zoneNames[zone.GetID()] = zone.Name
+	}
+
+	return NewGardenWaterHistoryResponse(history, zoneNames, garden), nil
 }
 
 func checkNotificationClientExists(ctx context.Context, storageClient *storage.Client, id string) *babyapi.ErrResponse {

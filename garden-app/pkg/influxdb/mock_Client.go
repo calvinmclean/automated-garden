@@ -104,6 +104,36 @@ func (_m *MockClient) DeleteAPI() api.DeleteAPI {
 	return r0
 }
 
+// GetGardenWaterHistory provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
+func (_m *MockClient) GetGardenWaterHistory(_a0 context.Context, _a1 string, _a2 time.Duration, _a3 uint64, _a4 bool) ([]pkg.WaterHistory, error) {
+	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetGardenWaterHistory")
+	}
+
+	var r0 []pkg.WaterHistory
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)); ok {
+		return rf(_a0, _a1, _a2, _a3, _a4)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, time.Duration, uint64, bool) []pkg.WaterHistory); ok {
+		r0 = rf(_a0, _a1, _a2, _a3, _a4)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]pkg.WaterHistory)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, time.Duration, uint64, bool) error); ok {
+		r1 = rf(_a0, _a1, _a2, _a3, _a4)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetLastContact provides a mock function with given fields: _a0, _a1
 func (_m *MockClient) GetLastContact(_a0 context.Context, _a1 string) (time.Time, error) {
 	ret := _m.Called(_a0, _a1)

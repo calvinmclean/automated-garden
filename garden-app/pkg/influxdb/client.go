@@ -30,7 +30,9 @@ waterCommands = from(bucket: "{{.Bucket}}")
   |> range(start: -{{.Start}})
   |> filter(fn: (r) => r._measurement == "water_command")
   |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/command/water")
+  {{- if .ZoneID }}
   |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
+  {{- end }}
   |> keep(columns: ["_time", "zone_id", "id", "_value", "source"])
   |> set(key: "command", value: "true")
 
@@ -38,7 +40,9 @@ waterEvents = from(bucket: "garden")
   |> range(start: -{{.Start}})
   |> filter(fn: (r) => r._measurement == "water")
   |> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/water")
+  {{- if .ZoneID }}
   |> filter(fn: (r) => r["zone_id"] == "{{.ZoneID}}")
+  {{- end }}
   |> keep(columns: ["_time", "zone_id", "id", "status", "_value"])
 
   union(tables: [waterCommands, waterEvents])
@@ -90,6 +94,7 @@ var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 type Client interface {
 	GetLastContact(context.Context, string) (time.Time, error)
 	GetWaterHistory(context.Context, string, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
+	GetGardenWaterHistory(context.Context, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
 	GetTemperatureAndHumidity(context.Context, string) (float64, float64, error)
 	influxdb2.Client
 }
@@ -172,7 +177,16 @@ func (client *client) GetLastContact(ctx context.Context, topicPrefix string) (t
 
 // GetWaterHistory gets recent water events for a specific Zone
 func (client *client) GetWaterHistory(ctx context.Context, zoneID string, topicPrefix string, timeRange time.Duration, limit uint64, desc bool) ([]pkg.WaterHistory, error) {
-	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetWaterHistory"))
+	return client.getWaterHistory(ctx, "GetWaterHistory", zoneID, topicPrefix, timeRange, limit, desc)
+}
+
+// GetGardenWaterHistory gets recent water events for all Zones in a Garden
+func (client *client) GetGardenWaterHistory(ctx context.Context, topicPrefix string, timeRange time.Duration, limit uint64, desc bool) ([]pkg.WaterHistory, error) {
+	return client.getWaterHistory(ctx, "GetGardenWaterHistory", "", topicPrefix, timeRange, limit, desc)
+}
+
+func (client *client) getWaterHistory(ctx context.Context, metricLabel, zoneID, topicPrefix string, timeRange time.Duration, limit uint64, desc bool) ([]pkg.WaterHistory, error) {
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues(metricLabel))
 	defer timer.ObserveDuration()
 
 	// Prepare query

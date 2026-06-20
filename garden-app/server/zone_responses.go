@@ -56,7 +56,7 @@ func (zr *ZoneResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 
 	// ignoring errors here since this can only be reached for a valid request
 	timeRange, _ := rangeQueryParam(r)
-	limit, _ := limitQueryParam(r)
+	limit, _ := limitQueryParam(r, 5)
 
 	return zoneDetailsTemplate.Render(r, map[string]any{
 		"TimeRange": timeRange,

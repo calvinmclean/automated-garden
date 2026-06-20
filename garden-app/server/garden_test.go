@@ -16,6 +16,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
@@ -57,7 +58,7 @@ func TestGetGarden(t *testing.T) {
 		{
 			"Successful",
 			"/gardens/c5cvhpcbcv45e8bp16dg",
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"c5cvhpcbcv45e8bp16dg","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"c5cvhpcbcv45e8bp16dg","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/action"},{"rel":"water_history","href":"/gardens/c5cvhpcbcv45e8bp16dg/water_history"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -107,28 +108,28 @@ func TestCreateGarden(t *testing.T) {
 			"Successful",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "light_schedule": {"duration": "15h", "start_time": "22:00:01-07:00"}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"next_light_action":{"time":"2023-08-23T13:00:01-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"next_light_action":{"time":"2023-08-23T13:00:01-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"SuccessfulWithControllerConfig",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "controller_config":{"temperature_humidity_pin":1,"light_pin":2,"valve_pins":[3,4,5],"pump_pins":[6,7,8]}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"valve_pins":\[3,4,5\],"pump_pins":\[6,7,8\],"light_pin":2,"temperature_humidity_pin":1},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"valve_pins":\[3,4,5\],"pump_pins":\[6,7,8\],"light_pin":2,"temperature_humidity_pin":1},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"SuccessfulWithTemperatureAndHumidity",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"temperature_humidity_data":{"temperature_celsius":50,"humidity_percentage":50},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"temperature_humidity_data":{"temperature_celsius":50,"humidity_percentage":50},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"SuccessfulButErrorGettingTemperatureAndHumidity",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "temperature_humidity_sensor": true}`,
 			true,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","temperature_humidity_sensor":true,"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -384,13 +385,13 @@ func TestGetAllGardens(t *testing.T) {
 		{
 			"SuccessfulEndDatedFalse",
 			"/gardens",
-			`{"items":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"items":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}\]}`,
 			http.StatusOK,
 		},
 		{
 			"SuccessfulEndDatedTrue",
 			"/gardens?end_dated=true",
-			`{"items":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}\]}`,
+			`{"items":\[{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(-07:00|Z)","state":"(ON|OFF)"},"health":{"status":"UP","details":"last contact from Garden was \d+(s|ms) ago","last_contact":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}\]}`,
 			http.StatusOK,
 		},
 	}
@@ -521,7 +522,7 @@ func TestUpdateGarden(t *testing.T) {
 			createExampleGarden(),
 			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"2023-08-23T22:00:02-07:00","state":"ON"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"2023-08-23T22:00:02-07:00","state":"ON"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -537,7 +538,7 @@ func TestUpdateGarden(t *testing.T) {
 			createExampleGarden(),
 			nil,
 			`{"notification_client_id":"c5cvhpcbcv45e8bp16dg"}`,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"notification_client_id":"c5cvhpcbcv45e8bp16dg","next_light_action":{"time":"2023-08-23T13:00:01-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"temperature_humidity_sensor":false,"notification_client_id":"c5cvhpcbcv45e8bp16dg","next_light_action":{"time":"2023-08-23T13:00:01-07:00","state":"OFF"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -545,7 +546,7 @@ func TestUpdateGarden(t *testing.T) {
 			createExampleGarden(),
 			nil,
 			`{"name": "new name","light_schedule": {}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","temperature_humidity_sensor":false,"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","temperature_humidity_sensor":false,"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -553,7 +554,7 @@ func TestUpdateGarden(t *testing.T) {
 			gardenWithoutLight,
 			nil,
 			`{"name": "new name", "created_at": "2021-08-03T19:53:14.816332-07:00", "light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"}}`,
-			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"2023-08-23T22:00:02-07:00","state":"ON"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"}\]}`,
+			`{"name":"new name","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2021-08-03T19:53:14.816332-07:00","light_schedule":{"duration":"2m","start_time":"22:00:02-07:00"},"temperature_humidity_sensor":false,"next_light_action":{"time":"2023-08-23T22:00:02-07:00","state":"ON"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusOK,
 		},
 		{
@@ -758,6 +759,100 @@ func TestGardenActionForm(t *testing.T) {
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
 			mqttClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGardenWaterHistory(t *testing.T) {
+	recordTime, _ := time.Parse(time.RFC3339Nano, "2021-10-03T11:24:52.891386-07:00")
+	tests := []struct {
+		name        string
+		setupMock   func(*influxdb.MockClient)
+		queryParams string
+		expected    string
+		status      int
+	}{
+		{
+			"BadRequestInvalidLimit",
+			func(*influxdb.MockClient) {},
+			"?limit=-1",
+			`{"status":"Invalid request.","error":"strconv.ParseUint: parsing \"-1\": invalid syntax"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"BadRequestInvalidTimeRange",
+			func(*influxdb.MockClient) {},
+			"?range=notTime",
+			`{"status":"Invalid request.","error":"time: invalid duration \"notTime\""}`,
+			http.StatusBadRequest,
+		},
+		{
+			"SuccessfulWaterHistoryEmpty",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetGardenWaterHistory", mock.Anything, "test-garden", time.Hour*72, uint64(20), true).Return([]pkg.WaterHistory{}, nil)
+			},
+			"",
+			`{"history":[],"count":0,"average":"0s","total":"0s"}`,
+			http.StatusOK,
+		},
+		{
+			"SuccessfulWaterHistory",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetGardenWaterHistory", mock.Anything, "test-garden", time.Hour*72, uint64(20), true).
+					Return([]pkg.WaterHistory{
+						{
+							Duration:    pkg.Duration{Duration: 3 * time.Second},
+							Status:      pkg.WaterStatusCompleted,
+							Source:      string(action.SourceCommand),
+							SentAt:      recordTime,
+							StartedAt:   recordTime,
+							CompletedAt: recordTime,
+							EventID:     "00000000000000000000",
+							ZoneID:      "c5cvhpcbcv45e8bp16dg",
+						},
+					}, nil)
+			},
+			"",
+			`{"history":[{"duration":"3s","event_id":"00000000000000000000","zone_id":"c5cvhpcbcv45e8bp16dg","status":"complete","source":"command","sent_at":"2021-10-03T11:24:52.891386-07:00","started_at":"2021-10-03T11:24:52.891386-07:00","completed_at":"2021-10-03T11:24:52.891386-07:00"}],"count":1,"average":"3s","total":"3s"}`,
+			http.StatusOK,
+		},
+		{
+			"InfluxDBClientError",
+			func(influxdbClient *influxdb.MockClient) {
+				influxdbClient.On("GetGardenWaterHistory", mock.Anything, "test-garden", time.Hour*72, uint64(20), true).
+					Return([]pkg.WaterHistory{}, errors.New("influxdb error"))
+			},
+			"",
+			`{"status":"Server Error.","error":"influxdb error"}`,
+			http.StatusInternalServerError,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			influxdbClient := new(influxdb.MockClient)
+			tt.setupMock(influxdbClient)
+
+			storageClient, err := storage.NewClient(storage.Config{
+				ConnectionString: ":memory:",
+			})
+			assert.NoError(t, err)
+
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, influxdbClient, worker.NewWorker(storageClient, influxdbClient, nil, slog.Default()))
+			assert.NoError(t, err)
+
+			garden := createExampleGarden()
+			err = storageClient.Gardens.Set(context.Background(), garden)
+			assert.NoError(t, err)
+
+			r := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/gardens/%s/water_history%s", garden.ID, tt.queryParams), http.NoBody)
+			w := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
+
+			assert.Equal(t, tt.status, w.Code)
+			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
+
+			influxdbClient.AssertExpectations(t)
 		})
 	}
 }

@@ -96,6 +96,10 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 			"action",
 			fmt.Sprintf("%s/%s/action", gardenBasePath, g.Garden.ID),
 		},
+		Link{
+			"water_history",
+			fmt.Sprintf("%s/%s/water_history", gardenBasePath, g.Garden.ID),
+		},
 	)
 
 	logger, _ := babyapi.GetLoggerFromContext(ctx)
@@ -324,6 +328,56 @@ func (api *GardensAPI) numZones(ctx context.Context, gardenID string) (uint, err
 	}
 
 	return uint(len(zones)), nil
+}
+
+// GardenWaterHistoryResponse wraps a slice of WaterHistory structs plus zone names and aggregate stats for a Garden
+type GardenWaterHistoryResponse struct {
+	History   []pkg.WaterHistory `json:"history"`
+	Count     int                `json:"count"`
+	Average   string             `json:"average"`
+	Total     string             `json:"total"`
+	ZoneNames map[string]string  `json:"-"`
+	Garden    *pkg.Garden        `json:"-"`
+}
+
+// NewGardenWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
+func NewGardenWaterHistoryResponse(history []pkg.WaterHistory, zoneNames map[string]string, garden *pkg.Garden) GardenWaterHistoryResponse {
+	total := time.Duration(0)
+	count := 0
+	for _, h := range history {
+		if h.Status == pkg.WaterStatusCompleted {
+			total += h.Duration.Duration
+			count++
+		}
+	}
+
+	average := time.Duration(0)
+	if count != 0 {
+		average = time.Duration(int(total) / count)
+	}
+
+	return GardenWaterHistoryResponse{
+		History:   history,
+		Count:     count,
+		Average:   average.String(),
+		Total:     time.Duration(total).String(),
+		ZoneNames: zoneNames,
+		Garden:    garden,
+	}
+}
+
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response
+func (resp GardenWaterHistoryResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+// HTML renders the garden water history page or table based on the request
+func (resp GardenWaterHistoryResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	if r.URL.Query().Get("table") == "true" {
+		return gardenWaterHistoryTableTemplate.Render(r, resp)
+	}
+	return gardenWaterHistoryPageTemplate.Render(r, resp)
 }
 
 type GardenActionResponse struct{}
