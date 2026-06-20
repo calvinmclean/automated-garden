@@ -4,6 +4,12 @@
 #include <Arduino.h>
 #include <ArduinoJson.h>
 
+struct SensorConfig {
+    char type[16];
+    gpio_num_t pin;
+    int interval;
+};
+
 struct Config {
     int numZones;
     gpio_num_t valvePins[12];
@@ -15,9 +21,8 @@ struct Config {
     bool fan;
     gpio_num_t fanPin;
 
-    bool tempHumidity;
-    gpio_num_t tempHumidityPin;
-    int tempHumidityInterval;
+    int numSensors;
+    SensorConfig sensors[16];
 };
 
 void serializeConfig(const Config& config, String& jsonString);

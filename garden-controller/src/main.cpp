@@ -8,7 +8,7 @@
 #include "mqtt.h"
 #include "main.h"
 #include "wifi_manager.h"
-#include "dht22.h"
+#include "sensors.h"
 
 Config config;
 
@@ -263,9 +263,7 @@ void setup() {
   setupWifiManager();
   setupMQTT();
 
-  if (config.tempHumidity) {
-      setupDHT22();
-  }
+  setupSensors();
 
   waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterMessage));
   if (waterQueue == NULL) {
