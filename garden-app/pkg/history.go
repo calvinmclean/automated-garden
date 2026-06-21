@@ -31,6 +31,7 @@ var (
 type WaterHistory struct {
 	Duration    Duration    `json:"duration" mapstructure:"duration"`
 	EventID     string      `json:"event_id" mapstructure:"event_id"`
+	ZoneID      string      `json:"zone_id,omitempty" mapstructure:"zone_id"`
 	Status      WaterStatus `json:"status" mapstructure:"status"`
 	Source      string      `json:"source" mapstructure:"source"`
 	SentAt      time.Time   `json:"sent_at" mapstructure:"sent_at"`

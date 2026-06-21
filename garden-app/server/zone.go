@@ -281,10 +281,10 @@ func rangeQueryParam(r *http.Request) (time.Duration, error) {
 	return timeRange, nil
 }
 
-func limitQueryParam(r *http.Request) (uint64, error) {
+func limitQueryParam(r *http.Request, defaultLimit uint64) (uint64, error) {
 	limitString := r.URL.Query().Get("limit")
 	if len(limitString) == 0 {
-		return 5, nil
+		return defaultLimit, nil
 	}
 
 	limit, err := strconv.ParseUint(limitString, 0, 64)
@@ -322,7 +322,7 @@ func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone,
 	}
 	logger.Debug("using time range", "time_range", timeRange)
 
-	limit, err := limitQueryParam(r)
+	limit, err := limitQueryParam(r, 5)
 	if err != nil {
 		logger.Error("unable to parse limit", "error", err)
 		return nil, babyapi.ErrInvalidRequest(err)
@@ -330,7 +330,7 @@ func (api *ZonesAPI) getWaterHistoryFromRequest(r *http.Request, zone *pkg.Zone,
 	logger.Debug("using limit", "limit", limit)
 
 	logger.Debug("getting water history from InfluxDB")
-	history, err := api.influxdbClient.GetWaterHistory(r.Context(), zone.GetID(), garden.TopicPrefix, timeRange, limit)
+	history, err := api.influxdbClient.GetWaterHistory(r.Context(), zone.GetID(), garden.TopicPrefix, timeRange, limit, true)
 	if err != nil {
 		logger.Error("unable to get water history from InfluxDB", "error", err)
 		return nil, babyapi.InternalServerError(err)

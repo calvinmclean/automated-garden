@@ -63,35 +63,37 @@
     <div class="uk-card-header uk-text-center">
         <h2>Water History</h2>
     </div>
-    <table class="uk-table uk-table-striped uk-margin-left uk-margin-right">
-        <colgroup>
-            <col>
-            <col>
-        </colgroup>
-        <thead>
-            <tr>
-                <th>Status</th>
-                <th>Source</th>
-                <th>Duration</th>
-                <th>Sent</th>
-                <th>Started</th>
-                <th>Completed</th>
-            </tr>
-        </thead>
+    <div class="uk-overflow-auto">
+        <table class="uk-table uk-table-striped uk-margin-left uk-margin-right">
+            <colgroup>
+                <col>
+                <col>
+            </colgroup>
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Source</th>
+                    <th>Duration</th>
+                    <th>Sent</th>
+                    <th>Started</th>
+                    <th>Completed</th>
+                </tr>
+            </thead>
 
-        <tbody>
-            {{ range .History }}
-            <tr>
-                <td>{{ .Status }}</td>
-                <td>{{ .Source }}</td>
-                <td>{{ .Duration }}</td>
-                <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .SentAt }}</span></td>
-                <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .StartedAt }}</span></td>
-                <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .CompletedAt }}</span></td>
-            </tr>
-            {{ end }}
-        </tbody>
-    </table>
+            <tbody>
+                {{ range .History }}
+                <tr>
+                    <td>{{ .Status }}</td>
+                    <td>{{ .Source }}</td>
+                    <td>{{ .Duration }}</td>
+                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .SentAt }}</span></td>
+                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .StartedAt }}</span></td>
+                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .CompletedAt }}</span></td>
+                </tr>
+                {{ end }}
+            </tbody>
+        </table>
+    </div>
 </div>
 {{ end }}
 

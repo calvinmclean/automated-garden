@@ -56,7 +56,7 @@ func (zr *ZoneResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 
 	// ignoring errors here since this can only be reached for a valid request
 	timeRange, _ := rangeQueryParam(r)
-	limit, _ := limitQueryParam(r)
+	limit, _ := limitQueryParam(r, 5)
 
 	return zoneDetailsTemplate.Render(r, map[string]any{
 		"TimeRange": timeRange,
@@ -122,12 +122,8 @@ func (zr *ZoneResponse) Render(w http.ResponseWriter, r *http.Request) error {
 					logger.Error("error getting water history for progress", "error", apiErr)
 					return nil // Don't fail the whole request for progress errors
 				}
-				resp := NewZoneWaterHistoryResponse(history)
 
-				// Reverse history for better presentation in UI
-				slices.Reverse(resp.History)
-
-				progress := pkg.CalculateWaterProgress(resp.History)
+				progress := pkg.CalculateWaterProgress(history)
 				if progress != (pkg.WaterHistoryProgress{}) {
 					zr.Progress = &progress
 				}
@@ -249,9 +245,6 @@ type ZoneWaterHistoryResponse struct {
 
 // NewZoneWaterHistoryResponse creates a response by creating some basic statistics about a list of history events
 func NewZoneWaterHistoryResponse(history []pkg.WaterHistory) ZoneWaterHistoryResponse {
-	// Reverse history to show latest in UI
-	slices.Reverse(history)
-
 	total := time.Duration(0)
 	count := 0
 	for _, h := range history {

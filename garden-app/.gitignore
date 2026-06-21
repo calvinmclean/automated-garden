@@ -7,3 +7,4 @@ integration_coverage.out
 cover.html
 gardens_kv.yaml
 garden.db
+manual_test.db

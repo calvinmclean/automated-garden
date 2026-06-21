@@ -49,6 +49,8 @@ const (
 	waterRoutinesTemplate                html.Template = "WaterRoutines"
 	waterRoutineModalTemplate            html.Template = "WaterRoutineModal"
 	waterHistoryTableTemplate            html.Template = "waterHistoryTable"
+	gardenWaterHistoryPageTemplate       html.Template = "GardenWaterHistoryPage"
+	gardenWaterHistoryTableTemplate      html.Template = "gardenWaterHistoryTable"
 	zoneProgressSectionTemplate          html.Template = "ZoneProgressSection"
 	notesPageTemplate                    html.Template = "NotesPage"
 	notesTemplate                        html.Template = "Notes"
