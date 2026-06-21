@@ -99,5 +99,39 @@ func TestSeedManualData(t *testing.T) {
 	require.GreaterOrEqual(t, len(gardenHistory.History), 1)
 	require.NotEmpty(t, gardenHistory.History[0].ZoneID, "history should include zone_id")
 
-	t.Logf("Seeded garden %s with %d water history event(s)", gardenID, len(gardenHistory.History))
+	// Wait for sensor data from both configured sensors to appear in the garden response.
+	var garden server.GardenResponse
+	require.Eventually(t, func() bool {
+		status, err = makeRequest(
+			http.MethodGet,
+			fmt.Sprintf("/gardens/%s", gardenID),
+			http.NoBody,
+			&garden,
+		)
+		if err != nil || status != http.StatusOK {
+			return false
+		}
+		if len(garden.SensorsData) < 2 {
+			return false
+		}
+		for _, s := range garden.SensorsData {
+			if s.TemperatureCelsius == 0 {
+				return false
+			}
+		}
+		return true
+	}, 30*time.Second, 300*time.Millisecond, "sensor data did not populate")
+
+	require.Equal(t, "Water", garden.SensorsData[1].Name)
+	require.Equal(t, "DS18B20", garden.SensorsData[1].Type)
+	require.NotZero(t, garden.SensorsData[1].TemperatureCelsius)
+	require.Zero(t, garden.SensorsData[1].HumidityPercentage)
+
+	require.Len(t, garden.SensorsData, 2)
+	require.Equal(t, "Ambient", garden.SensorsData[0].Name)
+	require.Equal(t, "DHT22", garden.SensorsData[0].Type)
+	require.NotZero(t, garden.SensorsData[0].TemperatureCelsius)
+	require.NotZero(t, garden.SensorsData[0].HumidityPercentage)
+
+	t.Logf("Seeded garden %s with %d water history event(s) and %d sensor reading(s)", gardenID, len(gardenHistory.History), len(garden.SensorsData))
 }

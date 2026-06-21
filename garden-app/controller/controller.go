@@ -22,6 +22,14 @@ import (
 	"github.com/rivo/tview"
 )
 
+// SensorConfig represents a configured sensor for the mock controller.
+type SensorConfig struct {
+	Name     string        `mapstructure:"name"`
+	Type     string        `mapstructure:"type"`
+	Pin      string        `mapstructure:"pin"`
+	Interval time.Duration `mapstructure:"interval"`
+}
+
 // Config holds all the options and sub-configs for the mock controller
 type Config struct {
 	MQTTConfig   mqtt.Config `mapstructure:"mqtt"`
@@ -49,9 +57,10 @@ type NestedConfig struct {
 
 	// Configs only used for generate-config
 	WifiConfig             `mapstructure:"wifi" survey:"wifi"`
-	Zones                  []ZoneConfig `mapstructure:"zones" survey:"zones"`
-	LightPin               string       `mapstructure:"light_pin" survey:"light_pin"`
-	TemperatureHumidityPin string       `mapstructure:"temperature_humidity_pin" survey:"temperature_humidity_pin"`
+	Zones                  []ZoneConfig   `mapstructure:"zones" survey:"zones"`
+	LightPin               string         `mapstructure:"light_pin" survey:"light_pin"`
+	TemperatureHumidityPin string         `mapstructure:"temperature_humidity_pin" survey:"temperature_humidity_pin"`
+	Sensors                []SensorConfig `mapstructure:"sensors" survey:"sensors"`
 
 	MQTTAddress string `survey:"mqtt_address"`
 	MQTTPort    int    `survey:"mqtt_port"`
@@ -142,7 +151,17 @@ func (c *Controller) Start() {
 			return
 		}
 	}
-	if c.PublishTemperatureHumidity {
+	if len(c.Sensors) > 0 {
+		for i, sensor := range c.Sensors {
+			i, sensor := i, sensor // capture loop variables
+			c.logger.Debug("create scheduled job to publish sensor data", "sensor_id", i, "type", sensor.Type, "interval", sensor.Interval.String())
+			_, err := scheduler.Every(sensor.Interval).Do(func() { c.publishSensorData(uint(i), sensor.Type) })
+			if err != nil {
+				c.logger.Error("error scheduling sensor publishing", "sensor_id", i, "error", err)
+				return
+			}
+		}
+	} else if c.PublishTemperatureHumidity {
 		c.logger.Debug("create scheduled job to publish temperature and humidity data", "interval", c.TemperatureHumidityInterval.String())
 		_, err := scheduler.Every(c.TemperatureHumidityInterval).Do(c.publishTemperatureHumidityData)
 		if err != nil {
@@ -234,24 +253,37 @@ func (c *Controller) publishHealthData() {
 }
 
 func (c *Controller) publishTemperatureHumidityData() {
+	c.publishSensorData(0, "DHT22")
+}
+
+func (c *Controller) publishSensorData(sensorID uint, sensorType string) {
 	sensorTopic := fmt.Sprintf("%s/data/sensor", c.TopicPrefix)
 
 	temperature := c.TemperatureValue
-	humidity := c.HumidityValue
 	if !c.TemperatureHumidityDisableNoise {
 		temperature = addNoise(temperature, 3)
-		humidity = addNoise(humidity, 3)
 	}
 
-	logger := c.pubLogger.With(
-		"topic", sensorTopic,
-		"sensor_id", 0,
-		"temperature", temperature,
-		"humidity", humidity,
-	)
-	logger.Info("publishing sensor data")
+	logger := c.pubLogger.With("topic", sensorTopic, "sensor_id", sensorID, "type", sensorType)
 
-	message := fmt.Appendf(nil, "sensor,sensor_id=0 temperature=%f,humidity=%f", temperature, humidity)
+	var message []byte
+	switch strings.ToUpper(sensorType) {
+	case "DHT22":
+		humidity := c.HumidityValue
+		if !c.TemperatureHumidityDisableNoise {
+			humidity = addNoise(humidity, 3)
+		}
+		logger = logger.With("temperature", temperature, "humidity", humidity)
+		message = fmt.Appendf(nil, "sensor,sensor_id=%d temperature=%f,humidity=%f", sensorID, temperature, humidity)
+	case "DS18B20":
+		logger = logger.With("temperature", temperature)
+		message = fmt.Appendf(nil, "sensor,sensor_id=%d temperature=%f", sensorID, temperature)
+	default:
+		logger.Warn("unknown sensor type, skipping publish")
+		return
+	}
+
+	logger.Info("publishing sensor data")
 	err := c.mqttClient.Publish(sensorTopic, message)
 	if err != nil {
 		logger.Error("unable to publish sensor data", "error", err)

@@ -18,9 +18,16 @@ controller:
   publish_water_event: true
   publish_health: true
   health_interval: 500ms
-  publish_temperature_humidity: true
-  temperature_humidity_interval: 100ms
   temperature_value: 50
   humidity_value: 50
   temperature_humidity_disable_noise: true
   enable_ui: false
+  sensors:
+    - name: Ambient
+      type: DHT22
+      pin: GPIO_NUM_21
+      interval: 100ms
+    - name: Water
+      type: DS18B20
+      pin: GPIO_NUM_22
+      interval: 100ms

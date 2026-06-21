@@ -106,7 +106,8 @@ func CreateGardenTest(t *testing.T) string {
 		},
 		"controller_config": {
 			"sensors": [
-				{"name": "Ambient", "type": "DHT22", "pin": 21, "interval": "5s"}
+				{"name": "Ambient", "type": "DHT22", "pin": 21, "interval": "5s"},
+				{"name": "Water", "type": "DS18B20", "pin": 22, "interval": "5s"}
 			]
 		}
 	}`, &g)
