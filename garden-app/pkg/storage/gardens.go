@@ -55,6 +55,7 @@ func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error)
 			NotificationSettings: row.NotificationSettings,
 			ControllerConfig:     row.ControllerConfig,
 			LightSchedule:        row.LightSchedule,
+			FanSchedule:          row.FanSchedule,
 		},
 		row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 	)
@@ -93,6 +94,7 @@ func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) iter
 						NotificationSettings: row.NotificationSettings,
 						ControllerConfig:     row.ControllerConfig,
 						LightSchedule:        row.LightSchedule,
+						FanSchedule:          row.FanSchedule,
 					},
 					row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 				)
@@ -121,6 +123,7 @@ func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) iter
 						NotificationSettings: row.NotificationSettings,
 						ControllerConfig:     row.ControllerConfig,
 						LightSchedule:        row.LightSchedule,
+						FanSchedule:          row.FanSchedule,
 					},
 					row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 				)
@@ -274,6 +277,7 @@ func (s *GardenStorage) GetByTopicPrefix(ctx context.Context, topicPrefix string
 			NotificationSettings: row.NotificationSettings,
 			ControllerConfig:     row.ControllerConfig,
 			LightSchedule:        row.LightSchedule,
+			FanSchedule:          row.FanSchedule,
 		},
 		row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 	)
