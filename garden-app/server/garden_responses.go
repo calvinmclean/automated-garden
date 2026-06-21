@@ -194,6 +194,7 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 
 	// Add a task for each configured sensor
 	if g.Garden.ControllerConfig != nil {
+		g.SensorsData = make([]SensorData, len(g.Garden.ControllerConfig.Sensors))
 		for i, sensor := range g.Garden.ControllerConfig.Sensors {
 			i, sensor := i, sensor // capture loop variables
 			//nolint:gosec // sensor index comes from a slice range and is non-negative
@@ -216,7 +217,7 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 					if reading.Humidity != nil {
 						data.HumidityPercentage = *reading.Humidity
 					}
-					g.SensorsData = append(g.SensorsData, data)
+					g.SensorsData[sensorID] = data
 					return nil
 				},
 			})
