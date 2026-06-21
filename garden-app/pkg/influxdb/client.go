@@ -76,13 +76,6 @@ waterEvents = from(bucket: "garden")
 |> filter(fn: (r) => r["_field"] == "temperature" or r["_field"] == "humidity")
 |> drop(columns: ["host"])
 |> last()`
-	legacyTemperatureAndHumidityQueryTemplate = `from(bucket: "{{.Bucket}}")
-|> range(start: -{{.Start}})
-|> filter(fn: (r) => r["_measurement"] == "temperature" or r["_measurement"] == "humidity")
-|> filter(fn: (r) => r["_field"] == "value")
-|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/temperature" or r["topic"] == "{{.TopicPrefix}}/data/humidity")
-|> drop(columns: ["host"])
-|> last()`
 )
 
 func init() {
@@ -113,7 +106,7 @@ type Client interface {
 	GetLastContact(context.Context, string) (time.Time, error)
 	GetWaterHistory(context.Context, string, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
 	GetGardenWaterHistory(context.Context, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
-	GetSensorReading(context.Context, string, uint) (SensorReading, error)
+	GetSensorReading(context.Context, string, string) (SensorReading, error)
 	influxdb2.Client
 }
 
@@ -264,30 +257,15 @@ func (client *client) getWaterHistory(ctx context.Context, metricLabel, zoneID, 
 }
 
 // GetSensorReading gets the most recent temperature and/or humidity reading for a sensor.
-func (client *client) GetSensorReading(ctx context.Context, topicPrefix string, sensorID uint) (SensorReading, error) {
+func (client *client) GetSensorReading(ctx context.Context, topicPrefix string, sensorID string) (SensorReading, error) {
 	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetSensorReading"))
 	defer timer.ObserveDuration()
 
-	reading, err := client.getSensorReadingFromMeasurement(ctx, topicPrefix, sensorID)
-	if err != nil {
-		return SensorReading{}, err
-	}
-
-	// Fall back to legacy temperature/humidity measurements for the first sensor
-	// so existing data is still visible after the upgrade.
-	if reading.IsZero() && sensorID == 0 {
-		return client.getLegacyTemperatureAndHumidity(ctx, topicPrefix)
-	}
-
-	return reading, nil
-}
-
-func (client *client) getSensorReadingFromMeasurement(ctx context.Context, topicPrefix string, sensorID uint) (SensorReading, error) {
 	queryString, err := queryData{
 		Bucket:      client.config.Bucket,
 		Start:       time.Minute * 15,
 		TopicPrefix: topicPrefix,
-		SensorID:    fmt.Sprint(sensorID),
+		SensorID:    sensorID,
 	}.Render(sensorReadingQueryTemplate)
 	if err != nil {
 		return SensorReading{}, err
@@ -303,36 +281,6 @@ func (client *client) getSensorReadingFromMeasurement(ctx context.Context, topic
 	for queryResult.Next() {
 		value := queryResult.Record().Value().(float64)
 		switch queryResult.Record().Field() {
-		case "temperature":
-			reading.Temperature = &value
-		case "humidity":
-			reading.Humidity = &value
-		}
-	}
-
-	return reading, queryResult.Err()
-}
-
-func (client *client) getLegacyTemperatureAndHumidity(ctx context.Context, topicPrefix string) (SensorReading, error) {
-	queryString, err := queryData{
-		Bucket:      client.config.Bucket,
-		Start:       time.Minute * 15,
-		TopicPrefix: topicPrefix,
-	}.Render(legacyTemperatureAndHumidityQueryTemplate)
-	if err != nil {
-		return SensorReading{}, err
-	}
-
-	queryAPI := client.QueryAPI(client.config.Org)
-	queryResult, err := queryAPI.Query(ctx, queryString)
-	if err != nil {
-		return SensorReading{}, err
-	}
-
-	reading := SensorReading{}
-	for queryResult.Next() {
-		value := queryResult.Record().Value().(float64)
-		switch queryResult.Record().Measurement() {
 		case "temperature":
 			reading.Temperature = &value
 		case "humidity":

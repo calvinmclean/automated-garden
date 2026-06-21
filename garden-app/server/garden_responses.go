@@ -58,7 +58,7 @@ type NextFanAction struct {
 
 // SensorData has the most recent readings for a single configured sensor.
 type SensorData struct {
-	ID                 uint    `json:"id"`
+	ID                 string  `json:"id"`
 	Name               string  `json:"name"`
 	Type               string  `json:"type"`
 	TemperatureCelsius float64 `json:"temperature_celsius,omitempty"`
@@ -197,17 +197,15 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 		g.SensorsData = make([]SensorData, len(g.Garden.ControllerConfig.Sensors))
 		for i, sensor := range g.Garden.ControllerConfig.Sensors {
 			i, sensor := i, sensor // capture loop variables
-			//nolint:gosec // sensor index comes from a slice range and is non-negative
-			sensorID := uint(i)
 			tasks = append(tasks, concurrent.TaskFunc{
-				Name: "sensor-" + fmt.Sprint(sensorID),
+				Name: "sensor-" + sensor.ID,
 				Fn: func(taskCtx context.Context) error {
-					reading, err := g.api.influxdbClient.GetSensorReading(taskCtx, g.Garden.TopicPrefix, sensorID)
+					reading, err := g.api.influxdbClient.GetSensorReading(taskCtx, g.Garden.TopicPrefix, sensor.ID)
 					if err != nil {
 						return err
 					}
 					data := SensorData{
-						ID:   sensorID,
+						ID:   sensor.ID,
 						Name: sensor.Name,
 						Type: sensor.Type,
 					}
@@ -217,7 +215,7 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 					if reading.Humidity != nil {
 						data.HumidityPercentage = *reading.Humidity
 					}
-					g.SensorsData[sensorID] = data
+					g.SensorsData[i] = data
 					return nil
 				},
 			})

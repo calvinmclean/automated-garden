@@ -55,7 +55,18 @@ func TestControllerConfigPatch(t *testing.T) {
 			err := c.Patch(tt.newConfig)
 			require.Nil(t, err)
 
-			assert.EqualValues(t, tt.newConfig, c)
+			if tt.name == "Sensors" {
+				require.Len(t, c.Sensors, len(tt.newConfig.Sensors))
+				for i := range c.Sensors {
+					assert.NotEmpty(t, c.Sensors[i].ID)
+					assert.Equal(t, tt.newConfig.Sensors[i].Name, c.Sensors[i].Name)
+					assert.Equal(t, tt.newConfig.Sensors[i].Type, c.Sensors[i].Type)
+					assert.Equal(t, tt.newConfig.Sensors[i].Pin, c.Sensors[i].Pin)
+					assert.Equal(t, tt.newConfig.Sensors[i].Interval, c.Sensors[i].Interval)
+				}
+			} else {
+				assert.EqualValues(t, tt.newConfig, c)
+			}
 		})
 	}
 
@@ -102,6 +113,45 @@ func TestControllerConfigPatch(t *testing.T) {
 		}})
 		require.Error(t, err)
 	})
+
+	t.Run("PreserveExistingSensorIDs", func(t *testing.T) {
+		c := &ControllerConfig{Sensors: []SensorConfig{
+			{ID: "existing1", Name: "Ambient", Type: "DHT22", Pin: 21},
+		}}
+
+		err := c.Patch(&ControllerConfig{Sensors: []SensorConfig{
+			{ID: "existing1", Name: "Ambient Renamed", Type: "DHT22", Pin: 22},
+			{Name: "New", Type: "DS18B20", Pin: 23},
+		}})
+		require.Nil(t, err)
+		require.Len(t, c.Sensors, 2)
+		assert.Equal(t, "existing1", c.Sensors[0].ID)
+		assert.Equal(t, "Ambient Renamed", c.Sensors[0].Name)
+		assert.Equal(t, uint(22), c.Sensors[0].Pin)
+		assert.NotEmpty(t, c.Sensors[1].ID)
+		assert.NotEqual(t, "existing1", c.Sensors[1].ID)
+	})
+
+	t.Run("UnknownSensorIDRejected", func(t *testing.T) {
+		c := &ControllerConfig{Sensors: []SensorConfig{
+			{ID: "existing1", Name: "Ambient", Type: "DHT22", Pin: 21},
+		}}
+
+		err := c.Patch(&ControllerConfig{Sensors: []SensorConfig{
+			{ID: "unknown", Name: "Hacker", Type: "DHT22", Pin: 21},
+		}})
+		require.Error(t, err)
+	})
+
+	t.Run("DuplicateSensorIDRejected", func(t *testing.T) {
+		c := &ControllerConfig{}
+
+		err := c.Patch(&ControllerConfig{Sensors: []SensorConfig{
+			{ID: "dup", Name: "A", Type: "DHT22", Pin: 21},
+			{ID: "dup", Name: "B", Type: "DS18B20", Pin: 22},
+		}})
+		require.Error(t, err)
+	})
 }
 
 func TestToMessage(t *testing.T) {
@@ -118,8 +168,8 @@ func TestToMessage(t *testing.T) {
 				LightPin:  pointer(uint(1)),
 				FanPin:    pointer(uint(2)),
 				Sensors: []SensorConfig{
-					{Name: "Ambient", Type: "DHT22", Pin: 21, Interval: Duration{Duration: time.Second}},
-					{Name: "Reservoir", Type: "DS18B20", Pin: 22, Interval: Duration{Duration: 2 * time.Second}},
+					{ID: "sensor1", Name: "Ambient", Type: "DHT22", Pin: 21, Interval: Duration{Duration: time.Second}},
+					{ID: "sensor2", Name: "Reservoir", Type: "DS18B20", Pin: 22, Interval: Duration{Duration: 2 * time.Second}},
 				},
 			},
 			ControllerConfigMessage{
@@ -131,8 +181,8 @@ func TestToMessage(t *testing.T) {
 				FanEnabled:   true,
 				FanPin:       uint(2),
 				Sensors: []SensorConfigMessage{
-					{Type: "DHT22", Pin: 21, Interval: 1000},
-					{Type: "DS18B20", Pin: 22, Interval: 2000},
+					{ID: "sensor1", Type: "DHT22", Pin: 21, Interval: 1000},
+					{ID: "sensor2", Type: "DS18B20", Pin: 22, Interval: 2000},
 				},
 			},
 		},
@@ -144,7 +194,7 @@ func TestToMessage(t *testing.T) {
 				LightPin:  pointer(uint(1)),
 				FanPin:    pointer(uint(2)),
 				Sensors: []SensorConfig{
-					{Name: "Ambient", Type: "DHT22", Pin: 21},
+					{ID: "sensor1", Name: "Ambient", Type: "DHT22", Pin: 21},
 				},
 			},
 			ControllerConfigMessage{
@@ -156,7 +206,7 @@ func TestToMessage(t *testing.T) {
 				FanEnabled:   true,
 				FanPin:       uint(2),
 				Sensors: []SensorConfigMessage{
-					{Type: "DHT22", Pin: 21, Interval: 5000},
+					{ID: "sensor1", Type: "DHT22", Pin: 21, Interval: 5000},
 				},
 			},
 		},

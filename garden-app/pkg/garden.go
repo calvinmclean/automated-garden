@@ -21,17 +21,17 @@ const (
 
 // Garden is the representation of a single garden-controller device
 type Garden struct {
-	Name                      string                `json:"name" yaml:"name,omitempty"`
-	TopicPrefix               string                `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
-	ID                        babyapi.ID            `json:"id" yaml:"id,omitempty"`
-	MaxZones                  *uint                 `json:"max_zones" yaml:"max_zones"`
-	CreatedAt                 *time.Time            `json:"created_at" yaml:"created_at,omitempty"`
-	EndDate                   *time.Time            `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	LightSchedule             *LightSchedule        `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
-	FanSchedule               *FanSchedule          `json:"fan_schedule,omitempty" yaml:"fan_schedule,omitempty"`
-	NotificationClientID      *string               `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
-	NotificationSettings      *NotificationSettings `json:"notification_settings,omitempty" yaml:"notification_settings,omitempty"`
-	ControllerConfig          *ControllerConfig     `json:"controller_config,omitempty" yaml:"controller_config,omitempty"`
+	Name                 string                `json:"name" yaml:"name,omitempty"`
+	TopicPrefix          string                `json:"topic_prefix,omitempty" yaml:"topic_prefix,omitempty"`
+	ID                   babyapi.ID            `json:"id" yaml:"id,omitempty"`
+	MaxZones             *uint                 `json:"max_zones" yaml:"max_zones"`
+	CreatedAt            *time.Time            `json:"created_at" yaml:"created_at,omitempty"`
+	EndDate              *time.Time            `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	LightSchedule        *LightSchedule        `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
+	FanSchedule          *FanSchedule          `json:"fan_schedule,omitempty" yaml:"fan_schedule,omitempty"`
+	NotificationClientID *string               `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	NotificationSettings *NotificationSettings `json:"notification_settings,omitempty" yaml:"notification_settings,omitempty"`
+	ControllerConfig     *ControllerConfig     `json:"controller_config,omitempty" yaml:"controller_config,omitempty"`
 	// ControllerInfo is populated via LEFT JOIN when reading from storage and is not persisted directly on the Garden
 	ControllerInfo *ControllerInfo `json:"controller_info,omitempty" yaml:"controller_info,omitempty"`
 }
@@ -247,6 +247,7 @@ func (g *Garden) Bind(r *http.Request) error {
 			if g.ControllerConfig.FanPin != nil && *g.ControllerConfig.FanPin == 0 {
 				g.ControllerConfig.FanPin = nil
 			}
+			g.ControllerConfig.EnsureSensorIDs()
 		}
 	case http.MethodPatch:
 		illegalRegexp := regexp.MustCompile(`[\$\#\*\>\+\/]`)

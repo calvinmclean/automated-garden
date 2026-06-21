@@ -262,6 +262,7 @@
                         {{ if and .ControllerConfig .ControllerConfig.Sensors }}
                         {{ range $i, $sensor := .ControllerConfig.Sensors }}
                         <div class="sensor-row uk-margin-small-bottom uk-grid-small" uk-grid>
+                            <input type="hidden" value="{{ $sensor.ID }}" name="ControllerConfig.Sensors.{{ $i }}.ID">
                             <div>
                                 <input class="uk-input" type="text" value="{{ $sensor.Name }}" placeholder="Name"
                                     name="ControllerConfig.Sensors.{{ $i }}.Name">
@@ -293,6 +294,7 @@
 
                 <div id="sensor-template" style="display:none;">
                     <div class="sensor-row uk-margin-small-bottom uk-grid-small" uk-grid>
+                        <input type="hidden" value="" name="ControllerConfig.Sensors.__INDEX__.ID">
                         <div>
                             <input class="uk-input" type="text" placeholder="Name" name="ControllerConfig.Sensors.__INDEX__.Name">
                         </div>

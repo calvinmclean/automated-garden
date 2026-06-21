@@ -163,7 +163,7 @@ func (_m *MockClient) GetLastContact(_a0 context.Context, _a1 string) (time.Time
 }
 
 // GetSensorReading provides a mock function with given fields: _a0, _a1, _a2
-func (_m *MockClient) GetSensorReading(_a0 context.Context, _a1 string, _a2 uint) (SensorReading, error) {
+func (_m *MockClient) GetSensorReading(_a0 context.Context, _a1 string, _a2 string) (SensorReading, error) {
 	ret := _m.Called(_a0, _a1, _a2)
 
 	if len(ret) == 0 {
@@ -172,16 +172,16 @@ func (_m *MockClient) GetSensorReading(_a0 context.Context, _a1 string, _a2 uint
 
 	var r0 SensorReading
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, string, uint) (SensorReading, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) (SensorReading, error)); ok {
 		return rf(_a0, _a1, _a2)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, string, uint) SensorReading); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, string, string) SensorReading); ok {
 		r0 = rf(_a0, _a1, _a2)
 	} else {
 		r0 = ret.Get(0).(SensorReading)
 	}
 
-	if rf, ok := ret.Get(1).(func(context.Context, string, uint) error); ok {
+	if rf, ok := ret.Get(1).(func(context.Context, string, string) error); ok {
 		r1 = rf(_a0, _a1, _a2)
 	} else {
 		r1 = ret.Error(1)

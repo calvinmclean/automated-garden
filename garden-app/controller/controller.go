@@ -24,6 +24,7 @@ import (
 
 // SensorConfig represents a configured sensor for the mock controller.
 type SensorConfig struct {
+	ID       string        `mapstructure:"id"`
 	Name     string        `mapstructure:"name"`
 	Type     string        `mapstructure:"type"`
 	Pin      string        `mapstructure:"pin"`
@@ -152,12 +153,12 @@ func (c *Controller) Start() {
 		}
 	}
 	if len(c.Sensors) > 0 {
-		for i, sensor := range c.Sensors {
-			i, sensor := i, sensor // capture loop variables
-			c.logger.Debug("create scheduled job to publish sensor data", "sensor_id", i, "type", sensor.Type, "interval", sensor.Interval.String())
-			_, err := scheduler.Every(sensor.Interval).Do(func() { c.publishSensorData(uint(i), sensor.Type) })
+		for _, sensor := range c.Sensors {
+			sensor := sensor // capture loop variable
+			c.logger.Debug("create scheduled job to publish sensor data", "sensor_id", sensor.ID, "type", sensor.Type, "interval", sensor.Interval.String())
+			_, err := scheduler.Every(sensor.Interval).Do(func() { c.publishSensorData(sensor.ID, sensor.Type) })
 			if err != nil {
-				c.logger.Error("error scheduling sensor publishing", "sensor_id", i, "error", err)
+				c.logger.Error("error scheduling sensor publishing", "sensor_id", sensor.ID, "error", err)
 				return
 			}
 		}
@@ -253,10 +254,10 @@ func (c *Controller) publishHealthData() {
 }
 
 func (c *Controller) publishTemperatureHumidityData() {
-	c.publishSensorData(0, "DHT22")
+	c.publishSensorData("0", "DHT22")
 }
 
-func (c *Controller) publishSensorData(sensorID uint, sensorType string) {
+func (c *Controller) publishSensorData(sensorID, sensorType string) {
 	sensorTopic := fmt.Sprintf("%s/data/sensor", c.TopicPrefix)
 
 	temperature := c.TemperatureValue
@@ -274,10 +275,10 @@ func (c *Controller) publishSensorData(sensorID uint, sensorType string) {
 			humidity = addNoise(humidity, 3)
 		}
 		logger = logger.With("temperature", temperature, "humidity", humidity)
-		message = fmt.Appendf(nil, "sensor,sensor_id=%d temperature=%f,humidity=%f", sensorID, temperature, humidity)
+		message = fmt.Appendf(nil, "sensor,sensor_id=%s temperature=%f,humidity=%f", sensorID, temperature, humidity)
 	case "DS18B20":
 		logger = logger.With("temperature", temperature)
-		message = fmt.Appendf(nil, "sensor,sensor_id=%d temperature=%f", sensorID, temperature)
+		message = fmt.Appendf(nil, "sensor,sensor_id=%s temperature=%f", sensorID, temperature)
 	default:
 		logger.Warn("unknown sensor type, skipping publish")
 		return

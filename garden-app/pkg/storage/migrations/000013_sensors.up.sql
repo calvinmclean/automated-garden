@@ -1,5 +1,5 @@
 -- Convert the legacy single temperature/humidity sensor configuration into the
--- new generic sensors array. The array index is used as the sensor_id in MQTT.
+-- new generic sensors array. A random 20-character hex ID is assigned as the stable sensor_id.
 UPDATE gardens
 SET controller_config = json_set(
     json_remove(
@@ -10,6 +10,7 @@ SET controller_config = json_set(
     '$.sensors',
     json_array(
         json_object(
+            'id', lower(hex(randomblob(10))),
             'name', 'Ambient',
             'type', 'DHT22',
             'pin', json_extract(controller_config, '$.temperature_humidity_pin'),

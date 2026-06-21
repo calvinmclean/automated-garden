@@ -115,6 +115,13 @@ func TestGardenPatch(t *testing.T) {
 			if g.CreatedAt != tt.newGarden.CreatedAt {
 				t.Errorf("Unexpected result for CreatedAt: expected=%v, actual=%v", tt.newGarden.CreatedAt, g.CreatedAt)
 			}
+			if tt.newGarden.ControllerConfig != nil && g.ControllerConfig != nil {
+				for i := range g.ControllerConfig.Sensors {
+					if i < len(tt.newGarden.ControllerConfig.Sensors) {
+						tt.newGarden.ControllerConfig.Sensors[i].ID = g.ControllerConfig.Sensors[i].ID
+					}
+				}
+			}
 			assert.EqualValues(t, tt.newGarden.ControllerConfig, g.ControllerConfig)
 		})
 	}

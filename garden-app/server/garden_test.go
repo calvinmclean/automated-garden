@@ -153,21 +153,21 @@ func TestCreateGarden(t *testing.T) {
 			"SuccessfulWithControllerConfig",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "controller_config":{"sensors":[{"name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}],"light_pin":2,"valve_pins":[3,4,5],"pump_pins":[6,7,8]}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"valve_pins":\[3,4,5\],"pump_pins":\[6,7,8\],"light_pin":2,"sensors":\[{"name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}\]},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"sensors_data":\[{"id":0,"name":"Ambient","type":"DHT22","temperature_celsius":50,"humidity_percentage":50}\],"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},\{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"valve_pins":\[3,4,5\],"pump_pins":\[6,7,8\],"light_pin":2,"sensors":\[{"id":"[0-9a-v]{20}","name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}\]},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"sensors_data":\[{"id":"[0-9a-v]{20}","name":"Ambient","type":"DHT22","temperature_celsius":50,"humidity_percentage":50}\],"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},\{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"SuccessfulWithTemperatureAndHumidity",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "controller_config":{"sensors":[{"name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}]}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"sensors":\[{"name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}\]},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"sensors_data":\[{"id":0,"name":"Ambient","type":"DHT22","temperature_celsius":50,"humidity_percentage":50}\],"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},\{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"sensors":\[{"id":"[0-9a-v]{20}","name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}\]},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"sensors_data":\[{"id":"[0-9a-v]{20}","name":"Ambient","type":"DHT22","temperature_celsius":50,"humidity_percentage":50}\],"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},\{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
 			"SuccessfulButErrorGettingTemperatureAndHumidity",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "controller_config":{"sensors":[{"name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}]}}`,
 			true,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"sensors":\[{"name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}\]},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},\{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","controller_config":{"sensors":\[{"id":"[0-9a-v]{20}","name":"Ambient","type":"DHT22","pin":21,"interval":"5s"}\]},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"sensors_data":\[{"id":"","name":"","type":""}\],"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},\{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -232,9 +232,9 @@ func TestCreateGarden(t *testing.T) {
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 			influxdbClient.On("Close")
 			if tt.temperatureHumidityError {
-				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", uint(0)).Return(influxdb.SensorReading{}, errors.New("influxdb error"))
+				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", mock.AnythingOfType("string")).Return(influxdb.SensorReading{}, errors.New("influxdb error"))
 			} else {
-				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", uint(0)).Return(influxdb.SensorReading{
+				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", mock.AnythingOfType("string")).Return(influxdb.SensorReading{
 					Temperature: pointer[float64](50.0),
 					Humidity:    pointer[float64](50.0),
 				}, nil)
@@ -402,9 +402,9 @@ func TestUpdateGardenPUT(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			influxdbClient.On("GetLastContact", mock.Anything, "test-garden").Return(clock.Now(), nil)
 			if tt.temperatureHumidityError {
-				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", uint(0)).Return(influxdb.SensorReading{}, errors.New("influxdb error"))
+				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", mock.AnythingOfType("string")).Return(influxdb.SensorReading{}, errors.New("influxdb error"))
 			} else {
-				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", uint(0)).Return(influxdb.SensorReading{
+				influxdbClient.On("GetSensorReading", mock.Anything, "test-garden", mock.AnythingOfType("string")).Return(influxdb.SensorReading{
 					Temperature: pointer[float64](50.0),
 					Humidity:    pointer[float64](50.0),
 				}, nil)
