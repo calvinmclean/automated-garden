@@ -195,13 +195,13 @@
     {{ $textColor := "uk-text-muted" }}
     {{ if .NextFanAction.IsActive }}
     {{ $fanIcon = "play-circle" }}
-    {{ $fanTooltip = print "Fan ON - Running for " (FormatDuration .NextFanAction.DurationUntil) " more" }}
+    {{ $fanTooltip = print "Fan ON - Stops " (FormatUpcomingDate .NextFanAction.Time) }}
     {{ $textColor = "uk-text-primary" }}
     {{ else }}
     {{ $fanIcon = "minus-circle" }}
-    {{ $fanTooltip = print "Fan OFF - Next run in " (FormatDuration .NextFanAction.DurationUntil) }}
+    {{ $fanTooltip = print "Fan OFF - Next run " (FormatUpcomingDate .NextFanAction.Time) }}
     {{ end }}
-    <span uk-icon="{{ $fanIcon }}" uk-tooltip="{{ $fanTooltip }}"></span>
+    <span uk-icon="{{ $fanIcon }}" uk-tooltip="title: {{ $fanTooltip }}"></span>
     <span class="{{ $textColor }}">
         {{ if .NextFanAction.IsActive }}ON{{ else }}OFF{{ end }}
     </span>

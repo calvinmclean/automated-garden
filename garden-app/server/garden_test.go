@@ -124,7 +124,7 @@ func TestGetGardenWithFanSchedule(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	// Verify response contains fan_schedule and next_fan_action with regex for dynamic timestamp
 	assert.Regexp(t, `"fan_schedule":\{"duration":"30m","interval":"2h","power":50,"only_with_light":false\}`, w.Body.String())
-	assert.Regexp(t, `"next_fan_action":\{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","is_active":(true|false),"duration_until":"[\dmhs]+"\}`, w.Body.String())
+	assert.Regexp(t, `"next_fan_action":\{"time":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","is_active":(true|false)\}`, w.Body.String())
 
 	gr.worker.Stop()
 }
@@ -172,7 +172,7 @@ func TestCreateGarden(t *testing.T) {
 			"SuccessfulWithFanSchedule",
 			`{"name": "test-garden", "topic_prefix": "test-garden", "max_zones": 2, "fan_schedule": {"duration": "30m", "interval": "2h", "power": 50}}`,
 			false,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","fan_schedule":{"duration":"30m","interval":"2h","power":50,"only_with_light":false},"next_fan_action":{"time":"2023-08-23T10:30:00Z","is_active":true,"duration_until":"30m"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"[0-9a-v]{20}","max_zones":2,"created_at":"2023-08-23T10:00:00Z","fan_schedule":{"duration":"30m","interval":"2h","power":50,"only_with_light":false},"next_fan_action":{"time":"2023-08-23T10:30:00Z","is_active":true},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":0,"links":\[{"rel":"self","href":"/gardens/[0-9a-v]{20}"},{"rel":"zones","href":"/gardens/[0-9a-v]{20}/zones"},{"rel":"action","href":"/gardens/[0-9a-v]{20}/action"},{"rel":"water_history","href":"/gardens/[0-9a-v]{20}/water_history"}\]}`,
 			http.StatusCreated,
 		},
 		{
@@ -605,7 +605,7 @@ func TestUpdateGarden(t *testing.T) {
 			createExampleGarden(),
 			nil,
 			`{"fan_schedule": {"duration": "30m", "interval": "2h", "power": 50}}`,
-			`{"name":"test-garden","topic_prefix":"test-garden","id":"c5cvhpcbcv45e8bp16dg","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"fan_schedule":{"duration":"30m","interval":"2h","power":50,"only_with_light":false},"temperature_humidity_sensor":false,"next_light_action":{"time":"2023-08-23T13:00:01-07:00","state":"OFF"},"next_fan_action":{"time":"2023-08-23T10:30:00Z","is_active":true,"duration_until":"30m"},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/action"},{"rel":"water_history","href":"/gardens/c5cvhpcbcv45e8bp16dg/water_history"}\]}`,
+			`{"name":"test-garden","topic_prefix":"test-garden","id":"c5cvhpcbcv45e8bp16dg","max_zones":2,"created_at":"\d{4}-\d{2}-\d\dT\d\d:\d\d:\d\d(\.\d+)?(-07:00|Z)","light_schedule":{"duration":"15h","start_time":"22:00:01-07:00"},"fan_schedule":{"duration":"30m","interval":"2h","power":50,"only_with_light":false},"temperature_humidity_sensor":false,"next_light_action":{"time":"2023-08-23T13:00:01-07:00","state":"OFF"},"next_fan_action":{"time":"2023-08-23T10:30:00Z","is_active":true},"health":{"status":"UP","details":"last contact from Garden was 0s ago","last_contact":"2023-08-23T10:00:00Z"},"num_zones":1,"links":\[{"rel":"self","href":"/gardens/c5cvhpcbcv45e8bp16dg"},{"rel":"zones","href":"/gardens/c5cvhpcbcv45e8bp16dg/zones"},{"rel":"action","href":"/gardens/c5cvhpcbcv45e8bp16dg/action"},{"rel":"water_history","href":"/gardens/c5cvhpcbcv45e8bp16dg/water_history"}\]}`,
 			http.StatusOK,
 		},
 		{

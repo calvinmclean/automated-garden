@@ -52,9 +52,8 @@ type NextLightAction struct {
 
 // NextFanAction contains the time and state for the next scheduled FanAction
 type NextFanAction struct {
-	Time          *time.Time    `json:"time"`
-	IsActive      bool          `json:"is_active"`
-	DurationUntil *pkg.Duration `json:"duration_until"`
+	Time     *time.Time `json:"time"`
+	IsActive bool       `json:"is_active"`
 }
 
 // TemperatureHumidityData has the temperature and humidity of the Garden
@@ -152,14 +151,9 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 	if g.Garden.FanSchedule != nil {
 		nextFanTime, nextFanWillBeActive := g.Garden.FanSchedule.NextChange(clock.Now())
 		isActive := !nextFanWillBeActive
-		durationUntil := nextFanTime.Sub(clock.Now())
-		if durationUntil < 0 {
-			durationUntil = 0
-		}
 		g.NextFanAction = &NextFanAction{
-			Time:          &nextFanTime,
-			IsActive:      isActive,
-			DurationUntil: &pkg.Duration{Duration: durationUntil},
+			Time:     &nextFanTime,
+			IsActive: isActive,
 		}
 	}
 
