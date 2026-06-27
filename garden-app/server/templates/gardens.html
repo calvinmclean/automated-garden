@@ -37,12 +37,8 @@
             </div>
             {{ end }}
 
-            {{ if .LightSchedule }}
-            {{ template "lightScheduleDetails" . }}
-            {{ end }}
-
-            {{ if .FanSchedule }}
-            {{ template "fanScheduleDetails" . }}
+            {{ if or .LightSchedule .FanSchedule }}
+            {{ template "scheduleSummary" . }}
             {{ end }}
 
             {{ template "gardenTemperatureSection" . }}
@@ -167,46 +163,48 @@
 </p>
 {{ end }}
 
-{{ define "lightScheduleDetails" }}
-<p>
-    {{ $textColor := "uk-text-muted" }}
+{{ define "scheduleSummary" }}
+<div class="uk-flex uk-flex-wrap uk-flex-middle uk-margin-small-top">
+    {{ if .LightSchedule }}
+    {{ $lightIcon := "chevron-down" }}
+    {{ $lightTextColor := "uk-text-muted" }}
+    {{ $lightTooltip := print "Duration: " (FormatDuration .LightSchedule.Duration) " starting at " (FormatStartTime .LightSchedule.StartTime) }}
     {{ if eq .NextLightAction.State.String "ON" }}
-    <span uk-icon="chevron-up" uk-tooltip="Turning On"></span>
-    {{ $textColor = "uk-text-warning" }}
-    {{ else }}
-    <span uk-icon="chevron-down" uk-tooltip="Turning Off"></span>
+    {{ $lightIcon = "chevron-up" }}
+    {{ $lightTextColor = "uk-text-warning" }}
     {{ end }}
-    Light will turn <span class="{{ $textColor }}">{{ .NextLightAction.State }}</span> {{ FormatUpcomingDate
-    .NextLightAction.Time }}
-</p>
+    <div class="uk-flex uk-flex-middle uk-margin-small-right uk-margin-small-bottom"
+        uk-tooltip="title: {{ $lightTooltip }}">
+        <span uk-icon="icon: {{ $lightIcon }}; ratio: 0.8" class="uk-margin-small-right"></span>
+        <span>
+            Light: <span class="{{ $lightTextColor }}">{{ .NextLightAction.State }}</span> {{ FormatUpcomingDate
+            .NextLightAction.Time }}
+        </span>
+    </div>
+    {{ end }}
 
-<p>
-    <span>
-        <span uk-icon="future" uk-tooltip="Duration"></span> {{ FormatDuration .LightSchedule.Duration }}
-        <span uk-icon="clock" uk-tooltip="Start Time"></span> {{ FormatStartTime .LightSchedule.StartTime }}
-    </span>
-</p>
-{{ end }}
-
-{{ define "fanScheduleDetails" }}
-<p>
+    {{ if .FanSchedule }}
     {{ $fanIcon := "ban" }}
+    {{ $fanTextColor := "uk-text-muted" }}
     {{ $fanTooltip := "" }}
-    {{ $textColor := "uk-text-muted" }}
     {{ if .NextFanAction.IsActive }}
     {{ $fanIcon = "play-circle" }}
+    {{ $fanTextColor = "uk-text-primary" }}
     {{ $fanTooltip = print "Fan ON - Stops " (FormatUpcomingDate .NextFanAction.Time) }}
-    {{ $textColor = "uk-text-primary" }}
     {{ else }}
     {{ $fanIcon = "minus-circle" }}
     {{ $fanTooltip = print "Fan OFF - Next run " (FormatUpcomingDate .NextFanAction.Time) }}
     {{ end }}
-    <span uk-icon="{{ $fanIcon }}" uk-tooltip="title: {{ $fanTooltip }}"></span>
-    <span class="{{ $textColor }}">
-        {{ if .NextFanAction.IsActive }}ON{{ else }}OFF{{ end }}
-    </span>
-    <span class="uk-text-meta">({{ .FanSchedule.Power }}% power)</span>
-</p>
+    <div class="uk-flex uk-flex-middle uk-margin-small-right uk-margin-small-bottom"
+        uk-tooltip="title: {{ $fanTooltip }}">
+        <span uk-icon="icon: {{ $fanIcon }}; ratio: 0.8" class="uk-margin-small-right"></span>
+        <span>
+            Fan: <span class="{{ $fanTextColor }}">{{ if .NextFanAction.IsActive }}ON{{ else }}OFF{{ end }}</span>
+            ({{ .FanSchedule.Power }}%)
+        </span>
+    </div>
+    {{ end }}
+</div>
 {{ end }}
 
 {{ define "gardenActionButton" }}
