@@ -92,22 +92,26 @@
             </div>
             <div id="fan-schedule-fields" class="{{ if not .FanSchedule }}uk-hidden{{ end }}">
                 <div class="uk-margin">
-                    <label class="uk-form-label" for="garden-fan-schedule-duration">Fan Duration</label>
-                    <input id="garden-fan-schedule-duration" class="uk-input" type="text"
-                        value="{{ if and .FanSchedule .FanSchedule.Duration }}{{ .FanSchedule.Duration }}{{ end }}" placeholder="e.g. 30m"
-                        name="FanSchedule.Duration">
-                </div>
-                <div class="uk-margin">
-                    <label class="uk-form-label" for="garden-fan-schedule-interval">Fan Interval</label>
-                    <input id="garden-fan-schedule-interval" class="uk-input" type="text"
-                        value="{{ if and .FanSchedule .FanSchedule.Interval }}{{ .FanSchedule.Interval }}{{ end }}" placeholder="e.g. 2h30m"
-                        name="FanSchedule.Interval">
-                </div>
-                <div class="uk-margin">
-                    <label class="uk-form-label" for="garden-fan-schedule-power">Fan Power (%)</label>
-                    <input id="garden-fan-schedule-power" class="uk-input" type="number" min="0" max="100"
-                        value="{{ if and .FanSchedule .FanSchedule.Power }}{{ .FanSchedule.Power }}{{ end }}" placeholder="0-100"
-                        name="FanSchedule.Power">
+                    <div class="uk-grid-small uk-child-width-1-3@s" uk-grid>
+                        <div>
+                            <label class="uk-form-label" for="garden-fan-schedule-duration">Fan Duration</label>
+                            <input id="garden-fan-schedule-duration" class="uk-input" type="text"
+                                value="{{ if and .FanSchedule .FanSchedule.Duration }}{{ .FanSchedule.Duration }}{{ end }}" placeholder="e.g. 30m"
+                                name="FanSchedule.Duration">
+                        </div>
+                        <div>
+                            <label class="uk-form-label" for="garden-fan-schedule-interval">Fan Interval</label>
+                            <input id="garden-fan-schedule-interval" class="uk-input" type="text"
+                                value="{{ if and .FanSchedule .FanSchedule.Interval }}{{ .FanSchedule.Interval }}{{ end }}" placeholder="e.g. 2h30m"
+                                name="FanSchedule.Interval">
+                        </div>
+                        <div>
+                            <label class="uk-form-label" for="garden-fan-schedule-power">Fan Power (%)</label>
+                            <input id="garden-fan-schedule-power" class="uk-input" type="number" min="0" max="100"
+                                value="{{ if and .FanSchedule .FanSchedule.Power }}{{ .FanSchedule.Power }}{{ end }}" placeholder="0-100"
+                                name="FanSchedule.Power">
+                        </div>
+                    </div>
                 </div>
                 <div class="uk-margin">
                     <input class="uk-checkbox" id="garden-fan-only-with-light" type="checkbox" name="FanSchedule.OnlyWithLight" value="true"
