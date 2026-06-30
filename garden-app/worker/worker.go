@@ -2,7 +2,9 @@ package worker
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
+	"net/http"
 	"sync"
 	"time"
 
@@ -44,10 +46,25 @@ type Worker struct {
 	mqttClient     mqtt.Client
 	scheduler      *gocron.Scheduler
 	logger         *slog.Logger
+	httpClient     *http.Client
+
+	// controllerSetupURLFunc builds the URL for the controller's WiFiManager paramsave endpoint.
+	// It is overridable for tests.
+	controllerSetupURLFunc func(topicPrefix string) string
 
 	// When Garden health messages are received, Timers are created to track their
 	// uptime and notify if they go down
 	downTimers map[string]clock.Timer
+}
+
+// WorkerOption configures a Worker during creation
+type WorkerOption func(*Worker)
+
+// WithHTTPClient sets the HTTP client used for controller setup requests
+func WithHTTPClient(client *http.Client) WorkerOption {
+	return func(w *Worker) {
+		w.httpClient = client
+	}
 }
 
 // NewWorker creates a Worker with specified clients
@@ -56,17 +73,28 @@ func NewWorker(
 	influxdbClient influxdb.Client,
 	mqttClient mqtt.Client,
 	logger *slog.Logger,
+	options ...WorkerOption,
 ) *Worker {
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.CustomTime(clock.DefaultClock)
-	return &Worker{
+	w := &Worker{
 		storageClient:  storageClient,
 		influxdbClient: influxdbClient,
 		mqttClient:     mqttClient,
 		scheduler:      scheduler,
 		logger:         logger.With("source", "worker"),
 		downTimers:     map[string]clock.Timer{},
+		httpClient:     http.DefaultClient,
+		controllerSetupURLFunc: func(topicPrefix string) string {
+			return fmt.Sprintf("http://%s.local/paramsave", topicPrefix)
+		},
 	}
+
+	for _, option := range options {
+		option(w)
+	}
+
+	return w
 }
 
 // StartAsync starts the Worker's background jobs

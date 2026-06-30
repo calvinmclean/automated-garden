@@ -3,6 +3,10 @@ package worker
 import (
 	"errors"
 	"log/slog"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"strconv"
 	"testing"
 	"time"
 
@@ -282,6 +286,126 @@ func TestStopActionExecute(t *testing.T) {
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestControllerSetupActionExecute(t *testing.T) {
+	garden := &pkg.Garden{
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	tests := []struct {
+		name         string
+		action       *action.ControllerSetupAction
+		serverStatus int
+		assert       func(error, *testing.T)
+	}{
+		{
+			"Successful",
+			&action.ControllerSetupAction{
+				Server:      "192.168.0.1",
+				TopicPrefix: "garden",
+				Port:        1883,
+			},
+			http.StatusOK,
+			func(err error, t *testing.T) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			"SuccessfulRedirect",
+			&action.ControllerSetupAction{
+				Server:      "192.168.0.1",
+				TopicPrefix: "garden",
+				Port:        1883,
+			},
+			http.StatusFound,
+			func(err error, t *testing.T) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			"MissingServer",
+			&action.ControllerSetupAction{
+				TopicPrefix: "garden",
+				Port:        1883,
+			},
+			http.StatusOK,
+			func(err error, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, "controller_setup action must have server", err.Error())
+			},
+		},
+		{
+			"MissingTopicPrefix",
+			&action.ControllerSetupAction{
+				Server: "192.168.0.1",
+				Port:   1883,
+			},
+			http.StatusOK,
+			func(err error, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, "controller_setup action must have topic_prefix", err.Error())
+			},
+		},
+		{
+			"InvalidPort",
+			&action.ControllerSetupAction{
+				Server:      "192.168.0.1",
+				TopicPrefix: "garden",
+				Port:        0,
+			},
+			http.StatusOK,
+			func(err error, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, "controller_setup action must have a positive port", err.Error())
+			},
+		},
+		{
+			"ServerError",
+			&action.ControllerSetupAction{
+				Server:      "192.168.0.1",
+				TopicPrefix: "garden",
+				Port:        1883,
+			},
+			http.StatusInternalServerError,
+			func(err error, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, "controller setup request returned status 500", err.Error())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			received := url.Values{}
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				assert.Equal(t, http.MethodPost, r.Method)
+				assert.Equal(t, "/paramsave", r.URL.Path)
+				assert.Equal(t, "application/x-www-form-urlencoded", r.Header.Get("Content-Type"))
+
+				r.Body = http.MaxBytesReader(w, r.Body, 1024)
+				err := r.ParseForm()
+				assert.NoError(t, err)
+				received = r.PostForm
+
+				w.WriteHeader(tt.serverStatus)
+			}))
+			defer server.Close()
+
+			worker := NewWorker(nil, nil, nil, slog.Default())
+			worker.controllerSetupURLFunc = func(string) string { return server.URL + "/paramsave" }
+
+			err := worker.ExecuteControllerSetupAction(garden, tt.action)
+			tt.assert(err, t)
+
+			if err == nil {
+				assert.Equal(t, tt.action.Server, received.Get("server"))
+				assert.Equal(t, tt.action.TopicPrefix, received.Get("topic_prefix"))
+				assert.Equal(t, strconv.Itoa(tt.action.Port), received.Get("port"))
+			}
 		})
 	}
 }

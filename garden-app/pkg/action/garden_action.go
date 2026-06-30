@@ -12,27 +12,40 @@ import (
 // GardenAction collects all the possible actions for a Garden into a single struct so these can easily be
 // received as one request
 type GardenAction struct {
-	Light  *LightAction  `json:"light" form:"light"`
-	Fan    *FanAction    `json:"fan" form:"fan"`
-	Stop   *StopAction   `json:"stop" form:"stop"`
-	Update *UpdateAction `json:"update" form:"update"`
+	Light           *LightAction           `json:"light" form:"light"`
+	Fan             *FanAction             `json:"fan" form:"fan"`
+	Stop            *StopAction            `json:"stop" form:"stop"`
+	Update          *UpdateAction          `json:"update" form:"update"`
+	ControllerSetup *ControllerSetupAction `json:"controller_setup" form:"controller_setup"`
 }
 
 // String returns a string representation of the GardenAction
 func (action *GardenAction) String() string {
-	return fmt.Sprintf("{LightAction: %+v, FanAction: %+v, StopAction: %+v, UpdateAction: %+v}", action.Light, action.Fan, action.Stop, action.Update)
+	return fmt.Sprintf("{LightAction: %+v, FanAction: %+v, StopAction: %+v, UpdateAction: %+v, ControllerSetupAction: %+v}", action.Light, action.Fan, action.Stop, action.Update, action.ControllerSetup)
 }
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
 // It will verify that the request is valid
 func (action *GardenAction) Bind(_ *http.Request) error {
-	if action == nil || (action.Light == nil && action.Fan == nil && action.Stop == nil && action.Update == nil) {
+	if action == nil || (action.Light == nil && action.Fan == nil && action.Stop == nil && action.Update == nil && action.ControllerSetup == nil) {
 		return errors.New("missing required action fields")
 	}
 
 	if action.Update != nil {
 		if !action.Update.Config {
 			return errors.New("update action must have config=true")
+		}
+	}
+
+	if action.ControllerSetup != nil {
+		if action.ControllerSetup.Server == "" {
+			return errors.New("controller_setup action must have server")
+		}
+		if action.ControllerSetup.TopicPrefix == "" {
+			return errors.New("controller_setup action must have topic_prefix")
+		}
+		if action.ControllerSetup.Port <= 0 {
+			return errors.New("controller_setup action must have a positive port")
 		}
 	}
 	return nil
@@ -59,4 +72,12 @@ type UpdateAction struct {
 type FanAction struct {
 	Duration int64 `json:"duration" form:"duration"`
 	Power    uint8 `json:"power" form:"power"`
+}
+
+// ControllerSetupAction is used to send MQTT connection details to the controller's
+// WiFiManager setup endpoint
+type ControllerSetupAction struct {
+	Server      string `json:"server" form:"server"`
+	TopicPrefix string `json:"topic_prefix" form:"topic_prefix"`
+	Port        int    `json:"port" form:"port"`
 }

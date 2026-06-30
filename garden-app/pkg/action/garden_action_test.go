@@ -33,6 +33,21 @@ func TestGardenActionBind(t *testing.T) {
 			&GardenAction{Update: &UpdateAction{}},
 			"update action must have config=true",
 		},
+		{
+			"ErrorMissingControllerSetupServer",
+			&GardenAction{ControllerSetup: &ControllerSetupAction{TopicPrefix: "garden", Port: 1883}},
+			"controller_setup action must have server",
+		},
+		{
+			"ErrorMissingControllerSetupTopicPrefix",
+			&GardenAction{ControllerSetup: &ControllerSetupAction{Server: "192.168.0.1", Port: 1883}},
+			"controller_setup action must have topic_prefix",
+		},
+		{
+			"ErrorMissingControllerSetupPort",
+			&GardenAction{ControllerSetup: &ControllerSetupAction{Server: "192.168.0.1", TopicPrefix: "garden"}},
+			"controller_setup action must have a positive port",
+		},
 	}
 
 	t.Run("SuccessfulLightAction", func(t *testing.T) {
@@ -50,6 +65,20 @@ func TestGardenActionBind(t *testing.T) {
 	t.Run("SuccessfulStopAction", func(t *testing.T) {
 		ar := &GardenAction{
 			Stop: &StopAction{},
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading GardenAction JSON: %v", err)
+		}
+	})
+	t.Run("SuccessfulControllerSetupAction", func(t *testing.T) {
+		ar := &GardenAction{
+			ControllerSetup: &ControllerSetupAction{
+				Server:      "192.168.0.1",
+				TopicPrefix: "garden",
+				Port:        1883,
+			},
 		}
 		r := httptest.NewRequest("", "/", nil)
 		err := ar.Bind(r)

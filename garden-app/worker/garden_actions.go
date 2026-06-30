@@ -2,9 +2,14 @@
 package worker
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"net/http"
+	"net/url"
+	"strconv"
+	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
@@ -33,6 +38,11 @@ func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) 
 		err := w.ExecuteUpdateAction(g, input.Update)
 		if err != nil {
 			return fmt.Errorf("unable to execute UpdateAction: %v", err)
+		}
+	case input.ControllerSetup != nil:
+		err := w.ExecuteControllerSetupAction(g, input.ControllerSetup)
+		if err != nil {
+			return fmt.Errorf("unable to execute ControllerSetupAction: %v", err)
 		}
 	}
 	return nil
@@ -114,6 +124,45 @@ func (w *Worker) ExecuteUpdateAction(g *pkg.Garden, input *action.UpdateAction) 
 	err = w.mqttClient.Publish(topic, msg)
 	if err != nil {
 		return fmt.Errorf("unable to publish UpdateAction: %v", err)
+	}
+
+	return nil
+}
+
+// ExecuteControllerSetupAction sends MQTT connection details to the controller's
+// WiFiManager paramsave endpoint
+func (w *Worker) ExecuteControllerSetupAction(g *pkg.Garden, input *action.ControllerSetupAction) error {
+	if input.Server == "" {
+		return errors.New("controller_setup action must have server")
+	}
+	if input.TopicPrefix == "" {
+		return errors.New("controller_setup action must have topic_prefix")
+	}
+	if input.Port <= 0 {
+		return errors.New("controller_setup action must have a positive port")
+	}
+
+	endpoint := w.controllerSetupURLFunc(g.TopicPrefix)
+
+	form := url.Values{}
+	form.Set("server", input.Server)
+	form.Set("topic_prefix", input.TopicPrefix)
+	form.Set("port", strconv.Itoa(input.Port))
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, strings.NewReader(form.Encode()))
+	if err != nil {
+		return fmt.Errorf("unable to create controller setup request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+
+	resp, err := w.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("unable to send controller setup request: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return fmt.Errorf("controller setup request returned status %d", resp.StatusCode)
 	}
 
 	return nil

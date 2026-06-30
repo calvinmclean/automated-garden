@@ -230,6 +230,11 @@
                     <span uk-icon="ban"></span> Stop Watering
                 </a>
             </li>
+            <li>
+                <a href="#controller-setup-confirm-{{ .ID }}" uk-toggle>
+                    <span uk-icon="cog"></span> Controller Setup
+                </a>
+            </li>
             {{- if .ControllerConfig }}
             <li>
                 <a href="#update-config-confirm-{{ .ID }}" uk-toggle>
@@ -242,6 +247,7 @@
 </div>
 
 {{ template "stopWateringConfirmationModal" . }}
+{{ template "controllerSetupConfirmationModal" . }}
 {{ template "updateConfigConfirmationModal" . }}
 {{ end }}
 
@@ -303,6 +309,39 @@
                 {{ template "actionFeedback" "primary" }}
                 onclick="UIkit.modal('#update-config-confirm-{{ .ID }}').hide()">
                 <span uk-icon="push"></span> Update Config
+            </button>
+        </p>
+    </div>
+</div>
+{{ end }}
+
+{{ define "controllerSetupConfirmationModal" }}
+<div id="controller-setup-confirm-{{ .ID }}" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">Controller Setup</h3>
+        <p>Configure MQTT settings for <strong>{{ .Name }}</strong>.</p>
+
+        <form id="controller-setup-form-{{ .ID }}">
+            <div class="uk-margin">
+                <input class="uk-input" type="text" name="controller_setup.server" placeholder="MQTT Server" value="192.168.0.1">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" type="text" name="controller_setup.topic_prefix" placeholder="Topic Prefix" value="{{ .TopicPrefix }}">
+            </div>
+            <div class="uk-margin">
+                <input class="uk-input" type="number" name="controller_setup.port" placeholder="MQTT Port" value="1883">
+            </div>
+        </form>
+
+        <p class="uk-text-right">
+            <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
+            <button class="uk-button uk-button-primary" type="button"
+                hx-post="/gardens/{{ .ID }}/action"
+                hx-include="#controller-setup-form-{{ .ID }}"
+                hx-swap="none"
+                {{ template "actionFeedback" "primary" }}
+                onclick="UIkit.modal('#controller-setup-confirm-{{ .ID }}').hide()">
+                <span uk-icon="cog"></span> Save Setup
             </button>
         </p>
     </div>
