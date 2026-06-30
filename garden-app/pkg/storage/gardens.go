@@ -55,6 +55,7 @@ func (s *GardenStorage) Get(ctx context.Context, id string) (*pkg.Garden, error)
 			NotificationSettings: row.NotificationSettings,
 			ControllerConfig:     row.ControllerConfig,
 			LightSchedule:        row.LightSchedule,
+			FanSchedule:          row.FanSchedule,
 		},
 		row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 	)
@@ -93,6 +94,7 @@ func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) iter
 						NotificationSettings: row.NotificationSettings,
 						ControllerConfig:     row.ControllerConfig,
 						LightSchedule:        row.LightSchedule,
+						FanSchedule:          row.FanSchedule,
 					},
 					row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 				)
@@ -121,6 +123,7 @@ func (s *GardenStorage) Search(ctx context.Context, _ string, q url.Values) iter
 						NotificationSettings: row.NotificationSettings,
 						ControllerConfig:     row.ControllerConfig,
 						LightSchedule:        row.LightSchedule,
+						FanSchedule:          row.FanSchedule,
 					},
 					row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 				)
@@ -186,6 +189,18 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		}
 	}
 
+	var fanSchedule sql.NullString
+	if garden.FanSchedule != nil {
+		fanScheduleStr, err := json.Marshal(garden.FanSchedule)
+		if err != nil {
+			return fmt.Errorf("error marshaling fan schedule: %w", err)
+		}
+		fanSchedule = sql.NullString{
+			String: string(fanScheduleStr),
+			Valid:  true,
+		}
+	}
+
 	var maxZones int64
 	if garden.MaxZones != nil {
 		var err error
@@ -217,6 +232,7 @@ func (s *GardenStorage) Set(ctx context.Context, garden *pkg.Garden) error {
 		NotificationSettings: notificationSettings,
 		ControllerConfig:     controllerConfig,
 		LightSchedule:        lightSchedule,
+		FanSchedule:          fanSchedule,
 	})
 	if err != nil {
 		var sqliteErr *sqlite.Error
@@ -261,6 +277,7 @@ func (s *GardenStorage) GetByTopicPrefix(ctx context.Context, topicPrefix string
 			NotificationSettings: row.NotificationSettings,
 			ControllerConfig:     row.ControllerConfig,
 			LightSchedule:        row.LightSchedule,
+			FanSchedule:          row.FanSchedule,
 		},
 		row.MacAddress, row.IpAddress, row.FirmwareVersion, row.UpdatedAt,
 	)
@@ -364,6 +381,15 @@ func dbGardenToGarden(dbGarden db.Garden) (*pkg.Garden, error) {
 			return nil, fmt.Errorf("error unmarshaling light schedule: %w", err)
 		}
 		garden.LightSchedule = &lightSchedule
+	}
+
+	if dbGarden.FanSchedule.Valid && len(dbGarden.FanSchedule.String) > 0 {
+		var fanSchedule pkg.FanSchedule
+		err := json.Unmarshal([]byte(dbGarden.FanSchedule.String), &fanSchedule)
+		if err != nil {
+			return nil, fmt.Errorf("error unmarshaling fan schedule: %w", err)
+		}
+		garden.FanSchedule = &fanSchedule
 	}
 
 	return garden, nil

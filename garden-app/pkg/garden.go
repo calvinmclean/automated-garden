@@ -28,6 +28,7 @@ type Garden struct {
 	CreatedAt                 *time.Time            `json:"created_at" yaml:"created_at,omitempty"`
 	EndDate                   *time.Time            `json:"end_date,omitempty" yaml:"end_date,omitempty"`
 	LightSchedule             *LightSchedule        `json:"light_schedule,omitempty" yaml:"light_schedule,omitempty"`
+	FanSchedule               *FanSchedule          `json:"fan_schedule,omitempty" yaml:"fan_schedule,omitempty"`
 	TemperatureHumiditySensor *bool                 `json:"temperature_humidity_sensor,omitempty" yaml:"temperature_humidity_sensor,omitempty"`
 	NotificationClientID      *string               `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
 	NotificationSettings      *NotificationSettings `json:"notification_settings,omitempty" yaml:"notification_settings,omitempty"`
@@ -120,6 +121,18 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 			g.LightSchedule = nil
 		}
 	}
+	if newGarden.FanSchedule != nil {
+		if g.FanSchedule == nil {
+			g.FanSchedule = &FanSchedule{}
+		}
+		g.FanSchedule.Patch(newGarden.FanSchedule)
+
+		if newGarden.FanSchedule.Duration == nil &&
+			newGarden.FanSchedule.Interval == nil &&
+			newGarden.FanSchedule.Power == nil {
+			g.FanSchedule = nil
+		}
+	}
 	if newGarden.TemperatureHumiditySensor != nil {
 		g.TemperatureHumiditySensor = newGarden.TemperatureHumiditySensor
 	}
@@ -207,6 +220,30 @@ func (g *Garden) Bind(r *http.Request) error {
 			}
 		}
 
+		// consider empty FanSchedule as nil for removing from HTML form
+		if g.FanSchedule != nil {
+			durationEmpty := g.FanSchedule.Duration == nil || g.FanSchedule.Duration.Duration == 0
+			intervalEmpty := g.FanSchedule.Interval == nil || g.FanSchedule.Interval.Duration == 0
+			powerEmpty := g.FanSchedule.Power == nil || *g.FanSchedule.Power == 0
+			if durationEmpty && intervalEmpty && powerEmpty {
+				g.FanSchedule = nil
+			}
+		}
+		if g.FanSchedule != nil {
+			if g.FanSchedule.Duration == nil || g.FanSchedule.Duration.Duration == 0 {
+				return errors.New("missing required fan_schedule.duration field")
+			}
+			if g.FanSchedule.Interval == nil || g.FanSchedule.Interval.Duration == 0 {
+				return errors.New("missing required fan_schedule.interval field")
+			}
+			if g.FanSchedule.Power == nil {
+				return errors.New("missing required fan_schedule.power field")
+			}
+			if *g.FanSchedule.Power > 100 {
+				return errors.New("fan_schedule.power must be between 0 and 100")
+			}
+		}
+
 		// Ignore empty string provided for NotificationClientID
 		if g.NotificationClientID != nil && *g.NotificationClientID == "" {
 			g.NotificationClientID = nil
@@ -221,6 +258,9 @@ func (g *Garden) Bind(r *http.Request) error {
 			}
 			if g.ControllerConfig.TemperatureHumidityInterval != nil && (*g.ControllerConfig.TemperatureHumidityInterval == Duration{}) {
 				g.ControllerConfig.TemperatureHumidityInterval = nil
+			}
+			if g.ControllerConfig.FanPin != nil && *g.ControllerConfig.FanPin == 0 {
+				g.ControllerConfig.FanPin = nil
 			}
 		}
 	case http.MethodPatch:
@@ -249,6 +289,11 @@ func (g *Garden) Bind(r *http.Request) error {
 				return fmt.Errorf("invalid light_schedule.duration >= 24 hours: %s", g.LightSchedule.Duration)
 			}
 		}
+	}
+
+	// Ignore empty string provided for NotificationClientID
+	if g.NotificationClientID != nil && *g.NotificationClientID == "" {
+		g.NotificationClientID = nil
 	}
 
 	return nil

@@ -20,7 +20,7 @@ func (q *Queries) DeleteGarden(ctx context.Context, id string) error {
 }
 
 const getGarden = `-- name: GetGarden :one
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 WHERE g.id = ? LIMIT 1
@@ -38,6 +38,7 @@ type GetGardenRow struct {
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
 	LightSchedule        sql.NullString
+	FanSchedule          sql.NullString
 	MacAddress           sql.NullString
 	IpAddress            sql.NullString
 	FirmwareVersion      sql.NullString
@@ -59,6 +60,7 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (GetGardenRow, error
 		&i.NotificationSettings,
 		&i.ControllerConfig,
 		&i.LightSchedule,
+		&i.FanSchedule,
 		&i.MacAddress,
 		&i.IpAddress,
 		&i.FirmwareVersion,
@@ -68,7 +70,7 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (GetGardenRow, error
 }
 
 const getGardenByTopicPrefix = `-- name: GetGardenByTopicPrefix :one
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 WHERE g.topic_prefix = ? LIMIT 1
@@ -86,6 +88,7 @@ type GetGardenByTopicPrefixRow struct {
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
 	LightSchedule        sql.NullString
+	FanSchedule          sql.NullString
 	MacAddress           sql.NullString
 	IpAddress            sql.NullString
 	FirmwareVersion      sql.NullString
@@ -107,6 +110,7 @@ func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string
 		&i.NotificationSettings,
 		&i.ControllerConfig,
 		&i.LightSchedule,
+		&i.FanSchedule,
 		&i.MacAddress,
 		&i.IpAddress,
 		&i.FirmwareVersion,
@@ -116,7 +120,7 @@ func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string
 }
 
 const listActiveGardens = `-- name: ListActiveGardens :many
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 WHERE g.end_date IS NULL
@@ -135,6 +139,7 @@ type ListActiveGardensRow struct {
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
 	LightSchedule        sql.NullString
+	FanSchedule          sql.NullString
 	MacAddress           sql.NullString
 	IpAddress            sql.NullString
 	FirmwareVersion      sql.NullString
@@ -162,6 +167,7 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 			&i.NotificationSettings,
 			&i.ControllerConfig,
 			&i.LightSchedule,
+			&i.FanSchedule,
 			&i.MacAddress,
 			&i.IpAddress,
 			&i.FirmwareVersion,
@@ -181,7 +187,7 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 }
 
 const listAllGardens = `-- name: ListAllGardens :many
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 `
@@ -198,6 +204,7 @@ type ListAllGardensRow struct {
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
 	LightSchedule        sql.NullString
+	FanSchedule          sql.NullString
 	MacAddress           sql.NullString
 	IpAddress            sql.NullString
 	FirmwareVersion      sql.NullString
@@ -225,6 +232,7 @@ func (q *Queries) ListAllGardens(ctx context.Context) ([]ListAllGardensRow, erro
 			&i.NotificationSettings,
 			&i.ControllerConfig,
 			&i.LightSchedule,
+			&i.FanSchedule,
 			&i.MacAddress,
 			&i.IpAddress,
 			&i.FirmwareVersion,
@@ -265,9 +273,9 @@ INSERT INTO gardens (
   max_zones, temp_humid_sensor,
   created_at, end_date,
   notification_client_id, notification_settings,
-  controller_config, light_schedule
+  controller_config, light_schedule, fan_schedule
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -278,7 +286,8 @@ DO UPDATE SET
   notification_client_id = EXCLUDED.notification_client_id,
   notification_settings = EXCLUDED.notification_settings,
   controller_config = EXCLUDED.controller_config,
-  light_schedule = EXCLUDED.light_schedule
+  light_schedule = EXCLUDED.light_schedule,
+  fan_schedule = EXCLUDED.fan_schedule
 `
 
 type UpsertGardenParams struct {
@@ -293,6 +302,7 @@ type UpsertGardenParams struct {
 	NotificationSettings sql.NullString
 	ControllerConfig     sql.NullString
 	LightSchedule        sql.NullString
+	FanSchedule          sql.NullString
 }
 
 func (q *Queries) UpsertGarden(ctx context.Context, arg UpsertGardenParams) error {
@@ -308,6 +318,7 @@ func (q *Queries) UpsertGarden(ctx context.Context, arg UpsertGardenParams) erro
 		arg.NotificationSettings,
 		arg.ControllerConfig,
 		arg.LightSchedule,
+		arg.FanSchedule,
 	)
 	return err
 }

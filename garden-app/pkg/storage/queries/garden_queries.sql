@@ -22,9 +22,9 @@ INSERT INTO gardens (
   max_zones, temp_humid_sensor,
   created_at, end_date,
   notification_client_id, notification_settings,
-  controller_config, light_schedule
+  controller_config, light_schedule, fan_schedule
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
@@ -35,7 +35,8 @@ DO UPDATE SET
   notification_client_id = EXCLUDED.notification_client_id,
   notification_settings = EXCLUDED.notification_settings,
   controller_config = EXCLUDED.controller_config,
-  light_schedule = EXCLUDED.light_schedule;
+  light_schedule = EXCLUDED.light_schedule,
+  fan_schedule = EXCLUDED.fan_schedule;
 
 -- name: SetGardenEndDate :exec
 UPDATE gardens

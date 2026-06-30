@@ -74,6 +74,7 @@ func (w *Worker) StartAsync() {
 	w.scheduler.StartAsync()
 	w.setupMQTT()
 	w.syncLightStateAllGardens()
+	w.syncFanStateAllGardens()
 }
 
 func (w *Worker) setupMQTT() {
@@ -117,6 +118,25 @@ func (w *Worker) syncLightStateAllGardens() {
 		err := w.setExpectedLightState(g)
 		if err != nil {
 			logger.Error("error setting expected LightState", "error", err)
+		}
+	}
+}
+
+func (w *Worker) syncFanStateAllGardens() {
+	if w.storageClient == nil {
+		return
+	}
+
+	for g, err := range w.storageClient.Gardens.Search(context.Background(), "", nil) {
+		if err != nil {
+			w.logger.Error("error getting garden for fan state sync", "error", err)
+			continue
+		}
+		logger := w.contextLogger(g, nil, nil)
+
+		err := w.setExpectedFanState(g)
+		if err != nil {
+			logger.Error("error setting expected FanState", "error", err)
 		}
 	}
 }

@@ -19,6 +19,11 @@ func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) 
 		if err != nil {
 			return fmt.Errorf("unable to execute LightAction: %v", err)
 		}
+	case input.Fan != nil:
+		err := w.ExecuteFanAction(g, input.Fan)
+		if err != nil {
+			return fmt.Errorf("unable to execute FanAction: %v", err)
+		}
 	case input.Stop != nil:
 		err := w.ExecuteStopAction(g, input.Stop)
 		if err != nil {
@@ -62,6 +67,26 @@ func (w *Worker) ExecuteLightAction(g *pkg.Garden, input *action.LightAction) er
 	err = w.mqttClient.Publish(topic, msg)
 	if err != nil {
 		return fmt.Errorf("unable to publish LightAction: %v", err)
+	}
+
+	return nil
+}
+
+// ExecuteFanAction sends an MQTT message to the garden controller to turn on the fan for a duration
+func (w *Worker) ExecuteFanAction(g *pkg.Garden, input *action.FanAction) error {
+	msg, err := json.Marshal(input)
+	if err != nil {
+		return fmt.Errorf("unable to marshal FanAction to JSON: %v", err)
+	}
+
+	topic, err := mqtt.FanTopic(g.TopicPrefix)
+	if err != nil {
+		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
+	}
+
+	err = w.mqttClient.Publish(topic, msg)
+	if err != nil {
+		return fmt.Errorf("unable to publish FanAction: %v", err)
 	}
 
 	return nil

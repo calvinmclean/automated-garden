@@ -40,6 +40,12 @@ func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) er
 		msg += fmt.Sprintf(" Error setting LightState: %v", err)
 	}
 
+	err = w.setExpectedFanState(garden)
+	if err != nil {
+		logger.Warn("unable to set expected FanState", "error", err.Error())
+		msg += fmt.Sprintf(" Error setting FanState: %v", err)
+	}
+
 	return w.sendGardenStartupMessage(garden, topic, msg)
 }
 
@@ -61,6 +67,48 @@ func (w *Worker) setExpectedLightState(garden *pkg.Garden) error {
 	})
 	if err != nil {
 		return fmt.Errorf("error executing LightAction: %w", err)
+	}
+
+	return nil
+}
+
+// setExpectedFanState is used when a GardenController connects/starts up. It runs the fan for the
+// remaining duration of the current ON period if the schedule says it should be active now.
+func (w *Worker) setExpectedFanState(garden *pkg.Garden) error {
+	if garden == nil {
+		return errors.New("nil Garden")
+	}
+
+	if garden.FanSchedule == nil || w.mqttClient == nil {
+		return nil
+	}
+
+	if !garden.FanSchedule.IsActiveAtTime(clock.Now()) {
+		return nil
+	}
+
+	if garden.FanSchedule.OnlyWithLight && garden.LightSchedule != nil {
+		if garden.LightSchedule.ExpectedStateAtTime(clock.Now()) != pkg.LightStateOn {
+			return nil
+		}
+	}
+
+	nextChange, _ := garden.FanSchedule.NextChange(clock.Now())
+	if nextChange.IsZero() {
+		return nil
+	}
+
+	remainingDuration := nextChange.Sub(clock.Now())
+	if remainingDuration <= 0 {
+		return nil
+	}
+
+	err := w.ExecuteFanAction(garden, &action.FanAction{
+		Duration: remainingDuration.Milliseconds(),
+		Power:    garden.FanSchedule.PowerToPWM(),
+	})
+	if err != nil {
+		return fmt.Errorf("error executing FanAction: %w", err)
 	}
 
 	return nil

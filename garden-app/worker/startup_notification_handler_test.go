@@ -3,6 +3,7 @@ package worker
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
@@ -61,6 +63,59 @@ func TestGetGardenAndSendStartupMessage(t *testing.T) {
 		fmt.Println(garden.LightSchedule.NextChange(c.Now()))
 		mqttClient.On("Publish", "garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
 		err = w.getGardenAndSendStartupMessage("garden/data/logs", "logs message=\"garden-controller setup complete\"")
+		require.NoError(t, err)
+		mqttClient.AssertExpectations(t)
+	})
+
+	t.Run("Shutdown", func(t *testing.T) {
+		mqttClient.On("Disconnect", uint(100)).Return()
+		w.Stop()
+		mqttClient.AssertExpectations(t)
+	})
+}
+
+func TestSetExpectedFanState(t *testing.T) {
+	c := clock.MockTime()
+	defer clock.Reset()
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+
+	power := uint(50)
+	garden := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		TopicPrefix: "garden",
+		Name:        "garden",
+		FanSchedule: &pkg.FanSchedule{
+			Duration: &pkg.Duration{Duration: 30 * time.Minute},
+			Interval: &pkg.Duration{Duration: 2 * time.Hour},
+			Power:    &power,
+		},
+	}
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	require.NoError(t, err)
+
+	mqttClient := new(mqtt.MockClient)
+	w := NewWorker(storageClient, nil, mqttClient, slog.Default())
+
+	t.Run("FanTurnsOn", func(t *testing.T) {
+		// At mock start time (10:00), the fan cycle just started, so 30 minutes remain
+		expectedMsg, _ := json.Marshal(&action.FanAction{
+			Duration: (30 * time.Minute).Milliseconds(),
+			Power:    garden.FanSchedule.PowerToPWM(),
+		})
+		mqttClient.On("Publish", "garden/command/fan", expectedMsg).Return(nil)
+		err = w.setExpectedFanState(garden)
+		require.NoError(t, err)
+		mqttClient.AssertExpectations(t)
+	})
+
+	t.Run("FanTurnsOff", func(t *testing.T) {
+		// 1 hour later the fan is in the OFF portion of the cycle
+		c.Add(time.Hour)
+		err = w.setExpectedFanState(garden)
 		require.NoError(t, err)
 		mqttClient.AssertExpectations(t)
 	})
