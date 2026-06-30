@@ -365,7 +365,10 @@ func (w *Worker) ResetFanSchedule(g *pkg.Garden) error {
 	if err := w.RemoveJobsByTag(g.ID.String(), "fan"); err != nil {
 		return err
 	}
-	return w.ScheduleFanActions(g)
+	if err := w.ScheduleFanActions(g); err != nil {
+		return err
+	}
+	return w.setExpectedFanState(g)
 }
 
 func (w *Worker) executeFanActionInScheduledJob(g *pkg.Garden, actionLogger *slog.Logger) {
