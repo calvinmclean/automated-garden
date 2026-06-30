@@ -5,6 +5,7 @@
 #include <ArduinoJson.h>
 
 struct SensorConfig {
+    char id[21];
     char type[16];
     gpio_num_t pin;
     int interval;

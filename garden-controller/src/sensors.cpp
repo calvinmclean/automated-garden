@@ -162,10 +162,11 @@ void setupSensors() {
 
 static void publishSensor(int index, float temperature, float humidity, bool hasHumidity) {
     char message[SENSOR_MESSAGE_SIZE];
+    const char* sensorID = sensorRuntimes[index].config.id;
     if (hasHumidity) {
-        snprintf(message, sizeof(message), "sensor,sensor_id=%d temperature=%.2f,humidity=%.2f", index, temperature, humidity);
+        snprintf(message, sizeof(message), "sensor,sensor_id=%s temperature=%.2f,humidity=%.2f", sensorID, temperature, humidity);
     } else {
-        snprintf(message, sizeof(message), "sensor,sensor_id=%d temperature=%.2f", index, temperature);
+        snprintf(message, sizeof(message), "sensor,sensor_id=%s temperature=%.2f", sensorID, temperature);
     }
 
     if (client.connected()) {

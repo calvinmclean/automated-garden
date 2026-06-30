@@ -18,8 +18,8 @@ void test_loadAndSaveConfig() {
         GPIO_NUM_22, // fanPin
         2, // numSensors
         {
-            { "DHT22", GPIO_NUM_21, 5000 },
-            { "DS18B20", GPIO_NUM_22, 5000 }
+            { "", "DHT22", GPIO_NUM_21, 5000 },
+            { "", "DS18B20", GPIO_NUM_22, 5000 }
         }
     };
 
@@ -62,15 +62,15 @@ void test_serializeConfig(void) {
         GPIO_NUM_22, // fanPin
         2, // numSensors
         {
-            { "DHT22", GPIO_NUM_21, 5000 },
-            { "DS18B20", GPIO_NUM_22, 5000 }
+            { "", "DHT22", GPIO_NUM_21, 5000 },
+            { "", "DS18B20", GPIO_NUM_22, 5000 }
         }
     };
 
     String outputJSON;
     serializeConfig(inputConfig, outputJSON);
 
-    TEST_ASSERT_EQUAL_STRING("{\"num_zones\":4,\"valve_pins\":[4,5,6,7],\"pump_pins\":[12,13,14,15],\"light\":true,\"light_pin\":2,\"fan\":true,\"fan_pin\":22,\"num_sensors\":2,\"sensors\":[{\"type\":\"DHT22\",\"pin\":21,\"interval\":5000},{\"type\":\"DS18B20\",\"pin\":22,\"interval\":5000}]}", outputJSON.c_str());
+    TEST_ASSERT_EQUAL_STRING("{\"num_zones\":4,\"valve_pins\":[4,5,6,7],\"pump_pins\":[12,13,14,15],\"light\":true,\"light_pin\":2,\"fan\":true,\"fan_pin\":22,\"num_sensors\":2,\"sensors\":[{\"id\":\"\",\"type\":\"DHT22\",\"pin\":21,\"interval\":5000},{\"id\":\"\",\"type\":\"DS18B20\",\"pin\":22,\"interval\":5000}]}", outputJSON.c_str());
 }
 
 void test_deserializeConfig(void) {
@@ -91,8 +91,8 @@ void test_deserializeConfig(void) {
         GPIO_NUM_22, // fanPin
         2, // numSensors
         {
-            { "DHT22", GPIO_NUM_21, 5000 },
-            { "DS18B20", GPIO_NUM_22, 5000 }
+            { "", "DHT22", GPIO_NUM_21, 5000 },
+            { "", "DS18B20", GPIO_NUM_22, 5000 }
         }
     };
 

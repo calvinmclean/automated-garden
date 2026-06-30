@@ -20,6 +20,7 @@
 #define MQTT_LOGGING_TOPIC          "/data/logs"
 #define MQTT_HEALTH_DATA_TOPIC      "/data/health"
 #define MQTT_INFO_DATA_TOPIC        "/data/info"
+#define MQTT_SENSOR_DATA_TOPIC      "/data/sensor"
 
 #define HEALTH_PUBLISH_INTERVAL 60000
 

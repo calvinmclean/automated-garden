@@ -19,6 +19,7 @@ void serializeConfig(const Config& config, String& jsonString) {
 
     doc["num_sensors"] = config.numSensors;
     for (int i = 0; i < config.numSensors; i++) {
+        doc["sensors"][i]["id"] = config.sensors[i].id;
         doc["sensors"][i]["type"] = config.sensors[i].type;
         doc["sensors"][i]["pin"] = config.sensors[i].pin;
         doc["sensors"][i]["interval"] = config.sensors[i].interval;
@@ -55,6 +56,7 @@ bool deserializeConfig(const char* jsonString, Config& config) {
         config.numSensors = 16;
     }
     for (int i = 0; i < config.numSensors; i++) {
+        strlcpy(config.sensors[i].id, doc["sensors"][i]["id"] | "", sizeof(config.sensors[i].id));
         strlcpy(config.sensors[i].type, doc["sensors"][i]["type"].as<const char*>(), sizeof(config.sensors[i].type));
         config.sensors[i].pin = static_cast<gpio_num_t>(doc["sensors"][i]["pin"].as<int>());
         config.sensors[i].interval = doc["sensors"][i]["interval"].as<int>();
