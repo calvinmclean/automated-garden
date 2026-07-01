@@ -86,6 +86,18 @@ func TestGardenActionBind(t *testing.T) {
 			t.Errorf("Unexpected error reading GardenAction JSON: %v", err)
 		}
 	})
+	t.Run("SuccessfulFirmwareUpdateLatestAction", func(t *testing.T) {
+		ar := &GardenAction{
+			FirmwareUpdate: &FirmwareUpdateAction{
+				Latest: true,
+			},
+		}
+		r := httptest.NewRequest("", "/", nil)
+		err := ar.Bind(r)
+		if err != nil {
+			t.Errorf("Unexpected error reading GardenAction JSON: %v", err)
+		}
+	})
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			r := httptest.NewRequest("", "/", nil)

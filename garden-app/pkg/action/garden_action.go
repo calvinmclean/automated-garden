@@ -17,17 +17,18 @@ type GardenAction struct {
 	Stop            *StopAction            `json:"stop" form:"stop"`
 	Update          *UpdateAction          `json:"update" form:"update"`
 	ControllerSetup *ControllerSetupAction `json:"controller_setup" form:"controller_setup"`
+	FirmwareUpdate  *FirmwareUpdateAction  `json:"firmware_update" form:"firmware_update"`
 }
 
 // String returns a string representation of the GardenAction
 func (action *GardenAction) String() string {
-	return fmt.Sprintf("{LightAction: %+v, FanAction: %+v, StopAction: %+v, UpdateAction: %+v, ControllerSetupAction: %+v}", action.Light, action.Fan, action.Stop, action.Update, action.ControllerSetup)
+	return fmt.Sprintf("{LightAction: %+v, FanAction: %+v, StopAction: %+v, UpdateAction: %+v, ControllerSetupAction: %+v, FirmwareUpdateAction: %+v}", action.Light, action.Fan, action.Stop, action.Update, action.ControllerSetup, action.FirmwareUpdate)
 }
 
 // Bind is used to make this struct compatible with our REST API implemented with go-chi.
 // It will verify that the request is valid
 func (action *GardenAction) Bind(_ *http.Request) error {
-	if action == nil || (action.Light == nil && action.Fan == nil && action.Stop == nil && action.Update == nil && action.ControllerSetup == nil) {
+	if action == nil || (action.Light == nil && action.Fan == nil && action.Stop == nil && action.Update == nil && action.ControllerSetup == nil && action.FirmwareUpdate == nil) {
 		return errors.New("missing required action fields")
 	}
 
@@ -80,4 +81,12 @@ type ControllerSetupAction struct {
 	Server      string `json:"server" form:"server"`
 	TopicPrefix string `json:"topic_prefix" form:"topic_prefix"`
 	Port        int    `json:"port" form:"port"`
+}
+
+// FirmwareUpdateAction is used to update the controller's firmware via the WiFiManager
+// update endpoint. When Latest is true, the firmware is fetched from the GitHub release
+// tagged controller-latest; otherwise FileData must be provided.
+type FirmwareUpdateAction struct {
+	Latest   bool   `json:"latest" form:"latest"`
+	FileData []byte `json:"-" form:"-"`
 }

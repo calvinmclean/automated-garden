@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"iter"
 	"net/http"
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -22,7 +24,8 @@ import (
 )
 
 const (
-	gardenBasePath = "/gardens"
+	gardenBasePath        = "/gardens"
+	maxFirmwareUploadSize = 3 * 1024 * 1024 // 3 MB
 )
 
 // GardensAPI encapsulates the structs and dependencies necessary for the "/gardens" API
@@ -269,8 +272,15 @@ func (api *GardensAPI) gardenAction(_ http.ResponseWriter, r *http.Request, gard
 		return nil, babyapi.ErrInvalidRequest(errors.New("unable to execute action on end-dated garden"))
 	}
 
-	gardenAction := &action.GardenAction{}
-	if err := render.Bind(r, gardenAction); err != nil {
+	var gardenAction *action.GardenAction
+	var err error
+	if strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data") {
+		gardenAction, err = parseFirmwareUpdateAction(r)
+	} else {
+		gardenAction = &action.GardenAction{}
+		err = render.Bind(r, gardenAction)
+	}
+	if err != nil {
 		logger.Error("invalid request for GardenAction", "error", err)
 		return nil, babyapi.ErrInvalidRequest(err)
 	}
@@ -283,6 +293,44 @@ func (api *GardensAPI) gardenAction(_ http.ResponseWriter, r *http.Request, gard
 
 	render.Status(r, http.StatusAccepted)
 	return &GardenActionResponse{}, nil
+}
+
+func parseFirmwareUpdateAction(r *http.Request) (*action.GardenAction, error) {
+	err := r.ParseMultipartForm(int64(maxFirmwareUploadSize + 1024))
+	if err != nil {
+		return nil, fmt.Errorf("unable to parse multipart form: %w", err)
+	}
+
+	latest := r.FormValue("firmware_update.latest") == "true"
+
+	fwAction := &action.FirmwareUpdateAction{
+		Latest: latest,
+	}
+
+	if !latest {
+		file, header, err := r.FormFile("firmware_update.file")
+		if err != nil {
+			return nil, errors.New("firmware_update file is required when latest is not true")
+		}
+		defer func() { _ = file.Close() }()
+
+		if filepath.Ext(header.Filename) != ".bin" {
+			return nil, errors.New("firmware file must have .bin extension")
+		}
+
+		fwAction.FileData, err = io.ReadAll(io.LimitReader(file, int64(maxFirmwareUploadSize)+1))
+		if err != nil {
+			return nil, fmt.Errorf("unable to read firmware file: %w", err)
+		}
+
+		if len(fwAction.FileData) > maxFirmwareUploadSize {
+			return nil, errors.New("firmware file exceeds maximum size of 3 MB")
+		}
+	}
+
+	return &action.GardenAction{
+		FirmwareUpdate: fwAction,
+	}, nil
 }
 
 // gardenWaterHistory responds with recent water events for all Zones in a Garden

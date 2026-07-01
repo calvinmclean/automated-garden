@@ -2,10 +2,13 @@
 package worker
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"mime/multipart"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -43,6 +46,11 @@ func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) 
 		err := w.ExecuteControllerSetupAction(g, input.ControllerSetup)
 		if err != nil {
 			return fmt.Errorf("unable to execute ControllerSetupAction: %v", err)
+		}
+	case input.FirmwareUpdate != nil:
+		err := w.ExecuteFirmwareUpdateAction(g, input.FirmwareUpdate)
+		if err != nil {
+			return fmt.Errorf("unable to execute FirmwareUpdateAction: %v", err)
 		}
 	}
 	return nil
@@ -166,4 +174,127 @@ func (w *Worker) ExecuteControllerSetupAction(g *pkg.Garden, input *action.Contr
 	}
 
 	return nil
+}
+
+// ExecuteFirmwareUpdateAction sends a firmware image to the controller's WiFiManager
+// update endpoint. When input.Latest is true, the image is downloaded from the
+// controller-latest GitHub release.
+func (w *Worker) ExecuteFirmwareUpdateAction(g *pkg.Garden, input *action.FirmwareUpdateAction) error {
+	var firmware []byte
+	var err error
+
+	if input.Latest {
+		firmware, err = w.downloadLatestFirmware()
+		if err != nil {
+			return fmt.Errorf("unable to download latest firmware: %v", err)
+		}
+	} else {
+		if len(input.FileData) == 0 {
+			return errors.New("firmware_update action must have a file or latest=true")
+		}
+		firmware = input.FileData
+	}
+
+	if len(firmware) > maxFirmwareSize {
+		return fmt.Errorf("firmware exceeds maximum size of %d bytes", maxFirmwareSize)
+	}
+
+	endpoint := w.firmwareUpdateUploadURLFunc(g.TopicPrefix)
+
+	body := &bytes.Buffer{}
+	writer := multipart.NewWriter(body)
+	part, err := writer.CreateFormFile("update", firmwareAssetName)
+	if err != nil {
+		return fmt.Errorf("unable to create firmware form file: %v", err)
+	}
+	_, err = part.Write(firmware)
+	if err != nil {
+		return fmt.Errorf("unable to write firmware form file: %v", err)
+	}
+	err = writer.Close()
+	if err != nil {
+		return fmt.Errorf("unable to close firmware multipart writer: %v", err)
+	}
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, body)
+	if err != nil {
+		return fmt.Errorf("unable to create firmware update request: %v", err)
+	}
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+
+	resp, err := w.httpClient.Do(req)
+	if err != nil {
+		return fmt.Errorf("unable to send firmware update request: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode >= http.StatusBadRequest {
+		return fmt.Errorf("firmware update request returned status %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+type githubRelease struct {
+	Assets []githubAsset `json:"assets"`
+}
+
+type githubAsset struct {
+	Name               string `json:"name"`
+	BrowserDownloadURL string `json:"browser_download_url"`
+}
+
+func (w *Worker) downloadLatestFirmware() ([]byte, error) {
+	releaseURL := w.firmwareUpdateReleaseURLFunc()
+
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, releaseURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create release request: %v", err)
+	}
+	req.Header.Set("Accept", "application/vnd.github+json")
+
+	resp, err := w.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch release: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("release request returned status %d", resp.StatusCode)
+	}
+
+	var release githubRelease
+	decoder := json.NewDecoder(io.LimitReader(resp.Body, 1024*1024))
+	err = decoder.Decode(&release)
+	if err != nil {
+		return nil, fmt.Errorf("unable to decode release response: %v", err)
+	}
+
+	var downloadURL string
+	for _, asset := range release.Assets {
+		if asset.Name == firmwareAssetName {
+			downloadURL = asset.BrowserDownloadURL
+			break
+		}
+	}
+	if downloadURL == "" {
+		return nil, fmt.Errorf("release does not contain %q asset", firmwareAssetName)
+	}
+
+	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create asset request: %v", err)
+	}
+
+	resp, err = w.httpClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("unable to fetch asset: %v", err)
+	}
+	defer func() { _ = resp.Body.Close() }()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("asset request returned status %d", resp.StatusCode)
+	}
+
+	return io.ReadAll(io.LimitReader(resp.Body, int64(maxFirmwareSize)+1))
 }

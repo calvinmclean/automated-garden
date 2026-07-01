@@ -235,6 +235,11 @@
                     <span uk-icon="cog"></span> Controller Setup
                 </a>
             </li>
+            <li>
+                <a href="#firmware-update-confirm-{{ .ID }}" uk-toggle>
+                    <span uk-icon="download"></span> Update Firmware
+                </a>
+            </li>
             {{- if .ControllerConfig }}
             <li>
                 <a href="#update-config-confirm-{{ .ID }}" uk-toggle>
@@ -248,6 +253,7 @@
 
 {{ template "stopWateringConfirmationModal" . }}
 {{ template "controllerSetupConfirmationModal" . }}
+{{ template "firmwareUpdateConfirmationModal" . }}
 {{ template "updateConfigConfirmationModal" . }}
 {{ end }}
 
@@ -342,6 +348,41 @@
                 {{ template "actionFeedback" "primary" }}
                 onclick="UIkit.modal('#controller-setup-confirm-{{ .ID }}').hide()">
                 <span uk-icon="cog"></span> Save Setup
+            </button>
+        </p>
+    </div>
+</div>
+{{ end }}
+
+{{ define "firmwareUpdateConfirmationModal" }}
+<div id="firmware-update-confirm-{{ .ID }}" class="uk-modal" uk-modal>
+    <div class="uk-modal-dialog uk-modal-body">
+        <h3 class="uk-modal-title">Update Firmware</h3>
+        <p>Upload a new firmware image for <strong>{{ .Name }}</strong>.</p>
+
+        <form id="firmware-update-form-{{ .ID }}" hx-encoding="multipart/form-data">
+            <div class="uk-margin">
+                <label>
+                    <input class="uk-checkbox" type="checkbox" name="firmware_update.latest" value="true"
+                        onchange="var f=document.getElementById('firmware-update-file-{{ .ID }}'); f.classList.toggle('uk-hidden', this.checked); f.querySelector('input').disabled = this.checked;">
+                    Use latest release
+                </label>
+            </div>
+            <div id="firmware-update-file-{{ .ID }}" class="uk-margin">
+                <input type="file" name="firmware_update.file" accept=".bin">
+            </div>
+        </form>
+
+        <p class="uk-text-right">
+            <button class="uk-button uk-button-default uk-modal-close" type="button">Cancel</button>
+            <button class="uk-button uk-button-primary" type="button"
+                hx-post="/gardens/{{ .ID }}/action"
+                hx-include="#firmware-update-form-{{ .ID }}"
+                hx-encoding="multipart/form-data"
+                hx-swap="none"
+                {{ template "actionFeedback" "primary" }}
+                onclick="UIkit.modal('#firmware-update-confirm-{{ .ID }}').hide()">
+                <span uk-icon="download"></span> Update Firmware
             </button>
         </p>
     </div>

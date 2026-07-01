@@ -17,6 +17,13 @@ import (
 	"github.com/prometheus/client_golang/prometheus"
 )
 
+const (
+	maxFirmwareSize      = 3 * 1024 * 1024 // 3 MB
+	firmwareAssetName    = "firmware.bin"
+	controllerReleaseTag = "controller-latest"
+	githubRepo           = "calvinmclean/automated-garden"
+)
+
 var (
 	scheduleJobsGauge = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Namespace: "garden_app",
@@ -52,6 +59,14 @@ type Worker struct {
 	// It is overridable for tests.
 	controllerSetupURLFunc func(topicPrefix string) string
 
+	// firmwareUpdateReleaseURLFunc returns the GitHub API URL for the controller-latest release.
+	// It is overridable for tests.
+	firmwareUpdateReleaseURLFunc func() string
+
+	// firmwareUpdateUploadURLFunc builds the URL for the controller's WiFiManager update endpoint.
+	// It is overridable for tests.
+	firmwareUpdateUploadURLFunc func(topicPrefix string) string
+
 	// When Garden health messages are received, Timers are created to track their
 	// uptime and notify if they go down
 	downTimers map[string]clock.Timer
@@ -64,6 +79,27 @@ type WorkerOption func(*Worker)
 func WithHTTPClient(client *http.Client) WorkerOption {
 	return func(w *Worker) {
 		w.httpClient = client
+	}
+}
+
+// WithControllerSetupURLFunc overrides the URL builder for controller setup requests
+func WithControllerSetupURLFunc(fn func(topicPrefix string) string) WorkerOption {
+	return func(w *Worker) {
+		w.controllerSetupURLFunc = fn
+	}
+}
+
+// WithFirmwareUpdateReleaseURLFunc overrides the GitHub release URL used for latest firmware updates
+func WithFirmwareUpdateReleaseURLFunc(fn func() string) WorkerOption {
+	return func(w *Worker) {
+		w.firmwareUpdateReleaseURLFunc = fn
+	}
+}
+
+// WithFirmwareUpdateUploadURLFunc overrides the URL builder for firmware upload requests
+func WithFirmwareUpdateUploadURLFunc(fn func(topicPrefix string) string) WorkerOption {
+	return func(w *Worker) {
+		w.firmwareUpdateUploadURLFunc = fn
 	}
 }
 
@@ -87,6 +123,12 @@ func NewWorker(
 		httpClient:     http.DefaultClient,
 		controllerSetupURLFunc: func(topicPrefix string) string {
 			return fmt.Sprintf("http://%s.local/paramsave", topicPrefix)
+		},
+		firmwareUpdateReleaseURLFunc: func() string {
+			return fmt.Sprintf("https://api.github.com/repos/%s/releases/tags/%s", githubRepo, controllerReleaseTag)
+		},
+		firmwareUpdateUploadURLFunc: func(topicPrefix string) string {
+			return fmt.Sprintf("http://%s.local/u", topicPrefix)
 		},
 	}
 

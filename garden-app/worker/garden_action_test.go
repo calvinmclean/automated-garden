@@ -2,11 +2,14 @@ package worker
 
 import (
 	"errors"
+	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strconv"
+	"strings"
 	"testing"
 	"time"
 
@@ -408,4 +411,144 @@ func TestControllerSetupActionExecute(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestFirmwareUpdateActionExecute(t *testing.T) {
+	garden := &pkg.Garden{
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	firmwareData := []byte("fake firmware binary data")
+
+	tests := []struct {
+		name         string
+		action       *action.FirmwareUpdateAction
+		setupServers func() (releaseURL, uploadURL string)
+		assert       func(error, []byte, *testing.T)
+	}{
+		{
+			"SuccessfulDirectUpload",
+			&action.FirmwareUpdateAction{
+				Latest:   false,
+				FileData: firmwareData,
+			},
+			func() (string, string) {
+				return "", newFirmwareUploadServer(t, firmwareData, http.StatusOK)
+			},
+			func(err error, _ []byte, t *testing.T) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			"SuccessfulLatest",
+			&action.FirmwareUpdateAction{
+				Latest: true,
+			},
+			func() (string, string) {
+				assetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, "/firmware.bin", r.URL.Path)
+					_, _ = w.Write(firmwareData)
+				}))
+
+				releaseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					assert.Equal(t, "/releases/tags/controller-latest", r.URL.Path)
+					_, _ = fmt.Fprintf(w, `{"assets":[{"name":"firmware.bin","browser_download_url":"%s/firmware.bin"}]}`, assetServer.URL)
+				}))
+
+				uploadServer := newFirmwareUploadServer(t, firmwareData, http.StatusOK)
+				return releaseServer.URL + "/releases/tags/controller-latest", uploadServer
+			},
+			func(err error, _ []byte, t *testing.T) {
+				assert.NoError(t, err)
+			},
+		},
+		{
+			"MissingFile",
+			&action.FirmwareUpdateAction{
+				Latest: false,
+			},
+			func() (string, string) {
+				return "", ""
+			},
+			func(err error, _ []byte, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, "firmware_update action must have a file or latest=true", err.Error())
+			},
+		},
+		{
+			"FileTooLarge",
+			&action.FirmwareUpdateAction{
+				Latest:   false,
+				FileData: make([]byte, maxFirmwareSize+1),
+			},
+			func() (string, string) {
+				return "", ""
+			},
+			func(err error, _ []byte, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, fmt.Sprintf("firmware exceeds maximum size of %d bytes", maxFirmwareSize), err.Error())
+			},
+		},
+		{
+			"ControllerError",
+			&action.FirmwareUpdateAction{
+				Latest:   false,
+				FileData: firmwareData,
+			},
+			func() (string, string) {
+				return "", newFirmwareUploadServer(t, firmwareData, http.StatusInternalServerError)
+			},
+			func(err error, _ []byte, t *testing.T) {
+				assert.Error(t, err)
+				assert.Equal(t, "firmware update request returned status 500", err.Error())
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			releaseURL, uploadURL := tt.setupServers()
+
+			worker := NewWorker(nil, nil, nil, slog.Default())
+			if releaseURL != "" {
+				worker.firmwareUpdateReleaseURLFunc = func() string { return releaseURL }
+			}
+			if uploadURL != "" {
+				worker.firmwareUpdateUploadURLFunc = func(string) string { return uploadURL }
+			}
+
+			err := worker.ExecuteFirmwareUpdateAction(garden, tt.action)
+			tt.assert(err, firmwareData, t)
+		})
+	}
+}
+
+func newFirmwareUploadServer(t *testing.T, expectedData []byte, status int) string {
+	t.Helper()
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/u", r.URL.Path)
+		assert.True(t, strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data"))
+
+		r.Body = http.MaxBytesReader(w, r.Body, int64(maxFirmwareSize+1024))
+		err := r.ParseMultipartForm(int64(maxFirmwareSize + 1024))
+		assert.NoError(t, err)
+
+		file, header, err := r.FormFile("update")
+		assert.NoError(t, err)
+		defer func() { _ = file.Close() }()
+
+		assert.Equal(t, "firmware.bin", header.Filename)
+
+		received, err := io.ReadAll(file)
+		assert.NoError(t, err)
+		assert.Equal(t, expectedData, received)
+
+		w.WriteHeader(status)
+	}))
+	t.Cleanup(server.Close)
+
+	return server.URL + "/u"
 }

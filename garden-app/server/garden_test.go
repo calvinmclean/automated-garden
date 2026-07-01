@@ -6,7 +6,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
+	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"slices"
@@ -827,6 +829,164 @@ func TestGardenActionForm(t *testing.T) {
 			assert.Equal(t, tt.status, w.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(w.Body.String()))
 			mqttClient.AssertExpectations(t)
+		})
+	}
+}
+
+func TestGardenActionFirmwareUpdate(t *testing.T) {
+	firmwareData := []byte("fake firmware binary data")
+
+	uploadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/u", r.URL.Path)
+		assert.True(t, strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data"))
+
+		r.Body = http.MaxBytesReader(w, r.Body, int64(maxFirmwareUploadSize+1024))
+		err := r.ParseMultipartForm(int64(maxFirmwareUploadSize + 1024))
+		assert.NoError(t, err)
+
+		file, header, err := r.FormFile("update")
+		assert.NoError(t, err)
+		defer func() { _ = file.Close() }()
+
+		assert.Equal(t, "firmware.bin", header.Filename)
+
+		received, err := io.ReadAll(file)
+		assert.NoError(t, err)
+		assert.Equal(t, firmwareData, received)
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer uploadServer.Close()
+
+	assetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/firmware.bin", r.URL.Path)
+		_, _ = w.Write(firmwareData)
+	}))
+	defer assetServer.Close()
+
+	releaseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/releases/tags/controller-latest", r.URL.Path)
+		_, _ = fmt.Fprintf(w, `{"assets":[{"name":"firmware.bin","browser_download_url":"%s/firmware.bin"}]}`, assetServer.URL)
+	}))
+	defer releaseServer.Close()
+
+	tests := []struct {
+		name         string
+		buildRequest func(string) *http.Request
+		expected     string
+		status       int
+	}{
+		{
+			"SuccessfulDirectUpload",
+			func(path string) *http.Request {
+				var body bytes.Buffer
+				writer := multipart.NewWriter(&body)
+				_ = writer.WriteField("firmware_update.latest", "false")
+				part, _ := writer.CreateFormFile("firmware_update.file", "firmware.bin")
+				_, _ = part.Write(firmwareData)
+				_ = writer.Close()
+
+				r := httptest.NewRequest(http.MethodPost, path, &body)
+				r.Header.Set("Content-Type", writer.FormDataContentType())
+				return r
+			},
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"SuccessfulLatest",
+			func(path string) *http.Request {
+				var body bytes.Buffer
+				writer := multipart.NewWriter(&body)
+				_ = writer.WriteField("firmware_update.latest", "true")
+				_ = writer.Close()
+
+				r := httptest.NewRequest(http.MethodPost, path, &body)
+				r.Header.Set("Content-Type", writer.FormDataContentType())
+				return r
+			},
+			"{}",
+			http.StatusAccepted,
+		},
+		{
+			"InvalidExtension",
+			func(path string) *http.Request {
+				var body bytes.Buffer
+				writer := multipart.NewWriter(&body)
+				_ = writer.WriteField("firmware_update.latest", "false")
+				part, _ := writer.CreateFormFile("firmware_update.file", "firmware.txt")
+				_, _ = part.Write(firmwareData)
+				_ = writer.Close()
+
+				r := httptest.NewRequest(http.MethodPost, path, &body)
+				r.Header.Set("Content-Type", writer.FormDataContentType())
+				return r
+			},
+			`{"status":"Invalid request.","error":"firmware file must have .bin extension"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"FileTooLarge",
+			func(path string) *http.Request {
+				var body bytes.Buffer
+				writer := multipart.NewWriter(&body)
+				_ = writer.WriteField("firmware_update.latest", "false")
+				part, _ := writer.CreateFormFile("firmware_update.file", "firmware.bin")
+				_, _ = part.Write(make([]byte, maxFirmwareUploadSize+1))
+				_ = writer.Close()
+
+				r := httptest.NewRequest(http.MethodPost, path, &body)
+				r.Header.Set("Content-Type", writer.FormDataContentType())
+				return r
+			},
+			`{"status":"Invalid request.","error":"firmware file exceeds maximum size of 3 MB"}`,
+			http.StatusBadRequest,
+		},
+		{
+			"MissingFile",
+			func(path string) *http.Request {
+				var body bytes.Buffer
+				writer := multipart.NewWriter(&body)
+				_ = writer.WriteField("firmware_update.latest", "false")
+				_ = writer.Close()
+
+				r := httptest.NewRequest(http.MethodPost, path, &body)
+				r.Header.Set("Content-Type", writer.FormDataContentType())
+				return r
+			},
+			`{"status":"Invalid request.","error":"firmware_update file is required when latest is not true"}`,
+			http.StatusBadRequest,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mqttClient := new(mqtt.MockClient)
+
+			storageClient, err := storage.NewClient(storage.Config{
+				ConnectionString: ":memory:",
+			})
+			assert.NoError(t, err)
+
+			w := worker.NewWorker(storageClient, nil, mqttClient, slog.Default(),
+				worker.WithFirmwareUpdateUploadURLFunc(func(string) string { return uploadServer.URL + "/u" }),
+				worker.WithFirmwareUpdateReleaseURLFunc(func() string { return releaseServer.URL + "/releases/tags/controller-latest" }),
+			)
+
+			gr := NewGardenAPI()
+			err = gr.setup(Config{}, storageClient, nil, w)
+			assert.NoError(t, err)
+
+			garden := createExampleGarden()
+			err = storageClient.Gardens.Set(context.Background(), garden)
+			assert.NoError(t, err)
+
+			r := tt.buildRequest(fmt.Sprintf("/gardens/%s/action", garden.ID))
+			resp := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
+
+			assert.Equal(t, tt.status, resp.Code)
+			assert.Equal(t, tt.expected, strings.TrimSpace(resp.Body.String()))
 		})
 	}
 }
