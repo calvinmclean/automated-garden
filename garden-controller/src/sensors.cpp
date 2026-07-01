@@ -19,7 +19,7 @@
 
 TaskHandle_t sensorTaskHandle;
 
-char sensorDataTopic[50];
+char sensorDataTopic[80];
 
 struct DS18B20Bus {
     gpio_num_t pin;

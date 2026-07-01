@@ -21,20 +21,20 @@ QueueHandle_t fanPublisherQueue;
 TaskHandle_t fanPublisherTaskHandle;
 
 // command topics (subscribe)
-char waterCommandTopic[50];
-char stopCommandTopic[50];
-char stopAllCommandTopic[50];
-char lightCommandTopic[50];
-char fanCommandTopic[50];
-char updateConfigCommandTopic[50];
+char waterCommandTopic[80];
+char stopCommandTopic[80];
+char stopAllCommandTopic[80];
+char lightCommandTopic[80];
+char fanCommandTopic[80];
+char updateConfigCommandTopic[80];
 
 // data topics (publish)
-char waterDataTopic[50];
-char lightDataTopic[50];
-char fanDataTopic[50];
-char healthDataTopic[50];
-char logDataTopic[50];
-char infoDataTopic[50];
+char waterDataTopic[80];
+char lightDataTopic[80];
+char fanDataTopic[80];
+char healthDataTopic[80];
+char logDataTopic[80];
+char infoDataTopic[80];
 
 #define ZERO (unsigned long int) 0
 
