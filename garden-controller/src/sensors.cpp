@@ -129,7 +129,7 @@ void setupSensors() {
         if (strcasecmp(config.sensors[i].type, "DHT22") == 0) {
             sensorRuntimes[i].dht = new DHT(config.sensors[i].pin, DHT22);
             sensorRuntimes[i].dht->begin();
-            printf("sensor %d: DHT22 on pin %d interval=%d\n", i, (int)config.sensors[i].pin, sensorRuntimes[i].config.interval);
+            printf("sensor %d: id=%s DHT22 on pin %d interval=%d\n", i, config.sensors[i].id, (int)config.sensors[i].pin, sensorRuntimes[i].config.interval);
         } else if (strcasecmp(config.sensors[i].type, "DS18B20") == 0) {
             DS18B20Bus* bus = findOrCreateBus(config.sensors[i].pin);
             if (bus == nullptr) {
@@ -149,7 +149,7 @@ void setupSensors() {
             sensorRuntimes[i].dt = bus->dt;
             sensorRuntimes[i].oneWire = bus->oneWire;
             sensorRuntimes[i].ds18b20Index = usedCount;
-            printf("sensor %d: DS18B20 on pin %d index %d interval=%d\n", i, (int)config.sensors[i].pin, usedCount, sensorRuntimes[i].config.interval);
+            printf("sensor %d: id=%s DS18B20 on pin %d index %d interval=%d\n", i, config.sensors[i].id, (int)config.sensors[i].pin, usedCount, sensorRuntimes[i].config.interval);
         } else {
             printf("sensor %d: unknown type %s\n", i, config.sensors[i].type);
         }

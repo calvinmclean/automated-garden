@@ -2,9 +2,6 @@
 #define mqtt_h
 
 #include <ArduinoJson.h>
-
-// Increase PubSubClient's max packet size so the controller config message (with sensors) fits.
-#define MQTT_MAX_PACKET_SIZE 1024
 #include <PubSubClient.h>
 
 #include "config.h"

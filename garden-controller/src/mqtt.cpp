@@ -296,9 +296,12 @@ void handleFanCommand(char* message) {
 }
 
 void handleConfigCommand(char* message) {
+    printf("handling update_config command\n");
     bool result = deserializeConfig((char*)message, config);
     if (!result) {
         printf("failed to deserialize config: %s\n", (char*)message);
+    } else {
+        printf("config deserialized successfully, numSensors=%d\n", config.numSensors);
     }
 
     saveConfigToFile(config);

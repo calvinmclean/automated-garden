@@ -51,7 +51,7 @@ bool deserializeConfig(const char* jsonString, Config& config) {
     config.fan = doc["fan"].as<bool>();
     config.fanPin = static_cast<gpio_num_t>(doc["fan_pin"].as<int>());
 
-    config.numSensors = doc["num_sensors"].as<int>();
+    config.numSensors = doc["sensors"].size();
     if (config.numSensors > 16) {
         config.numSensors = 16;
     }
