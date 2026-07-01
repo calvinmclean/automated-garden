@@ -66,6 +66,10 @@ void setupFan() {
     ledc_channel.duty = 0;
     ledc_channel.hpoint = 0;
     ledc_channel_config(&ledc_channel);
+
+    // Explicitly set fan to 0% on startup so it does not retain a previous duty cycle
+    ledc_set_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1, 0);
+    ledc_update_duty(LEDC_LOW_SPEED_MODE, LEDC_CHANNEL_1);
 }
 
 /*
