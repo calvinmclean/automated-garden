@@ -292,42 +292,6 @@
                     <button type="button" class="uk-button uk-button-default uk-button-small" onclick="addSensorRow()">Add Sensor</button>
                 </div>
 
-                <div id="sensor-template" style="display:none;">
-                    <div class="sensor-row uk-margin-small-bottom uk-grid-small" uk-grid>
-                        <input type="hidden" value="" name="ControllerConfig.Sensors.__INDEX__.ID">
-                        <div>
-                            <input class="uk-input" type="text" placeholder="Name" name="ControllerConfig.Sensors.__INDEX__.Name">
-                        </div>
-                        <div>
-                            <select class="uk-select" name="ControllerConfig.Sensors.__INDEX__.Type">
-                                <option value="DHT22">DHT22</option>
-                                <option value="DS18B20">DS18B20</option>
-                            </select>
-                        </div>
-                        <div>
-                            <input class="uk-input uk-form-width-small" type="number" placeholder="Pin" name="ControllerConfig.Sensors.__INDEX__.Pin">
-                        </div>
-                        <div>
-                            <input class="uk-input" type="text" placeholder="Interval" name="ControllerConfig.Sensors.__INDEX__.Interval">
-                        </div>
-                        <div>
-                            <button type="button" class="uk-button uk-button-danger uk-button-small"
-                                onclick="this.closest('.sensor-row').remove()">Remove</button>
-                        </div>
-                    </div>
-                </div>
-
-                <script>
-                    function addSensorRow() {
-                        const list = document.getElementById('sensors-list');
-                        const index = list.children.length;
-                        const template = document.getElementById('sensor-template').innerHTML;
-                        const html = template.replace(/__INDEX__/g, index);
-                        const wrapper = document.createElement('div');
-                        wrapper.innerHTML = html.trim();
-                        list.appendChild(wrapper.firstChild);
-                    }
-                </script>
             </div>
 
             {{ template "modalSubmitButton" }}
@@ -338,6 +302,43 @@
             {{ end }}
             {{ template "modalCloseButton" }}
         </form>
+
+        <div id="sensor-template" style="display:none;">
+            <div class="sensor-row uk-margin-small-bottom uk-grid-small" uk-grid>
+                <input type="hidden" value="" name="ControllerConfig.Sensors.__INDEX__.ID">
+                <div>
+                    <input class="uk-input" type="text" placeholder="Name" name="ControllerConfig.Sensors.__INDEX__.Name">
+                </div>
+                <div>
+                    <select class="uk-select" name="ControllerConfig.Sensors.__INDEX__.Type">
+                        <option value="DHT22">DHT22</option>
+                        <option value="DS18B20">DS18B20</option>
+                    </select>
+                </div>
+                <div>
+                    <input class="uk-input uk-form-width-small" type="number" placeholder="Pin" name="ControllerConfig.Sensors.__INDEX__.Pin">
+                </div>
+                <div>
+                    <input class="uk-input" type="text" placeholder="Interval" name="ControllerConfig.Sensors.__INDEX__.Interval">
+                </div>
+                <div>
+                    <button type="button" class="uk-button uk-button-danger uk-button-small"
+                        onclick="this.closest('.sensor-row').remove()">Remove</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function addSensorRow() {
+                const list = document.getElementById('sensors-list');
+                const index = list.children.length;
+                const template = document.getElementById('sensor-template').innerHTML;
+                const html = template.replace(/__INDEX__/g, index);
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html.trim();
+                list.appendChild(wrapper.firstChild);
+            }
+        </script>
     </div>
 </div>
 {{ end }}
