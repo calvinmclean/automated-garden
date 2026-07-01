@@ -343,8 +343,18 @@ func (w *Worker) ScheduleFanActions(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Info("creating scheduled Job for fan Garden", "fan_schedule", *g.FanSchedule)
 
-	startDate := clock.Now().AddDate(0, 0, -1)
-	startTime := time.Date(startDate.Year(), startDate.Month(), startDate.Day(), 0, 0, 0, 0, time.UTC)
+	// Use NextChange to determine correct StartAt for the fan job.
+	// This ensures the scheduled Job is on the same cycle grid that NextChange
+	// (and the UI) uses, avoiding drift when cycleDuration doesn't divide 24h.
+	nextTime, nextState := g.FanSchedule.NextChange(clock.Now())
+	var startTime time.Time
+	if nextState {
+		// Currently OFF: next change is the start of the next ON period
+		startTime = nextTime.UTC()
+	} else {
+		// Currently ON: next change is OFF, so ON started one Duration ago
+		startTime = nextTime.UTC().Add(-g.FanSchedule.Duration.Duration)
+	}
 
 	scheduleJobsGauge.WithLabelValues(gardenLabels(g)...).Inc()
 	_, err := w.scheduler.

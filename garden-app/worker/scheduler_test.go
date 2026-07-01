@@ -1195,6 +1195,65 @@ func TestResetFanSchedule(t *testing.T) {
 	mqttClient.AssertExpectations(t)
 }
 
+// TestScheduleFanActions_NextRun verifies that the scheduled fan job's NextRun
+// aligns with FanSchedule.NextChange, especially when cycleDuration does not
+// evenly divide 24h. This prevents the UI and scheduler from drifting onto
+// different cycle grids.
+func TestScheduleFanActions_NextRun(t *testing.T) {
+	mockClock := clock.MockTime()
+	// 12:00 UTC with a 2h30m cycle (30m ON, 2h OFF). Cycle boundaries:
+	// 10:00 ON, 10:30 OFF, 13:00 ON, 13:30 OFF, ...
+	mockClock.Set(time.Date(2024, 1, 1, 12, 0, 0, 0, time.UTC))
+	t.Cleanup(clock.Reset)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+	defer weather.ResetCache()
+
+	influxdbClient := new(influxdb.MockClient)
+	mqttClient := new(mqtt.MockClient)
+	mqttClient.On("Disconnect", uint(100)).Return()
+	influxdbClient.On("Close").Return()
+
+	worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
+	worker.StartAsync()
+
+	power := uint(50)
+	g := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "test-garden",
+		TopicPrefix: "test-garden",
+		FanSchedule: &pkg.FanSchedule{
+			Duration: &pkg.Duration{Duration: 30 * time.Minute},
+			Interval: &pkg.Duration{Duration: 2 * time.Hour},
+			Power:    &power,
+		},
+	}
+
+	err = worker.ScheduleFanActions(g)
+	require.NoError(t, err)
+
+	var fanJob interface{ NextRun() time.Time }
+	for _, job := range worker.scheduler.Jobs() {
+		tags := job.Tags()
+		if slices.Contains(tags, g.ID.String()) && slices.Contains(tags, "fan") {
+			fanJob = job
+			break
+		}
+	}
+
+	require.NotNil(t, fanJob, "fan job not found")
+
+	expectedNext, _ := g.FanSchedule.NextChange(clock.Now())
+	assert.True(t, expectedNext.Equal(fanJob.NextRun()), "NextRun mismatch: expected %v, got %v", expectedNext, fanJob.NextRun())
+
+	worker.Stop()
+	influxdbClient.AssertExpectations(t)
+	mqttClient.AssertExpectations(t)
+}
+
 func TestExecuteFanAction(t *testing.T) {
 	storageClient, err := storage.NewClient(storage.Config{
 		ConnectionString: ":memory:",

@@ -65,6 +65,7 @@ func (fs FanSchedule) NextChange(now time.Time) (time.Time, bool) {
 		return time.Time{}, false
 	}
 
+	now = now.UTC()
 	anchor := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, time.UTC)
 
 	// If anchor is in the future, the first cycle hasn't started yet

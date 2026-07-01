@@ -191,3 +191,57 @@ func TestFanScheduleNextChange(t *testing.T) {
 		})
 	}
 }
+
+func TestFanScheduleNextChange_Timezone(t *testing.T) {
+	// Use a timezone east of UTC where the naive local-date-at-UTC anchor would be
+	// in the future and produce incorrect results.
+	loc := time.FixedZone("UTC+8", 8*60*60)
+	duration := &Duration{Duration: 30 * time.Minute}
+	interval := &Duration{Duration: 2 * time.Hour}
+
+	tests := []struct {
+		name             string
+		now              time.Time
+		expectedAfter    time.Duration
+		expectedActive   bool
+		expectedIsActive bool
+	}{
+		{
+			"EarlyMorningBeforeUTCMidnight",
+			// 2024-01-01 06:00 UTC+8 = 2023-12-31 22:00 UTC.
+			// The cycle is anchored at UTC midnight, so the next ON is 30m away.
+			time.Date(2024, 1, 1, 6, 0, 0, 0, loc),
+			30 * time.Minute,
+			true,
+			false,
+		},
+		{
+			"DuringOffPeriodNearMidnight",
+			// 2024-01-01 00:15 UTC+8 = 2023-12-31 16:15 UTC.
+			// The ON period started at 2023-12-31 23:00 UTC+8 and ends at 01:30 UTC+8.
+			time.Date(2024, 1, 1, 0, 15, 0, 0, loc),
+			1*time.Hour + 15*time.Minute,
+			true,
+			false,
+		},
+		{
+			"DuringActivePeriod",
+			// 2024-01-01 10:45 UTC+8 = 2024-01-01 02:45 UTC.
+			// This is 15m into a 30m ON period.
+			time.Date(2024, 1, 1, 10, 45, 0, 0, loc),
+			15 * time.Minute,
+			false,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			schedule := &FanSchedule{Duration: duration, Interval: interval}
+			nextChange, willBeActive := schedule.NextChange(tt.now)
+			assert.WithinDuration(t, tt.now.Add(tt.expectedAfter), nextChange, time.Second)
+			assert.Equal(t, tt.expectedActive, willBeActive)
+			assert.Equal(t, tt.expectedIsActive, schedule.IsActiveAtTime(tt.now))
+		})
+	}
+}
