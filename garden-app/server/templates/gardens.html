@@ -220,11 +220,6 @@
                 {{ template "lightActionButton" (args "ID" .ID.String "State" "OFF") }}
             </li>
             {{ end }}
-            {{ if .FanSchedule }}
-            <li>
-                {{ template "fanActionButton" . }}
-            </li>
-            {{ end }}
             <li>
                 <a href="#stop-watering-confirm-{{ .ID }}" uk-toggle>
                     <span uk-icon="ban"></span> Stop Watering
@@ -267,15 +262,6 @@
     <span uk-icon="download"></span>
     {{ end }}
     Light {{ .State }}
-</a>
-{{ end }}
-
-{{ define "fanActionButton" }}
-<a hx-post="/gardens/{{ .ID }}/action" hx-include="this" hx-swap="none" id="fan-action-{{ .ID }}" {{
-    template "actionFeedback" "warning" }}>
-    <input type="hidden" name="fan.duration" value="{{ .FanSchedule.Duration.Milliseconds }}">
-    <span uk-icon="forward"></span>
-    Fan ON ({{ FormatDuration .FanSchedule.Duration }} @ {{ .FanSchedule.Power }}%)
 </a>
 {{ end }}
 
