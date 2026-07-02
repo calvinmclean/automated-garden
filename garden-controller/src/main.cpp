@@ -202,6 +202,11 @@ void fanTask(void* parameters) {
       // Publish start state
       xQueueSend(fanPublisherQueue, &fan_power, portMAX_DELAY);
 
+      // A power of 0 means turn the fan off immediately and ignore duration
+      if (fe.power == 0) {
+        continue;
+      }
+
       // Delay for specified duration
       xTaskNotifyWait(0x00, ULONG_MAX, NULL, fe.duration / portTICK_PERIOD_MS);
 
