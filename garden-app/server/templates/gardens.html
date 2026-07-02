@@ -169,15 +169,17 @@
     {{ $lightIcon := "chevron-down" }}
     {{ $lightTextColor := "uk-text-muted" }}
     {{ $lightTooltip := print "Duration: " (FormatDuration .LightSchedule.Duration) " starting at " (FormatStartTime .LightSchedule.StartTime) }}
-    {{ if eq .NextLightAction.State.String "ON" }}
+    {{ $lightCurrentState := "OFF" }}
+    {{ if eq .NextLightAction.State.String "OFF" }}
     {{ $lightIcon = "chevron-up" }}
     {{ $lightTextColor = "uk-text-warning" }}
+    {{ $lightCurrentState = "ON" }}
     {{ end }}
     <div class="uk-flex uk-flex-middle uk-margin-small-right uk-margin-small-bottom"
         uk-tooltip="title: {{ $lightTooltip }}">
         <span uk-icon="icon: {{ $lightIcon }}; ratio: 0.8" class="uk-margin-small-right"></span>
         <span>
-            Light: <span class="{{ $lightTextColor }}">{{ .NextLightAction.State }}</span> {{ FormatUpcomingDate
+            Light: <span class="{{ $lightTextColor }}">{{ $lightCurrentState }}</span> until {{ FormatUntilDate
             .NextLightAction.Time }}
         </span>
     </div>
