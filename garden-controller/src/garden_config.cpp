@@ -3,7 +3,7 @@
 
 // Write Config to JSON
 void serializeConfig(const Config& config, String& jsonString) {
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(2048);
 
     doc["num_zones"] = config.numZones;
     for (int i = 0; i < config.numZones; i++) {
@@ -17,16 +17,20 @@ void serializeConfig(const Config& config, String& jsonString) {
     doc["fan"] = config.fan;
     doc["fan_pin"] = config.fanPin;
 
-    doc["temp_humidity"] = config.tempHumidity;
-    doc["temp_humidity_pin"] = config.tempHumidityPin;
-    doc["temp_humidity_interval"] = config.tempHumidityInterval;
+    doc["num_sensors"] = config.numSensors;
+    for (int i = 0; i < config.numSensors; i++) {
+        doc["sensors"][i]["id"] = config.sensors[i].id;
+        doc["sensors"][i]["type"] = config.sensors[i].type;
+        doc["sensors"][i]["pin"] = config.sensors[i].pin;
+        doc["sensors"][i]["interval"] = config.sensors[i].interval;
+    }
 
     serializeJson(doc, jsonString);
 }
 
 // Read Config from JSON
 bool deserializeConfig(const char* jsonString, Config& config) {
-    DynamicJsonDocument doc(1024);
+    DynamicJsonDocument doc(2048);
 
     DeserializationError error = deserializeJson(doc, jsonString);
 
@@ -47,9 +51,16 @@ bool deserializeConfig(const char* jsonString, Config& config) {
     config.fan = doc["fan"].as<bool>();
     config.fanPin = static_cast<gpio_num_t>(doc["fan_pin"].as<int>());
 
-    config.tempHumidity = doc["temp_humidity"].as<bool>();
-    config.tempHumidityPin = static_cast<gpio_num_t>(doc["temp_humidity_pin"].as<int>());
-    config.tempHumidityInterval = doc["temp_humidity_interval"].as<int>();
+    config.numSensors = doc["sensors"].size();
+    if (config.numSensors > 16) {
+        config.numSensors = 16;
+    }
+    for (int i = 0; i < config.numSensors; i++) {
+        strlcpy(config.sensors[i].id, doc["sensors"][i]["id"] | "", sizeof(config.sensors[i].id));
+        strlcpy(config.sensors[i].type, doc["sensors"][i]["type"].as<const char*>(), sizeof(config.sensors[i].type));
+        config.sensors[i].pin = static_cast<gpio_num_t>(doc["sensors"][i]["pin"].as<int>());
+        config.sensors[i].interval = doc["sensors"][i]["interval"].as<int>();
+    }
 
     return true;
 }
@@ -127,7 +138,9 @@ void printConfig(Config& config) {
     printf("  Fan: %s\n", config.fan ? "Enabled" : "Disabled");
     printf("  Fan Pin: %d\n", (int)config.fanPin);
 
-    printf("  TempHumidity: %s\n", config.tempHumidity ? "Enabled" : "Disabled");
-    printf("  TempHumidity Pin: %d\n", (int)config.tempHumidityPin);
-    printf("  TempHumidity Interval: %d\n", config.tempHumidityInterval);
+    printf("  Sensors: %d\n", config.numSensors);
+    for (int i = 0; i < config.numSensors; i++) {
+        printf("    Sensor %d: type=%s pin=%d interval=%d\n",
+               i, config.sensors[i].type, (int)config.sensors[i].pin, config.sensors[i].interval);
+    }
 }

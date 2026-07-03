@@ -14,7 +14,6 @@ type Garden struct {
 	Name                 string
 	TopicPrefix          string
 	MaxZones             int64
-	TempHumidSensor      bool
 	CreatedAt            string
 	EndDate              sql.NullString
 	NotificationClientID sql.NullString

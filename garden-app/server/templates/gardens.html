@@ -41,8 +41,8 @@
             {{ template "scheduleSummary" . }}
             {{ end }}
 
-            {{ template "gardenTemperatureSection" . }}
-            {{ if .Garden.HasTemperatureHumiditySensor }}
+            {{ template "gardenSensorSection" . }}
+            {{ if .Garden.ControllerConfig.Sensors }}
             <div hx-get="/gardens/{{ .ID }}?swap_data=true" hx-headers='{"Accept": "text/html"}'
                 hx-trigger="unitsChanged from:body" hx-swap="innerHTML" hx-target="#garden-data-{{ .ID }}"
                 style="display: none;"></div>
@@ -121,19 +121,19 @@
 {{ end }}
 {{ end }}
 
-{{ define "gardenTemperatureSection" }}
-{{ if IncludeData }}
-{{ if .TemperatureHumidityData }}
-{{ template "temperatureHumidityDetails" .TemperatureHumidityData }}
-{{ end }}
-{{ else }}
-{{ if .Garden.HasTemperatureHumiditySensor }}
-<div id="garden-temp-{{ .ID }}" class="uk-margin-small-top">
+{{ define "gardenSensorSection" }}
+{{ if .Garden.ControllerConfig.Sensors }}
+<div id="garden-sensors-{{ .ID }}" class="uk-flex uk-flex-wrap uk-margin-small-top" style="gap: 5px;">
+    {{ if IncludeData }}
+    {{ range .SensorsData }}
+    {{ template "sensorDetails" . }}
+    {{ end }}
+    {{ else }}
     <div class="uk-text-center">
         <div uk-spinner="ratio: 0.5"></div>
     </div>
+    {{ end }}
 </div>
-{{ end }}
 {{ end }}
 {{ end }}
 
@@ -143,24 +143,29 @@
 </div>
 {{ end }}
 
-{{ define "temperatureHumidityDetails" }}
-<p>
-    <span>
-        Temperature:
+{{ define "sensorDetails" }}
+<span class="uk-label uk-flex-inline uk-flex-middle"
+    style="background-color: #f0f0f0; color: #333; font-size: 0.9rem; padding: 4px 10px;"
+    uk-tooltip="{{ .Name }} ({{ .Type }})">
+    {{ if or (eq .Type "DHT22") (eq .Type "DS18B20") }}
+    <span class="uk-margin-small-right">
+        <i data-lucide="thermometer" width="14" height="14"></i>
+    </span>
+    <span class="uk-margin-small-right">
         {{ if IsMetric }}
         {{ Sprintf "%.1f" .TemperatureCelsius }}°C
-        <progress class="uk-progress" value="{{ .TemperatureCelsius }}" max="50"></progress>
         {{ else }}
-        {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
-        {{ Sprintf "%.1f" $tempF }}°F
-        <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
+        {{ Sprintf "%.1f" (CelsiusToFahrenheit .TemperatureCelsius) }}°F
         {{ end }}
     </span>
-    <span>
-        Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%
-        <progress class="uk-progress" value="{{ .HumidityPercentage }}" max="100"></progress>
+    {{ end }}
+    {{ if eq .Type "DHT22" }}
+    <span class="uk-margin-small-right">
+        <i data-lucide="waves-horizontal" width="14" height="14"></i>
     </span>
-</p>
+    <span>{{ Sprintf "%.0f" .HumidityPercentage }}%</span>
+    {{ end }}
+</span>
 {{ end }}
 
 {{ define "scheduleSummary" }}
@@ -485,29 +490,11 @@
 
 {{ define "gardenSwapDataResponse" }}
 {{ template "gardenDataSection" . }}
-{{ if .TemperatureHumidityData }}
-<div id="garden-temp-{{ .ID }}" hx-swap-oob="true">
-    {{ template "temperatureHumidityDetails" .TemperatureHumidityData }}
+{{ if .SensorsData }}
+<div id="garden-sensors-{{ .ID }}" hx-swap-oob="true">
+    {{ range .SensorsData }}
+    {{ template "sensorDetails" . }}
+    {{ end }}
 </div>
 {{ end }}
-{{ end }}
-
-{{ define "temperatureHumidityDetailsOnly" }}
-<p>
-    <span>
-        Temperature:
-        {{ if IsMetric }}
-        {{ Sprintf "%.1f" .TemperatureCelsius }}°C
-        <progress class="uk-progress" value="{{ .TemperatureCelsius }}" max="50"></progress>
-        {{ else }}
-        {{ $tempF := CelsiusToFahrenheit .TemperatureCelsius }}
-        {{ Sprintf "%.1f" $tempF }}°F
-        <progress class="uk-progress" value="{{ $tempF }}" max="120"></progress>
-        {{ end }}
-    </span>
-    <span>
-        Humidity: {{ Sprintf "%.2f" .HumidityPercentage }}%
-        <progress class="uk-progress" value="{{ .HumidityPercentage }}" max="100"></progress>
-    </span>
-</p>
 {{ end }}

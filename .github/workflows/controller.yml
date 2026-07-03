@@ -4,9 +4,6 @@ on:
   push:
     paths:
       - "garden-controller/**"
-  pull_request:
-    paths:
-      - "garden-controller/**"
 
 jobs:
   build:

@@ -35,8 +35,6 @@ func TestGardenEndDated(t *testing.T) {
 func TestGardenPatch(t *testing.T) {
 	now := clock.Now()
 	ten := uint(10)
-	trueBool := true
-	falseBool := false
 
 	tests := []struct {
 		name      string
@@ -71,14 +69,6 @@ func TestGardenPatch(t *testing.T) {
 			}},
 		},
 		{
-			"PatchTemperatureHumiditySensorTrue",
-			&Garden{TemperatureHumiditySensor: &trueBool},
-		},
-		{
-			"PatchTemperatureHumiditySensorFalse",
-			&Garden{TemperatureHumiditySensor: &falseBool},
-		},
-		{
 			"PatchFanSchedule",
 			&Garden{FanSchedule: &FanSchedule{
 				Duration: &Duration{Duration: 30 * time.Minute},
@@ -89,10 +79,12 @@ func TestGardenPatch(t *testing.T) {
 		{
 			"ControllerConfig",
 			&Garden{ControllerConfig: &ControllerConfig{
-				ValvePins:              []uint{1, 2},
-				PumpPins:               []uint{3, 4},
-				LightPin:               pointer(uint(1)),
-				TemperatureHumidityPin: pointer(uint(1)),
+				ValvePins: []uint{1, 2},
+				PumpPins:  []uint{3, 4},
+				LightPin:  pointer(uint(1)),
+				Sensors: []SensorConfig{
+					{Name: "Ambient", Type: "DHT22", Pin: 1, Interval: Duration{Duration: 5 * time.Second}},
+				},
 			}},
 		},
 		{
@@ -122,6 +114,13 @@ func TestGardenPatch(t *testing.T) {
 			}
 			if g.CreatedAt != tt.newGarden.CreatedAt {
 				t.Errorf("Unexpected result for CreatedAt: expected=%v, actual=%v", tt.newGarden.CreatedAt, g.CreatedAt)
+			}
+			if tt.newGarden.ControllerConfig != nil && g.ControllerConfig != nil {
+				for i := range g.ControllerConfig.Sensors {
+					if i < len(tt.newGarden.ControllerConfig.Sensors) {
+						tt.newGarden.ControllerConfig.Sensors[i].ID = g.ControllerConfig.Sensors[i].ID
+					}
+				}
 			}
 			assert.EqualValues(t, tt.newGarden.ControllerConfig, g.ControllerConfig)
 		})
@@ -183,22 +182,4 @@ func TestGardenPatch(t *testing.T) {
 			t.Errorf("Expected nil EndDate, but got: %v", g.EndDate)
 		}
 	})
-}
-
-func TestHasTemperatureHumiditySensor(t *testing.T) {
-	trueBool := true
-	falseBool := false
-	tests := []struct {
-		val      *bool
-		expected bool
-	}{
-		{nil, false},
-		{&trueBool, true},
-		{&falseBool, false},
-	}
-
-	for _, tt := range tests {
-		g := &Garden{TemperatureHumiditySensor: tt.val}
-		assert.Equal(t, tt.expected, g.HasTemperatureHumiditySensor())
-	}
 }

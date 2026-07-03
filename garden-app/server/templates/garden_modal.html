@@ -23,17 +23,6 @@
                     name="MaxZones">
             </div>
 
-            <div class="uk-margin">
-                <input
-                    class="uk-checkbox"
-                    id="garden-temp-hum"
-                    type="checkbox"
-                    name="TemperatureHumiditySensor"
-                    value="true"
-                    {{ if and .TemperatureHumiditySensor (DerefBool .TemperatureHumiditySensor) }}checked{{ end }}>
-                <label class="uk-form-label" for="garden-temp-hum"> Temperature/Humidity Sensor</label>
-            </div>
-
             <div class="uk-margin" style="text-align: left;">
                 <button type="button" id="light-schedule-toggle"
                     class="uk-button {{ if .LightSchedule }}uk-button-primary{{ else }}uk-button-default{{ end }}"
@@ -267,20 +256,42 @@
                         name="ControllerConfig.FanPin">
                 </div>
 
-                {{ if .TemperatureHumiditySensor }}
                 <div class="uk-margin">
-                    <label class="uk-form-label" for="garden-config-temp-hum-pin">Temperature/Humidity Sensor Pin</label>
-                    <input id="garden-config-temp-hum-pin" class="uk-input" type="number"
-                        value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityPin }}{{ .ControllerConfig.TemperatureHumidityPin }}{{ end }}" placeholder="Temperature/Humidity Sensor Pin"
-                        name="ControllerConfig.TemperatureHumidityPin">
+                    <label class="uk-form-label">Sensors</label>
+                    <div id="sensors-list">
+                        {{ if and .ControllerConfig .ControllerConfig.Sensors }}
+                        {{ range $i, $sensor := .ControllerConfig.Sensors }}
+                        <div class="sensor-row uk-margin-small-bottom uk-grid-small" uk-grid>
+                            <input type="hidden" value="{{ $sensor.ID }}" name="ControllerConfig.Sensors.{{ $i }}.ID">
+                            <div>
+                                <input class="uk-input" type="text" value="{{ $sensor.Name }}" placeholder="Name"
+                                    name="ControllerConfig.Sensors.{{ $i }}.Name">
+                            </div>
+                            <div>
+                                <select class="uk-select" name="ControllerConfig.Sensors.{{ $i }}.Type">
+                                    <option value="DHT22" {{ if eq $sensor.Type "DHT22" }}selected{{ end }}>DHT22</option>
+                                    <option value="DS18B20" {{ if eq $sensor.Type "DS18B20" }}selected{{ end }}>DS18B20</option>
+                                </select>
+                            </div>
+                            <div>
+                                <input class="uk-input uk-form-width-small" type="number" value="{{ $sensor.Pin }}" placeholder="Pin"
+                                    name="ControllerConfig.Sensors.{{ $i }}.Pin">
+                            </div>
+                            <div>
+                                <input class="uk-input" type="text" value="{{ $sensor.Interval }}" placeholder="Interval"
+                                    name="ControllerConfig.Sensors.{{ $i }}.Interval">
+                            </div>
+                            <div>
+                                <button type="button" class="uk-button uk-button-danger uk-button-small"
+                                    onclick="this.closest('.sensor-row').remove()">Remove</button>
+                            </div>
+                        </div>
+                        {{ end }}
+                        {{ end }}
+                    </div>
+                    <button type="button" class="uk-button uk-button-default uk-button-small" onclick="addSensorRow()">Add Sensor</button>
                 </div>
 
-                <div class="uk-margin">
-                    <label class="uk-form-label" for="garden-config-temp-hum-interval">Temperature/Humidity Sensor Interval</label>
-                <input id="garden-config-temp-hum-interval" class="uk-input" value="{{ if and .ControllerConfig .ControllerConfig.TemperatureHumidityInterval }}{{ .ControllerConfig.TemperatureHumidityInterval }}{{ end }}" placeholder="Temperature/Humidity Sensor Interval"
-                    name="ControllerConfig.TemperatureHumidityInterval">
-            </div>
-            {{ end }}
             </div>
 
             {{ template "modalSubmitButton" }}
@@ -291,6 +302,43 @@
             {{ end }}
             {{ template "modalCloseButton" }}
         </form>
+
+        <div id="sensor-template" style="display:none;">
+            <div class="sensor-row uk-margin-small-bottom uk-grid-small" uk-grid>
+                <input type="hidden" value="" name="ControllerConfig.Sensors.__INDEX__.ID">
+                <div>
+                    <input class="uk-input" type="text" placeholder="Name" name="ControllerConfig.Sensors.__INDEX__.Name">
+                </div>
+                <div>
+                    <select class="uk-select" name="ControllerConfig.Sensors.__INDEX__.Type">
+                        <option value="DHT22">DHT22</option>
+                        <option value="DS18B20">DS18B20</option>
+                    </select>
+                </div>
+                <div>
+                    <input class="uk-input uk-form-width-small" type="number" placeholder="Pin" name="ControllerConfig.Sensors.__INDEX__.Pin">
+                </div>
+                <div>
+                    <input class="uk-input" type="text" placeholder="Interval" name="ControllerConfig.Sensors.__INDEX__.Interval">
+                </div>
+                <div>
+                    <button type="button" class="uk-button uk-button-danger uk-button-small"
+                        onclick="this.closest('.sensor-row').remove()">Remove</button>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            function addSensorRow() {
+                const list = document.getElementById('sensors-list');
+                const index = list.children.length;
+                const template = document.getElementById('sensor-template').innerHTML;
+                const html = template.replace(/__INDEX__/g, index);
+                const wrapper = document.createElement('div');
+                wrapper.innerHTML = html.trim();
+                list.appendChild(wrapper.firstChild);
+            }
+        </script>
     </div>
 </div>
 {{ end }}

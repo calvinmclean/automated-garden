@@ -13,14 +13,15 @@
     <script src="https://unpkg.com/htmx.org@1.9.8"></script>
     <script src="https://unpkg.com/htmx.org@1.9.8/dist/ext/json-enc.js"></script>
     <script src="https://unpkg.com/hyperscript.org@0.9.12"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 
-<style>
-    div.htmx-swapping {
-        opacity: 0;
-        transition: opacity 1s ease-out;
-    }
-</style>
+    <style>
+        div.htmx-swapping {
+            opacity: 0;
+            transition: opacity 1s ease-out;
+        }
+    </style>
 
 <body>
     <div id="create-modal-here"></div>
@@ -438,6 +439,13 @@
 
         function formatLocalTime(rfc3339) {
             return new Date(rfc3339).toLocaleString();
+        }
+
+        if (typeof lucide !== 'undefined') {
+            lucide.createIcons();
+            document.body.addEventListener('htmx:afterSwap', function() {
+                lucide.createIcons();
+            });
         }
     </script>
 </body>

@@ -20,7 +20,7 @@ func (q *Queries) DeleteGarden(ctx context.Context, id string) error {
 }
 
 const getGarden = `-- name: GetGarden :one
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 WHERE g.id = ? LIMIT 1
@@ -31,7 +31,6 @@ type GetGardenRow struct {
 	Name                 string
 	TopicPrefix          string
 	MaxZones             int64
-	TempHumidSensor      bool
 	CreatedAt            string
 	EndDate              sql.NullString
 	NotificationClientID sql.NullString
@@ -53,7 +52,6 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (GetGardenRow, error
 		&i.Name,
 		&i.TopicPrefix,
 		&i.MaxZones,
-		&i.TempHumidSensor,
 		&i.CreatedAt,
 		&i.EndDate,
 		&i.NotificationClientID,
@@ -70,7 +68,7 @@ func (q *Queries) GetGarden(ctx context.Context, id string) (GetGardenRow, error
 }
 
 const getGardenByTopicPrefix = `-- name: GetGardenByTopicPrefix :one
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 WHERE g.topic_prefix = ? LIMIT 1
@@ -81,7 +79,6 @@ type GetGardenByTopicPrefixRow struct {
 	Name                 string
 	TopicPrefix          string
 	MaxZones             int64
-	TempHumidSensor      bool
 	CreatedAt            string
 	EndDate              sql.NullString
 	NotificationClientID sql.NullString
@@ -103,7 +100,6 @@ func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string
 		&i.Name,
 		&i.TopicPrefix,
 		&i.MaxZones,
-		&i.TempHumidSensor,
 		&i.CreatedAt,
 		&i.EndDate,
 		&i.NotificationClientID,
@@ -120,7 +116,7 @@ func (q *Queries) GetGardenByTopicPrefix(ctx context.Context, topicPrefix string
 }
 
 const listActiveGardens = `-- name: ListActiveGardens :many
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 WHERE g.end_date IS NULL
@@ -132,7 +128,6 @@ type ListActiveGardensRow struct {
 	Name                 string
 	TopicPrefix          string
 	MaxZones             int64
-	TempHumidSensor      bool
 	CreatedAt            string
 	EndDate              sql.NullString
 	NotificationClientID sql.NullString
@@ -160,7 +155,6 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 			&i.Name,
 			&i.TopicPrefix,
 			&i.MaxZones,
-			&i.TempHumidSensor,
 			&i.CreatedAt,
 			&i.EndDate,
 			&i.NotificationClientID,
@@ -187,7 +181,7 @@ func (q *Queries) ListActiveGardens(ctx context.Context, endDate sql.NullString)
 }
 
 const listAllGardens = `-- name: ListAllGardens :many
-SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.temp_humid_sensor, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
+SELECT g.id, g.name, g.topic_prefix, g.max_zones, g.created_at, g.end_date, g.notification_client_id, g.notification_settings, g.controller_config, g.light_schedule, g.fan_schedule, ci.mac_address, ci.ip_address, ci.firmware_version, ci.updated_at
 FROM gardens g
 LEFT JOIN garden_controller_info ci ON g.id = ci.garden_id
 `
@@ -197,7 +191,6 @@ type ListAllGardensRow struct {
 	Name                 string
 	TopicPrefix          string
 	MaxZones             int64
-	TempHumidSensor      bool
 	CreatedAt            string
 	EndDate              sql.NullString
 	NotificationClientID sql.NullString
@@ -225,7 +218,6 @@ func (q *Queries) ListAllGardens(ctx context.Context) ([]ListAllGardensRow, erro
 			&i.Name,
 			&i.TopicPrefix,
 			&i.MaxZones,
-			&i.TempHumidSensor,
 			&i.CreatedAt,
 			&i.EndDate,
 			&i.NotificationClientID,
@@ -270,18 +262,17 @@ func (q *Queries) SetGardenEndDate(ctx context.Context, arg SetGardenEndDatePara
 const upsertGarden = `-- name: UpsertGarden :exec
 INSERT INTO gardens (
   id, name, topic_prefix,
-  max_zones, temp_humid_sensor,
+  max_zones,
   created_at, end_date,
   notification_client_id, notification_settings,
   controller_config, light_schedule, fan_schedule
 ) VALUES (
-  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
+  ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?
 ) ON CONFLICT (id)
 DO UPDATE SET
   name = EXCLUDED.name,
   topic_prefix = EXCLUDED.topic_prefix,
   max_zones = EXCLUDED.max_zones,
-  temp_humid_sensor = EXCLUDED.temp_humid_sensor,
   end_date = EXCLUDED.end_date,
   notification_client_id = EXCLUDED.notification_client_id,
   notification_settings = EXCLUDED.notification_settings,
@@ -295,7 +286,6 @@ type UpsertGardenParams struct {
 	Name                 string
 	TopicPrefix          string
 	MaxZones             int64
-	TempHumidSensor      bool
 	CreatedAt            string
 	EndDate              sql.NullString
 	NotificationClientID sql.NullString
@@ -311,7 +301,6 @@ func (q *Queries) UpsertGarden(ctx context.Context, arg UpsertGardenParams) erro
 		arg.Name,
 		arg.TopicPrefix,
 		arg.MaxZones,
-		arg.TempHumidSensor,
 		arg.CreatedAt,
 		arg.EndDate,
 		arg.NotificationClientID,

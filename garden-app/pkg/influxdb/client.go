@@ -69,13 +69,13 @@ waterEvents = from(bucket: "garden")
   |> limit(n: {{.Limit}})
   {{- end }}
   |> yield(name: "waterHistory")`
-	temperatureAndHumidityQueryTemplate = `from(bucket: "{{.Bucket}}")
+	sensorReadingQueryTemplate = `from(bucket: "{{.Bucket}}")
 |> range(start: -{{.Start}})
-|> filter(fn: (r) => r["_measurement"] == "temperature" or r["_measurement"] == "humidity")
-|> filter(fn: (r) => r["_field"] == "value")
-|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/temperature" or r["topic"] == "{{.TopicPrefix}}/data/humidity")
+|> filter(fn: (r) => r["_measurement"] == "sensor")
+|> filter(fn: (r) => r["sensor_id"] == "{{.SensorID}}")
+|> filter(fn: (r) => r["_field"] == "temperature" or r["_field"] == "humidity")
 |> drop(columns: ["host"])
-|> mean()`
+|> last()`
 )
 
 func init() {
@@ -90,12 +90,23 @@ var influxDBClientSummary = prometheus.NewSummaryVec(prometheus.SummaryOpts{
 	Help:      "summary of influxdb client calls",
 }, []string{"function"})
 
+// SensorReading holds the most recent temperature and/or humidity values for a sensor.
+type SensorReading struct {
+	Temperature *float64
+	Humidity    *float64
+}
+
+// IsZero returns true if neither temperature nor humidity has a value.
+func (r SensorReading) IsZero() bool {
+	return r.Temperature == nil && r.Humidity == nil
+}
+
 // Client is an interface that allows querying InfluxDB for data
 type Client interface {
 	GetLastContact(context.Context, string) (time.Time, error)
 	GetWaterHistory(context.Context, string, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
 	GetGardenWaterHistory(context.Context, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
-	GetTemperatureAndHumidity(context.Context, string) (float64, float64, error)
+	GetSensorReading(context.Context, string, string) (SensorReading, error)
 	influxdb2.Client
 }
 
@@ -115,6 +126,7 @@ type queryData struct {
 	Start       time.Duration
 	ZoneID      string
 	TopicPrefix string
+	SensorID    string
 	Limit       uint64
 	Descending  bool
 }
@@ -244,36 +256,37 @@ func (client *client) getWaterHistory(ctx context.Context, metricLabel, zoneID, 
 	return result, queryResult.Err()
 }
 
-// GetTemperatureAndHumidity gets the recent temperature and humidity data for a Garden
-func (client *client) GetTemperatureAndHumidity(ctx context.Context, topicPrefix string) (float64, float64, error) {
-	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetTemperatureAndHumidity"))
+// GetSensorReading gets the most recent temperature and/or humidity reading for a sensor.
+func (client *client) GetSensorReading(ctx context.Context, topicPrefix string, sensorID string) (SensorReading, error) {
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetSensorReading"))
 	defer timer.ObserveDuration()
 
 	queryString, err := queryData{
 		Bucket:      client.config.Bucket,
 		Start:       time.Minute * 15,
 		TopicPrefix: topicPrefix,
-	}.Render(temperatureAndHumidityQueryTemplate)
+		SensorID:    sensorID,
+	}.Render(sensorReadingQueryTemplate)
 	if err != nil {
-		return 0, 0, err
+		return SensorReading{}, err
 	}
 
 	queryAPI := client.QueryAPI(client.config.Org)
 	queryResult, err := queryAPI.Query(ctx, queryString)
 	if err != nil {
-		return 0, 0, err
+		return SensorReading{}, err
 	}
 
-	var temperature float64
-	var humidity float64
+	reading := SensorReading{}
 	for queryResult.Next() {
-		switch queryResult.Record().Measurement() {
+		value := queryResult.Record().Value().(float64)
+		switch queryResult.Record().Field() {
 		case "temperature":
-			temperature = queryResult.Record().Value().(float64)
+			reading.Temperature = &value
 		case "humidity":
-			humidity = queryResult.Record().Value().(float64)
+			reading.Humidity = &value
 		}
 	}
 
-	return temperature, humidity, queryResult.Err()
+	return reading, queryResult.Err()
 }

@@ -104,7 +104,12 @@ func CreateGardenTest(t *testing.T) string {
 			"duration": "14h",
 			"start_time": "22:00:00-07:00"
 		},
-		"temperature_humidity_sensor": true
+		"controller_config": {
+			"sensors": [
+				{"id": "c5cvhpcbcv45e8bp16dg", "name": "Ambient", "type": "DHT22", "pin": 21, "interval": "5s"},
+				{"id": "c5cvhpcbcv45e8bp16dh", "name": "Water", "type": "DS18B20", "pin": 22, "interval": "5s"}
+			]
+		}
 	}`, &g)
 	require.NoError(t, err)
 	require.Equal(t, http.StatusCreated, status)
@@ -234,8 +239,16 @@ func GardenTestsWithID(t *testing.T, gardenID string) {
 		}
 
 		assert.Equal(t, pkg.HealthStatusUp, g.Health.Status)
-		assert.Equal(t, 50.0, g.TemperatureHumidityData.TemperatureCelsius)
-		assert.Equal(t, 50.0, g.TemperatureHumidityData.HumidityPercentage)
+		require.Len(t, g.SensorsData, 2)
+		assert.Equal(t, "c5cvhpcbcv45e8bp16dg", g.SensorsData[0].ID)
+		assert.Equal(t, "Ambient", g.SensorsData[0].Name)
+		assert.Equal(t, "DHT22", g.SensorsData[0].Type)
+		assert.Equal(t, 50.0, g.SensorsData[0].TemperatureCelsius)
+		assert.Equal(t, 50.0, g.SensorsData[0].HumidityPercentage)
+		assert.Equal(t, "c5cvhpcbcv45e8bp16dh", g.SensorsData[1].ID)
+		assert.Equal(t, "Water", g.SensorsData[1].Name)
+		assert.Equal(t, "DS18B20", g.SensorsData[1].Type)
+		assert.Equal(t, 50.0, g.SensorsData[1].TemperatureCelsius)
 	})
 }
 

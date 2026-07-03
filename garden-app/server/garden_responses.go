@@ -32,14 +32,14 @@ type ActiveWatering struct {
 // and hypermedia Links fields
 type GardenResponse struct {
 	*pkg.Garden
-	NextLightAction         *NextLightAction         `json:"next_light_action,omitempty"`
-	NextFanAction           *NextFanAction           `json:"next_fan_action,omitempty"`
-	Health                  *pkg.GardenHealth        `json:"health,omitempty"`
-	TemperatureHumidityData *TemperatureHumidityData `json:"temperature_humidity_data,omitempty"`
-	NumZones                uint                     `json:"num_zones"`
-	Links                   []Link                   `json:"links,omitempty"`
-	ActiveWatering          *ActiveWatering          `json:"-"` // HTML only
-	WateringQueue           uint                     `json:"-"` // HTML only
+	NextLightAction *NextLightAction  `json:"next_light_action,omitempty"`
+	NextFanAction   *NextFanAction    `json:"next_fan_action,omitempty"`
+	Health          *pkg.GardenHealth `json:"health,omitempty"`
+	SensorsData     []SensorData      `json:"sensors_data,omitempty"`
+	NumZones        uint              `json:"num_zones"`
+	Links           []Link            `json:"links,omitempty"`
+	ActiveWatering  *ActiveWatering   `json:"-"` // HTML only
+	WateringQueue   uint              `json:"-"` // HTML only
 
 	api *GardensAPI
 }
@@ -56,10 +56,13 @@ type NextFanAction struct {
 	IsActive bool       `json:"is_active"`
 }
 
-// TemperatureHumidityData has the temperature and humidity of the Garden
-type TemperatureHumidityData struct {
-	TemperatureCelsius float64 `json:"temperature_celsius"`
-	HumidityPercentage float64 `json:"humidity_percentage"`
+// SensorData has the most recent readings for a single configured sensor.
+type SensorData struct {
+	ID                 string  `json:"id"`
+	Name               string  `json:"name"`
+	Type               string  `json:"type"`
+	TemperatureCelsius float64 `json:"temperature_celsius,omitempty"`
+	HumidityPercentage float64 `json:"humidity_percentage,omitempty"`
 }
 
 // NewGardenResponse creates a self-referencing GardenResponse
@@ -189,22 +192,34 @@ func (g *GardenResponse) fetchInfluxDBData(ctx context.Context, logger *slog.Log
 		},
 	}
 
-	// Add temperature/humidity task only if sensor is enabled
-	if g.Garden.HasTemperatureHumiditySensor() {
-		tasks = append(tasks, concurrent.TaskFunc{
-			Name: "temperature-humidity",
-			Fn: func(taskCtx context.Context) error {
-				t, h, err := g.api.influxdbClient.GetTemperatureAndHumidity(taskCtx, g.Garden.TopicPrefix)
-				if err != nil {
-					return err
-				}
-				g.TemperatureHumidityData = &TemperatureHumidityData{
-					TemperatureCelsius: t,
-					HumidityPercentage: h,
-				}
-				return nil
-			},
-		})
+	// Add a task for each configured sensor
+	if g.Garden.ControllerConfig != nil {
+		g.SensorsData = make([]SensorData, len(g.Garden.ControllerConfig.Sensors))
+		for i, sensor := range g.Garden.ControllerConfig.Sensors {
+			i, sensor := i, sensor // capture loop variables
+			tasks = append(tasks, concurrent.TaskFunc{
+				Name: "sensor-" + sensor.ID,
+				Fn: func(taskCtx context.Context) error {
+					reading, err := g.api.influxdbClient.GetSensorReading(taskCtx, g.Garden.TopicPrefix, sensor.ID)
+					if err != nil {
+						return err
+					}
+					data := SensorData{
+						ID:   sensor.ID,
+						Name: sensor.Name,
+						Type: sensor.Type,
+					}
+					if reading.Temperature != nil {
+						data.TemperatureCelsius = *reading.Temperature
+					}
+					if reading.Humidity != nil {
+						data.HumidityPercentage = *reading.Humidity
+					}
+					g.SensorsData[i] = data
+					return nil
+				},
+			})
+		}
 	}
 
 	// Add zone water history tasks to the same batch
