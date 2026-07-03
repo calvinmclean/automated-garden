@@ -171,18 +171,20 @@
 {{ define "scheduleSummary" }}
 <div class="uk-flex uk-flex-wrap uk-flex-middle uk-margin-small-top">
     {{ if .LightSchedule }}
-    {{ $lightIcon := "chevron-down" }}
+    {{ $lightIcon := "moon" }}
     {{ $lightTextColor := "uk-text-muted" }}
     {{ $lightTooltip := print "Duration: " (FormatDuration .LightSchedule.Duration) " starting at " (FormatStartTime .LightSchedule.StartTime) }}
     {{ $lightCurrentState := "OFF" }}
     {{ if eq .NextLightAction.State.String "OFF" }}
-    {{ $lightIcon = "chevron-up" }}
+    {{ $lightIcon = "sun" }}
     {{ $lightTextColor = "uk-text-warning" }}
     {{ $lightCurrentState = "ON" }}
     {{ end }}
     <div class="uk-flex uk-flex-middle uk-margin-small-right uk-margin-small-bottom"
         uk-tooltip="title: {{ $lightTooltip }}">
-        <span uk-icon="icon: {{ $lightIcon }}; ratio: 0.8" class="uk-margin-small-right"></span>
+        <span class="uk-margin-small-right">
+            <i data-lucide="{{ $lightIcon }}" width="16" height="16"></i>
+        </span>
         <span>
             Light: <span class="{{ $lightTextColor }}">{{ $lightCurrentState }}</span> until {{ FormatUntilDate
             .NextLightAction.Time }}
