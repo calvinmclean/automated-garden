@@ -48,7 +48,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			},
 			nil,
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/water", mock.Anything).Return(nil)
 			},
 			"",
 		},
@@ -76,7 +76,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 			},
 			durationPtr(500 * time.Millisecond),
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, sc *storage.Client) {
-				mqttClient.On("Publish", "garden/command/water", []byte(`{"duration":500,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/water", []byte(`{"duration":500,"zone_id":"00000000000000000000","position":0,"id":"00000000000000000000","source":"schedule"}`)).Return(nil)
 			},
 			"",
 		},
@@ -116,7 +116,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				assert.NoError(t, err)
 				err = sc.Zones.Set(context.Background(), &pkg.Zone{ID: babyapi.ID{ID: id}, GardenID: id})
 				assert.NoError(t, err)
-				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/water", mock.Anything).Return(nil)
 			},
 			"",
 		},
@@ -139,7 +139,7 @@ func TestExecuteScheduledWaterAction(t *testing.T) {
 				duration = *tt.duration
 			}
 
-			err = NewWorker(sc, influxdbClient, mqttClient, slog.Default()).ExecuteScheduledWaterAction(garden, tt.zone, tt.waterSchedule, duration)
+			err = NewWorker(sc, influxdbClient, mqttClient, slog.Default()).ExecuteScheduledWaterAction(context.Background(), garden, tt.zone, tt.waterSchedule, duration)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())

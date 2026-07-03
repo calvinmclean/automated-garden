@@ -180,7 +180,7 @@ func (api *WaterRoutineAPI) runWatering(_ http.ResponseWriter, r *http.Request, 
 		}
 		stepLogger.Debug("zone action", "action", zoneAction)
 
-		if err := api.worker.ExecuteZoneAction(garden, zone, zoneAction); err != nil {
+		if err := api.worker.ExecuteZoneAction(r.Context(), garden, zone, zoneAction); err != nil {
 			stepLogger.Error("unable to execute ZoneAction", "error", err)
 			return nil, babyapi.InternalServerError(err)
 		}

@@ -91,7 +91,7 @@ func TestScheduleWaterActionStorageError(t *testing.T) {
 	mqttClient := new(mqtt.MockClient)
 
 	// Allow light action sync during StartAsync (test doesn't care about light behavior)
-	mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
+	mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
@@ -137,8 +137,8 @@ func TestScheduleWaterAction(t *testing.T) {
 	mqttClient := new(mqtt.MockClient)
 
 	// Allow light action sync during StartAsync (test doesn't care about light behavior)
-	mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
-	mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
+	mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(nil)
+	mqttClient.On("Publish", mock.Anything, "test-garden/command/water", mock.Anything).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
@@ -238,8 +238,8 @@ func TestScheduleWaterActionGardenHealthNotification(t *testing.T) {
 
 			mqttClient := new(mqtt.MockClient)
 			// Allow light action sync during StartAsync (test doesn't care about light behavior)
-			mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
-			mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
+			mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(nil)
+			mqttClient.On("Publish", mock.Anything, "test-garden/command/water", mock.Anything).Return(nil)
 			mqttClient.On("Disconnect", uint(100)).Return()
 
 			influxdbClient := new(influxdb.MockClient)
@@ -318,8 +318,8 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 
 			mqttClient := new(mqtt.MockClient)
 			// Allow light action sync during StartAsync (test doesn't care about light behavior)
-			mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
-			mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(errors.New("publish error"))
+			mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(nil)
+			mqttClient.On("Publish", mock.Anything, "test-garden/command/water", mock.Anything).Return(errors.New("publish error"))
 			mqttClient.On("Disconnect", uint(100)).Return()
 
 			influxdbClient := new(influxdb.MockClient)
@@ -602,7 +602,7 @@ func TestScheduleLightActions(t *testing.T) {
 				assert.NoError(t, err)
 
 				mqttClient := new(mqtt.MockClient)
-				mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(tt.mqttPublishError)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(tt.mqttPublishError)
 				mqttClient.On("Disconnect", uint(100)).Return()
 
 				influxdbClient := new(influxdb.MockClient)
@@ -685,7 +685,7 @@ func TestScheduleLightActions(t *testing.T) {
 				assert.NoError(t, err)
 
 				mqttClient := new(mqtt.MockClient)
-				mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(nil)
 				mqttClient.On("Disconnect", uint(100)).Return()
 
 				influxdbClient := new(influxdb.MockClient)
@@ -1044,7 +1044,7 @@ func TestResetLightSchedule_SyncsStateDuringOnPeriod(t *testing.T) {
 
 	mqttClient := new(mqtt.MockClient)
 	// Expect immediate ON sync because we're in the ON period
-	mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
+	mqttClient.On("Publish", mock.Anything, "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 
 	influxdbClient := new(influxdb.MockClient)
@@ -1264,7 +1264,7 @@ func TestExecuteFanAction(t *testing.T) {
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
 	// Expect fan command published with correct JSON
-	mqttClient.On("Publish", "test-garden/command/fan", []byte(`{"duration":1800000,"power":127}`)).Return(nil)
+	mqttClient.On("Publish", mock.Anything, "test-garden/command/fan", []byte(`{"duration":1800000,"power":127}`)).Return(nil)
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
@@ -1282,7 +1282,7 @@ func TestExecuteFanAction(t *testing.T) {
 		Power:    127,
 	}
 
-	err = worker.ExecuteFanAction(g, input)
+	err = worker.ExecuteFanAction(context.Background(), g, input)
 	assert.NoError(t, err)
 
 	worker.Stop()
@@ -1299,7 +1299,7 @@ func TestExecuteFanAction_MQTTPublishError(t *testing.T) {
 
 	influxdbClient := new(influxdb.MockClient)
 	mqttClient := new(mqtt.MockClient)
-	mqttClient.On("Publish", "test-garden/command/fan", []byte(`{"duration":60000,"power":255}`)).Return(errors.New("mqtt publish error"))
+	mqttClient.On("Publish", mock.Anything, "test-garden/command/fan", []byte(`{"duration":60000,"power":255}`)).Return(errors.New("mqtt publish error"))
 	mqttClient.On("Disconnect", uint(100)).Return()
 	influxdbClient.On("Close").Return()
 
@@ -1317,7 +1317,7 @@ func TestExecuteFanAction_MQTTPublishError(t *testing.T) {
 		Power:    255,
 	}
 
-	err = worker.ExecuteFanAction(g, input)
+	err = worker.ExecuteFanAction(context.Background(), g, input)
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "mqtt publish error")
 
@@ -1400,7 +1400,7 @@ func TestExecuteFanActionInScheduledJob_OnlyWithLight(t *testing.T) {
 					Duration: tt.expectedDurMs,
 					Power:    tt.expectedPower,
 				})
-				mqttClient.On("Publish", "test-garden/command/fan", expectedMsg).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/fan", expectedMsg).Return(nil)
 			}
 			mqttClient.On("Disconnect", uint(100)).Return()
 			influxdbClient.On("Close").Return()

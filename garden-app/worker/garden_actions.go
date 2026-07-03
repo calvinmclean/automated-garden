@@ -20,35 +20,35 @@ import (
 )
 
 // ExecuteGardenAction will execute a GardenAction
-func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) error {
+func (w *Worker) ExecuteGardenAction(ctx context.Context, g *pkg.Garden, input *action.GardenAction) error {
 	switch {
 	case input.Light != nil:
-		err := w.ExecuteLightAction(g, input.Light)
+		err := w.ExecuteLightAction(ctx, g, input.Light)
 		if err != nil {
 			return fmt.Errorf("unable to execute LightAction: %v", err)
 		}
 	case input.Fan != nil:
-		err := w.ExecuteFanAction(g, input.Fan)
+		err := w.ExecuteFanAction(ctx, g, input.Fan)
 		if err != nil {
 			return fmt.Errorf("unable to execute FanAction: %v", err)
 		}
 	case input.Stop != nil:
-		err := w.ExecuteStopAction(g, input.Stop)
+		err := w.ExecuteStopAction(ctx, g, input.Stop)
 		if err != nil {
 			return fmt.Errorf("unable to execute StopAction: %v", err)
 		}
 	case input.Update != nil:
-		err := w.ExecuteUpdateAction(g, input.Update)
+		err := w.ExecuteUpdateAction(ctx, g, input.Update)
 		if err != nil {
 			return fmt.Errorf("unable to execute UpdateAction: %v", err)
 		}
 	case input.ControllerSetup != nil:
-		err := w.ExecuteControllerSetupAction(g, input.ControllerSetup)
+		err := w.ExecuteControllerSetupAction(ctx, g, input.ControllerSetup)
 		if err != nil {
 			return fmt.Errorf("unable to execute ControllerSetupAction: %v", err)
 		}
 	case input.FirmwareUpdate != nil:
-		err := w.ExecuteFirmwareUpdateAction(g, input.FirmwareUpdate)
+		err := w.ExecuteFirmwareUpdateAction(ctx, g, input.FirmwareUpdate)
 		if err != nil {
 			return fmt.Errorf("unable to execute FirmwareUpdateAction: %v", err)
 		}
@@ -57,7 +57,7 @@ func (w *Worker) ExecuteGardenAction(g *pkg.Garden, input *action.GardenAction) 
 }
 
 // ExecuteStopAction sends the message over MQTT to the embedded garden controller
-func (w *Worker) ExecuteStopAction(g *pkg.Garden, input *action.StopAction) error {
+func (w *Worker) ExecuteStopAction(ctx context.Context, g *pkg.Garden, input *action.StopAction) error {
 	topicFunc := mqtt.StopTopic
 	if input.All {
 		topicFunc = mqtt.StopAllTopic
@@ -67,11 +67,11 @@ func (w *Worker) ExecuteStopAction(g *pkg.Garden, input *action.StopAction) erro
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	return w.mqttClient.Publish(topic, []byte("no message"))
+	return w.mqttClient.Publish(ctx, topic, []byte("no message"))
 }
 
 // ExecuteLightAction sends an MQTT message to the garden controller to change the state of the light
-func (w *Worker) ExecuteLightAction(g *pkg.Garden, input *action.LightAction) error {
+func (w *Worker) ExecuteLightAction(ctx context.Context, g *pkg.Garden, input *action.LightAction) error {
 	msg, err := json.Marshal(input)
 	if err != nil {
 		return fmt.Errorf("unable to marshal LightAction to JSON: %v", err)
@@ -82,7 +82,7 @@ func (w *Worker) ExecuteLightAction(g *pkg.Garden, input *action.LightAction) er
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	err = w.mqttClient.Publish(topic, msg)
+	err = w.mqttClient.Publish(ctx, topic, msg)
 	if err != nil {
 		return fmt.Errorf("unable to publish LightAction: %v", err)
 	}
@@ -91,7 +91,7 @@ func (w *Worker) ExecuteLightAction(g *pkg.Garden, input *action.LightAction) er
 }
 
 // ExecuteFanAction sends an MQTT message to the garden controller to turn on the fan for a duration
-func (w *Worker) ExecuteFanAction(g *pkg.Garden, input *action.FanAction) error {
+func (w *Worker) ExecuteFanAction(ctx context.Context, g *pkg.Garden, input *action.FanAction) error {
 	msg, err := json.Marshal(input)
 	if err != nil {
 		return fmt.Errorf("unable to marshal FanAction to JSON: %v", err)
@@ -102,7 +102,7 @@ func (w *Worker) ExecuteFanAction(g *pkg.Garden, input *action.FanAction) error 
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	err = w.mqttClient.Publish(topic, msg)
+	err = w.mqttClient.Publish(ctx, topic, msg)
 	if err != nil {
 		return fmt.Errorf("unable to publish FanAction: %v", err)
 	}
@@ -111,7 +111,7 @@ func (w *Worker) ExecuteFanAction(g *pkg.Garden, input *action.FanAction) error 
 }
 
 // ExecuteUpdateAction sends an MQTT message to the garden controller with the current configuration
-func (w *Worker) ExecuteUpdateAction(g *pkg.Garden, input *action.UpdateAction) error {
+func (w *Worker) ExecuteUpdateAction(ctx context.Context, g *pkg.Garden, input *action.UpdateAction) error {
 	if !input.Config {
 		return errors.New("update action must have config=true")
 	}
@@ -129,7 +129,7 @@ func (w *Worker) ExecuteUpdateAction(g *pkg.Garden, input *action.UpdateAction) 
 		return fmt.Errorf("unable to fill MQTT topic template: %v", err)
 	}
 
-	err = w.mqttClient.Publish(topic, msg)
+	err = w.mqttClient.Publish(ctx, topic, msg)
 	if err != nil {
 		return fmt.Errorf("unable to publish UpdateAction: %v", err)
 	}
@@ -139,7 +139,7 @@ func (w *Worker) ExecuteUpdateAction(g *pkg.Garden, input *action.UpdateAction) 
 
 // ExecuteControllerSetupAction sends MQTT connection details to the controller's
 // WiFiManager paramsave endpoint
-func (w *Worker) ExecuteControllerSetupAction(g *pkg.Garden, input *action.ControllerSetupAction) error {
+func (w *Worker) ExecuteControllerSetupAction(ctx context.Context, g *pkg.Garden, input *action.ControllerSetupAction) error {
 	if input.Server == "" {
 		return errors.New("controller_setup action must have server")
 	}
@@ -157,7 +157,7 @@ func (w *Worker) ExecuteControllerSetupAction(g *pkg.Garden, input *action.Contr
 	form.Set("topic_prefix", input.TopicPrefix)
 	form.Set("port", strconv.Itoa(input.Port))
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, strings.NewReader(form.Encode()))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
 	if err != nil {
 		return fmt.Errorf("unable to create controller setup request: %v", err)
 	}
@@ -179,12 +179,12 @@ func (w *Worker) ExecuteControllerSetupAction(g *pkg.Garden, input *action.Contr
 // ExecuteFirmwareUpdateAction sends a firmware image to the controller's WiFiManager
 // update endpoint. When input.Latest is true, the image is downloaded from the
 // controller-latest GitHub release.
-func (w *Worker) ExecuteFirmwareUpdateAction(g *pkg.Garden, input *action.FirmwareUpdateAction) error {
+func (w *Worker) ExecuteFirmwareUpdateAction(ctx context.Context, g *pkg.Garden, input *action.FirmwareUpdateAction) error {
 	var firmware []byte
 	var err error
 
 	if input.Latest {
-		firmware, err = w.downloadLatestFirmware()
+		firmware, err = w.downloadLatestFirmware(ctx)
 		if err != nil {
 			return fmt.Errorf("unable to download latest firmware: %v", err)
 		}
@@ -216,7 +216,7 @@ func (w *Worker) ExecuteFirmwareUpdateAction(g *pkg.Garden, input *action.Firmwa
 		return fmt.Errorf("unable to close firmware multipart writer: %v", err)
 	}
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodPost, endpoint, body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, body)
 	if err != nil {
 		return fmt.Errorf("unable to create firmware update request: %v", err)
 	}
@@ -244,10 +244,10 @@ type githubAsset struct {
 	BrowserDownloadURL string `json:"browser_download_url"`
 }
 
-func (w *Worker) downloadLatestFirmware() ([]byte, error) {
+func (w *Worker) downloadLatestFirmware(ctx context.Context) ([]byte, error) {
 	releaseURL := w.firmwareUpdateReleaseURLFunc()
 
-	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, releaseURL, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, releaseURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create release request: %v", err)
 	}
@@ -281,7 +281,7 @@ func (w *Worker) downloadLatestFirmware() ([]byte, error) {
 		return nil, fmt.Errorf("release does not contain %q asset", firmwareAssetName)
 	}
 
-	req, err = http.NewRequestWithContext(context.Background(), http.MethodGet, downloadURL, nil)
+	req, err = http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, nil)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create asset request: %v", err)
 	}

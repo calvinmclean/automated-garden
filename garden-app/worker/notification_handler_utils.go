@@ -11,17 +11,17 @@ import (
 
 const notificationClientIDLogField = "notification_client_id"
 
-func (w *Worker) sendNotificationForGarden(garden *pkg.Garden, title, message string) error {
+func (w *Worker) sendNotificationForGarden(ctx context.Context, garden *pkg.Garden, title, message string) error {
 	if garden.GetNotificationClientID() == "" {
 		return errors.New("garden does not have notification client")
 	}
 
-	notificationClient, err := w.storageClient.NotificationClientConfigs.Get(context.Background(), garden.GetNotificationClientID())
+	notificationClient, err := w.storageClient.NotificationClientConfigs.Get(ctx, garden.GetNotificationClientID())
 	if err != nil {
 		return fmt.Errorf("error getting all notification clients: %w", err)
 	}
 
-	err = notificationClient.SendMessage(title, message)
+	err = notificationClient.SendMessage(ctx, title, message)
 	if err != nil {
 		return err
 	}

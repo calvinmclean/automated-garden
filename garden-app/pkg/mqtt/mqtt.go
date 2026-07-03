@@ -4,6 +4,7 @@ package mqtt
 //go:generate mockery --all --inpackage
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -30,7 +31,7 @@ type Config struct {
 
 // Client is an interface that allows access to MQTT functionality within the garden-app
 type Client interface {
-	Publish(string, []byte) error
+	Publish(context.Context, string, []byte) error
 	Connect() error
 	Disconnect(uint)
 	AddHandler(TopicHandler)
@@ -108,7 +109,7 @@ func (c *client) Connect() error {
 }
 
 // Publish will send the message to the specified MQTT topic
-func (c *client) Publish(topic string, message []byte) error {
+func (c *client) Publish(ctx context.Context, topic string, message []byte) error {
 	timer := prometheus.NewTimer(mqttClientSummary.WithLabelValues("Publish", topic))
 	defer timer.ObserveDuration()
 
@@ -120,8 +121,15 @@ func (c *client) Publish(topic string, message []byte) error {
 	if err := c.Connect(); err != nil {
 		return fmt.Errorf("unable to connect to MQTT broker: %v", err)
 	}
-	if token := c.Client.Publish(topic, byte(1), false, message); token.Wait() && token.Error() != nil {
-		return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
+
+	token := c.Client.Publish(topic, byte(1), false, message)
+	select {
+	case <-token.Done():
+		if token.Error() != nil {
+			return fmt.Errorf("unable to publish MQTT message: %v", token.Error())
+		}
+	case <-ctx.Done():
+		return fmt.Errorf("unable to publish MQTT message: %w", ctx.Err())
 	}
 	return nil
 }

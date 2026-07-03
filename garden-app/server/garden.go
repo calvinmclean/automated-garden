@@ -286,7 +286,7 @@ func (api *GardensAPI) gardenAction(_ http.ResponseWriter, r *http.Request, gard
 	}
 	logger.Debug("garden action", "action", gardenAction)
 
-	if err := api.worker.ExecuteGardenAction(garden, gardenAction); err != nil {
+	if err := api.worker.ExecuteGardenAction(r.Context(), garden, gardenAction); err != nil {
 		logger.Error("unable to execute GardenAction", "error", err)
 		return nil, babyapi.InternalServerError(err)
 	}

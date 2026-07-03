@@ -178,14 +178,15 @@ func (w *Worker) syncLightStateAllGardens() {
 		return
 	}
 
-	for g, err := range w.storageClient.Gardens.Search(context.Background(), "", nil) {
+	ctx := context.Background()
+	for g, err := range w.storageClient.Gardens.Search(ctx, "", nil) {
 		if err != nil {
 			w.logger.Error("error getting garden for light state sync", "error", err)
 			continue
 		}
 		logger := w.contextLogger(g, nil, nil)
 
-		err := w.setExpectedLightState(g)
+		err := w.setExpectedLightState(ctx, g)
 		if err != nil {
 			logger.Error("error setting expected LightState", "error", err)
 		}
@@ -197,14 +198,15 @@ func (w *Worker) syncFanStateAllGardens() {
 		return
 	}
 
-	for g, err := range w.storageClient.Gardens.Search(context.Background(), "", nil) {
+	ctx := context.Background()
+	for g, err := range w.storageClient.Gardens.Search(ctx, "", nil) {
 		if err != nil {
 			w.logger.Error("error getting garden for fan state sync", "error", err)
 			continue
 		}
 		logger := w.contextLogger(g, nil, nil)
 
-		err := w.setExpectedFanState(g)
+		err := w.setExpectedFanState(ctx, g)
 		if err != nil {
 			logger.Error("error setting expected FanState", "error", err)
 		}

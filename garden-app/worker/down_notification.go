@@ -2,6 +2,7 @@
 package worker
 
 import (
+	"context"
 	"fmt"
 	"time"
 
@@ -73,7 +74,7 @@ func (w *Worker) handleDowntimeNotification(topic string) error {
 	title := fmt.Sprintf("%s is down", garden.Name)
 	msg := fmt.Sprintf("Garden has been down for > %s", downtime.String())
 
-	return w.sendNotificationForGarden(garden, title, msg)
+	return w.sendNotificationForGarden(context.Background(), garden, title, msg)
 }
 
 // message format: 'health garden="{{ TopicPrefix }}"'

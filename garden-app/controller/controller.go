@@ -247,7 +247,7 @@ func (c *Controller) publishHealthData() {
 	topic := fmt.Sprintf("%s/data/health", c.TopicPrefix)
 	healthLogger := c.pubLogger.With("topic", topic)
 	healthLogger.Info("publishing health data")
-	err := c.mqttClient.Publish(topic, fmt.Appendf(nil, "health garden=\"%s\"", c.TopicPrefix))
+	err := c.mqttClient.Publish(context.Background(), topic, fmt.Appendf(nil, "health garden=\"%s\"", c.TopicPrefix))
 	if err != nil {
 		healthLogger.Error("unable to publish health data", "error", err)
 	}
@@ -285,7 +285,7 @@ func (c *Controller) publishSensorData(sensorID, sensorType string) {
 	}
 
 	logger.Info("publishing sensor data")
-	err := c.mqttClient.Publish(sensorTopic, message)
+	err := c.mqttClient.Publish(context.Background(), sensorTopic, message)
 	if err != nil {
 		logger.Error("unable to publish sensor data", "error", err)
 	}
@@ -296,7 +296,7 @@ func (c *Controller) PublishStartupLog(topicPrefix string) error {
 	topic := fmt.Sprintf("%s/data/logs", topicPrefix)
 	msg := "logs message=\"garden-controller setup complete\""
 
-	err := c.mqttClient.Publish(topic, []byte(msg))
+	err := c.mqttClient.Publish(context.Background(), topic, []byte(msg))
 	if err != nil {
 		return fmt.Errorf("error publishing startup log %w", err)
 	}
@@ -331,7 +331,7 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 	waterEventLogger.Info("publishing watering event for Zone")
 
 	startMsg := fmt.Sprintf("water,status=start,zone=%d,id=%s,zone_id=%s millis=0", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID)
-	err := c.mqttClient.Publish(dataTopic, []byte(startMsg))
+	err := c.mqttClient.Publish(context.Background(), dataTopic, []byte(startMsg))
 	if err != nil {
 		waterEventLogger.Error("unable to publish watering started event", "error", err)
 	}
@@ -373,7 +373,7 @@ func (c *Controller) publishWaterEvent(waterMsg action.WaterMessage, cmdTopic st
 			terminalMsg = fmt.Sprintf("water,status=complete,zone=%d,id=%s,zone_id=%s millis=%d", waterMsg.Position, waterMsg.EventID, waterMsg.ZoneID, waterMsg.Duration)
 		}
 
-		err = c.mqttClient.Publish(dataTopic, []byte(terminalMsg))
+		err = c.mqttClient.Publish(context.Background(), dataTopic, []byte(terminalMsg))
 		if err != nil {
 			waterEventLogger.Error("unable to publish watering event", "error", err)
 		}

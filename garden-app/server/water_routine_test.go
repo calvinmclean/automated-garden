@@ -71,7 +71,7 @@ func TestWaterRoutine(t *testing.T) {
 	api := NewWaterRoutineAPI()
 	mqttClient := new(mqtt.MockClient)
 	// Allow light action sync during StartAsync (test doesn't care about light behavior)
-	mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
+	mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(nil)
 	api.setup(storageClient, worker.NewWorker(storageClient, nil, mqttClient, slog.Default()))
 
 	api.worker.StartAsync()
@@ -113,9 +113,9 @@ func TestWaterRoutine(t *testing.T) {
 	})
 
 	t.Run("RunRoutine", func(t *testing.T) {
-		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":0,"id":"00000000000000000000","source":"water_routine"}`, zones[0].GetID())).Return(nil)
-		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":1,"id":"00000000000000000000","source":"water_routine"}`, zones[1].GetID())).Return(nil)
-		mqttClient.On("Publish", "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":2,"id":"00000000000000000000","source":"water_routine"}`, zones[2].GetID())).Return(nil)
+		mqttClient.On("Publish", mock.Anything, "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":0,"id":"00000000000000000000","source":"water_routine"}`, zones[0].GetID())).Return(nil)
+		mqttClient.On("Publish", mock.Anything, "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":1,"id":"00000000000000000000","source":"water_routine"}`, zones[1].GetID())).Return(nil)
+		mqttClient.On("Publish", mock.Anything, "test-garden/command/water", fmt.Appendf(nil, `{"duration":1000,"zone_id":"%s","position":2,"id":"00000000000000000000","source":"water_routine"}`, zones[2].GetID())).Return(nil)
 		mqttClient.On("Disconnect", uint(100)).Return()
 
 		r := httptest.NewRequest(http.MethodPost, fmt.Sprintf("%s/%s/run", waterRoutineBasePath, wr.GetID()), http.NoBody)

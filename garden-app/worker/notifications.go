@@ -9,7 +9,7 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 )
 
-func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState, logger *slog.Logger) {
+func (w *Worker) sendLightActionNotification(ctx context.Context, g *pkg.Garden, state pkg.LightState, logger *slog.Logger) {
 	if g.GetNotificationClientID() == "" {
 		return
 	}
@@ -20,11 +20,11 @@ func (w *Worker) sendLightActionNotification(g *pkg.Garden, state pkg.LightState
 	}
 
 	title := fmt.Sprintf("%s: Light %s", g.Name, state.String())
-	w.sendNotification(g.GetNotificationClientID(), title, "Successfully executed LightAction", logger)
+	w.sendNotification(ctx, g.GetNotificationClientID(), title, "Successfully executed LightAction", logger)
 }
 
-func (w *Worker) sendDownNotification(g *pkg.Garden, clientID, actionName string) {
-	health := w.GetGardenHealth(context.Background(), g)
+func (w *Worker) sendDownNotification(ctx context.Context, g *pkg.Garden, clientID, actionName string) {
+	health := w.GetGardenHealth(ctx, g)
 	if health == nil || health.LastContact == nil {
 		return
 	}
@@ -32,6 +32,7 @@ func (w *Worker) sendDownNotification(g *pkg.Garden, clientID, actionName string
 		return
 	}
 	w.sendNotification(
+		ctx,
 		clientID,
 		fmt.Sprintf("%s: %s", g.Name, health.Status),
 		fmt.Sprintf(`Attempting to execute %s Action, but last contact was %s.
@@ -40,13 +41,13 @@ Details: %s`, actionName, health.LastContact.Format(time.DateTime), health.Detai
 	)
 }
 
-func (w *Worker) sendWateringReminder(ws *pkg.WaterSchedule, duration time.Duration, zoneCount int, logger *slog.Logger) {
+func (w *Worker) sendWateringReminder(ctx context.Context, ws *pkg.WaterSchedule, duration time.Duration, zoneCount int, logger *slog.Logger) {
 	if ws.GetNotificationClientID() == "" || ws.SendReminder == nil || !*ws.SendReminder {
 		return
 	}
 
 	title, message := generateWateringNotificationContent(ws, duration, zoneCount)
-	w.sendNotification(ws.GetNotificationClientID(), title, message, logger)
+	w.sendNotification(ctx, ws.GetNotificationClientID(), title, message, logger)
 }
 
 func generateWateringNotificationContent(ws *pkg.WaterSchedule, duration time.Duration, zoneCount int) (string, string) {
@@ -80,16 +81,16 @@ func generateWateringNotificationContent(ws *pkg.WaterSchedule, duration time.Du
 	return title, message
 }
 
-func (w *Worker) sendNotification(clientID, title, msg string, logger *slog.Logger) {
+func (w *Worker) sendNotification(ctx context.Context, clientID, title, msg string, logger *slog.Logger) {
 	ncLogger := logger.With("notification_client_id", clientID)
 
-	notificationClient, err := w.storageClient.NotificationClientConfigs.Get(context.Background(), clientID)
+	notificationClient, err := w.storageClient.NotificationClientConfigs.Get(ctx, clientID)
 	if err != nil {
 		ncLogger.Error("error getting notification client", "error", err)
 		return
 	}
 
-	err = notificationClient.SendMessage(title, msg)
+	err = notificationClient.SendMessage(ctx, title, msg)
 	if err != nil {
 		ncLogger.Error("error sending message", "error", err)
 		return

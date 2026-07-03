@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -46,7 +47,7 @@ func TestGardenAction(t *testing.T) {
 				Light: &action.LightAction{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/light", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -58,7 +59,7 @@ func TestGardenAction(t *testing.T) {
 				Stop: &action.StopAction{},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/stop", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/stop", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -70,7 +71,7 @@ func TestGardenAction(t *testing.T) {
 				Fan: &action.FanAction{Duration: 1800000, Power: 127},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/fan", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/fan", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -82,7 +83,7 @@ func TestGardenAction(t *testing.T) {
 				Update: &action.UpdateAction{Config: true},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/update_config", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/update_config", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -107,7 +108,7 @@ func TestGardenAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteGardenAction(garden, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteGardenAction(context.Background(), garden, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -139,7 +140,7 @@ func TestLightActionExecute(t *testing.T) {
 			"Successful",
 			&action.LightAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/light", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -149,7 +150,7 @@ func TestLightActionExecute(t *testing.T) {
 			"PublishError",
 			&action.LightAction{State: pkg.LightStateOff},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/light", mock.Anything).Return(errors.New("publish error"))
+				mqttClient.On("Publish", mock.Anything, "garden/command/light", mock.Anything).Return(errors.New("publish error"))
 			},
 			func(err error, t *testing.T) {
 				if err == nil {
@@ -181,7 +182,7 @@ func TestLightActionExecute(t *testing.T) {
 			assert.NoError(t, err)
 			worker.StartAsync()
 
-			err = worker.ExecuteLightAction(garden, tt.action)
+			err = worker.ExecuteLightAction(context.Background(), garden, tt.action)
 			tt.assert(err, t)
 
 			worker.Stop()
@@ -208,7 +209,7 @@ func TestFanActionExecute(t *testing.T) {
 			"Successful",
 			&action.FanAction{Duration: 1800000, Power: 127},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/fan", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/fan", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -218,7 +219,7 @@ func TestFanActionExecute(t *testing.T) {
 			"PublishError",
 			&action.FanAction{Duration: 1800000, Power: 127},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/fan", mock.Anything).Return(errors.New("publish error"))
+				mqttClient.On("Publish", mock.Anything, "garden/command/fan", mock.Anything).Return(errors.New("publish error"))
 			},
 			func(err error, t *testing.T) {
 				if err == nil {
@@ -237,7 +238,7 @@ func TestFanActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteFanAction(garden, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteFanAction(context.Background(), garden, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -261,7 +262,7 @@ func TestStopActionExecute(t *testing.T) {
 			"Successful",
 			&action.StopAction{},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/stop", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/stop", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -271,7 +272,7 @@ func TestStopActionExecute(t *testing.T) {
 			"SuccessfulStopAll",
 			&action.StopAction{All: true},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/stop_all", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/stop_all", mock.Anything).Return(nil)
 			},
 			func(err error, t *testing.T) {
 				assert.NoError(t, err)
@@ -285,7 +286,7 @@ func TestStopActionExecute(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteStopAction(garden, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteStopAction(context.Background(), garden, tt.action)
 			tt.assert(err, t)
 			mqttClient.AssertExpectations(t)
 			influxdbClient.AssertExpectations(t)
@@ -401,7 +402,7 @@ func TestControllerSetupActionExecute(t *testing.T) {
 			worker := NewWorker(nil, nil, nil, slog.Default())
 			worker.controllerSetupURLFunc = func(string) string { return server.URL + "/paramsave" }
 
-			err := worker.ExecuteControllerSetupAction(garden, tt.action)
+			err := worker.ExecuteControllerSetupAction(context.Background(), garden, tt.action)
 			tt.assert(err, t)
 
 			if err == nil {
@@ -518,7 +519,7 @@ func TestFirmwareUpdateActionExecute(t *testing.T) {
 				worker.firmwareUpdateUploadURLFunc = func(string) string { return uploadURL }
 			}
 
-			err := worker.ExecuteFirmwareUpdateAction(garden, tt.action)
+			err := worker.ExecuteFirmwareUpdateAction(context.Background(), garden, tt.action)
 			tt.assert(err, firmwareData, t)
 		})
 	}

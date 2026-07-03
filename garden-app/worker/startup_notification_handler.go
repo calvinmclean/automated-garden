@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -34,25 +35,27 @@ func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) er
 	logger = logger.With("garden_id", garden.GetID())
 	logger.Debug("found garden with topic-prefix")
 
-	err = w.setExpectedLightState(garden)
+	ctx := context.Background()
+
+	err = w.setExpectedLightState(ctx, garden)
 	if err != nil {
 		logger.Warn("unable to set expected LightState", "error", err.Error())
 		msg += fmt.Sprintf(" Error setting LightState: %v", err)
 	}
 
-	err = w.setExpectedFanState(garden)
+	err = w.setExpectedFanState(ctx, garden)
 	if err != nil {
 		logger.Warn("unable to set expected FanState", "error", err.Error())
 		msg += fmt.Sprintf(" Error setting FanState: %v", err)
 	}
 
-	return w.sendGardenStartupMessage(garden, topic, msg)
+	return w.sendGardenStartupMessage(ctx, garden, topic, msg)
 }
 
 // setExpectedLightState is used when a GardenController connects/starts up. It sets the current
 // expected light state in case the last toggle was missed during downtime or turned off after crashing.
 // It is also called by syncLightState when the server schedules/resets a LightSchedule.
-func (w *Worker) setExpectedLightState(garden *pkg.Garden) error {
+func (w *Worker) setExpectedLightState(ctx context.Context, garden *pkg.Garden) error {
 	if garden == nil {
 		return errors.New("nil Garden")
 	}
@@ -62,7 +65,7 @@ func (w *Worker) setExpectedLightState(garden *pkg.Garden) error {
 	}
 
 	state := garden.LightSchedule.ExpectedStateAtTime(clock.Now())
-	err := w.ExecuteLightAction(garden, &action.LightAction{
+	err := w.ExecuteLightAction(ctx, garden, &action.LightAction{
 		State: state,
 	})
 	if err != nil {
@@ -74,7 +77,7 @@ func (w *Worker) setExpectedLightState(garden *pkg.Garden) error {
 
 // setExpectedFanState is used when a GardenController connects/starts up. It runs the fan for the
 // remaining duration of the current ON period if the schedule says it should be active now.
-func (w *Worker) setExpectedFanState(garden *pkg.Garden) error {
+func (w *Worker) setExpectedFanState(ctx context.Context, garden *pkg.Garden) error {
 	if garden == nil {
 		return errors.New("nil Garden")
 	}
@@ -103,7 +106,7 @@ func (w *Worker) setExpectedFanState(garden *pkg.Garden) error {
 		return nil
 	}
 
-	err := w.ExecuteFanAction(garden, &action.FanAction{
+	err := w.ExecuteFanAction(ctx, garden, &action.FanAction{
 		Duration: remainingDuration.Milliseconds(),
 		Power:    garden.FanSchedule.PowerToPWM(),
 	})
@@ -114,7 +117,7 @@ func (w *Worker) setExpectedFanState(garden *pkg.Garden) error {
 	return nil
 }
 
-func (w *Worker) sendGardenStartupMessage(garden *pkg.Garden, topic string, msg string) error {
+func (w *Worker) sendGardenStartupMessage(ctx context.Context, garden *pkg.Garden, topic string, msg string) error {
 	if garden == nil {
 		return errors.New("nil Garden")
 	}
@@ -126,7 +129,7 @@ func (w *Worker) sendGardenStartupMessage(garden *pkg.Garden, topic string, msg 
 	}
 
 	title := fmt.Sprintf("%s connected", garden.Name)
-	return w.sendNotificationForGarden(garden, title, msg)
+	return w.sendNotificationForGarden(ctx, garden, title, msg)
 }
 
 func parseStartupMessage(msg string) string {

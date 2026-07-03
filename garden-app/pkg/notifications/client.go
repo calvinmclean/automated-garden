@@ -2,6 +2,7 @@
 package notifications
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -89,13 +90,13 @@ func (*Client) EndDated() bool {
 
 func (*Client) SetEndDate(_ time.Time) {}
 
-func (nc *Client) SendMessage(title, message string) error {
+func (nc *Client) SendMessage(ctx context.Context, title, message string) error {
 	if strings.HasPrefix(nc.URL, fakeScheme+"://") {
 		fc, err := newFakeClient(nc.URL)
 		if err != nil {
 			return fmt.Errorf("error initializing fake client: %w", err)
 		}
-		return fc.SendMessage(title, message)
+		return fc.SendMessage(ctx, title, message)
 	}
 
 	sender, err := shoutrrr.CreateSender(nc.URL)

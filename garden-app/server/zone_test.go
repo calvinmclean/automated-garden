@@ -253,7 +253,7 @@ func TestZoneAction(t *testing.T) {
 		{
 			"SuccessfulWaterAction",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/water", mock.Anything).Return(nil)
 			},
 			`{"water":{"duration":1000}}`,
 			"{}",
@@ -319,7 +319,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionInteger",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":1000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000","source":"command"}`)).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/water", []byte(`{"duration":1000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000","source":"command"}`)).Return(nil)
 			},
 			`water.duration=1000`,
 			"{}",
@@ -328,7 +328,7 @@ func TestZoneActionForm(t *testing.T) {
 		{
 			"SuccessfulWaterActionString",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/water", []byte(`{"duration":2000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000","source":"command"}`)).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/water", []byte(`{"duration":2000,"zone_id":"c5cvhpcbcv45e8bp16dg","position":0,"id":"00000000000000000000","source":"command"}`)).Return(nil)
 			},
 			`water.duration=2s`,
 			"{}",

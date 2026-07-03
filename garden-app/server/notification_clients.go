@@ -164,7 +164,7 @@ func (api *NotificationClientsAPI) testNotificationClient(_ http.ResponseWriter,
 		return babyapi.ErrInvalidRequest(err)
 	}
 
-	err = notificationClient.SendMessage(req.Title, req.Message)
+	err = notificationClient.SendMessage(r.Context(), req.Title, req.Message)
 	if err != nil {
 		return babyapi.ErrInvalidRequest(err)
 	}

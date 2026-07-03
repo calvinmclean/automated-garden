@@ -2,6 +2,7 @@
 package fake
 
 import (
+	"context"
 	"errors"
 	"sync"
 
@@ -42,7 +43,7 @@ func NewClient(options map[string]any) (*Client, error) {
 	return client, nil
 }
 
-func (c *Client) SendMessage(title, message string) error {
+func (c *Client) SendMessage(ctx context.Context, title, message string) error {
 	if c.SendMessageError != "" {
 		return errors.New(c.SendMessageError)
 	}

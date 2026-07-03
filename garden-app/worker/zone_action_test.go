@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"log/slog"
 	"testing"
 	"time"
@@ -41,7 +42,7 @@ func TestZoneAction(t *testing.T) {
 				},
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient) {
-				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/water", mock.Anything).Return(nil)
 			},
 			"",
 		},
@@ -56,7 +57,7 @@ func TestZoneAction(t *testing.T) {
 			influxdbClient := new(influxdb.MockClient)
 			tt.setupMock(mqttClient, influxdbClient)
 
-			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteZoneAction(garden, zone, tt.action)
+			err := NewWorker(nil, influxdbClient, mqttClient, slog.Default()).ExecuteZoneAction(context.Background(), garden, zone, tt.action)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())
@@ -90,7 +91,7 @@ func TestWaterActionExecute(t *testing.T) {
 				Position: uintPointer(0),
 			},
 			func(mqttClient *mqtt.MockClient, influxdbClient *influxdb.MockClient, wc *weather.MockClient) {
-				mqttClient.On("Publish", "garden/command/water", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "garden/command/water", mock.Anything).Return(nil)
 			},
 			"",
 		},
@@ -108,7 +109,7 @@ func TestWaterActionExecute(t *testing.T) {
 			wc := new(weather.MockClient)
 			tt.setupMock(mqttClient, influxdbClient, wc)
 
-			err = NewWorker(storageClient, influxdbClient, mqttClient, slog.Default()).ExecuteWaterAction(garden, tt.zone, action)
+			err = NewWorker(storageClient, influxdbClient, mqttClient, slog.Default()).ExecuteWaterAction(context.Background(), garden, tt.zone, action)
 			if tt.expectedError != "" {
 				assert.Error(t, err)
 				assert.Equal(t, tt.expectedError, err.Error())

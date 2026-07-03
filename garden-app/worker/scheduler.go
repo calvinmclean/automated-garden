@@ -64,22 +64,24 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 					return fmt.Errorf("error getting Zones for WaterSchedule when executing scheduled Job: %w", err)
 				}
 
+				ctx := context.Background()
+
 				// Send watering notification if enabled
-				w.sendWateringReminder(ws, duration, len(zonesAndGardens), jobLogger)
+				w.sendWateringReminder(ctx, ws, duration, len(zonesAndGardens), jobLogger)
 
 				// If duration is 0 (weather says skip), don't water any zones
 				if duration == 0 {
 					jobLogger.Info("skipping watering all zones due to weather control")
 					return nil
 				}
-
 				for _, zg := range zonesAndGardens {
-					err = w.ExecuteScheduledWaterAction(zg.Garden, zg.Zone, ws, duration)
+					err = w.ExecuteScheduledWaterAction(ctx, zg.Garden, zg.Zone, ws, duration)
 					if err != nil {
 						jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
 						schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
 						if ws.GetNotificationClientID() != "" {
 							go w.sendNotification(
+								ctx,
 								ws.GetNotificationClientID(),
 								fmt.Sprintf("%s: Water Action Error", ws.Name),
 								err.Error(),
@@ -95,6 +97,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
 				if waterSchedule.GetNotificationClientID() != "" {
 					w.sendNotification(
+						context.Background(),
 						waterSchedule.GetNotificationClientID(),
 						fmt.Sprintf("%s: Water Action Error", waterSchedule.Name),
 						err.Error(),
@@ -244,13 +247,15 @@ func (w *Worker) ResetLightSchedule(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Debug("resetting LightSchedule")
 
+	ctx := context.Background()
+
 	if err := w.RemoveJobsByTag(g.ID.String(), "light"); err != nil {
 		return err
 	}
 	if err := w.ScheduleLightActions(g); err != nil {
 		return err
 	}
-	if err := w.setExpectedLightState(g); err != nil {
+	if err := w.setExpectedLightState(ctx, g); err != nil {
 		return err
 	}
 
@@ -318,22 +323,24 @@ func (w *Worker) executeLightActionInScheduledJob(g *pkg.Garden, input *action.L
 	actionLogger = actionLogger.With("state", input.State.String())
 	actionLogger.Info("executing LightAction")
 
+	ctx := context.Background()
+
 	if g.GetNotificationClientID() != "" {
-		w.sendDownNotification(g, g.GetNotificationClientID(), "Light")
+		w.sendDownNotification(ctx, g, g.GetNotificationClientID(), "Light")
 	}
 
-	err := w.ExecuteLightAction(g, input)
+	err := w.ExecuteLightAction(ctx, g, input)
 	if err != nil {
 		actionLogger.Error("error executing scheduled LightAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 
 		if g.GetNotificationClientID() != "" {
-			w.sendNotification(g.GetNotificationClientID(), fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
+			w.sendNotification(ctx, g.GetNotificationClientID(), fmt.Sprintf("%s: Light Action Error", g.Name), err.Error(), actionLogger)
 		}
 		return
 	}
 
-	w.sendLightActionNotification(g, input.State, actionLogger)
+	w.sendLightActionNotification(ctx, g, input.State, actionLogger)
 }
 
 // ScheduleFanActions will schedule FanActions to turn the fan on based off the FanSchedule's
@@ -372,17 +379,21 @@ func (w *Worker) ResetFanSchedule(g *pkg.Garden) error {
 	logger := w.contextLogger(g, nil, nil)
 	logger.Debug("resetting FanSchedule")
 
+	ctx := context.Background()
+
 	if err := w.RemoveJobsByTag(g.ID.String(), "fan"); err != nil {
 		return err
 	}
 	if err := w.ScheduleFanActions(g); err != nil {
 		return err
 	}
-	return w.setExpectedFanState(g)
+	return w.setExpectedFanState(ctx, g)
 }
 
 func (w *Worker) executeFanActionInScheduledJob(g *pkg.Garden, actionLogger *slog.Logger) {
 	actionLogger.Info("executing FanAction")
+
+	ctx := context.Background()
 
 	if g.FanSchedule.OnlyWithLight && g.LightSchedule != nil {
 		if g.LightSchedule.ExpectedStateAtTime(clock.Now()) != pkg.LightStateOn {
@@ -392,7 +403,7 @@ func (w *Worker) executeFanActionInScheduledJob(g *pkg.Garden, actionLogger *slo
 	}
 
 	if g.GetNotificationClientID() != "" {
-		w.sendDownNotification(g, g.GetNotificationClientID(), "Fan")
+		w.sendDownNotification(ctx, g, g.GetNotificationClientID(), "Fan")
 	}
 
 	input := &action.FanAction{
@@ -400,13 +411,13 @@ func (w *Worker) executeFanActionInScheduledJob(g *pkg.Garden, actionLogger *slo
 		Power:    g.FanSchedule.PowerToPWM(),
 	}
 
-	err := w.ExecuteFanAction(g, input)
+	err := w.ExecuteFanAction(ctx, g, input)
 	if err != nil {
 		actionLogger.Error("error executing scheduled FanAction", "error", err)
 		schedulerErrors.WithLabelValues(gardenLabels(g)...).Inc()
 
 		if g.GetNotificationClientID() != "" {
-			w.sendNotification(g.GetNotificationClientID(), fmt.Sprintf("%s: Fan Action Error", g.Name), err.Error(), actionLogger)
+			w.sendNotification(ctx, g.GetNotificationClientID(), fmt.Sprintf("%s: Fan Action Error", g.Name), err.Error(), actionLogger)
 		}
 		return
 	}

@@ -172,7 +172,7 @@ func (api *ZonesAPI) zoneAction(_ http.ResponseWriter, r *http.Request, zone *pk
 	if zoneAction.Water != nil {
 		zoneAction.Water.Source = action.SourceCommand
 	}
-	if err := api.worker.ExecuteZoneAction(garden, zone, zoneAction); err != nil {
+	if err := api.worker.ExecuteZoneAction(r.Context(), garden, zone, zoneAction); err != nil {
 		logger.Error("unable to execute ZoneAction", "error", err)
 		return nil, babyapi.InternalServerError(err)
 	}

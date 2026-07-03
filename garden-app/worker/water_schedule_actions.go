@@ -11,10 +11,10 @@ import (
 )
 
 // ExecuteScheduledWaterAction will run ExecuteWaterAction after checking SkipCount
-func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule, duration time.Duration) error {
+func (w *Worker) ExecuteScheduledWaterAction(ctx context.Context, g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule, duration time.Duration) error {
 	if z.SkipCount != nil && *z.SkipCount > 0 {
 		*z.SkipCount--
-		err := w.storageClient.Zones.Set(context.Background(), z)
+		err := w.storageClient.Zones.Set(ctx, z)
 		if err != nil {
 			return fmt.Errorf("unable to save Zone after decrementing SkipCount: %w", err)
 		}
@@ -29,10 +29,10 @@ func (w *Worker) ExecuteScheduledWaterAction(g *pkg.Garden, z *pkg.Zone, ws *pkg
 	}
 
 	if ws.GetNotificationClientID() != "" {
-		w.sendDownNotification(g, ws.GetNotificationClientID(), "Water")
+		w.sendDownNotification(ctx, g, ws.GetNotificationClientID(), "Water")
 	}
 
-	return w.ExecuteWaterAction(g, z, &action.WaterAction{
+	return w.ExecuteWaterAction(ctx, g, z, &action.WaterAction{
 		Duration: &pkg.Duration{Duration: duration},
 		Source:   action.SourceSchedule,
 	})

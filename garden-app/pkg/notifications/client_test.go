@@ -1,6 +1,7 @@
 package notifications
 
 import (
+	"context"
 	"testing"
 
 	"github.com/containrrr/shoutrrr"
@@ -60,12 +61,12 @@ func TestTestCreateFakeURLError(t *testing.T) {
 
 func TestSendMessageFakeURL(t *testing.T) {
 	client := &Client{URL: "fake://"}
-	err := client.SendMessage("title", "message")
+	err := client.SendMessage(context.Background(), "title", "message")
 	assert.NoError(t, err)
 }
 
 func TestSendMessageFakeURLError(t *testing.T) {
 	client := &Client{URL: "fake://?send_message_error=fail"}
-	err := client.SendMessage("title", "message")
+	err := client.SendMessage(context.Background(), "title", "message")
 	assert.Error(t, err)
 }

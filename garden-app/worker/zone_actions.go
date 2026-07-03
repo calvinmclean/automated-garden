@@ -1,6 +1,7 @@
 package worker
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 
@@ -14,9 +15,9 @@ import (
 var CreateNewID = xid.New
 
 // ExecuteZoneAction will execute a ZoneAction
-func (w *Worker) ExecuteZoneAction(g *pkg.Garden, z *pkg.Zone, input *action.ZoneAction) error {
+func (w *Worker) ExecuteZoneAction(ctx context.Context, g *pkg.Garden, z *pkg.Zone, input *action.ZoneAction) error {
 	if input.Water != nil {
-		err := w.ExecuteWaterAction(g, z, input.Water)
+		err := w.ExecuteWaterAction(ctx, g, z, input.Water)
 		if err != nil {
 			return fmt.Errorf("unable to execute WaterAction: %w", err)
 		}
@@ -26,7 +27,7 @@ func (w *Worker) ExecuteZoneAction(g *pkg.Garden, z *pkg.Zone, input *action.Zon
 
 // ExecuteWaterAction sends the message over MQTT to the embedded garden controller. This is used for a directly-requested
 // WaterAction and does not perform any of the watering checks that are usuall done for a scheduled watering
-func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) error {
+func (w *Worker) ExecuteWaterAction(ctx context.Context, g *pkg.Garden, z *pkg.Zone, input *action.WaterAction) error {
 	if input.Duration.Duration == 0 {
 		w.logger.Info("weather control determined that watering should be skipped")
 		return nil
@@ -51,5 +52,5 @@ func (w *Worker) ExecuteWaterAction(g *pkg.Garden, z *pkg.Zone, input *action.Wa
 
 	w.logger.Info("publishing WaterMessage", "event_id", eventID)
 
-	return w.mqttClient.Publish(topic, msg)
+	return w.mqttClient.Publish(ctx, topic, msg)
 }

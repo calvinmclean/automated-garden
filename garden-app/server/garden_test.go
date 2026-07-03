@@ -697,7 +697,7 @@ func TestGardenAction(t *testing.T) {
 		{
 			"SuccessfulLightAction",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/light", mock.Anything).Return(nil)
 			},
 			`{"light":{"state":"on"}}`,
 			"{}",
@@ -759,7 +759,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightAction",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
 			},
 			`light.state=on`,
 			"{}",
@@ -768,7 +768,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightActionWithQuote",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
 			},
 			`light.state="on"`,
 			"{}",
@@ -777,7 +777,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightActionOFF",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
 			},
 			`light.state=off`,
 			"{}",
@@ -786,7 +786,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulLightActionOFFWithQuote",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
 			},
 			`light.state="off"`,
 			"{}",
@@ -795,7 +795,7 @@ func TestGardenActionForm(t *testing.T) {
 		{
 			"SuccessfulStopAllWatering",
 			func(mqttClient *mqtt.MockClient) {
-				mqttClient.On("Publish", "test-garden/command/stop_all", mock.Anything).Return(nil)
+				mqttClient.On("Publish", mock.Anything, "test-garden/command/stop_all", mock.Anything).Return(nil)
 			},
 			`stop.all=true`,
 			"{}",

@@ -81,7 +81,7 @@ func (w *Worker) doWaterCompleteStatusMessage(topic string, payload []byte) erro
 		message = fmt.Sprintf("Watered for %s\nGarden: %s", dur.String(), garden.Name)
 	}
 
-	return w.sendNotificationForGarden(garden, title, message)
+	return w.sendNotificationForGarden(context.Background(), garden, title, message)
 }
 
 func parseWaterStatusEvent(msg []byte) (action.WaterStatusEvent, error) {
