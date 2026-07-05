@@ -553,3 +553,139 @@ func newFirmwareUploadServer(t *testing.T, expectedData []byte, status int) stri
 
 	return server.URL + "/u"
 }
+
+func TestControllerSetupActionFallbackToIP(t *testing.T) {
+	garden := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	ipServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/paramsave", r.URL.Path)
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "application/x-www-form-urlencoded", r.Header.Get("Content-Type"))
+
+		r.Body = http.MaxBytesReader(w, r.Body, 1024)
+		err := r.ParseForm()
+		assert.NoError(t, err)
+		assert.Equal(t, "192.168.1.10", r.PostForm.Get("server"))
+		assert.Equal(t, "garden", r.PostForm.Get("topic_prefix"))
+		assert.Equal(t, "1883", r.PostForm.Get("port"))
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ipServer.Close()
+
+	garden.ControllerInfo = &pkg.ControllerInfo{IPAddress: ipServer.Listener.Addr().String()}
+
+	localServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("request should not reach local server when fallback succeeds")
+	}))
+	localServer.Close()
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.controllerSetupURLFunc = func(string) string { return localServer.URL + "/paramsave" }
+
+	err := worker.ExecuteControllerSetupAction(context.Background(), garden, &action.ControllerSetupAction{
+		Server:      "192.168.1.10",
+		TopicPrefix: "garden",
+		Port:        1883,
+	})
+	assert.NoError(t, err)
+}
+
+func TestControllerSetupActionNoFallbackOnServerError(t *testing.T) {
+	garden := &pkg.Garden{
+		ID:             babyapi.NewID(),
+		Name:           "garden",
+		TopicPrefix:    "garden",
+		ControllerInfo: &pkg.ControllerInfo{IPAddress: "127.0.0.1:9999"},
+	}
+
+	localServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+	}))
+	defer localServer.Close()
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.controllerSetupURLFunc = func(string) string { return localServer.URL + "/paramsave" }
+
+	err := worker.ExecuteControllerSetupAction(context.Background(), garden, &action.ControllerSetupAction{
+		Server:      "192.168.1.10",
+		TopicPrefix: "garden",
+		Port:        1883,
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "controller setup request returned status 500", err.Error())
+}
+
+func TestFirmwareUpdateActionFallbackToIP(t *testing.T) {
+	firmwareData := []byte("fake firmware binary data")
+
+	ipServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/u", r.URL.Path)
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.True(t, strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data"))
+
+		r.Body = http.MaxBytesReader(w, r.Body, int64(maxFirmwareSize+1024))
+		err := r.ParseMultipartForm(int64(maxFirmwareSize + 1024))
+		assert.NoError(t, err)
+
+		file, header, err := r.FormFile("update")
+		assert.NoError(t, err)
+		defer func() { _ = file.Close() }()
+
+		assert.Equal(t, "firmware.bin", header.Filename)
+
+		received, err := io.ReadAll(file)
+		assert.NoError(t, err)
+		assert.Equal(t, firmwareData, received)
+
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer ipServer.Close()
+
+	garden := &pkg.Garden{
+		ID:             babyapi.NewID(),
+		Name:           "garden",
+		TopicPrefix:    "garden",
+		ControllerInfo: &pkg.ControllerInfo{IPAddress: ipServer.Listener.Addr().String()},
+	}
+
+	localServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		t.Fatal("request should not reach local server when fallback succeeds")
+	}))
+	localServer.Close()
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.firmwareUpdateUploadURLFunc = func(string) string { return localServer.URL + "/u" }
+
+	err := worker.ExecuteFirmwareUpdateAction(context.Background(), garden, &action.FirmwareUpdateAction{
+		Latest:   false,
+		FileData: firmwareData,
+	})
+	assert.NoError(t, err)
+}
+
+func TestFirmwareUpdateActionNoFallbackOnServerError(t *testing.T) {
+	firmwareData := []byte("fake firmware binary data")
+
+	localServer := newFirmwareUploadServer(t, firmwareData, http.StatusInternalServerError)
+
+	garden := &pkg.Garden{
+		ID:             babyapi.NewID(),
+		Name:           "garden",
+		TopicPrefix:    "garden",
+		ControllerInfo: &pkg.ControllerInfo{IPAddress: "127.0.0.1:9999"},
+	}
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.firmwareUpdateUploadURLFunc = func(string) string { return localServer }
+
+	err := worker.ExecuteFirmwareUpdateAction(context.Background(), garden, &action.FirmwareUpdateAction{
+		Latest:   false,
+		FileData: firmwareData,
+	})
+	assert.Error(t, err)
+	assert.Equal(t, "firmware update request returned status 500", err.Error())
+}

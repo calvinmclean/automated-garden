@@ -9,10 +9,10 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"strconv"
-	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
@@ -137,6 +137,50 @@ func (w *Worker) ExecuteUpdateAction(ctx context.Context, g *pkg.Garden, input *
 	return nil
 }
 
+// sendControllerRequest sends an HTTP POST to the controller's .local hostname first.
+// If that fails at the network layer and a stored IP address is available, it retries
+// against the IP address before giving up.
+func (w *Worker) sendControllerRequest(ctx context.Context, g *pkg.Garden, localURL, path string, body []byte, contentType string) (*http.Response, error) {
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, localURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	resp, err := w.httpClient.Do(req)
+	if err == nil {
+		return resp, nil
+	}
+
+	if g == nil || g.ControllerInfo == nil || g.ControllerInfo.IPAddress == "" {
+		return nil, err
+	}
+
+	ipHost := g.ControllerInfo.IPAddress
+	if _, _, splitErr := net.SplitHostPort(ipHost); splitErr != nil {
+		ipHost = net.JoinHostPort(ipHost, "80")
+	}
+	ipURL := fmt.Sprintf("http://%s%s", ipHost, path)
+
+	w.logger.Debug("controller request failed, retrying with stored IP address", "local_url", localURL, "ip_url", ipURL, "error", err)
+
+	req, err = http.NewRequestWithContext(ctx, http.MethodPost, ipURL, bytes.NewReader(body))
+	if err != nil {
+		return nil, err
+	}
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
+	}
+
+	resp, ipErr := w.httpClient.Do(req)
+	if ipErr != nil {
+		return nil, fmt.Errorf("unable to send request to %q and fallback to %q: %v, %v", localURL, ipURL, err, ipErr)
+	}
+	return resp, nil
+}
+
 // ExecuteControllerSetupAction sends MQTT connection details to the controller's
 // WiFiManager paramsave endpoint
 func (w *Worker) ExecuteControllerSetupAction(ctx context.Context, g *pkg.Garden, input *action.ControllerSetupAction) error {
@@ -150,20 +194,17 @@ func (w *Worker) ExecuteControllerSetupAction(ctx context.Context, g *pkg.Garden
 		return errors.New("controller_setup action must have a positive port")
 	}
 
-	endpoint := w.controllerSetupURLFunc(g.TopicPrefix)
-
 	form := url.Values{}
 	form.Set("server", input.Server)
 	form.Set("topic_prefix", input.TopicPrefix)
 	form.Set("port", strconv.Itoa(input.Port))
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, strings.NewReader(form.Encode()))
-	if err != nil {
-		return fmt.Errorf("unable to create controller setup request: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := w.httpClient.Do(req)
+	resp, err := w.sendControllerRequest(
+		ctx, g,
+		w.controllerSetupURLFunc(g.TopicPrefix),
+		"/paramsave", []byte(form.Encode()),
+		"application/x-www-form-urlencoded",
+	)
 	if err != nil {
 		return fmt.Errorf("unable to send controller setup request: %v", err)
 	}
@@ -199,8 +240,6 @@ func (w *Worker) ExecuteFirmwareUpdateAction(ctx context.Context, g *pkg.Garden,
 		return fmt.Errorf("firmware exceeds maximum size of %d bytes", maxFirmwareSize)
 	}
 
-	endpoint := w.firmwareUpdateUploadURLFunc(g.TopicPrefix)
-
 	body := &bytes.Buffer{}
 	writer := multipart.NewWriter(body)
 	part, err := writer.CreateFormFile("update", firmwareAssetName)
@@ -216,13 +255,12 @@ func (w *Worker) ExecuteFirmwareUpdateAction(ctx context.Context, g *pkg.Garden,
 		return fmt.Errorf("unable to close firmware multipart writer: %v", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, body)
-	if err != nil {
-		return fmt.Errorf("unable to create firmware update request: %v", err)
-	}
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-
-	resp, err := w.httpClient.Do(req)
+	resp, err := w.sendControllerRequest(
+		ctx, g,
+		w.firmwareUpdateUploadURLFunc(g.TopicPrefix),
+		"/u", body.Bytes(),
+		writer.FormDataContentType(),
+	)
 	if err != nil {
 		return fmt.Errorf("unable to send firmware update request: %v", err)
 	}
