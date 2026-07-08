@@ -148,6 +148,22 @@ void runWifiManagerPortal() {
 }
 
 void setupWifiManager() {
+  // Load any previously-saved config first so the setup portal can show
+  // the currently-set values instead of the hardcoded defaults.
+  setupFS();
+
+  if (mqtt_server[0] != '\0') {
+    custom_mqtt_server.setValue(mqtt_server, sizeof(mqtt_server));
+  }
+  if (mqtt_topic_prefix[0] != '\0') {
+    custom_mqtt_topic_prefix.setValue(mqtt_topic_prefix, sizeof(mqtt_topic_prefix));
+  }
+  if (mqtt_port != 0) {
+    char port_str[7];
+    snprintf(port_str, sizeof(port_str), "%d", mqtt_port);
+    custom_mqtt_port.setValue(port_str, 6);
+  }
+
   wifiManager.setSaveConfigCallback(saveParamsToConfig);
   wifiManager.setSaveParamsCallback(saveParamsToConfig);
 
@@ -156,8 +172,6 @@ void setupWifiManager() {
   wifiManager.addParameter(&custom_mqtt_port);
 
   // wifiManager.resetSettings();
-
-  setupFS();
 
   wifiManager.setHostname(mqtt_topic_prefix);
 
