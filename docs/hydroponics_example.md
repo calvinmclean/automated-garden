@@ -42,10 +42,7 @@ influxdb:
   org: "garden"
   bucket: "garden"
 storage:
-  type: "ConfigMap"
-  options:
-    name: "garden-app-config"
-    key: "gardens.yaml"
+  connection_string: "garden.db"
 ```
 
 #### **Garden JSON**

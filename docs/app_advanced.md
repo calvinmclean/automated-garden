@@ -58,9 +58,6 @@ The `pkg/storage` package defines a `Client` interface and multiple implementati
 - `YAMLClient`
     - Writes objects to a YAML file on the local filesystem
     - Requires a filename to use
-- `ConfigMapClient`
-    - Write objects to a YAML file in a Kubernetes `ConfigMap`
-    - Requires a `ConfigMap` name and key to access the data
 
 This setup will allow for easily adding more storage clients in the future.
 
@@ -105,38 +102,6 @@ If you would rather use precise device IDs or the default names d not work, you 
 station_id: "<station_mac_address>"
 rain_module_id: "<rain_module_mac_address>"
 outdoor_module_id: "<outdoor_module_mac_address>"
-```
-
-### Kubernetes
-It is possible to run this project on Kubernetes and I highly recommend this because you can easily manage all services in the cluster and quickly redeploy the `garden-app` for updates. [K3s](https://k3s.io) is a simple single-node cluster that can be run on a Raspberry Pi.
-
-All the necessary Kubernetes manifests are available in this repository at [`deploy/`](https://github.com/calvinmclean/automated-garden/tree/main/deploy/). The project uses [`kustomize`](https://kustomize.io) to easily deploy to multiple K8s environments.
-```
-kubectl apply -k deploy/dev
-```
-Available kustomizations are:
-    - `base`: basic setup includes `garden-app` and all dependencies
-    - `overlays/dev`: adds a `garden-controller` Deployment to test communication with a mock controller
-    - `overlays/prod`: adds PersistentVolume for InfluxDB and Grafana
-    - `overlays/staging`: extends `dev`, changing namespace to `staging` and changing `NodePorts` for all services
-
-#### Setup `PersistentVolumeClaim`
-Adding a `PersistentVolumeClaim` will allow storing InfluxDB data and Grafana configurations on the local filesystem so you don't have to worry about losing that when Pods go down.
-
-Setting up a PVC might require additional steps depending on your system, but editing `persistent_volume.yaml` to match your system's settings will be necessary.
-
-#### `ConfigMap` Storage Client
-Since your `garden-app` container won't have access to a filesystem, you can emulate it with `ConfigMap` and the built-in Storage Client. All you will need to do is enable write access to the Pods in the system:
-```
-kubectl create clusterrolebinding default --clusterrole=admin --serviceaccount=default:default
-```
-YAML configuration to use this Storage Client:
-```yaml
-storage:
-    type: "ConfigMap"
-    options:
-        name: "garden-app-config"
-        key: "gardens.yaml"
 ```
 
 ## Controller
