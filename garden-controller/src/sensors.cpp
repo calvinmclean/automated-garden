@@ -169,12 +169,14 @@ static void publishSensor(int index, float temperature, float humidity, bool has
         snprintf(message, sizeof(message), "sensor,sensor_id=%s temperature=%.2f", sensorID, temperature);
     }
 
+    mqttLock();
     if (client.connected()) {
         printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", sensorDataTopic, message);
         client.publish(sensorDataTopic, message);
     } else {
         printf("unable to publish: not connected to MQTT broker\n");
     }
+    mqttUnlock();
 }
 
 void sensorPublishTask(void* parameters) {

@@ -2,6 +2,11 @@
 #define mqtt_h
 
 #include <ArduinoJson.h>
+
+#ifndef MQTT_KEEPALIVE
+#define MQTT_KEEPALIVE 60
+#endif
+
 #include <PubSubClient.h>
 
 #include "config.h"
@@ -26,6 +31,7 @@
 
 extern PubSubClient client;
 
+void setupMQTTMutexAndQueue();
 void setupMQTT();
 void setupWifi();
 void waterPublisherTask(void* parameters);
@@ -34,6 +40,7 @@ void fanPublisherTask(void* parameters);
 void healthPublisherTask(void* parameters);
 void mqttConnectTask(void* parameters);
 void mqttLoopTask(void* parameters);
+void mqttCommandTask(void* parameters);
 void processIncomingMessage(char* topic, byte* message, unsigned int length);
 
 extern QueueHandle_t waterPublisherQueue;
@@ -41,5 +48,8 @@ extern QueueHandle_t lightPublisherQueue;
 extern QueueHandle_t fanPublisherQueue;
 
 void publishInfoMessage(const char* message);
+
+void mqttLock();
+void mqttUnlock();
 
 #endif

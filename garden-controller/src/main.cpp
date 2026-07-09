@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <stdio.h>
+#include <esp_system.h>
 #include "driver/gpio.h"
 #include "driver/ledc.h"
 
@@ -247,6 +248,8 @@ void rebootTask(void* parameters) {
 
 #ifndef UNIT_TEST
 void setup() {
+  printf("boot: reset reason=%d\n", esp_reset_reason());
+
   initFS();
   setupConfigVars();
 
@@ -261,9 +264,9 @@ void setup() {
   }
 
   setupWifiManager();
-  setupMQTT();
-
+  setupMQTTMutexAndQueue();
   setupSensors();
+  setupMQTT();
 
   waterQueue = xQueueCreate(QUEUE_SIZE, sizeof(WaterMessage));
   if (waterQueue == NULL) {

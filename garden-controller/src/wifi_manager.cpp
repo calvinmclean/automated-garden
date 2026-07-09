@@ -88,7 +88,7 @@ const unsigned long WIFI_RECONNECT_TIMEOUT_MS = 30000;
 
 void wifiConnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
     lastDisconnectTime = 0;
-    printf("WiFi connected\n");
+    printf("WiFi connected, ip=%s\n", WiFi.localIP().toString().c_str());
 
     MDNS.end();
     if (!MDNS.begin(mqtt_topic_prefix)) {
@@ -101,6 +101,7 @@ void wifiConnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
 void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
     if (lastDisconnectTime == 0) {
         lastDisconnectTime = millis();
+        printf("WiFi disconnected, starting %lu ms reconnect timeout\n", WIFI_RECONNECT_TIMEOUT_MS);
     }
 
     unsigned long disconnectedFor = millis() - lastDisconnectTime;
@@ -111,6 +112,7 @@ void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
         ESP.restart();
     }
 
+    printf("WiFi reconnecting...\n");
     WiFi.reconnect();
 }
 

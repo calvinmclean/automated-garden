@@ -6,6 +6,10 @@
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
 
+SemaphoreHandle_t mqttMutex;
+QueueHandle_t mqttCommandQueue;
+TaskHandle_t mqttCommandTaskHandle;
+
 TaskHandle_t mqttConnectTaskHandle;
 TaskHandle_t mqttLoopTaskHandle;
 
@@ -37,6 +41,34 @@ char logDataTopic[80];
 char infoDataTopic[80];
 
 #define ZERO (unsigned long int) 0
+#define MQTT_COMMAND_QUEUE_SIZE 32
+
+struct MQTTCommand {
+    char topic[80];
+    char* message;
+};
+
+void mqttLock() {
+    xSemaphoreTakeRecursive(mqttMutex, portMAX_DELAY);
+}
+
+void mqttUnlock() {
+    xSemaphoreGiveRecursive(mqttMutex);
+}
+
+void setupMQTTMutexAndQueue() {
+    mqttMutex = xSemaphoreCreateRecursiveMutex();
+    if (mqttMutex == NULL) {
+        printf("error creating the mqttMutex\n");
+    }
+
+    mqttCommandQueue = xQueueCreate(MQTT_COMMAND_QUEUE_SIZE, sizeof(MQTTCommand*));
+    if (mqttCommandQueue == NULL) {
+        printf("error creating the mqttCommandQueue\n");
+    }
+
+    xTaskCreate(mqttCommandTask, "MQTTCommandTask", 4096, NULL, 1, &mqttCommandTaskHandle);
+}
 
 void setupMQTT() {
     // Connect to MQTT
@@ -70,7 +102,7 @@ void setupMQTT() {
 
     // Start MQTT tasks
     xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
-    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 0, &mqttLoopTaskHandle);
+    xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 2, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
     xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
 
@@ -122,12 +154,14 @@ void waterPublisherTask(void* parameters) {
             snprintf(message, sizeof(message), "water,status=%s,zone=%d,id=%s,zone_id=%s millis=%lu",
                      statusStr, we.position, we.id, we.zone_id, millisVal);
 
+            mqttLock();
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", waterDataTopic, message);
                 client.publish(waterDataTopic, message);
             } else {
                 printf("unable to publish: not connected to MQTT broker\n");
             }
+            mqttUnlock();
 
             free(we.zone_id);
             free(we.id);
@@ -147,12 +181,14 @@ void lightPublisherTask(void* parameters) {
         if (xQueueReceive(lightPublisherQueue, &state, portMAX_DELAY)) {
             char message[50];
             sprintf(message, "light,garden=\"%s\" state=%d", mqtt_topic_prefix, state);
+            mqttLock();
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", lightDataTopic, message);
                 client.publish(lightDataTopic, message);
             } else {
                 printf("unable to publish: not connected to MQTT broker\n");
             }
+            mqttUnlock();
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
@@ -169,12 +205,14 @@ void fanPublisherTask(void* parameters) {
         if (xQueueReceive(fanPublisherQueue, &power, portMAX_DELAY)) {
             char message[50];
             sprintf(message, "fan,garden=\"%s\" power=%d", mqtt_topic_prefix, power);
+            mqttLock();
             if (client.connected()) {
                 printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", fanDataTopic, message);
                 client.publish(fanDataTopic, message);
             } else {
                 printf("unable to publish: not connected to MQTT broker\n");
             }
+            mqttUnlock();
         }
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
@@ -189,12 +227,14 @@ void healthPublisherTask(void* parameters) {
     while (true) {
         char message[50];
         sprintf(message, "health garden=\"%s\"", mqtt_topic_prefix);
+        mqttLock();
         if (client.connected()) {
             printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", healthDataTopic, message);
             client.publish(healthDataTopic, message);
         } else {
             printf("unable to publish: not connected to MQTT broker\n");
         }
+        mqttUnlock();
         vTaskDelay(HEALTH_PUBLISH_INTERVAL / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
@@ -204,13 +244,15 @@ void healthPublisherTask(void* parameters) {
   mqttConnectTask will periodically attempt to reconnect to MQTT if needed
 */
 void mqttConnectTask(void* parameters) {
+    static bool firstConnect = true;
     while (true) {
         // Connect to MQTT server if not connected already
+        mqttLock();
         if (!client.connected()) {
             printf("attempting MQTT connection...");
             // Connect with defaul arguments + cleanSession = false for persistent sessions
             if (client.connect(mqtt_topic_prefix, NULL, NULL, 0, 0, 0, 0, false)) {
-                printf("connected\n");
+                printf(firstConnect ? "connected\n" : "reconnected\n");
                 client.subscribe(waterCommandTopic, 1);
                 client.subscribe(stopCommandTopic, 1);
                 client.subscribe(stopAllCommandTopic, 1);
@@ -226,10 +268,12 @@ void mqttConnectTask(void* parameters) {
 
                 client.publish(logDataTopic, "logs message=\"garden-controller setup complete\"");
                 publishControllerInfo();
+                firstConnect = false;
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }
         }
+        mqttUnlock();
         vTaskDelay(5000 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
@@ -241,9 +285,11 @@ void mqttConnectTask(void* parameters) {
 void mqttLoopTask(void* parameters) {
     while (true) {
         // Run MQTT loop to process incoming messages if connected
+        mqttLock();
         if (client.connected()) {
             client.loop();
         }
+        mqttUnlock();
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
@@ -309,6 +355,17 @@ void handleConfigCommand(char* message) {
     reboot(1000);
 }
 
+void publishInfoMessage(const char* message) {
+    mqttLock();
+    if (client.connected()) {
+        printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", infoDataTopic, message);
+        client.publish(infoDataTopic, message);
+    } else {
+        printf("unable to publish controller info: not connected to MQTT broker\n");
+    }
+    mqttUnlock();
+}
+
 /*
   processIncomingMessage is a callback function for the MQTT client that will
   react to incoming messages. Currently, the topics are:
@@ -321,55 +378,63 @@ void handleConfigCommand(char* message) {
     - fanCommandTopic: accepts FanEvent JSON to control a fan
     - updateConfigCommandTopic: accepts Config JSON to update
 */
-void publishInfoMessage(const char* message) {
-    if (client.connected()) {
-        printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", infoDataTopic, message);
-        client.publish(infoDataTopic, message);
-    } else {
-        printf("unable to publish controller info: not connected to MQTT broker\n");
-    }
-}
-
 void processIncomingMessage(char* topic, byte* message, unsigned int length) {
     if (length == 0) {
         return;
     }
 
-    char* topic_c = strdup(topic);
-    if (topic_c == nullptr) {
-        printf("memory allocation failed for topic_c\n");
+    MQTTCommand* cmd = (MQTTCommand*)malloc(sizeof(MQTTCommand));
+    if (cmd == nullptr) {
+        printf("memory allocation failed for MQTT command\n");
         return;
     }
 
-    char* message_c = (char*)malloc(length + 1);
-    if (message_c) {
-        memcpy(message_c, message, length);
-        message_c[length] = '\0';
-    } else {
-        free(topic_c);
+    cmd->message = (char*)malloc(length + 1);
+    if (cmd->message == nullptr) {
+        printf("memory allocation failed for MQTT command message\n");
+        free(cmd);
         return;
     }
 
-    printf("message received:\n\ttopic=%s\n\tmessage=%s\n", topic_c, message_c);
+    strncpy(cmd->topic, topic, sizeof(cmd->topic) - 1);
+    cmd->topic[sizeof(cmd->topic) - 1] = '\0';
+    memcpy(cmd->message, message, length);
+    cmd->message[length] = '\0';
 
-    if (strcmp(topic_c, waterCommandTopic) == 0) {
-        handleWaterCommand(message_c);
-    } else if (strcmp(topic_c, stopCommandTopic) == 0) {
-        printf("received command to stop watering\n");
-        stopWatering();
-    } else if (strcmp(topic_c, stopAllCommandTopic) == 0) {
-        printf("received command to stop ALL watering\n");
-        stopAllWatering();
-    } else if (strcmp(topic_c, lightCommandTopic) == 0) {
-        handleLightCommand(message_c);
-    } else if (strcmp(topic_c, fanCommandTopic) == 0) {
-        handleFanCommand(message_c);
-    } else if (strcmp(topic_c, updateConfigCommandTopic) == 0) {
-        handleConfigCommand(message_c);
-    } else {
-        printf("unexpected topic: %s\n", topic_c);
+    if (xQueueSend(mqttCommandQueue, &cmd, 0) != pdPASS) {
+        printf("MQTT command queue full, dropping message\n");
+        free(cmd->message);
+        free(cmd);
     }
+}
 
-    free(topic_c);
-    free(message_c);
+void mqttCommandTask(void* parameters) {
+    MQTTCommand* cmd;
+    while (true) {
+        if (xQueueReceive(mqttCommandQueue, &cmd, portMAX_DELAY)) {
+            printf("message received:\n\ttopic=%s\n\tmessage=%s\n", cmd->topic, cmd->message);
+
+            if (strcmp(cmd->topic, waterCommandTopic) == 0) {
+                handleWaterCommand(cmd->message);
+            } else if (strcmp(cmd->topic, stopCommandTopic) == 0) {
+                printf("received command to stop watering\n");
+                stopWatering();
+            } else if (strcmp(cmd->topic, stopAllCommandTopic) == 0) {
+                printf("received command to stop ALL watering\n");
+                stopAllWatering();
+            } else if (strcmp(cmd->topic, lightCommandTopic) == 0) {
+                handleLightCommand(cmd->message);
+            } else if (strcmp(cmd->topic, fanCommandTopic) == 0) {
+                handleFanCommand(cmd->message);
+            } else if (strcmp(cmd->topic, updateConfigCommandTopic) == 0) {
+                handleConfigCommand(cmd->message);
+            } else {
+                printf("unexpected topic: %s\n", cmd->topic);
+            }
+
+            free(cmd->message);
+            free(cmd);
+        }
+    }
+    vTaskDelete(NULL);
 }
