@@ -13,6 +13,7 @@ require (
 	github.com/go-co-op/gocron v1.35.2
 	github.com/golang-migrate/migrate/v4 v4.19.1
 	github.com/influxdata/influxdb-client-go/v2 v2.12.3
+	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf
 	github.com/mark3labs/mcp-go v0.33.0
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/patrickmn/go-cache v2.1.0+incompatible
@@ -74,7 +75,6 @@ require (
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
-	github.com/influxdata/line-protocol v0.0.0-20210922203350-b1ad95c89adf // indirect
 	github.com/invopop/jsonschema v0.13.0 // indirect
 	github.com/iris-contrib/schema v0.0.6 // indirect
 	github.com/josharian/intern v1.0.0 // indirect

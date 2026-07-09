@@ -14,13 +14,16 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 )
 
-func TestGetGardenAndSendStartupMessage(t *testing.T) {
+func TestGetGardenAndHandleLogMessage(t *testing.T) {
 	// When a GardenController reboots, the light probably turned off. If the LightSchedule shows it should be on,
 	// turn it on
 	c := clock.MockTime()
@@ -52,7 +55,7 @@ func TestGetGardenAndSendStartupMessage(t *testing.T) {
 
 	t.Run("LightTurnsOn", func(t *testing.T) {
 		mqttClient.On("Publish", mock.Anything, "garden/command/light", []byte(`{"state":"ON"}`)).Return(nil)
-		err = w.getGardenAndSendStartupMessage("garden/data/logs", "logs message=\"garden-controller setup complete\"")
+		err = w.getGardenAndHandleLogMessage("garden/data/logs", "logs message=\"garden-controller setup complete\"")
 		require.NoError(t, err)
 		mqttClient.AssertExpectations(t)
 	})
@@ -63,7 +66,7 @@ func TestGetGardenAndSendStartupMessage(t *testing.T) {
 		fmt.Println("Now", clock.Now())
 		fmt.Println(garden.LightSchedule.NextChange(c.Now()))
 		mqttClient.On("Publish", mock.Anything, "garden/command/light", []byte(`{"state":"OFF"}`)).Return(nil)
-		err = w.getGardenAndSendStartupMessage("garden/data/logs", "logs message=\"garden-controller setup complete\"")
+		err = w.getGardenAndHandleLogMessage("garden/data/logs", "logs message=\"garden-controller setup complete\"")
 		require.NoError(t, err)
 		mqttClient.AssertExpectations(t)
 	})
@@ -128,10 +131,192 @@ func TestSetExpectedFanState(t *testing.T) {
 	})
 }
 
-func TestParseStartupMessage(t *testing.T) {
-	input := "logs message=\"garden-controller setup complete\""
-	msg := parseStartupMessage(input)
-	require.Equal(t, "garden-controller setup complete", msg)
+func TestStartupLogIncludesResetReason(t *testing.T) {
+	fake.Reset()
+	defer fake.Reset()
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+
+	nc := &notifications.Client{
+		ID:   babyapi.NewID(),
+		Name: "test",
+		URL:  "fake://success",
+	}
+	err = storageClient.NotificationClientConfigs.Set(context.Background(), nc)
+	require.NoError(t, err)
+
+	notificationClientID := nc.GetID()
+	garden := &pkg.Garden{
+		ID:                   babyapi.NewID(),
+		TopicPrefix:          "garden",
+		Name:                 "garden",
+		NotificationClientID: &notificationClientID,
+		NotificationSettings: &pkg.NotificationSettings{
+			ControllerStartup: true,
+		},
+	}
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	require.NoError(t, err)
+
+	w := NewWorker(storageClient, nil, nil, slog.Default())
+
+	err = w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=info,source=startup message="garden-controller setup complete",reset_reason="Reset due to power-on event."`)
+	require.NoError(t, err)
+
+	last := fake.LastMessage()
+	require.Equal(t, "garden connected", last.Title)
+	require.Contains(t, last.Message, "garden-controller setup complete")
+	require.Contains(t, last.Message, "reset_reason=Reset due to power-on event.")
+}
+
+func TestParseControllerLogMessage(t *testing.T) {
+	tests := []struct {
+		name     string
+		input    string
+		expected *controllerLog
+		wantErr  bool
+	}{
+		{
+			"LegacyStartupMessage",
+			`logs message="garden-controller setup complete"`,
+			&controllerLog{
+				Level:   "info",
+				Message: "garden-controller setup complete",
+			},
+			false,
+		},
+		{
+			"StartupMessageWithResetReason",
+			`logs,level=info,source=startup message="garden-controller setup complete",reset_reason="Reset due to power-on event."`,
+			&controllerLog{
+				Level:       "info",
+				Source:      "startup",
+				Message:     "garden-controller setup complete",
+				ResetReason: "Reset due to power-on event.",
+			},
+			false,
+		},
+		{
+			"FullMessage",
+			`logs,level=error,source=wifi_manager message="error restarting mDNS after reconnect"`,
+			&controllerLog{
+				Level:   "error",
+				Source:  "wifi_manager",
+				Message: "error restarting mDNS after reconnect",
+			},
+			false,
+		},
+		{
+			"LevelDefaultsToInfo",
+			`logs,source=main message="hello"`,
+			&controllerLog{
+				Level:   "info",
+				Source:  "main",
+				Message: "hello",
+			},
+			false,
+		},
+		{
+			"MissingMessage",
+			`logs,level="error" state=1`,
+			nil,
+			true,
+		},
+		{
+			"WrongMeasurement",
+			`water,status=complete zone=1`,
+			nil,
+			true,
+		},
+		{
+			"EmptyMessage",
+			``,
+			nil,
+			true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			log, err := parseControllerLogMessage(tt.input)
+			if tt.wantErr {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, log)
+		})
+	}
+}
+
+func TestHandleGenericLog(t *testing.T) {
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+
+	nc := &notifications.Client{
+		ID:   babyapi.NewID(),
+		Name: "test",
+		URL:  "fake://success",
+	}
+	err = storageClient.NotificationClientConfigs.Set(context.Background(), nc)
+	require.NoError(t, err)
+
+	notificationClientID := nc.GetID()
+	garden := &pkg.Garden{
+		ID:                   babyapi.NewID(),
+		TopicPrefix:          "garden",
+		Name:                 "garden",
+		NotificationClientID: &notificationClientID,
+		NotificationSettings: &pkg.NotificationSettings{
+			ControllerErrors: true,
+		},
+	}
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	require.NoError(t, err)
+
+	w := NewWorker(storageClient, nil, nil, slog.Default())
+
+	t.Run("ErrorNotifies", func(t *testing.T) {
+		var logBuffer bytes.Buffer
+		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
+		err := w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=error,source=wifi_manager message="error restarting mDNS after reconnect"`)
+		require.NoError(t, err)
+
+		logs := logBuffer.String()
+		require.Contains(t, logs, "controller error")
+		require.Contains(t, logs, "level=error")
+		require.Contains(t, logs, "source=wifi_manager")
+		require.Contains(t, logs, "message=\"error restarting mDNS after reconnect\"")
+	})
+
+	t.Run("ErrorDoesNotNotifyWhenDisabled", func(t *testing.T) {
+		garden.NotificationSettings.ControllerErrors = false
+		err := storageClient.Gardens.Set(context.Background(), garden)
+		require.NoError(t, err)
+
+		var logBuffer bytes.Buffer
+		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
+		err = w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=error message="error"`)
+		require.NoError(t, err)
+		require.Contains(t, logBuffer.String(), "controller error")
+	})
+
+	t.Run("InfoDoesNotNotify", func(t *testing.T) {
+		garden.NotificationSettings.ControllerErrors = true
+		err := storageClient.Gardens.Set(context.Background(), garden)
+		require.NoError(t, err)
+
+		var logBuffer bytes.Buffer
+		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
+		err = w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=info,source=main message="hello"`)
+		require.NoError(t, err)
+		require.Contains(t, logBuffer.String(), "controller log")
+	})
 }
 
 func TestSendGardenStartupMessage_WarnLogs(t *testing.T) {
@@ -167,20 +352,24 @@ func TestSendGardenStartupMessage_WarnLogs(t *testing.T) {
 	}
 }
 
-func TestGetGardenAndSendMessage_WarnLogs(t *testing.T) {
+func TestGetGardenAndHandleLogMessage_WarnLogs(t *testing.T) {
 	tests := []struct {
-		name         string
-		garden       *pkg.Garden
-		topic        string
-		payload      string
-		expectedLogs string
+		name            string
+		garden          *pkg.Garden
+		topic           string
+		payload         string
+		expectedContain []string
 	}{
 		{
 			"UnexpectedMessage",
 			&pkg.Garden{},
 			"topic", "NOT THE MESSAGE",
-			`level=WARN msg="unexpected message from controller" topic=topic message="NOT THE MESSAGE"
-`,
+			[]string{
+				`level=WARN msg="unexpected controller log message"`,
+				`topic=topic`,
+				`message="NOT THE MESSAGE"`,
+				`error="error parsing line protocol`,
+			},
 		},
 	}
 
@@ -190,12 +379,14 @@ func TestGetGardenAndSendMessage_WarnLogs(t *testing.T) {
 			w := &Worker{
 				logger: slog.New(slog.NewTextHandler(&logBuffer, nil)),
 			}
-			err := w.getGardenAndSendStartupMessage(tt.topic, tt.payload)
+			err := w.getGardenAndHandleLogMessage(tt.topic, tt.payload)
 			require.NoError(t, err)
 
 			// Remove the time attribute before asserting
 			logs := strings.SplitN(logBuffer.String(), " ", 2)[1]
-			require.Equal(t, tt.expectedLogs, logs)
+			for _, expected := range tt.expectedContain {
+				require.Contains(t, logs, expected)
+			}
 		})
 	}
 }

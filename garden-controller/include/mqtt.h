@@ -48,6 +48,7 @@ extern QueueHandle_t lightPublisherQueue;
 extern QueueHandle_t fanPublisherQueue;
 
 void publishInfoMessage(const char* message);
+void publishLog(const char* level, const char* source, const char* message);
 
 void mqttLock();
 void mqttUnlock();

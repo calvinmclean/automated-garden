@@ -3,6 +3,8 @@
 #include "wifi_manager.h"
 #include "controller_info.h"
 
+#include <esp_system.h>
+
 WiFiClient wifiClient;
 PubSubClient client(wifiClient);
 
@@ -240,6 +242,56 @@ void healthPublisherTask(void* parameters) {
     vTaskDelete(NULL);
 }
 
+// resetReasonString returns a human-readable string for the ESP32 reset reason.
+const char* resetReasonString(esp_reset_reason_t reason) {
+    switch (reason) {
+        case ESP_RST_UNKNOWN:
+            return "Reset reason can not be determined.";
+        case ESP_RST_POWERON:
+            return "Reset due to power-on event.";
+        case ESP_RST_EXT:
+            return "Reset by external pin (not applicable for ESP32)";
+        case ESP_RST_SW:
+            return "Software reset via esp_restart.";
+        case ESP_RST_PANIC:
+            return "Software reset due to exception/panic.";
+        case ESP_RST_INT_WDT:
+            return "Reset (software or hardware) due to interrupt watchdog.";
+        case ESP_RST_TASK_WDT:
+            return "Reset due to task watchdog.";
+        case ESP_RST_WDT:
+            return "Reset due to other watchdogs.";
+        case ESP_RST_DEEPSLEEP:
+            return "Reset after exiting deep sleep mode.";
+        case ESP_RST_BROWNOUT:
+            return "Brownout reset (software or hardware)";
+        case ESP_RST_SDIO:
+            return "Reset over SDIO.";
+#ifdef ESP_RST_USB
+        case ESP_RST_USB:
+            return "Reset by USB peripheral.";
+#endif
+#ifdef ESP_RST_JTAG
+        case ESP_RST_JTAG:
+            return "Reset by JTAG.";
+#endif
+#ifdef ESP_RST_EFUSE
+        case ESP_RST_EFUSE:
+            return "Reset due to efuse error.";
+#endif
+#ifdef ESP_RST_PWR_GLITCH
+        case ESP_RST_PWR_GLITCH:
+            return "Reset due to power glitch detected.";
+#endif
+#ifdef ESP_RST_CPU_LOCKUP
+        case ESP_RST_CPU_LOCKUP:
+            return "Reset due to CPU lock up (double exception)";
+#endif
+        default:
+            return "Reset reason can not be determined.";
+    }
+}
+
 /*
   mqttConnectTask will periodically attempt to reconnect to MQTT if needed
 */
@@ -266,7 +318,11 @@ void mqttConnectTask(void* parameters) {
                     client.subscribe(fanCommandTopic, 1);
                 }
 
-                client.publish(logDataTopic, "logs message=\"garden-controller setup complete\"");
+                char startupMessage[150];
+                snprintf(startupMessage, sizeof(startupMessage),
+                         "logs,level=info,source=startup message=\"garden-controller setup complete\",reset_reason=\"%s\"",
+                         resetReasonString(esp_reset_reason()));
+                client.publish(logDataTopic, startupMessage);
                 publishControllerInfo();
                 firstConnect = false;
             } else {
@@ -362,6 +418,37 @@ void publishInfoMessage(const char* message) {
         client.publish(infoDataTopic, message);
     } else {
         printf("unable to publish controller info: not connected to MQTT broker\n");
+    }
+    mqttUnlock();
+}
+
+/*
+  publishLog publishes a generic log message to the logging topic. The message
+  is formatted as InfluxDB line protocol with level and source tags and a
+  string message field. The message content has basic escaping for quotes and
+  backslashes.
+*/
+void publishLog(const char* level, const char* source, const char* message) {
+    mqttLock();
+    if (client.connected()) {
+        char escapedMessage[256];
+        size_t j = 0;
+        for (size_t i = 0; message[i] != '\0' && j < sizeof(escapedMessage) - 2; i++) {
+            if (message[i] == '"' || message[i] == '\\') {
+                escapedMessage[j++] = '\\';
+            }
+            escapedMessage[j++] = message[i];
+        }
+        escapedMessage[j] = '\0';
+
+        char formattedMessage[300];
+        snprintf(formattedMessage, sizeof(formattedMessage),
+                 "logs,level=%s,source=%s message=\"%s\"", level, source, escapedMessage);
+
+        printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", logDataTopic, formattedMessage);
+        client.publish(logDataTopic, formattedMessage);
+    } else {
+        printf("unable to publish log: not connected to MQTT broker\n");
     }
     mqttUnlock();
 }

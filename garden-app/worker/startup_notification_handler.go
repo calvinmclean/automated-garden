@@ -4,27 +4,37 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	lineprotocol "github.com/influxdata/line-protocol"
 )
 
-func (w *Worker) handleGardenStartupMessage(_ mqtt.Client, msg mqtt.Message) {
-	err := w.getGardenAndSendStartupMessage(msg.Topic(), string(msg.Payload()))
+func (w *Worker) handleControllerLogMessage(_ mqtt.Client, msg mqtt.Message) {
+	err := w.getGardenAndHandleLogMessage(msg.Topic(), string(msg.Payload()))
 	if err != nil {
-		w.logger.With("topic", msg.Topic(), "error", err).Error("error handling message")
+		w.logger.With("topic", msg.Topic(), "error", err).Error("error handling controller log message")
 	}
 }
 
-func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) error {
+// controllerLog represents a log message published by a garden controller.
+type controllerLog struct {
+	Level       string
+	Source      string
+	Message     string
+	ResetReason string
+}
+
+func (w *Worker) getGardenAndHandleLogMessage(topic string, payload string) error {
 	logger := w.logger.With("topic", topic)
 
-	msg := parseStartupMessage(payload)
-	if msg != "garden-controller setup complete" {
-		logger.Warn("unexpected message from controller", "message", payload)
+	log, err := parseControllerLogMessage(payload)
+	if err != nil {
+		logger.Warn("unexpected controller log message", "message", payload, "error", err)
 		return nil
 	}
 
@@ -33,23 +43,64 @@ func (w *Worker) getGardenAndSendStartupMessage(topic string, payload string) er
 		return err
 	}
 	logger = logger.With("garden_id", garden.GetID())
-	logger.Debug("found garden with topic-prefix")
 
 	ctx := context.Background()
 
-	err = w.setExpectedLightState(ctx, garden)
+	if log.Message == "garden-controller setup complete" {
+		return w.handleStartupLog(ctx, garden, topic, log, logger)
+	}
+
+	return w.handleGenericLog(ctx, garden, log, logger)
+}
+
+func (w *Worker) handleStartupLog(ctx context.Context, garden *pkg.Garden, topic string, log *controllerLog, logger *slog.Logger) error {
+	err := w.setExpectedLightState(ctx, garden)
 	if err != nil {
 		logger.Warn("unable to set expected LightState", "error", err.Error())
-		msg += fmt.Sprintf(" Error setting LightState: %v", err)
+		log.Message += fmt.Sprintf(" Error setting LightState: %v", err)
 	}
 
 	err = w.setExpectedFanState(ctx, garden)
 	if err != nil {
 		logger.Warn("unable to set expected FanState", "error", err.Error())
-		msg += fmt.Sprintf(" Error setting FanState: %v", err)
+		log.Message += fmt.Sprintf(" Error setting FanState: %v", err)
 	}
 
-	return w.sendGardenStartupMessage(ctx, garden, topic, msg)
+	if log.ResetReason != "" {
+		log.Message += fmt.Sprintf(" reset_reason=%s", log.ResetReason)
+	}
+
+	return w.sendGardenStartupMessage(ctx, garden, topic, log.Message)
+}
+
+func (w *Worker) handleGenericLog(ctx context.Context, garden *pkg.Garden, log *controllerLog, logger *slog.Logger) error {
+	logArgs := []any{
+		"level", log.Level,
+		"source", log.Source,
+		"message", log.Message,
+	}
+
+	switch log.Level {
+	case "error":
+		logger.Error("controller error", logArgs...)
+	case "warn":
+		logger.Warn("controller warning", logArgs...)
+	case "debug":
+		logger.Debug("controller debug", logArgs...)
+	default:
+		logger.Info("controller log", logArgs...)
+	}
+
+	if log.Level == "error" && garden.GetNotificationSettings().ControllerErrors {
+		title := fmt.Sprintf("%s: Controller Error", garden.Name)
+		msg := log.Message
+		if log.Source != "" {
+			msg = fmt.Sprintf("[%s] %s", log.Source, msg)
+		}
+		return w.sendNotificationForGarden(ctx, garden, title, msg)
+	}
+
+	return nil
 }
 
 // setExpectedLightState is used when a GardenController connects/starts up. It sets the current
@@ -132,6 +183,56 @@ func (w *Worker) sendGardenStartupMessage(ctx context.Context, garden *pkg.Garde
 	return w.sendNotificationForGarden(ctx, garden, title, msg)
 }
 
-func parseStartupMessage(msg string) string {
-	return strings.TrimSuffix(strings.TrimPrefix(msg, "logs message=\""), "\"")
+// parseControllerLogMessage parses an InfluxDB line protocol message with the measurement "logs".
+// It supports tags "level" and "source" and the string field "message". If level is omitted, it
+// defaults to "info".
+func parseControllerLogMessage(msg string) (*controllerLog, error) {
+	msg = strings.TrimSpace(msg)
+	if msg == "" {
+		return nil, errors.New("empty message")
+	}
+
+	handler := lineprotocol.NewMetricHandler()
+	parser := lineprotocol.NewParser(handler)
+	metrics, err := parser.Parse([]byte(msg))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing line protocol: %w", err)
+	}
+	if len(metrics) != 1 {
+		return nil, fmt.Errorf("expected 1 metric, got %d", len(metrics))
+	}
+
+	m := metrics[0]
+	if m.Name() != "logs" {
+		return nil, fmt.Errorf("unexpected measurement %q", m.Name())
+	}
+
+	log := &controllerLog{
+		Level: "info",
+	}
+	for _, tag := range m.TagList() {
+		switch tag.Key {
+		case "level":
+			log.Level = tag.Value
+		case "source":
+			log.Source = tag.Value
+		}
+	}
+
+	for _, field := range m.FieldList() {
+		if s, ok := field.Value.(string); ok {
+			switch field.Key {
+			case "message":
+				log.Message = s
+			case "reset_reason":
+				log.ResetReason = s
+			}
+		}
+	}
+
+	if log.Message == "" {
+		return nil, errors.New("missing message field")
+	}
+
+	return log, nil
 }

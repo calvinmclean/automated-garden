@@ -157,7 +157,7 @@ func (w *Worker) setupMQTT() {
 	})
 	w.mqttClient.AddHandler(mqtt.TopicHandler{
 		Topic:   "+/data/logs",
-		Handler: w.handleGardenStartupMessage,
+		Handler: w.handleControllerLogMessage,
 	})
 	w.mqttClient.AddHandler(mqtt.TopicHandler{
 		Topic:   "+/data/health",
