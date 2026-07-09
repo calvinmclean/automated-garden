@@ -168,8 +168,8 @@ func TestStartupLogIncludesResetReason(t *testing.T) {
 
 	last := fake.LastMessage()
 	require.Equal(t, "garden connected", last.Title)
-	require.Contains(t, last.Message, "garden-controller setup complete")
-	require.Contains(t, last.Message, "reset_reason=Reset due to power-on event.")
+	require.Equal(t, `garden-controller setup complete
+Reset reason: Reset due to power-on event.`, last.Message)
 }
 
 func TestParseControllerLogMessage(t *testing.T) {

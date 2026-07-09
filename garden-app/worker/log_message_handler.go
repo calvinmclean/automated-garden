@@ -54,23 +54,25 @@ func (w *Worker) getGardenAndHandleLogMessage(topic string, payload string) erro
 }
 
 func (w *Worker) handleStartupLog(ctx context.Context, garden *pkg.Garden, topic string, log *controllerLog, logger *slog.Logger) error {
+	message := log.Message
+
 	err := w.setExpectedLightState(ctx, garden)
 	if err != nil {
 		logger.Warn("unable to set expected LightState", "error", err.Error())
-		log.Message += fmt.Sprintf(" Error setting LightState: %v", err)
+		message += fmt.Sprintf("\nError setting LightState: %v", err)
 	}
 
 	err = w.setExpectedFanState(ctx, garden)
 	if err != nil {
 		logger.Warn("unable to set expected FanState", "error", err.Error())
-		log.Message += fmt.Sprintf(" Error setting FanState: %v", err)
+		message += fmt.Sprintf("\nError setting FanState: %v", err)
 	}
 
 	if log.ResetReason != "" {
-		log.Message += fmt.Sprintf(" reset_reason=%s", log.ResetReason)
+		message += fmt.Sprintf("\nReset reason: %s", log.ResetReason)
 	}
 
-	return w.sendGardenStartupMessage(ctx, garden, topic, log.Message)
+	return w.sendGardenStartupMessage(ctx, garden, topic, message)
 }
 
 func (w *Worker) handleGenericLog(ctx context.Context, garden *pkg.Garden, log *controllerLog, logger *slog.Logger) error {
