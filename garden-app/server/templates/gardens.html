@@ -358,13 +358,13 @@
         <form id="firmware-update-form-{{ .ID }}" hx-encoding="multipart/form-data">
             <div class="uk-margin">
                 <label>
-                    <input class="uk-checkbox" type="checkbox" name="firmware_update.latest" value="true"
+                    <input class="uk-checkbox" type="checkbox" name="firmware_update.latest" value="true" checked
                         onchange="var f=document.getElementById('firmware-update-file-{{ .ID }}'); f.classList.toggle('uk-hidden', this.checked); f.querySelector('input').disabled = this.checked;">
                     Use latest release
                 </label>
             </div>
-            <div id="firmware-update-file-{{ .ID }}" class="uk-margin">
-                <input type="file" name="firmware_update.file" accept=".bin">
+            <div id="firmware-update-file-{{ .ID }}" class="uk-margin uk-hidden">
+                <input type="file" name="firmware_update.file" accept=".bin" disabled>
             </div>
         </form>
 
