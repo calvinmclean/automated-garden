@@ -2,13 +2,12 @@ package worker
 
 import (
 	"context"
-	"errors"
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	lineprotocol "github.com/influxdata/line-protocol"
 )
 
 func (w *Worker) handleControllerInfoMessage(_ mqtt.Client, msg mqtt.Message) {
@@ -41,39 +40,35 @@ func (w *Worker) getGardenAndSaveControllerInfo(topic string, payload string) er
 	return w.storageClient.ControllerInfo.Upsert(context.Background(), info)
 }
 
-// parseControllerInfoMessage parses a message in the format:
-// info mac="...",ip="...",version="..."
+// parseControllerInfoMessage parses an InfluxDB line protocol message with the
+// measurement "info" and string fields "mac", "ip", and "version".
 func parseControllerInfoMessage(msg string) (*pkg.ControllerInfo, error) {
-	msg = strings.TrimSpace(msg)
-	if !strings.HasPrefix(msg, "info ") {
-		return nil, errors.New("message does not start with 'info '")
+	handler := lineprotocol.NewMetricHandler()
+	parser := lineprotocol.NewParser(handler)
+	metrics, err := parser.Parse([]byte(msg))
+	if err != nil {
+		return nil, fmt.Errorf("error parsing line protocol: %w", err)
+	}
+	if len(metrics) != 1 {
+		return nil, fmt.Errorf("expected 1 metric, got %d", len(metrics))
 	}
 
-	data := strings.TrimPrefix(msg, "info ")
+	m := metrics[0]
+	if m.Name() != "info" {
+		return nil, fmt.Errorf("unexpected measurement %q", m.Name())
+	}
+
 	info := &pkg.ControllerInfo{}
-
-	pairs := strings.Split(data, ",")
-	for _, pair := range pairs {
-		pair = strings.TrimSpace(pair)
-		if pair == "" {
-			continue
-		}
-
-		parts := strings.SplitN(pair, "=", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid key=value pair: %q", pair)
-		}
-
-		key := strings.TrimSpace(parts[0])
-		value := strings.Trim(strings.TrimSpace(parts[1]), `"`)
-
-		switch key {
-		case "mac":
-			info.MACAddress = value
-		case "ip":
-			info.IPAddress = value
-		case "version":
-			info.FirmwareVersion = value
+	for _, field := range m.FieldList() {
+		if s, ok := field.Value.(string); ok {
+			switch field.Key {
+			case "mac":
+				info.MACAddress = s
+			case "ip":
+				info.IPAddress = s
+			case "version":
+				info.FirmwareVersion = s
+			}
 		}
 	}
 

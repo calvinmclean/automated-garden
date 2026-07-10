@@ -1,16 +1,16 @@
 package worker
 
 import (
-	"bytes"
 	"context"
 	"fmt"
+	"math"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	mqtt "github.com/eclipse/paho.mqtt.golang"
+	lineprotocol "github.com/influxdata/line-protocol"
 )
 
 func (w *Worker) handleWaterCompleteStatusMessage(_ mqtt.Client, msg mqtt.Message) {
@@ -84,43 +84,85 @@ func (w *Worker) doWaterCompleteStatusMessage(topic string, payload []byte) erro
 	return w.sendNotificationForGarden(context.Background(), garden, title, message)
 }
 
+func parseInt64Field(value interface{}) (int64, error) {
+	switch v := value.(type) {
+	case int:
+		return int64(v), nil
+	case int8:
+		return int64(v), nil
+	case int16:
+		return int64(v), nil
+	case int32:
+		return int64(v), nil
+	case int64:
+		return v, nil
+	case uint:
+		if v > math.MaxInt64 {
+			return 0, fmt.Errorf("value %d overflows int64", v)
+		}
+		return int64(v), nil
+	case uint8:
+		return int64(v), nil
+	case uint16:
+		return int64(v), nil
+	case uint32:
+		return int64(v), nil
+	case uint64:
+		if v > math.MaxInt64 {
+			return 0, fmt.Errorf("value %d overflows int64", v)
+		}
+		return int64(v), nil
+	case float32:
+		return int64(v), nil
+	case float64:
+		return int64(v), nil
+	default:
+		return 0, fmt.Errorf("unsupported type %T", value)
+	}
+}
+
 func parseWaterStatusEvent(msg []byte) (action.WaterStatusEvent, error) {
-	p := parser{data: bytes.TrimPrefix(msg, []byte("water,"))}
+	handler := lineprotocol.NewMetricHandler()
+	parser := lineprotocol.NewParser(handler)
+	metrics, err := parser.Parse(msg)
+	if err != nil {
+		return action.WaterStatusEvent{}, fmt.Errorf("error parsing line protocol: %w", err)
+	}
+	if len(metrics) != 1 {
+		return action.WaterStatusEvent{}, fmt.Errorf("expected 1 metric, got %d", len(metrics))
+	}
+
+	m := metrics[0]
+	if m.Name() != "water" {
+		return action.WaterStatusEvent{}, fmt.Errorf("unexpected measurement %q", m.Name())
+	}
 
 	result := action.WaterStatusEvent{}
-
-	part, err := p.readNextPair()
-	for part != "" && err == nil {
-		key, val, found := strings.Cut(part, "=")
-		if !found {
-			continue
-		}
-
-		switch key {
+	for _, tag := range m.TagList() {
+		switch tag.Key {
+		case "status":
+			result.Status = pkg.WaterStatus(tag.Value)
 		case "zone":
-			zonePos, err := strconv.ParseUint(val, 10, 0)
+			zonePos, err := strconv.ParseUint(tag.Value, 10, 0)
 			if err != nil {
 				return action.WaterStatusEvent{}, fmt.Errorf("invalid integer for position: %w", err)
 			}
 			result.Position = uint(zonePos)
-		case "millis":
-			dur, err := strconv.ParseInt(val, 10, 64)
+		case "id":
+			result.EventID = tag.Value
+		case "zone_id":
+			result.ZoneID = tag.Value
+		}
+	}
+
+	for _, field := range m.FieldList() {
+		if field.Key == "millis" {
+			duration, err := parseInt64Field(field.Value)
 			if err != nil {
 				return action.WaterStatusEvent{}, fmt.Errorf("invalid integer for millis: %w", err)
 			}
-			result.Duration = dur
-		case "id":
-			result.EventID = strings.Trim(val, `"`)
-		case "zone_id":
-			result.ZoneID = strings.Trim(val, `"`)
-		case "status":
-			result.Status = pkg.WaterStatus(val)
+			result.Duration = duration
 		}
-
-		part, err = p.readNextPair()
-	}
-	if err != nil {
-		return action.WaterStatusEvent{}, fmt.Errorf("error reading next pair: %w", err)
 	}
 
 	if result.Status != "" && result.Status != pkg.WaterStatusStarted &&
