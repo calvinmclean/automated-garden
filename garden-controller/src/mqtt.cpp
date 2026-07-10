@@ -319,11 +319,8 @@ void mqttConnectTask(void* parameters) {
                 }
 
                 if (firstConnect) {
-                    char startupMessage[150];
-                    snprintf(startupMessage, sizeof(startupMessage),
-                             "logs,level=info,source=startup message=\"garden-controller setup complete\",reset_reason=\"%s\"",
-                             resetReasonString(esp_reset_reason()));
-                    client.publish(logDataTopic, startupMessage);
+                    publishLog("info", "startup", "garden-controller setup complete",
+                               {{"reset_reason", resetReasonString(esp_reset_reason())}});
                     firstConnect = false;
                 }
                 publishControllerInfo();
@@ -424,28 +421,55 @@ void publishInfoMessage(const char* message) {
     mqttUnlock();
 }
 
+// escapeLineProtocolString copies src into dest, escaping quotes and backslashes,
+// and returns the number of bytes written (excluding the null terminator).
+static size_t escapeLineProtocolString(const char* src, char* dest, size_t destSize) {
+    size_t j = 0;
+    for (size_t i = 0; src[i] != '\0' && j < destSize - 2; i++) {
+        if (src[i] == '"' || src[i] == '\\') {
+            dest[j++] = '\\';
+        }
+        dest[j++] = src[i];
+    }
+    dest[j] = '\0';
+    return j;
+}
+
 /*
   publishLog publishes a generic log message to the logging topic. The message
   is formatted as InfluxDB line protocol with level and source tags and a
-  string message field. The message content has basic escaping for quotes and
-  backslashes.
+  string message field. The message content and any extra field values have
+  basic escaping for quotes and backslashes.
 */
-void publishLog(const char* level, const char* source, const char* message) {
+void publishLog(const char* level, const char* source, const char* message,
+                std::initializer_list<std::pair<const char*, const char*>> extraFields) {
     mqttLock();
     if (client.connected()) {
         char escapedMessage[256];
-        size_t j = 0;
-        for (size_t i = 0; message[i] != '\0' && j < sizeof(escapedMessage) - 2; i++) {
-            if (message[i] == '"' || message[i] == '\\') {
-                escapedMessage[j++] = '\\';
-            }
-            escapedMessage[j++] = message[i];
-        }
-        escapedMessage[j] = '\0';
+        escapeLineProtocolString(message, escapedMessage, sizeof(escapedMessage));
 
-        char formattedMessage[300];
+        char extraFieldString[256];
+        extraFieldString[0] = '\0';
+        size_t pos = 0;
+        for (const auto& kv : extraFields) {
+            if (kv.first == nullptr || kv.second == nullptr) {
+                continue;
+            }
+            int written = snprintf(extraFieldString + pos, sizeof(extraFieldString) - pos, ",%s=\"", kv.first);
+            if (written < 0 || (size_t)written >= sizeof(extraFieldString) - pos) {
+                break;
+            }
+            pos += written;
+            pos += escapeLineProtocolString(kv.second, extraFieldString + pos, sizeof(extraFieldString) - pos);
+            if (pos < sizeof(extraFieldString) - 1) {
+                extraFieldString[pos++] = '"';
+                extraFieldString[pos] = '\0';
+            }
+        }
+
+        char formattedMessage[512];
         snprintf(formattedMessage, sizeof(formattedMessage),
-                 "logs,level=%s,source=%s message=\"%s\"", level, source, escapedMessage);
+                 "logs,level=%s,source=%s message=\"%s\"%s", level, source, escapedMessage, extraFieldString);
 
         printf("publishing to MQTT:\n\ttopic=%s\n\tmessage=%s\n", logDataTopic, formattedMessage);
         client.publish(logDataTopic, formattedMessage);

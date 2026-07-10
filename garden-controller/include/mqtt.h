@@ -2,6 +2,8 @@
 #define mqtt_h
 
 #include <ArduinoJson.h>
+#include <initializer_list>
+#include <utility>
 
 #ifndef MQTT_KEEPALIVE
 #define MQTT_KEEPALIVE 60
@@ -48,7 +50,8 @@ extern QueueHandle_t lightPublisherQueue;
 extern QueueHandle_t fanPublisherQueue;
 
 void publishInfoMessage(const char* message);
-void publishLog(const char* level, const char* source, const char* message);
+void publishLog(const char* level, const char* source, const char* message,
+                std::initializer_list<std::pair<const char*, const char*>> extraFields = {});
 
 void mqttLock();
 void mqttUnlock();
