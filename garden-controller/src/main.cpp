@@ -248,8 +248,6 @@ void rebootTask(void* parameters) {
 
 #ifndef UNIT_TEST
 void setup() {
-  printf("boot: reset reason=%d\n", esp_reset_reason());
-
   initFS();
   setupConfigVars();
 

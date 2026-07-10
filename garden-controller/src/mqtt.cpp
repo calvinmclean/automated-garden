@@ -318,13 +318,15 @@ void mqttConnectTask(void* parameters) {
                     client.subscribe(fanCommandTopic, 1);
                 }
 
-                char startupMessage[150];
-                snprintf(startupMessage, sizeof(startupMessage),
-                         "logs,level=info,source=startup message=\"garden-controller setup complete\",reset_reason=\"%s\"",
-                         resetReasonString(esp_reset_reason()));
-                client.publish(logDataTopic, startupMessage);
+                if (firstConnect) {
+                    char startupMessage[150];
+                    snprintf(startupMessage, sizeof(startupMessage),
+                             "logs,level=info,source=startup message=\"garden-controller setup complete\",reset_reason=\"%s\"",
+                             resetReasonString(esp_reset_reason()));
+                    client.publish(logDataTopic, startupMessage);
+                    firstConnect = false;
+                }
                 publishControllerInfo();
-                firstConnect = false;
             } else {
                 printf("failed, rc=%zu\n", client.state());
             }
