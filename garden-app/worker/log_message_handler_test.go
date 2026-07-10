@@ -183,8 +183,10 @@ func TestParseControllerLogMessage(t *testing.T) {
 			"LegacyStartupMessage",
 			`logs message="garden-controller setup complete"`,
 			&controllerLog{
-				Level:   "info",
-				Message: "garden-controller setup complete",
+				Level:       "info",
+				Message:     "garden-controller setup complete",
+				ExtraTags:   map[string]string{},
+				ExtraFields: map[string]string{},
 			},
 			false,
 		},
@@ -196,6 +198,8 @@ func TestParseControllerLogMessage(t *testing.T) {
 				Source:      "startup",
 				Message:     "garden-controller setup complete",
 				ResetReason: "Reset due to power-on event.",
+				ExtraTags:   map[string]string{},
+				ExtraFields: map[string]string{},
 			},
 			false,
 		},
@@ -203,9 +207,11 @@ func TestParseControllerLogMessage(t *testing.T) {
 			"FullMessage",
 			`logs,level=error,source=wifi_manager message="error restarting mDNS after reconnect"`,
 			&controllerLog{
-				Level:   "error",
-				Source:  "wifi_manager",
-				Message: "error restarting mDNS after reconnect",
+				Level:       "error",
+				Source:      "wifi_manager",
+				Message:     "error restarting mDNS after reconnect",
+				ExtraTags:   map[string]string{},
+				ExtraFields: map[string]string{},
 			},
 			false,
 		},
@@ -213,9 +219,23 @@ func TestParseControllerLogMessage(t *testing.T) {
 			"LevelDefaultsToInfo",
 			`logs,source=main message="hello"`,
 			&controllerLog{
-				Level:   "info",
-				Source:  "main",
-				Message: "hello",
+				Level:       "info",
+				Source:      "main",
+				Message:     "hello",
+				ExtraTags:   map[string]string{},
+				ExtraFields: map[string]string{},
+			},
+			false,
+		},
+		{
+			"ExtraTagsAndFields",
+			`logs,level=warn,source=main,device=esp32 message="hello",count=42,ok=true`,
+			&controllerLog{
+				Level:       "warn",
+				Source:      "main",
+				Message:     "hello",
+				ExtraTags:   map[string]string{"device": "esp32"},
+				ExtraFields: map[string]string{"count": "42", "ok": "true"},
 			},
 			false,
 		},
@@ -282,6 +302,8 @@ func TestHandleGenericLog(t *testing.T) {
 	w := NewWorker(storageClient, nil, nil, slog.Default())
 
 	t.Run("ErrorNotifies", func(t *testing.T) {
+		fake.Reset()
+
 		var logBuffer bytes.Buffer
 		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
 		err := w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=error,source=wifi_manager message="error restarting mDNS after reconnect"`)
@@ -292,6 +314,27 @@ func TestHandleGenericLog(t *testing.T) {
 		require.Contains(t, logs, "level=error")
 		require.Contains(t, logs, "source=wifi_manager")
 		require.Contains(t, logs, "message=\"error restarting mDNS after reconnect\"")
+
+		last := fake.LastMessage()
+		require.Equal(t, "garden: Controller Error", last.Title)
+		require.Equal(t, "[wifi_manager] error restarting mDNS after reconnect", last.Message)
+	})
+
+	t.Run("ErrorNotifiesWithExtras", func(t *testing.T) {
+		fake.Reset()
+
+		var logBuffer bytes.Buffer
+		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
+		err := w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=error,source=wifi_manager,device=esp32 message="error restarting mDNS after reconnect",count=42`)
+		require.NoError(t, err)
+
+		last := fake.LastMessage()
+		require.Equal(t, "garden: Controller Error", last.Title)
+		require.Equal(t, `[wifi_manager] error restarting mDNS after reconnect
+`+
+			`count=42
+`+
+			`device=esp32`, last.Message)
 	})
 
 	t.Run("ErrorDoesNotNotifyWhenDisabled", func(t *testing.T) {
@@ -316,6 +359,18 @@ func TestHandleGenericLog(t *testing.T) {
 		err = w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=info,source=main message="hello"`)
 		require.NoError(t, err)
 		require.Contains(t, logBuffer.String(), "controller log")
+	})
+
+	t.Run("ExtraTagsAndFieldsAreLogged", func(t *testing.T) {
+		var logBuffer bytes.Buffer
+		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
+		err := w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=info,source=main,device=esp32 message="hello",count=42`)
+		require.NoError(t, err)
+
+		logs := logBuffer.String()
+		require.Contains(t, logs, "controller log")
+		require.Contains(t, logs, "device=esp32")
+		require.Contains(t, logs, "count=42")
 	})
 }
 

@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
@@ -27,6 +29,8 @@ type controllerLog struct {
 	Source      string
 	Message     string
 	ResetReason string
+	ExtraTags   map[string]string
+	ExtraFields map[string]string
 }
 
 func (w *Worker) getGardenAndHandleLogMessage(topic string, payload string) error {
@@ -82,6 +86,13 @@ func (w *Worker) handleGenericLog(ctx context.Context, garden *pkg.Garden, log *
 		"message", log.Message,
 	}
 
+	for k, v := range log.ExtraTags {
+		logArgs = append(logArgs, k, v)
+	}
+	for k, v := range log.ExtraFields {
+		logArgs = append(logArgs, k, v)
+	}
+
 	switch log.Level {
 	case "error":
 		logger.Error("controller error", logArgs...)
@@ -99,10 +110,30 @@ func (w *Worker) handleGenericLog(ctx context.Context, garden *pkg.Garden, log *
 		if log.Source != "" {
 			msg = fmt.Sprintf("[%s] %s", log.Source, msg)
 		}
+		msg += formatKeyValuePairs(log.ExtraTags, log.ExtraFields)
 		return w.sendNotificationForGarden(ctx, garden, title, msg)
 	}
 
 	return nil
+}
+
+// formatKeyValuePairs returns a string with sorted key=value pairs, one per line,
+// prefixed by a newline if there are any pairs.
+func formatKeyValuePairs(mapsToMerge ...map[string]string) string {
+	merged := map[string]string{}
+	for _, m := range mapsToMerge {
+		maps.Copy(merged, m)
+	}
+	if len(merged) == 0 {
+		return ""
+	}
+
+	var result strings.Builder
+	keys := slices.Sorted(maps.Keys(merged))
+	for _, k := range keys {
+		fmt.Fprintf(&result, "\n%s=%s", k, merged[k])
+	}
+	return result.String()
 }
 
 // setExpectedLightState is used when a GardenController connects/starts up. It sets the current
@@ -210,7 +241,9 @@ func parseControllerLogMessage(msg string) (*controllerLog, error) {
 	}
 
 	log := &controllerLog{
-		Level: "info",
+		Level:       "info",
+		ExtraTags:   make(map[string]string),
+		ExtraFields: make(map[string]string),
 	}
 	for _, tag := range m.TagList() {
 		switch tag.Key {
@@ -218,17 +251,23 @@ func parseControllerLogMessage(msg string) (*controllerLog, error) {
 			log.Level = tag.Value
 		case "source":
 			log.Source = tag.Value
+		default:
+			log.ExtraTags[tag.Key] = tag.Value
 		}
 	}
 
 	for _, field := range m.FieldList() {
-		if s, ok := field.Value.(string); ok {
-			switch field.Key {
-			case "message":
+		switch field.Key {
+		case "message":
+			if s, ok := field.Value.(string); ok {
 				log.Message = s
-			case "reset_reason":
+			}
+		case "reset_reason":
+			if s, ok := field.Value.(string); ok {
 				log.ResetReason = s
 			}
+		default:
+			log.ExtraFields[field.Key] = fmt.Sprintf("%v", field.Value)
 		}
 	}
 
