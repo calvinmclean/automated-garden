@@ -103,7 +103,7 @@ void setupMQTT() {
     }
 
     // Start MQTT tasks
-    xTaskCreate(mqttConnectTask, "MQTTConnectTask", 2048, NULL, 1, &mqttConnectTaskHandle);
+    xTaskCreate(mqttConnectTask, "MQTTConnectTask", 4096, NULL, 1, &mqttConnectTaskHandle);
     xTaskCreate(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 2, &mqttLoopTaskHandle);
     xTaskCreate(waterPublisherTask, "WaterPublisherTask", 2048, NULL, 1, &waterPublisherTaskHandle);
     xTaskCreate(healthPublisherTask, "HealthPublisherTask", 2048, NULL, 1, &healthPublisherTaskHandle);
