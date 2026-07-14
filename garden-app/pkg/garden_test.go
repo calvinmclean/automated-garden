@@ -91,6 +91,7 @@ func TestGardenPatch(t *testing.T) {
 			"PatchNotificationSettings",
 			&Garden{NotificationSettings: &NotificationSettings{
 				ControllerStartup: true,
+				ControllerErrors:  true,
 				LightSchedule:     true,
 			}},
 		},
@@ -114,6 +115,9 @@ func TestGardenPatch(t *testing.T) {
 			}
 			if g.CreatedAt != tt.newGarden.CreatedAt {
 				t.Errorf("Unexpected result for CreatedAt: expected=%v, actual=%v", tt.newGarden.CreatedAt, g.CreatedAt)
+			}
+			if tt.newGarden.NotificationSettings != nil {
+				assert.EqualValues(t, tt.newGarden.NotificationSettings, g.NotificationSettings)
 			}
 			if tt.newGarden.ControllerConfig != nil && g.ControllerConfig != nil {
 				for i := range g.ControllerConfig.Sensors {

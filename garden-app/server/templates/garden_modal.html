@@ -141,6 +141,19 @@
                     <div class="uk-width-1-2@m">
                         <label>
                             <div class="uk-inline">
+                                <input class="uk-checkbox" type="checkbox" name="NotificationSettings.ControllerErrors"
+                                    value="true" {{ if and .NotificationSettings .NotificationSettings.ControllerErrors }}checked{{ end }}>
+                                Controller errors
+                                <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                                <div uk-dropdown="pos: right-center">
+                                    Notify when the controller reports an error
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <div class="uk-width-1-2@m">
+                        <label>
+                            <div class="uk-inline">
                                 <input class="uk-checkbox" type="checkbox" name="NotificationSettings.LightSchedule"
                                     value="true" {{ if and .NotificationSettings .NotificationSettings.LightSchedule }}checked{{ end }}>
                                 Light schedule

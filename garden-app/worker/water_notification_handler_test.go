@@ -30,7 +30,7 @@ func TestParseWaterStatusEvent(t *testing.T) {
 		error    string
 	}{
 		{
-			"water,zone=1,zone_id=\"zoneID\",id=\"eventID\" millis=6000",
+			"water,zone=1,zone_id=zoneID,id=eventID millis=6000",
 			action.WaterStatusEvent{
 				Position: 1,
 				Duration: 6000,
@@ -40,7 +40,7 @@ func TestParseWaterStatusEvent(t *testing.T) {
 			"",
 		},
 		{
-			"water,zone=100,zone_id=\"zoneID\",id=\"eventID\" millis=1",
+			"water,zone=100,zone_id=zoneID,id=eventID millis=1",
 			action.WaterStatusEvent{
 				Position: 100,
 				Duration: 1,
@@ -50,7 +50,7 @@ func TestParseWaterStatusEvent(t *testing.T) {
 			"",
 		},
 		{
-			"water,status=complete,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			"water,status=complete,zone=0,zone_id=zoneID,id=eventID millis=0",
 			action.WaterStatusEvent{
 				Position: 0,
 				Duration: 0,
@@ -61,7 +61,7 @@ func TestParseWaterStatusEvent(t *testing.T) {
 			"",
 		},
 		{
-			"water,status=start,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			"water,status=start,zone=0,zone_id=zoneID,id=eventID millis=0",
 			action.WaterStatusEvent{
 				Position: 0,
 				Duration: 0,
@@ -72,7 +72,7 @@ func TestParseWaterStatusEvent(t *testing.T) {
 			"",
 		},
 		{
-			"water,status=cancelled,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=30000",
+			"water,status=cancelled,zone=0,zone_id=zoneID,id=eventID millis=30000",
 			action.WaterStatusEvent{
 				Position: 0,
 				Duration: 30000,
@@ -83,7 +83,7 @@ func TestParseWaterStatusEvent(t *testing.T) {
 			"",
 		},
 		{
-			"water,status=cancelled,zone=0,zone_id=\"zoneID\",id=\"eventID\" millis=0",
+			"water,status=cancelled,zone=0,zone_id=zoneID,id=eventID millis=0",
 			action.WaterStatusEvent{
 				Position: 0,
 				Duration: 0,
@@ -101,7 +101,7 @@ func TestParseWaterStatusEvent(t *testing.T) {
 		{
 			"water,zone=0,zone_id=zoneID,id=eventID millis=X",
 			action.WaterStatusEvent{},
-			"invalid integer for millis: strconv.ParseInt: parsing \"X\": invalid syntax",
+			"error parsing line protocol: metric parse error: expected field at 1:47: \"water,zone=0,zone_id=zoneID,id=eventID millis=X\"",
 		},
 		{
 			"water,status=X,zone=0,zone_id=zoneID,id=eventID millis=1",
@@ -135,12 +135,12 @@ func TestHandleMessage(t *testing.T) {
 	t.Run("ErrorParsingMessage", func(t *testing.T) {
 		err = handler.doWaterCompleteStatusMessage("garden/data/water", []byte{})
 		require.Error(t, err)
-		require.Equal(t, "error getting garden with topic-prefix \"garden\": error getting garden: resource not found", err.Error())
+		require.Contains(t, err.Error(), "error parsing message")
 	})
 
 	zoneID := babyapi.NewID()
 	t.Run("ErrorGettingGarden", func(t *testing.T) {
-		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
+		msg := fmt.Appendf(nil, "water,zone=0,zone_id=%s,id=eventID millis=6000", zoneID.String())
 		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, "error getting garden with topic-prefix \"garden\": error getting garden: resource not found", err.Error())
@@ -166,7 +166,7 @@ func TestHandleMessage(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("SuccessfulWithNoNotificationClients", func(t *testing.T) {
-		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
+		msg := fmt.Appendf(nil, "water,zone=0,zone_id=%s,id=eventID millis=6000", zoneID.String())
 		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.NoError(t, err)
 	})
@@ -210,7 +210,7 @@ func TestHandleMessage(t *testing.T) {
 
 	t.Run("ErrorGettingZone", func(t *testing.T) {
 		dneID := xid.New().String()
-		msg := fmt.Appendf(nil, "water,zone=1 millis=6000 zone_id=%s id=eventID", dneID)
+		msg := fmt.Appendf(nil, "water,zone=1,zone_id=%s,id=eventID millis=6000", dneID)
 		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Equal(t, fmt.Sprintf("error getting zone %s: resource not found", dneID), err.Error())
@@ -233,7 +233,7 @@ func TestHandleMessage(t *testing.T) {
 
 		http.DefaultClient = r.GetDefaultClient()
 
-		msg := fmt.Appendf(nil, "water,zone=0 millis=6000 zone_id=%s id=eventID", zoneID.String())
+		msg := fmt.Appendf(nil, "water,zone=0,zone_id=%s,id=eventID millis=6000", zoneID.String())
 		err = handler.doWaterCompleteStatusMessage("garden/data/water", msg)
 		require.Error(t, err)
 		require.Contains(t, err.Error(), "failed to send notification")

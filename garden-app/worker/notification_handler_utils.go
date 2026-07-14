@@ -74,23 +74,3 @@ func (w *Worker) getGarden(topicPrefix string) (*pkg.Garden, error) {
 
 	return garden, nil
 }
-
-type parser struct {
-	data []byte
-	i    int
-}
-
-func (p *parser) readNextPair() (string, error) {
-	var n []byte
-	for ; p.i < len(p.data); p.i++ {
-		c := p.data[p.i]
-		if c == ' ' || c == ',' {
-			p.i++
-			break
-		}
-
-		n = append(n, c)
-	}
-
-	return string(n), nil
-}

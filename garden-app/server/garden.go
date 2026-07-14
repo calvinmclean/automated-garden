@@ -217,7 +217,6 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 		logger.Debug("updating/resetting LightSchedule for Garden")
 		if err := api.worker.ResetLightSchedule(garden); err != nil {
 			logger.Error("unable to update/reset LightSchedule", "light_schedule", garden.LightSchedule, "error", err)
-			return babyapi.InternalServerError(err)
 		}
 	}
 
@@ -225,7 +224,6 @@ func (api *GardensAPI) onCreateOrUpdate(_ http.ResponseWriter, r *http.Request, 
 		logger.Info("updating/resetting FanSchedule for Garden")
 		if err := api.worker.ResetFanSchedule(garden); err != nil {
 			logger.Error("unable to update/reset FanSchedule", "fan_schedule", garden.FanSchedule, "error", err)
-			return babyapi.InternalServerError(err)
 		}
 	}
 
