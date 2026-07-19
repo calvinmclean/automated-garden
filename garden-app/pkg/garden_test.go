@@ -91,7 +91,7 @@ func TestGardenPatch(t *testing.T) {
 			"PatchNotificationSettings",
 			&Garden{NotificationSettings: &NotificationSettings{
 				ControllerStartup: true,
-				ControllerErrors:  true,
+				ControllerAlerts:  true,
 				LightSchedule:     true,
 			}},
 		},

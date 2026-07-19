@@ -216,6 +216,18 @@ func TestParseControllerLogMessage(t *testing.T) {
 			false,
 		},
 		{
+			"AlertMessage",
+			`logs,level=alert,source=config message="received config update request"`,
+			&controllerLog{
+				Level:       "alert",
+				Source:      "config",
+				Message:     "received config update request",
+				ExtraTags:   map[string]string{},
+				ExtraFields: map[string]string{},
+			},
+			false,
+		},
+		{
 			"LevelDefaultsToInfo",
 			`logs,source=main message="hello"`,
 			&controllerLog{
@@ -293,7 +305,7 @@ func TestHandleGenericLog(t *testing.T) {
 		Name:                 "garden",
 		NotificationClientID: &notificationClientID,
 		NotificationSettings: &pkg.NotificationSettings{
-			ControllerErrors: true,
+			ControllerAlerts: true,
 		},
 	}
 	err = storageClient.Gardens.Set(context.Background(), garden)
@@ -338,7 +350,7 @@ func TestHandleGenericLog(t *testing.T) {
 	})
 
 	t.Run("ErrorDoesNotNotifyWhenDisabled", func(t *testing.T) {
-		garden.NotificationSettings.ControllerErrors = false
+		garden.NotificationSettings.ControllerAlerts = false
 		err := storageClient.Gardens.Set(context.Background(), garden)
 		require.NoError(t, err)
 
@@ -350,7 +362,7 @@ func TestHandleGenericLog(t *testing.T) {
 	})
 
 	t.Run("InfoDoesNotNotify", func(t *testing.T) {
-		garden.NotificationSettings.ControllerErrors = true
+		garden.NotificationSettings.ControllerAlerts = true
 		err := storageClient.Gardens.Set(context.Background(), garden)
 		require.NoError(t, err)
 
@@ -371,6 +383,44 @@ func TestHandleGenericLog(t *testing.T) {
 		require.Contains(t, logs, "controller log")
 		require.Contains(t, logs, "device=esp32")
 		require.Contains(t, logs, "count=42")
+	})
+
+	t.Run("AlertNotifies", func(t *testing.T) {
+		fake.Reset()
+
+		garden.NotificationSettings.ControllerAlerts = true
+		err := storageClient.Gardens.Set(context.Background(), garden)
+		require.NoError(t, err)
+
+		var logBuffer bytes.Buffer
+		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
+		err = w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=alert,source=config message="received config update request"`)
+		require.NoError(t, err)
+
+		logs := logBuffer.String()
+		require.Contains(t, logs, "controller log")
+		require.Contains(t, logs, "level=alert")
+		require.Contains(t, logs, "source=config")
+		require.Contains(t, logs, "message=\"received config update request\"")
+
+		last := fake.LastMessage()
+		require.Equal(t, "garden: Controller Alert", last.Title)
+		require.Equal(t, "[config] received config update request", last.Message)
+	})
+
+	t.Run("AlertDoesNotNotifyWhenDisabled", func(t *testing.T) {
+		garden.NotificationSettings.ControllerAlerts = false
+		err := storageClient.Gardens.Set(context.Background(), garden)
+		require.NoError(t, err)
+
+		fake.Reset()
+
+		var logBuffer bytes.Buffer
+		w.logger = slog.New(slog.NewTextHandler(&logBuffer, nil))
+		err = w.getGardenAndHandleLogMessage("garden/data/logs", `logs,level=alert,source=config message="received config update request"`)
+		require.NoError(t, err)
+		require.Contains(t, logBuffer.String(), "controller log")
+		require.Empty(t, fake.LastMessage())
 	})
 }
 

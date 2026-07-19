@@ -398,6 +398,7 @@ void handleFanCommand(char* message) {
 
 void handleConfigCommand(char* message) {
     printf("handling update_config command\n");
+    publishLog("alert", "config", "received config update request");
     bool result = deserializeConfig((char*)message, config);
     if (!result) {
         printf("failed to deserialize config: %s\n", (char*)message);
@@ -406,6 +407,7 @@ void handleConfigCommand(char* message) {
     }
 
     saveConfigToFile(config);
+    publishLog("alert", "config", "completed config update request. rebooting...");
 
     reboot(1000);
 }

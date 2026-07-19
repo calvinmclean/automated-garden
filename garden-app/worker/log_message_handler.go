@@ -104,8 +104,11 @@ func (w *Worker) handleGenericLog(ctx context.Context, garden *pkg.Garden, log *
 		logger.Info("controller log", logArgs...)
 	}
 
-	if log.Level == "error" && garden.GetNotificationSettings().ControllerErrors {
+	if (log.Level == "error" || log.Level == "alert") && garden.GetNotificationSettings().ControllerAlerts {
 		title := fmt.Sprintf("%s: Controller Error", garden.Name)
+		if log.Level == "alert" {
+			title = fmt.Sprintf("%s: Controller Alert", garden.Name)
+		}
 		msg := log.Message
 		if log.Source != "" {
 			msg = fmt.Sprintf("[%s] %s", log.Source, msg)
