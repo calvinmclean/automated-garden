@@ -304,6 +304,20 @@ func (c *Controller) PublishStartupLog(topicPrefix string) error {
 	return nil
 }
 
+// PublishLog publishes a raw InfluxDB line-protocol log message to the controller's
+// logs topic. The message is expected to be a valid line-protocol entry with
+// measurement "logs".
+func (c *Controller) PublishLog(topicPrefix string, msg []byte) error {
+	topic := fmt.Sprintf("%s/data/logs", topicPrefix)
+
+	err := c.mqttClient.Publish(context.Background(), topic, msg)
+	if err != nil {
+		return fmt.Errorf("error publishing controller log %w", err)
+	}
+
+	return nil
+}
+
 // addNoise will take a base value and introduce some += variance based on the provided percentage range. This will
 // produce sensor data that is relatively consistent but not totally flat
 func addNoise(baseValue float64, percentRange float64) float64 {

@@ -104,6 +104,36 @@ func (_m *MockClient) DeleteAPI() api.DeleteAPI {
 	return r0
 }
 
+// GetControllerLogs provides a mock function with given fields: _a0, _a1, _a2, _a3
+func (_m *MockClient) GetControllerLogs(_a0 context.Context, _a1 string, _a2 time.Duration, _a3 uint64) ([]pkg.ControllerLog, error) {
+	ret := _m.Called(_a0, _a1, _a2, _a3)
+
+	if len(ret) == 0 {
+		panic("no return value specified for GetControllerLogs")
+	}
+
+	var r0 []pkg.ControllerLog
+	var r1 error
+	if rf, ok := ret.Get(0).(func(context.Context, string, time.Duration, uint64) ([]pkg.ControllerLog, error)); ok {
+		return rf(_a0, _a1, _a2, _a3)
+	}
+	if rf, ok := ret.Get(0).(func(context.Context, string, time.Duration, uint64) []pkg.ControllerLog); ok {
+		r0 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).([]pkg.ControllerLog)
+		}
+	}
+
+	if rf, ok := ret.Get(1).(func(context.Context, string, time.Duration, uint64) error); ok {
+		r1 = rf(_a0, _a1, _a2, _a3)
+	} else {
+		r1 = ret.Error(1)
+	}
+
+	return r0, r1
+}
+
 // GetGardenWaterHistory provides a mock function with given fields: _a0, _a1, _a2, _a3, _a4
 func (_m *MockClient) GetGardenWaterHistory(_a0 context.Context, _a1 string, _a2 time.Duration, _a3 uint64, _a4 bool) ([]pkg.WaterHistory, error) {
 	ret := _m.Called(_a0, _a1, _a2, _a3, _a4)

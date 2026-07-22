@@ -51,6 +51,7 @@ const (
 	waterHistoryTableTemplate            html.Template = "waterHistoryTable"
 	gardenWaterHistoryPageTemplate       html.Template = "GardenWaterHistoryPage"
 	gardenWaterHistoryTableTemplate      html.Template = "gardenWaterHistoryTable"
+	controllerLogsModalTemplate          html.Template = "ControllerLogsModal"
 	zoneProgressSectionTemplate          html.Template = "ZoneProgressSection"
 	notesPageTemplate                    html.Template = "NotesPage"
 	notesTemplate                        html.Template = "Notes"

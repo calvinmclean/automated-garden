@@ -76,6 +76,13 @@ waterEvents = from(bucket: "garden")
 |> filter(fn: (r) => r["_field"] == "temperature" or r["_field"] == "humidity")
 |> drop(columns: ["host"])
 |> last()`
+	controllerLogsQueryTemplate = `from(bucket: "{{.Bucket}}")
+|> range(start: -{{.Start}})
+|> filter(fn: (r) => r["_measurement"] == "logs")
+|> filter(fn: (r) => r["topic"] == "{{.TopicPrefix}}/data/logs")
+|> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+|> sort(columns: ["_time"], desc: true)
+|> limit(n: {{.Limit}})`
 )
 
 func init() {
@@ -107,6 +114,7 @@ type Client interface {
 	GetWaterHistory(context.Context, string, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
 	GetGardenWaterHistory(context.Context, string, time.Duration, uint64, bool) ([]pkg.WaterHistory, error)
 	GetSensorReading(context.Context, string, string) (SensorReading, error)
+	GetControllerLogs(context.Context, string, time.Duration, uint64) ([]pkg.ControllerLog, error)
 	influxdb2.Client
 }
 
@@ -289,4 +297,53 @@ func (client *client) GetSensorReading(ctx context.Context, topicPrefix string, 
 	}
 
 	return reading, queryResult.Err()
+}
+
+// GetControllerLogs retrieves recent log entries published by a garden controller.
+func (client *client) GetControllerLogs(ctx context.Context, topicPrefix string, timeRange time.Duration, limit uint64) ([]pkg.ControllerLog, error) {
+	timer := prometheus.NewTimer(influxDBClientSummary.WithLabelValues("GetControllerLogs"))
+	defer timer.ObserveDuration()
+
+	queryString, err := queryData{
+		Bucket:      client.config.Bucket,
+		Start:       timeRange,
+		TopicPrefix: topicPrefix,
+		Limit:       limit,
+	}.Render(controllerLogsQueryTemplate)
+	if err != nil {
+		return nil, err
+	}
+
+	queryAPI := client.QueryAPI(client.config.Org)
+	queryResult, err := queryAPI.Query(ctx, queryString)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]pkg.ControllerLog, 0)
+	for queryResult.Next() {
+		log := pkg.ControllerLog{}
+
+		values := queryResult.Record().Values()
+		err = mapstructure.Decode(values, &log)
+		if err != nil {
+			return nil, fmt.Errorf("error decoding controller log values: %w", err)
+		}
+
+		log.Details = make(map[string]string)
+		for k, v := range values {
+			switch k {
+			case "_time", "_measurement", "_start", "_stop", "topic", "level", "source", "message":
+				continue
+			}
+			log.Details[k] = fmt.Sprintf("%v", v)
+		}
+		if len(log.Details) == 0 {
+			log.Details = nil
+		}
+
+		result = append(result, log)
+	}
+
+	return result, queryResult.Err()
 }

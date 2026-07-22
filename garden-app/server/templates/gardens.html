@@ -16,6 +16,7 @@
 {{ define "GardenCard" }}
 <div class="uk-width-1-2@m" id="garden-card-{{ .ID }}">
     <div id="edit-modal-here"></div>
+    <div id="controller-logs-modal-container-{{ .ID }}"></div>
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">
             <h3 class="uk-card-title uk-margin-remove-bottom">
@@ -55,6 +56,13 @@
                 </div>
                 <div class="uk-float-right">
                     <a class="uk-icon-button" href="/gardens/{{ .ID }}/water_history" uk-icon="history" uk-tooltip="Water History"></a>
+                    <a class="uk-icon-button" uk-icon="file-text" uk-tooltip="Controller Logs"
+                        hx-get="/gardens/{{ .ID }}/controller-logs"
+                        hx-headers='{"Accept": "text/html"}'
+                        hx-target="#controller-logs-modal-container-{{ .ID }}"
+                        hx-swap="innerHTML"
+                        hx-trigger="click"
+                        _="on htmx:afterOnLoad wait 10ms then add .uk-open to #modal"></a>
                     {{ template "gardenInfoPopover" . }}
                 </div>
             </div>
