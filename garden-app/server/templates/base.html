@@ -485,12 +485,71 @@
             });
         }
 
+        function getBrowserTZOffset() {
+            const offset = new Date().getTimezoneOffset();
+            const sign = offset > 0 ? '-' : '+';
+            const hours = String(Math.abs(Math.floor(offset / 60))).padStart(2, '0');
+            const minutes = String(Math.abs(offset % 60)).padStart(2, '0');
+            return sign + hours + ':' + minutes;
+        }
+
+        function parseOffsetToMinutes(tz) {
+            if (tz === 'Z') {
+                return 0;
+            }
+            const m = tz.match(/^([+-])(\d{2}):(\d{2})$/);
+            if (!m) {
+                return 0;
+            }
+            const sign = m[1] === '+' ? 1 : -1;
+            return sign * (parseInt(m[2], 10) * 60 + parseInt(m[3], 10));
+        }
+
+        function initStartTimeInputs(root) {
+            root = root || document;
+            const browserOffset = new Date().getTimezoneOffset();
+            const browserTZ = getBrowserTZOffset();
+
+            root.querySelectorAll('.start-time-input').forEach(function(container) {
+                const hourInput = container.querySelector('.start-time-hour');
+                const minuteInput = container.querySelector('.start-time-minute');
+                const tzInput = container.querySelector('.start-time-tz');
+                if (!hourInput || !minuteInput || !tzInput) {
+                    return;
+                }
+
+                tzInput.value = browserTZ;
+
+                const original = container.getAttribute('data-start-time');
+                if (!original) {
+                    return;
+                }
+
+                const m = original.match(/^(\d{2}):(\d{2}):(\d{2})([+-]\d{2}:\d{2}|Z)$/);
+                if (!m) {
+                    return;
+                }
+
+                const originalHours = parseInt(m[1], 10);
+                const originalMinutes = parseInt(m[2], 10);
+                const originalOffset = parseOffsetToMinutes(m[4]);
+
+                let totalMinutes = originalHours * 60 + originalMinutes - originalOffset - browserOffset;
+                totalMinutes = ((totalMinutes % 1440) + 1440) % 1440;
+
+                hourInput.value = String(Math.floor(totalMinutes / 60)).padStart(2, '0');
+                minuteInput.value = String(totalMinutes % 60).padStart(2, '0');
+            });
+        }
+
         document.addEventListener('DOMContentLoaded', function() {
             localizeTimeElements();
+            initStartTimeInputs();
         });
 
         function onHTMXSwap() {
             localizeTimeElements();
+            initStartTimeInputs();
         }
 
         document.body.addEventListener('htmx:afterSwap', onHTMXSwap);
