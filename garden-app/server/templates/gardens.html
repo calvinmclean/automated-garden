@@ -194,8 +194,8 @@
             <i data-lucide="{{ $lightIcon }}" width="16" height="16"></i>
         </span>
         <span>
-            Light: <span class="{{ $lightTextColor }}">{{ $lightCurrentState }}</span> until {{ FormatUntilDate
-            .NextLightAction.Time }}
+            Light: <span class="{{ $lightTextColor }}">{{ $lightCurrentState }}</span> until
+            <time datetime="{{ FormatRFC3339NonZero .NextLightAction.Time }}" data-format="until">{{ FormatUntilDate .NextLightAction.Time }}</time>
         </span>
     </div>
     {{ end }}
@@ -207,16 +207,21 @@
     {{ if .NextFanAction.IsActive }}
     {{ $fanIcon = "play-circle" }}
     {{ $fanTextColor = "uk-text-primary" }}
-    {{ $fanTooltip = print "Fan ON - Stops " (FormatUpcomingDate .NextFanAction.Time) }}
+    {{ $fanTooltip = "Fan ON" }}
     {{ else }}
     {{ $fanIcon = "minus-circle" }}
-    {{ $fanTooltip = print "Fan OFF - Next run " (FormatUpcomingDate .NextFanAction.Time) }}
+    {{ $fanTooltip = "Fan OFF" }}
     {{ end }}
     <div class="uk-flex uk-flex-middle uk-margin-small-right uk-margin-small-bottom"
         uk-tooltip="title: {{ $fanTooltip }}">
         <span uk-icon="icon: {{ $fanIcon }}; ratio: 0.8" class="uk-margin-small-right"></span>
         <span>
             Fan: <span class="{{ $fanTextColor }}">{{ if .NextFanAction.IsActive }}ON{{ else }}OFF{{ end }}</span>
+            {{ if .NextFanAction.IsActive }}
+            until <time datetime="{{ FormatRFC3339NonZero .NextFanAction.Time }}" data-format="upcoming">{{ FormatUpcomingDate .NextFanAction.Time }}</time>
+            {{ else }}
+            - Next run <time datetime="{{ FormatRFC3339NonZero .NextFanAction.Time }}" data-format="upcoming">{{ FormatUpcomingDate .NextFanAction.Time }}</time>
+            {{ end }}
             ({{ .FanSchedule.Power }}%)
         </span>
     </div>
@@ -407,7 +412,7 @@
             <li><code class="uk-text-small">{{ .ControllerInfo.FirmwareVersion }}</code></li>
         </ul>
         <p class="uk-text-meta uk-margin-small-top uk-margin-remove-bottom">
-            Updated {{ FormatUpcomingDate .ControllerInfo.UpdatedAt }}
+            Updated <time datetime="{{ FormatRFC3339NonZero .ControllerInfo.UpdatedAt }}" data-format="upcoming">{{ FormatUpcomingDate .ControllerInfo.UpdatedAt }}</time>
         </p>
         {{ else }}
         <p class="uk-text-meta uk-text-italic uk-margin-small-top uk-margin-remove-bottom">No controller info available</p>

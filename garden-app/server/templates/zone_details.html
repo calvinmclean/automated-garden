@@ -86,9 +86,9 @@
                     <td>{{ .Status }}</td>
                     <td>{{ .Source }}</td>
                     <td>{{ .Duration }}</td>
-                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .SentAt }}</span></td>
-                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .StartedAt }}</span></td>
-                    <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .CompletedAt }}</span></td>
+                    <td><time datetime="{{ FormatRFC3339NonZero .SentAt }}" data-format="local">{{ FormatRFC3339NonZero .SentAt }}</time></td>
+                    <td><time datetime="{{ FormatRFC3339NonZero .StartedAt }}" data-format="local">{{ FormatRFC3339NonZero .StartedAt }}</time></td>
+                    <td><time datetime="{{ FormatRFC3339NonZero .CompletedAt }}" data-format="local">{{ FormatRFC3339NonZero .CompletedAt }}</time></td>
                 </tr>
                 {{ end }}
             </tbody>

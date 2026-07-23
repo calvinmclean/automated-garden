@@ -40,7 +40,7 @@
         <div class="uk-card-footer">
             <div class="uk-clearfix">
                 <div class="uk-float-left uk-text-meta">
-                    <span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ FormatRFC3339NonZero .CreatedAt }}</span>
+                    <time datetime="{{ FormatRFC3339NonZero .CreatedAt }}" data-format="local">{{ FormatRFC3339NonZero .CreatedAt }}</time>
                 </div>
                 <div class="uk-float-right">
                     {{ template "deleteButton" ( args "HXDelete" (print "/notes/" .ID) "HXTarget" (print "#note-card-" .ID) ) }}

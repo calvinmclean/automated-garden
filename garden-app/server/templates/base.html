@@ -437,9 +437,64 @@
             }
         });
 
-        function formatLocalTime(rfc3339) {
-            return new Date(rfc3339).toLocaleString();
+        function formatLocalTime(date) {
+            return date.toLocaleString();
         }
+
+        function formatUpcomingDate(date) {
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            if (isToday) {
+                return 'at ' + timeStr;
+            }
+            const dateStr = date.toLocaleDateString([], { weekday: 'long', day: '2-digit', month: 'short' });
+            return 'on ' + dateStr + ' at ' + timeStr;
+        }
+
+        function formatUntilDate(date) {
+            const now = new Date();
+            const isToday = date.toDateString() === now.toDateString();
+            const timeStr = date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            if (isToday) {
+                return timeStr;
+            }
+            const dateStr = date.toLocaleDateString([], { weekday: 'long', day: '2-digit', month: 'short' });
+            return dateStr + ' at ' + timeStr;
+        }
+
+        function localizeTimeElements(root) {
+            root = root || document;
+            root.querySelectorAll('time[datetime][data-format]').forEach(function(el) {
+                const date = new Date(el.getAttribute('datetime'));
+                if (isNaN(date.getTime())) {
+                    return;
+                }
+                const format = el.getAttribute('data-format');
+                switch (format) {
+                case 'upcoming':
+                    el.textContent = formatUpcomingDate(date);
+                    break;
+                case 'until':
+                    el.textContent = formatUntilDate(date);
+                    break;
+                case 'local':
+                    el.textContent = formatLocalTime(date);
+                    break;
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            localizeTimeElements();
+        });
+
+        function onHTMXSwap() {
+            localizeTimeElements();
+        }
+
+        document.body.addEventListener('htmx:afterSwap', onHTMXSwap);
+        document.body.addEventListener('htmx:oobAfterSwap', onHTMXSwap);
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

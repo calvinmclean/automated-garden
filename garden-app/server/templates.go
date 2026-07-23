@@ -98,21 +98,9 @@ func templateFuncs(r *http.Request) map[string]any {
 		"add": func(a, b int) int {
 			return a + b
 		},
-		"ToLower": strings.ToLower,
-		"FormatUpcomingDate": func(date *time.Time) string {
-			now := clock.Now()
-			if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
-				return date.Format("at 3:04PM")
-			}
-			return date.Format("on Monday, 02 Jan at 3:04PM")
-		},
-		"FormatUntilDate": func(date *time.Time) string {
-			now := clock.Now()
-			if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
-				return date.Format("3:04PM")
-			}
-			return date.Format("Monday, 02 Jan at 3:04PM")
-		},
+		"ToLower":            strings.ToLower,
+		"FormatUpcomingDate": formatUpcomingDate,
+		"FormatUntilDate":    formatUntilDate,
 		"FormatRFC3339NonZero": func(date *time.Time) string {
 			if date == nil || date.IsZero() {
 				return ""
@@ -370,6 +358,28 @@ func templateFuncs(r *http.Request) map[string]any {
 			return *n
 		},
 	}
+}
+
+func formatUpcomingDate(date *time.Time) string {
+	if date == nil {
+		return ""
+	}
+	now := clock.Now()
+	if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
+		return date.Format("at 3:04PM")
+	}
+	return date.Format("on Monday, 02 Jan at 3:04PM")
+}
+
+func formatUntilDate(date *time.Time) string {
+	if date == nil {
+		return ""
+	}
+	now := clock.Now()
+	if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
+		return date.Format("3:04PM")
+	}
+	return date.Format("Monday, 02 Jan at 3:04PM")
 }
 
 func formatDuration(d *pkg.Duration) string {

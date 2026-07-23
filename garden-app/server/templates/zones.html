@@ -104,7 +104,7 @@
 <div>
     Watering for
     <span class="uk-text-primary">{{ FormatDuration .Duration }}</span>
-    {{ FormatUpcomingDate .Time }}
+    <time datetime="{{ FormatRFC3339NonZero .Time }}" data-format="upcoming">{{ FormatUpcomingDate .Time }}</time>
 </div>
 {{ end }}
 
