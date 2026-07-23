@@ -176,6 +176,30 @@ func TestSeedManualData(t *testing.T) {
 		}
 	})
 
+	t.Run("ControllerInfo", func(t *testing.T) {
+		err = seedController.PublishControllerInfo()
+		require.NoError(t, err)
+
+		var gardenWithInfo server.GardenResponse
+		require.Eventually(t, func() bool {
+			status, err := makeRequest(
+				http.MethodGet,
+				fmt.Sprintf("/gardens/%s", gardenID),
+				http.NoBody,
+				&gardenWithInfo,
+			)
+			if err != nil || status != http.StatusOK {
+				return false
+			}
+			return gardenWithInfo.ControllerInfo != nil && gardenWithInfo.ControllerInfo.MACAddress != ""
+		}, 30*time.Second, 300*time.Millisecond, "controller info did not populate")
+
+		require.Equal(t, "AA:BB:CC:DD:EE:FF", gardenWithInfo.ControllerInfo.MACAddress)
+		require.Equal(t, "192.168.1.42", gardenWithInfo.ControllerInfo.IPAddress)
+		require.Equal(t, "test-version", gardenWithInfo.ControllerInfo.FirmwareVersion)
+		require.NotNil(t, gardenWithInfo.ControllerInfo.UpdatedAt)
+	})
+
 	t.Run("SensorData", func(t *testing.T) {
 		// Wait for sensor data from both configured sensors to appear in the garden response.
 		var garden server.GardenResponse
