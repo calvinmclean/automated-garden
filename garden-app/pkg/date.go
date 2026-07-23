@@ -47,26 +47,24 @@ func (d *Date) UnmarshalJSON(data []byte) error {
 		str = str[1 : len(str)-1]
 	}
 
-	// Try parsing as DateOnly format first
-	parsed, err := time.Parse(time.DateOnly, str)
-	if err == nil {
-		d.Year = parsed.Year()
-		d.Month = parsed.Month()
-		d.Day = parsed.Day()
-		return nil
+	parsed, err := ParseDate(str)
+	if err != nil {
+		return err
 	}
 
-	// Fall back to RFC3339 for backward compatibility
-	parsed, err = time.Parse(time.RFC3339, str)
-	if err == nil {
-		utc := parsed.UTC()
-		d.Year = utc.Year()
-		d.Month = utc.Month()
-		d.Day = utc.Day()
-		return nil
+	*d = parsed
+	return nil
+}
+
+// UnmarshalText implements encoding.TextUnmarshaler for HTML form decoding.
+func (d *Date) UnmarshalText(data []byte) error {
+	parsed, err := ParseDate(string(data))
+	if err != nil {
+		return err
 	}
 
-	return fmt.Errorf("unable to parse date: %q", str)
+	*d = parsed
+	return nil
 }
 
 // String returns the date in YYYY-MM-DD format
