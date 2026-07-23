@@ -110,6 +110,10 @@ func (g *GardenResponse) Render(w http.ResponseWriter, r *http.Request) error {
 			"water_history",
 			fmt.Sprintf("%s/%s/water_history", gardenBasePath, g.Garden.ID),
 		},
+		Link{
+			"controller_logs",
+			fmt.Sprintf("%s/%s/controller-logs", gardenBasePath, g.Garden.ID),
+		},
 	)
 
 	logger, _ := babyapi.GetLoggerFromContext(ctx)
@@ -415,4 +419,31 @@ type GardenActionResponse struct{}
 
 func (*GardenActionResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
+}
+
+// ControllerLogsResponse wraps a slice of ControllerLog entries for a Garden.
+type ControllerLogsResponse struct {
+	Logs   []pkg.ControllerLog `json:"logs"`
+	Count  int                 `json:"count"`
+	Garden *pkg.Garden         `json:"-"`
+}
+
+// NewControllerLogsResponse creates a response from controller log entries.
+func NewControllerLogsResponse(logs []pkg.ControllerLog, garden *pkg.Garden) ControllerLogsResponse {
+	return ControllerLogsResponse{
+		Logs:   logs,
+		Count:  len(logs),
+		Garden: garden,
+	}
+}
+
+// Render is used to make this struct compatible with the go-chi webserver for writing
+// the JSON response.
+func (resp ControllerLogsResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+// HTML renders the controller logs modal.
+func (resp ControllerLogsResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
+	return controllerLogsModalTemplate.Render(r, resp)
 }

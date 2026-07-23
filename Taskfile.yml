@@ -16,8 +16,9 @@ tasks:
     aliases: ["mtu"]
     desc: Start docker test stack, seed data if needed, and run the server for manual testing. Ctrl-C to stop the server; run manual-test-down to clean up docker and reset data.
     dir: ./garden-app
+    silent: true
     cmds:
-      - docker compose -f ../deploy/docker-compose.yml --profile test up -d
+      - docker compose -f ../deploy/docker-compose.yml -f ../deploy/docker-compose.manual.yml --profile test up -d
       - |
         if [ ! -f manual_test.db ]; then
           sleep 15
@@ -30,7 +31,7 @@ tasks:
     desc: Stop docker test stack used for manual testing and remove the seeded DB file.
     dir: ./garden-app
     cmds:
-      - docker compose -f ../deploy/docker-compose.yml --profile test down
+      - docker compose -f ../deploy/docker-compose.yml -f ../deploy/docker-compose.manual.yml --profile test down
       - rm -f manual_test.db
 
   unit-test:

@@ -1,0 +1,41 @@
+{{ define "ControllerLogsModal" }}
+<div id="modal" class="uk-modal" style="display:block;">
+    <div class="uk-modal-dialog uk-modal-body">
+        <button class="uk-modal-close-default" type="button" {{ template "closeModal" }} uk-close></button>
+        <h3 class="uk-modal-title">Controller Logs - {{ .Garden.Name }}</h3>
+
+        <div class="uk-overflow-auto">
+            <table class="uk-table uk-table-striped uk-table-small">
+                <thead>
+                    <tr>
+                        <th>Time</th>
+                        <th>Level</th>
+                        <th>Source</th>
+                        <th>Message</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {{ range .Logs }}
+                    <tr>
+                        <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ RFC3339Nano .Time }}</span></td>
+                        <td><span class="uk-label uk-label-{{ .LevelClass }}">{{ .Level }}</span></td>
+                        <td>{{ .Source }}</td>
+                        <td>{{ .Message }}</td>
+                        <td>
+                            {{ if .Details }}
+                            {{ range $k, $v := .Details }}
+                            <div class="uk-text-meta">{{ $k }}={{ $v }}</div>
+                            {{ end }}
+                            {{ else }}
+                            <span class="uk-text-meta">-</span>
+                            {{ end }}
+                        </td>
+                    </tr>
+                    {{ end }}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{{ end }}

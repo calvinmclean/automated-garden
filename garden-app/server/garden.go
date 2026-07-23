@@ -64,6 +64,7 @@ func NewGardenAPI() *GardensAPI {
 
 	api.AddCustomIDRoute(http.MethodPost, "/action", api.GetRequestedResourceAndDo(api.gardenAction))
 	api.AddCustomIDRoute(http.MethodGet, "/water_history", api.GetRequestedResourceAndDo(api.gardenWaterHistory))
+	api.AddCustomIDRoute(http.MethodGet, "/controller-logs", api.GetRequestedResourceAndDo(api.controllerLogs))
 
 	api.AddCustomRoute(http.MethodGet, "/components", babyapi.Handler(func(_ http.ResponseWriter, r *http.Request) render.Renderer {
 		switch r.URL.Query().Get("type") {
@@ -369,6 +370,26 @@ func (api *GardensAPI) gardenWaterHistory(_ http.ResponseWriter, r *http.Request
 	}
 
 	return NewGardenWaterHistoryResponse(history, zoneNames, garden), nil
+}
+
+// controllerLogs responds with recent log entries published by the garden controller
+func (api *GardensAPI) controllerLogs(_ http.ResponseWriter, r *http.Request, garden *pkg.Garden) (render.Renderer, *babyapi.ErrResponse) {
+	timeRange, err := rangeQueryParam(r)
+	if err != nil {
+		return nil, babyapi.ErrInvalidRequest(err)
+	}
+
+	limit, err := limitQueryParam(r, 50)
+	if err != nil {
+		return nil, babyapi.ErrInvalidRequest(err)
+	}
+
+	logs, err := api.influxdbClient.GetControllerLogs(r.Context(), garden.TopicPrefix, timeRange, limit)
+	if err != nil {
+		return nil, babyapi.InternalServerError(err)
+	}
+
+	return NewControllerLogsResponse(logs, garden), nil
 }
 
 func checkNotificationClientExists(ctx context.Context, storageClient *storage.Client, id string) *babyapi.ErrResponse {
