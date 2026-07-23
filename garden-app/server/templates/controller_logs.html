@@ -18,7 +18,7 @@
                 <tbody>
                     {{ range .Logs }}
                     <tr>
-                        <td><span _="on load if my.textContent !== '' then set my.textContent to formatLocalTime(my.textContent)">{{ RFC3339Nano .Time }}</span></td>
+                        <td><time datetime="{{ RFC3339Nano .Time }}" data-format="local">{{ RFC3339Nano .Time }}</time></td>
                         <td><span class="uk-label uk-label-{{ .LevelClass }}">{{ .Level }}</span></td>
                         <td>{{ .Source }}</td>
                         <td>{{ .Message }}</td>
