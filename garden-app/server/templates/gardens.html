@@ -195,7 +195,7 @@
         </span>
         <span>
             Light: <span class="{{ $lightTextColor }}">{{ $lightCurrentState }}</span> until
-            <time datetime="{{ FormatRFC3339NonZero .NextLightAction.Time }}" data-format="until">{{ FormatUntilDate .NextLightAction.Time }}</time>
+            <time datetime="{{ FormatRFC3339NonZero .NextLightAction.Time }}" data-format="until"></time>
         </span>
     </div>
     {{ end }}
@@ -218,9 +218,9 @@
         <span>
             Fan: <span class="{{ $fanTextColor }}">{{ if .NextFanAction.IsActive }}ON{{ else }}OFF{{ end }}</span>
             {{ if .NextFanAction.IsActive }}
-            until <time datetime="{{ FormatRFC3339NonZero .NextFanAction.Time }}" data-format="upcoming">{{ FormatUpcomingDate .NextFanAction.Time }}</time>
+            until <time datetime="{{ FormatRFC3339NonZero .NextFanAction.Time }}" data-format="upcoming"></time>
             {{ else }}
-            - Next run <time datetime="{{ FormatRFC3339NonZero .NextFanAction.Time }}" data-format="upcoming">{{ FormatUpcomingDate .NextFanAction.Time }}</time>
+            - Next run <time datetime="{{ FormatRFC3339NonZero .NextFanAction.Time }}" data-format="upcoming"></time>
             {{ end }}
             ({{ .FanSchedule.Power }}%)
         </span>
@@ -412,7 +412,7 @@
             <li><code class="uk-text-small">{{ .ControllerInfo.FirmwareVersion }}</code></li>
         </ul>
         <p class="uk-text-meta uk-margin-small-top uk-margin-remove-bottom">
-            Updated <time datetime="{{ FormatRFC3339NonZero .ControllerInfo.UpdatedAt }}" data-format="upcoming">{{ FormatUpcomingDate .ControllerInfo.UpdatedAt }}</time>
+            Updated <time datetime="{{ FormatRFC3339NonZero .ControllerInfo.UpdatedAt }}" data-format="upcoming"></time>
         </p>
         {{ else }}
         <p class="uk-text-meta uk-text-italic uk-margin-small-top uk-margin-remove-bottom">No controller info available</p>

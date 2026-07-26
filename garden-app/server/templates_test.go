@@ -4,81 +4,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 
 	"github.com/stretchr/testify/require"
 )
-
-func TestFormatUpcomingDate(t *testing.T) {
-	defer clock.Reset()
-	clock.MockTime()
-
-	tests := []struct {
-		name     string
-		date     *time.Time
-		expected string
-	}{
-		{
-			name:     "today",
-			date:     ptr(time.Date(2023, time.August, 23, 15, 30, 0, 0, time.UTC)),
-			expected: "at 3:30PM",
-		},
-		{
-			name:     "tomorrow",
-			date:     ptr(time.Date(2023, time.August, 24, 15, 30, 0, 0, time.UTC)),
-			expected: "on Thursday, 24 Aug at 3:30PM",
-		},
-		{
-			name:     "nil date",
-			date:     nil,
-			expected: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, formatUpcomingDate(tt.date))
-		})
-	}
-}
-
-func TestFormatUntilDate(t *testing.T) {
-	defer clock.Reset()
-	clock.MockTime()
-
-	tests := []struct {
-		name     string
-		date     *time.Time
-		expected string
-	}{
-		{
-			name:     "today",
-			date:     ptr(time.Date(2023, time.August, 23, 15, 30, 0, 0, time.UTC)),
-			expected: "3:30PM",
-		},
-		{
-			name:     "tomorrow",
-			date:     ptr(time.Date(2023, time.August, 24, 15, 30, 0, 0, time.UTC)),
-			expected: "Thursday, 24 Aug at 3:30PM",
-		},
-		{
-			name:     "nil date",
-			date:     nil,
-			expected: "",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			require.Equal(t, tt.expected, formatUntilDate(tt.date))
-		})
-	}
-}
-
-func ptr(t time.Time) *time.Time {
-	return &t
-}
 
 func TestFormatDuration(t *testing.T) {
 	tests := []struct {

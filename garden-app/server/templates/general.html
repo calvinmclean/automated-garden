@@ -56,6 +56,6 @@ _="on click add .uk-text-{{ . }} wait 500ms then remove .uk-text-{{ . }}"
         <input class="uk-input start-time-minute" type="number" min="0" max="59" {{ if .StartTime }}
             value="{{ FormatInt00 .StartTime.Time.Minute }}" {{ end }} name="{{ .Name }}.Minute">
     </div>
-    <input type="hidden" class="start-time-tz" name="{{ .Name }}.TZ" {{ if .StartTime }}value="{{ FormatTZOffset .StartTime }}"{{ end }}>
+    <input type="hidden" class="start-time-tz" name="{{ .Name }}.TZ">
 </div>
 {{ end }}

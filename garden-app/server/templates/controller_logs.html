@@ -18,7 +18,7 @@
                 <tbody>
                     {{ range .Logs }}
                     <tr>
-                        <td><time datetime="{{ RFC3339Nano .Time }}" data-format="local">{{ RFC3339Nano .Time }}</time></td>
+                        <td><time datetime="{{ RFC3339Nano .Time }}" data-format="local"></time></td>
                         <td><span class="uk-label uk-label-{{ .LevelClass }}">{{ .Level }}</span></td>
                         <td>{{ .Source }}</td>
                         <td>{{ .Message }}</td>

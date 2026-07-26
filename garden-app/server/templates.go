@@ -98,26 +98,14 @@ func templateFuncs(r *http.Request) map[string]any {
 		"add": func(a, b int) int {
 			return a + b
 		},
-		"ToLower":            strings.ToLower,
-		"FormatUpcomingDate": formatUpcomingDate,
-		"FormatUntilDate":    formatUntilDate,
 		"FormatRFC3339NonZero": func(date *time.Time) string {
 			if date == nil || date.IsZero() {
 				return ""
 			}
 			return date.Format(time.RFC3339)
 		},
-		"FormatDate": func(t *time.Time) string {
-			if t == nil {
-				return ""
-			}
-			return t.Format(time.DateOnly)
-		},
 		"FormatStartTime": func(startTime *pkg.StartTime) string {
 			return startTime.Time.Format(time.Kitchen)
-		},
-		"FormatTZOffset": func(startTime *pkg.StartTime) string {
-			return startTime.Time.Format("Z07:00")
 		},
 		"FormatInt00": func(i int) string {
 			return fmt.Sprintf("%02d", i)
@@ -197,9 +185,6 @@ func templateFuncs(r *http.Request) map[string]any {
 		"IsNotNil": func(v any) bool {
 			return v != nil
 		},
-		"Float64Ptr": func(f float64) *float64 {
-			return &f
-		},
 		"timeNow": func() time.Time {
 			return clock.Now()
 		},
@@ -250,24 +235,6 @@ func templateFuncs(r *http.Request) map[string]any {
 
 			//nolint:gosec
 			return template.HTML(sb.String())
-		},
-		"TZOffsetOptions": func(startTime *pkg.StartTime) []map[string]string {
-			options := []map[string]string{
-				{"Name": "UTC", "Value": "Z", "Selected": ""},
-				{"Name": "UTC-07:00", "Value": "-07:00", "Selected": ""},
-			}
-
-			if startTime == nil {
-				return options
-			}
-
-			for _, opt := range options {
-				if opt["Value"] == startTime.Time.Format("Z07:00") {
-					opt["Selected"] = "selected"
-				}
-			}
-
-			return options
 		},
 		"URLPath": func() string {
 			return r.URL.Path
@@ -358,28 +325,6 @@ func templateFuncs(r *http.Request) map[string]any {
 			return *n
 		},
 	}
-}
-
-func formatUpcomingDate(date *time.Time) string {
-	if date == nil {
-		return ""
-	}
-	now := clock.Now()
-	if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
-		return date.Format("at 3:04PM")
-	}
-	return date.Format("on Monday, 02 Jan at 3:04PM")
-}
-
-func formatUntilDate(date *time.Time) string {
-	if date == nil {
-		return ""
-	}
-	now := clock.Now()
-	if date.YearDay() == now.YearDay() && date.Year() == now.Year() {
-		return date.Format("3:04PM")
-	}
-	return date.Format("Monday, 02 Jan at 3:04PM")
 }
 
 func formatDuration(d *pkg.Duration) string {
