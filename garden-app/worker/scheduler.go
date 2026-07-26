@@ -391,8 +391,6 @@ func (w *Worker) ResetFanSchedule(g *pkg.Garden) error {
 }
 
 func (w *Worker) executeFanActionInScheduledJob(g *pkg.Garden, actionLogger *slog.Logger) {
-	actionLogger.Info("executing FanAction")
-
 	ctx := context.Background()
 
 	if g.FanSchedule.OnlyWithLight && g.LightSchedule != nil {

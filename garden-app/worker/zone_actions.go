@@ -50,7 +50,5 @@ func (w *Worker) ExecuteWaterAction(ctx context.Context, g *pkg.Garden, z *pkg.Z
 		return fmt.Errorf("unable to fill MQTT topic template: %w", err)
 	}
 
-	w.logger.Info("publishing WaterMessage", "event_id", eventID)
-
 	return w.mqttClient.Publish(ctx, topic, msg)
 }
