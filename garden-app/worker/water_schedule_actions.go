@@ -10,6 +10,12 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 )
 
+// weatherDataTimeout caps how long the worker will wait for a single weather
+// API call, including retries. A separate timeout is used for each metric
+// (rain, temperature, evapotranspiration) to prevent a single stalled request
+// from blocking the scheduled watering indefinitely.
+const weatherDataTimeout = 30 * time.Second
+
 // ExecuteScheduledWaterAction will run ExecuteWaterAction after checking SkipCount
 func (w *Worker) ExecuteScheduledWaterAction(ctx context.Context, g *pkg.Garden, z *pkg.Zone, ws *pkg.WaterSchedule, duration time.Duration) error {
 	if z.SkipCount != nil && *z.SkipCount > 0 {
@@ -41,7 +47,7 @@ func (w *Worker) ExecuteScheduledWaterAction(ctx context.Context, g *pkg.Garden,
 // CalculateETDuration calculates watering duration based on ET data using the citrus tree formula.
 // Returns (duration, true) if ET calculation succeeds, (0, false) otherwise.
 // This completely overrides the configured duration when successful.
-func (w *Worker) CalculateETDuration(ws *pkg.WaterSchedule) (time.Duration, bool) {
+func (w *Worker) CalculateETDuration(ctx context.Context, ws *pkg.WaterSchedule) (time.Duration, bool) {
 	if !ws.HasEvapotranspirationControl() {
 		return 0, false
 	}
@@ -69,7 +75,7 @@ func (w *Worker) CalculateETDuration(ws *pkg.WaterSchedule) (time.Duration, bool
 	}
 
 	// Fetch average ET over the interval (minimum 24h enforced by client)
-	avgET, err := etProvider.GetAverageEvapotranspiration(context.Background(), ws.Interval.Duration)
+	avgET, err := etProvider.GetAverageEvapotranspiration(ctx, ws.Interval.Duration)
 	if err != nil {
 		w.logger.Warn("error getting evapotranspiration data", "error", err)
 		return 0, false
@@ -91,17 +97,21 @@ func (w *Worker) CalculateETDuration(ws *pkg.WaterSchedule) (time.Duration, bool
 	return duration, true
 }
 
-// ScaleWateringDuration returns a new watering duration based on weather scaling. It will not return
-// any errors if they are encountered because there are multiple factors impacting watering.
-// If ET control is configured and succeeds, it provides the base duration which can then be scaled
-// by temperature and rain controls if they are also configured.
-func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bool) {
+// ScaleWateringDuration returns a new watering duration based on weather scaling.
+// If any weather API fails, the last error is returned and the unscaled duration
+// is used so that scheduled watering is not blocked by transient weather service
+// issues. If ET control is configured and succeeds, it provides the base duration
+// which can then be scaled by temperature and rain controls if they are also configured.
+func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), weatherDataTimeout)
+	defer cancel()
+
 	baseDuration := ws.Duration.Duration
 	scaleFactor := 1.0
-	hadError := false
+	var lastErr error
 
 	if ws.HasEvapotranspirationControl() {
-		etDuration, ok := w.CalculateETDuration(ws)
+		etDuration, ok := w.CalculateETDuration(ctx, ws)
 		if ok {
 			baseDuration = etDuration
 			w.logger.Debug("using ET-calculated duration as base", "et_duration", etDuration)
@@ -111,12 +121,12 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 	if ws.HasTemperatureControl() {
 		weatherClient, err := w.storageClient.GetWeatherClient(ws.WeatherControl.Temperature.ClientID)
 		if err != nil {
-			hadError = true
+			lastErr = err
 			w.logger.Warn("error getting WeatherClient for TemperatureControl", "error", err)
 		} else {
-			avgHighTemp, err := weatherClient.GetAverageHighTemperature(context.Background(), ws.Interval.Duration)
+			avgHighTemp, err := weatherClient.GetAverageHighTemperature(ctx, ws.Interval.Duration)
 			if err != nil {
-				hadError = true
+				lastErr = err
 				w.logger.Warn("error getting average high temperatures", "error", err)
 			} else {
 				tempScaleFactor := ws.WeatherControl.Temperature.Scale(float64(avgHighTemp))
@@ -133,12 +143,12 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 	if ws.HasRainControl() {
 		weatherClient, err := w.storageClient.GetWeatherClient(ws.WeatherControl.Rain.ClientID)
 		if err != nil {
-			hadError = true
+			lastErr = err
 			w.logger.Warn("error getting WeatherClient for RainControl", "error", err)
 		} else {
-			totalRain, err := weatherClient.GetTotalRain(context.Background(), ws.Interval.Duration)
+			totalRain, err := weatherClient.GetTotalRain(ctx, ws.Interval.Duration)
 			if err != nil {
-				hadError = true
+				lastErr = err
 				w.logger.Warn("error getting rain data", "error", err)
 			} else {
 				rainScaleFactor := ws.WeatherControl.Rain.Scale(float64(totalRain))
@@ -156,7 +166,7 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, bo
 
 	result := time.Duration(float64(baseDuration) * scaleFactor)
 	if result.Milliseconds() == 0 {
-		return 0, hadError
+		return 0, lastErr
 	}
-	return result, hadError
+	return result, lastErr
 }

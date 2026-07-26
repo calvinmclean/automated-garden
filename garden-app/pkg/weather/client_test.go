@@ -103,6 +103,58 @@ func TestCachedWeatherClient(t *testing.T) {
 	})
 }
 
+func TestWeatherClientRetriesAndCaches(t *testing.T) {
+	restore := SetRetryDelaysForTest([]time.Duration{0, 0, 0, 0})
+	defer restore()
+	defer ResetCache()
+
+	client, err := NewClient(&Config{
+		Name: "test",
+		Type: "fake",
+		Options: map[string]any{
+			"rain_mm":              25.4,
+			"rain_interval":        "24h",
+			"avg_high_temperature": 40,
+			"error":                "transient error",
+			"error_count":          2,
+		},
+	}, func(m map[string]any) error { return nil })
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+
+	rain, err := client.GetTotalRain(context.Background(), 24*time.Hour)
+	assert.NoError(t, err)
+	assert.InDelta(t, float32(25.4), rain, 0.01)
+
+	// Second call should be served from cache, so even with a permanent error
+	// configured the client should succeed.
+	rain, err = client.GetTotalRain(context.Background(), 24*time.Hour)
+	assert.NoError(t, err)
+	assert.InDelta(t, float32(25.4), rain, 0.01)
+}
+
+func TestWeatherClientRetriesPermanentError(t *testing.T) {
+	restore := SetRetryDelaysForTest([]time.Duration{0, 0, 0, 0})
+	defer restore()
+	defer ResetCache()
+
+	client, err := NewClient(&Config{
+		Name: "test",
+		Type: "fake",
+		Options: map[string]any{
+			"rain_mm":       25.4,
+			"rain_interval": "24h",
+			"error":         "permanent error",
+		},
+	}, func(m map[string]any) error { return nil })
+	assert.NoError(t, err)
+	assert.NotNil(t, client)
+
+	_, err = client.GetTotalRain(context.Background(), 24*time.Hour)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "permanent error")
+}
+
 func TestEndDated(t *testing.T) {
 	assert.False(t, (&Config{}).EndDated())
 }

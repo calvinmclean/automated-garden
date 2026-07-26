@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/internal/weatherapi"
 	"github.com/mitchellh/mapstructure"
 )
 
@@ -104,7 +105,7 @@ func (c *Client) fetchData(ctx context.Context, pastDays int, dailyVars ...strin
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
-		return nil, fmt.Errorf("API returned status %d: %s", resp.StatusCode, string(body))
+		return nil, &weatherapi.HTTPError{StatusCode: resp.StatusCode, Body: string(body)}
 	}
 
 	body, err := io.ReadAll(resp.Body)

@@ -176,6 +176,7 @@ func TestScaleWateringDuration(t *testing.T) {
 		waterSchedule    *pkg.WaterSchedule
 		setupWeather     func(*storage.Client)
 		expectedDuration time.Duration
+		expectedError    string
 	}{
 		{
 			name: "NoWeatherControl",
@@ -408,6 +409,7 @@ func TestScaleWateringDuration(t *testing.T) {
 				})
 			},
 			expectedDuration: time.Second,
+			expectedError:    "weather client error",
 		},
 	}
 
@@ -422,9 +424,18 @@ func TestScaleWateringDuration(t *testing.T) {
 			tt.setupWeather(sc)
 
 			worker := NewWorker(sc, new(influxdb.MockClient), new(mqtt.MockClient), slog.Default())
-			duration, _ := worker.ScaleWateringDuration(tt.waterSchedule)
+			restoreDelays := weather.SetRetryDelaysForTest([]time.Duration{0, 0, 0, 0})
+			defer restoreDelays()
+
+			duration, err := worker.ScaleWateringDuration(tt.waterSchedule)
 
 			assert.Equal(t, tt.expectedDuration, duration)
+			if tt.expectedError == "" {
+				assert.NoError(t, err)
+			} else {
+				assert.Error(t, err)
+				assert.ErrorContains(t, err, tt.expectedError)
+			}
 		})
 	}
 }

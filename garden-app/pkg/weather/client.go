@@ -174,7 +174,9 @@ func (c *clientWrapper) GetTotalRain(ctx context.Context, since time.Duration) (
 		return cachedData.(float32), nil
 	}
 
-	totalRain, err := c.Client.GetTotalRain(ctx, since)
+	totalRain, err := WithRetries(ctx, func(ctx context.Context) (float32, error) {
+		return c.Client.GetTotalRain(ctx, since)
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -198,7 +200,9 @@ func (c *clientWrapper) GetAverageHighTemperature(ctx context.Context, since tim
 		return cachedData.(float32), nil
 	}
 
-	avgTemp, err := c.Client.GetAverageHighTemperature(ctx, since)
+	avgTemp, err := WithRetries(ctx, func(ctx context.Context) (float32, error) {
+		return c.Client.GetAverageHighTemperature(ctx, since)
+	})
 	if err != nil {
 		return 0, err
 	}
@@ -233,7 +237,9 @@ func (c *clientWrapper) GetAverageEvapotranspiration(ctx context.Context, since 
 		return 0, fmt.Errorf("weather client does not support evapotranspiration data")
 	}
 
-	avgET, err := etClient.GetAverageEvapotranspiration(ctx, since)
+	avgET, err := WithRetries(ctx, func(ctx context.Context) (float32, error) {
+		return etClient.GetAverageEvapotranspiration(ctx, since)
+	})
 	if err != nil {
 		return 0, err
 	}

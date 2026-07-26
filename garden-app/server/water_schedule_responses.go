@@ -30,8 +30,8 @@ func GetNextWaterDetails(r *http.Request, ws *pkg.WaterSchedule, worker *worker.
 	}
 
 	if ws.HasWeatherControl() && !excludeWeatherData {
-		wd, hadErr := worker.ScaleWateringDuration(ws)
-		if hadErr {
+		wd, err := worker.ScaleWateringDuration(ws)
+		if err != nil {
 			result.Message = "error impacted duration scaling"
 		}
 

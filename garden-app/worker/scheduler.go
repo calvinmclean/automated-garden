@@ -55,7 +55,11 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 				// Calculate duration for weather control (for notifications and zone watering)
 				duration := ws.Duration.Duration
 				if ws.HasWeatherControl() {
-					duration, _ = w.ScaleWateringDuration(ws)
+					scaledDuration, err := w.ScaleWateringDuration(ws)
+					if err != nil {
+						jobLogger.Warn("weather data unavailable, proceeding with unscaled duration", "error", err)
+					}
+					duration = scaledDuration
 				}
 
 				// Get zones using this WaterSchedule (for notifications and watering)

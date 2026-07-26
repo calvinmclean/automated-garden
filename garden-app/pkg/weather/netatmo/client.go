@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/clock"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather/internal/weatherapi"
 	"github.com/mitchellh/mapstructure"
 	"golang.org/x/sync/singleflight"
 )
@@ -151,6 +152,10 @@ func (c *Client) getStationData() (stationDataResponse, error) {
 		return stationDataResponse{}, fmt.Errorf("error reading response body with status %d: %v", resp.StatusCode, err)
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return stationDataResponse{}, &weatherapi.HTTPError{StatusCode: resp.StatusCode, Body: string(respBody)}
+	}
+
 	var respData stationDataResponse
 	err = json.Unmarshal(respBody, &respData)
 	if err != nil {
@@ -259,7 +264,7 @@ func (c *Client) doRefreshToken() error {
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("received unexpected status %d with body: %s", resp.StatusCode, string(respBody))
+		return &weatherapi.HTTPError{StatusCode: resp.StatusCode, Body: string(respBody)}
 	}
 
 	err = json.Unmarshal(respBody, c.Authentication)
