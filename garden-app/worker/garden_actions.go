@@ -12,8 +12,11 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 
+	"github.com/calvinmclean/automated-garden/garden-app/clock"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
@@ -234,10 +237,10 @@ func (w *Worker) ExecuteFirmwareUpdateAction(ctx context.Context, g *pkg.Garden,
 			return errors.New("firmware_update action must have a file or latest=true")
 		}
 		firmware = input.FileData
-	}
 
-	if len(firmware) > maxFirmwareSize {
-		return fmt.Errorf("firmware exceeds maximum size of %d bytes", maxFirmwareSize)
+		if len(firmware) > maxFirmwareSize {
+			return fmt.Errorf("firmware exceeds maximum size of %d bytes", maxFirmwareSize)
+		}
 	}
 
 	body := &bytes.Buffer{}
@@ -283,6 +286,16 @@ type githubAsset struct {
 }
 
 func (w *Worker) downloadLatestFirmware(ctx context.Context) ([]byte, error) {
+	w.firmwareMutex.Lock()
+	defer w.firmwareMutex.Unlock()
+
+	if info, err := os.Stat(w.firmwareFile); err == nil && clock.Since(info.ModTime()) < firmwareCacheTTL {
+		cachedData, err := os.ReadFile(w.firmwareFile)
+		if err == nil {
+			return cachedData, nil
+		}
+	}
+
 	releaseURL := w.firmwareUpdateReleaseURLFunc()
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, releaseURL, nil)
@@ -334,5 +347,30 @@ func (w *Worker) downloadLatestFirmware(ctx context.Context) ([]byte, error) {
 		return nil, fmt.Errorf("asset request returned status %d", resp.StatusCode)
 	}
 
-	return io.ReadAll(io.LimitReader(resp.Body, int64(maxFirmwareSize)+1))
+	firmware, err := io.ReadAll(io.LimitReader(resp.Body, int64(maxFirmwareSize)+1))
+	if err != nil {
+		return nil, fmt.Errorf("unable to read asset: %v", err)
+	}
+
+	if len(firmware) > maxFirmwareSize {
+		return nil, fmt.Errorf("firmware exceeds maximum size of %d bytes", maxFirmwareSize)
+	}
+
+	if err := os.MkdirAll(filepath.Dir(w.firmwareFile), 0o750); err != nil {
+		return nil, fmt.Errorf("unable to create cache directory: %v", err)
+	}
+	if err := os.WriteFile(w.firmwareFile, firmware, 0o600); err != nil {
+		return nil, fmt.Errorf("unable to write firmware file: %v", err)
+	}
+	if err := os.Chtimes(w.firmwareFile, clock.Now(), clock.Now()); err != nil {
+		return nil, fmt.Errorf("unable to set firmware file modification time: %v", err)
+	}
+
+	if w.firmwareTimer == nil {
+		w.firmwareTimer = clock.AfterFunc(firmwareCacheTTL, w.deleteFirmwareFile)
+	} else {
+		w.firmwareTimer.Reset(firmwareCacheTTL)
+	}
+
+	return firmware, nil
 }

@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
@@ -22,6 +24,7 @@ const (
 	firmwareAssetName    = "firmware.bin"
 	controllerReleaseTag = "controller-latest"
 	githubRepo           = "calvinmclean/automated-garden"
+	firmwareCacheTTL     = 10 * time.Minute
 )
 
 var (
@@ -70,6 +73,15 @@ type Worker struct {
 	// When Garden health messages are received, Timers are created to track their
 	// uptime and notify if they go down
 	downTimers map[string]clock.Timer
+
+	// firmwareFile is the path to the cached latest firmware binary on disk.
+	firmwareFile string
+
+	// firmwareTimer deletes firmwareFile after firmwareCacheTTL.
+	firmwareTimer clock.Timer
+
+	// firmwareMutex protects firmwareFile and firmwareTimer.
+	firmwareMutex sync.Mutex
 }
 
 // WorkerOption configures a Worker during creation
@@ -130,6 +142,7 @@ func NewWorker(
 		firmwareUpdateUploadURLFunc: func(topicPrefix string) string {
 			return fmt.Sprintf("http://%s.local/u", topicPrefix)
 		},
+		firmwareFile: filepath.Join(os.TempDir(), "latest-firmware.bin"),
 	}
 
 	for _, option := range options {
@@ -137,6 +150,10 @@ func NewWorker(
 	}
 
 	return w
+}
+
+func (w *Worker) deleteFirmwareFile() {
+	_ = os.Remove(w.firmwareFile)
 }
 
 // StartAsync starts the Worker's background jobs
@@ -222,6 +239,13 @@ func (w *Worker) Stop() {
 	if w.influxdbClient != nil {
 		w.influxdbClient.Close()
 	}
+
+	w.firmwareMutex.Lock()
+	if w.firmwareTimer != nil {
+		w.firmwareTimer.Stop()
+	}
+	_ = os.Remove(w.firmwareFile)
+	w.firmwareMutex.Unlock()
 
 	prometheus.Unregister(scheduleJobsGauge)
 	prometheus.Unregister(schedulerErrors)

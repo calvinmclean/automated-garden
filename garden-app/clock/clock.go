@@ -10,6 +10,7 @@ import (
 
 type Timer interface {
 	Reset(d time.Duration) bool
+	Stop() bool
 }
 
 // Clock allows mocking time
