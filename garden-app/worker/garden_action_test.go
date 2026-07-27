@@ -9,8 +9,10 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -512,6 +514,9 @@ func TestFirmwareUpdateActionExecute(t *testing.T) {
 			releaseURL, uploadURL := tt.setupServers()
 
 			worker := NewWorker(nil, nil, nil, slog.Default())
+			t.Cleanup(func() {
+				_ = os.Remove(worker.firmwareFile)
+			})
 			if releaseURL != "" {
 				worker.firmwareUpdateReleaseURLFunc = func() string { return releaseURL }
 			}
@@ -523,6 +528,170 @@ func TestFirmwareUpdateActionExecute(t *testing.T) {
 			tt.assert(err, firmwareData, t)
 		})
 	}
+}
+
+func TestFirmwareUpdateActionCachesLatestFirmware(t *testing.T) {
+	garden := &pkg.Garden{
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	firmwareData := []byte("fake firmware binary data")
+
+	var assetRequests atomic.Int32
+	assetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/firmware.bin", r.URL.Path)
+		assetRequests.Add(1)
+		_, _ = w.Write(firmwareData)
+	}))
+	defer assetServer.Close()
+
+	releaseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/releases/tags/controller-latest", r.URL.Path)
+		_, _ = fmt.Fprintf(w, `{"assets":[{"name":"firmware.bin","browser_download_url":"%s/firmware.bin"}]}`, assetServer.URL)
+	}))
+	defer releaseServer.Close()
+
+	uploadServer := newFirmwareUploadServer(t, firmwareData, http.StatusOK)
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.firmwareUpdateReleaseURLFunc = func() string { return releaseServer.URL + "/releases/tags/controller-latest" }
+	worker.firmwareUpdateUploadURLFunc = func(string) string { return uploadServer }
+
+	t.Cleanup(func() {
+		_ = os.Remove(worker.firmwareFile)
+	})
+
+	for i := 0; i < 2; i++ {
+		err := worker.ExecuteFirmwareUpdateAction(context.Background(), garden, &action.FirmwareUpdateAction{
+			Latest: true,
+		})
+		assert.NoError(t, err)
+	}
+
+	assert.Equal(t, int32(1), assetRequests.Load(), "asset server should only be hit once")
+
+	cachedData, err := os.ReadFile(worker.firmwareFile)
+	assert.NoError(t, err)
+	assert.Equal(t, firmwareData, cachedData)
+}
+
+func TestFirmwareUpdateActionRefreshesStaleFirmwareCache(t *testing.T) {
+	mock := clock.MockTime()
+	defer clock.Reset()
+
+	garden := &pkg.Garden{
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	firmwareData := []byte("updated firmware binary data")
+	staleData := []byte("stale firmware binary data")
+
+	var assetRequests atomic.Int32
+	assetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/firmware.bin", r.URL.Path)
+		assetRequests.Add(1)
+		_, _ = w.Write(firmwareData)
+	}))
+	defer assetServer.Close()
+
+	releaseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/releases/tags/controller-latest", r.URL.Path)
+		_, _ = fmt.Fprintf(w, `{"assets":[{"name":"firmware.bin","browser_download_url":"%s/firmware.bin"}]}`, assetServer.URL)
+	}))
+	defer releaseServer.Close()
+
+	uploadServer := newFirmwareUploadServer(t, firmwareData, http.StatusOK)
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.firmwareUpdateReleaseURLFunc = func() string { return releaseServer.URL + "/releases/tags/controller-latest" }
+	worker.firmwareUpdateUploadURLFunc = func(string) string { return uploadServer }
+
+	t.Cleanup(func() {
+		_ = os.Remove(worker.firmwareFile)
+	})
+
+	// Seed a stale firmware file
+	err := os.WriteFile(worker.firmwareFile, staleData, 0o600)
+	assert.NoError(t, err)
+	staleTime := mock.Now().Add(-11 * time.Minute)
+	err = os.Chtimes(worker.firmwareFile, staleTime, staleTime)
+	assert.NoError(t, err)
+
+	err = worker.ExecuteFirmwareUpdateAction(context.Background(), garden, &action.FirmwareUpdateAction{
+		Latest: true,
+	})
+	assert.NoError(t, err)
+
+	assert.Equal(t, int32(1), assetRequests.Load(), "asset server should be hit for stale cache")
+
+	cachedData, err := os.ReadFile(worker.firmwareFile)
+	assert.NoError(t, err)
+	assert.Equal(t, firmwareData, cachedData)
+}
+
+func TestFirmwareUpdateActionDeletesCachedFirmwareAfterTTL(t *testing.T) {
+	mock := clock.MockTime()
+	defer clock.Reset()
+
+	garden := &pkg.Garden{
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	firmwareData := []byte("fake firmware binary data")
+
+	assetServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/firmware.bin", r.URL.Path)
+		_, _ = w.Write(firmwareData)
+	}))
+	defer assetServer.Close()
+
+	releaseServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, "/releases/tags/controller-latest", r.URL.Path)
+		_, _ = fmt.Fprintf(w, `{"assets":[{"name":"firmware.bin","browser_download_url":"%s/firmware.bin"}]}`, assetServer.URL)
+	}))
+	defer releaseServer.Close()
+
+	uploadServer := newFirmwareUploadServer(t, firmwareData, http.StatusOK)
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.firmwareUpdateReleaseURLFunc = func() string { return releaseServer.URL + "/releases/tags/controller-latest" }
+	worker.firmwareUpdateUploadURLFunc = func(string) string { return uploadServer }
+
+	t.Cleanup(func() {
+		_ = os.Remove(worker.firmwareFile)
+	})
+
+	err := worker.ExecuteFirmwareUpdateAction(context.Background(), garden, &action.FirmwareUpdateAction{
+		Latest: true,
+	})
+	assert.NoError(t, err)
+
+	_, err = os.Stat(worker.firmwareFile)
+	assert.NoError(t, err)
+
+	mock.Add(firmwareCacheTTL)
+
+	_, err = os.Stat(worker.firmwareFile)
+	assert.True(t, os.IsNotExist(err), "cached file should be deleted after TTL")
+}
+
+func TestWorkerStopDeletesFirmwareFile(t *testing.T) {
+	worker := NewWorker(nil, nil, nil, slog.Default())
+
+	err := os.WriteFile(worker.firmwareFile, []byte("cached firmware"), 0o600)
+	assert.NoError(t, err)
+
+	t.Cleanup(func() {
+		_ = os.Remove(worker.firmwareFile)
+	})
+
+	worker.Stop()
+
+	_, err = os.Stat(worker.firmwareFile)
+	assert.True(t, os.IsNotExist(err), "Stop should delete the cached firmware file")
 }
 
 func newFirmwareUploadServer(t *testing.T, expectedData []byte, status int) string {

@@ -45,7 +45,9 @@ func (w *Worker) handleHealthMessage(topic, payload string) {
 }
 
 func (w *Worker) newDownTimer(d time.Duration, topic string) clock.Timer {
+	w.downTimerWg.Add(1)
 	return clock.AfterFunc(d, func() {
+		defer w.downTimerWg.Done()
 		logger := w.logger.With("topic", topic)
 
 		err := w.handleDowntimeNotification(topic)
