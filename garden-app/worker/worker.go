@@ -74,6 +74,9 @@ type Worker struct {
 	// uptime and notify if they go down
 	downTimers map[string]clock.Timer
 
+	// downTimerWg tracks in-flight down-timer callbacks so Stop() can wait for them
+	downTimerWg sync.WaitGroup
+
 	// firmwareFile is the path to the cached latest firmware binary on disk.
 	firmwareFile string
 
@@ -246,6 +249,14 @@ func (w *Worker) Stop() {
 	}
 	_ = os.Remove(w.firmwareFile)
 	w.firmwareMutex.Unlock()
+
+	// Stop any pending down timers and wait for in-flight callbacks to finish
+	for _, timer := range w.downTimers {
+		if timer.Stop() {
+			w.downTimerWg.Done()
+		}
+	}
+	w.downTimerWg.Wait()
 
 	prometheus.Unregister(scheduleJobsGauge)
 	prometheus.Unregister(schedulerErrors)
