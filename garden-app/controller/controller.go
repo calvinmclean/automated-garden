@@ -318,6 +318,22 @@ func (c *Controller) PublishLog(topicPrefix string, msg []byte) error {
 	return nil
 }
 
+// PublishControllerInfo publishes the controller's runtime information to the
+// MQTT topic that the server listens on for controller info updates.
+func (c *Controller) PublishControllerInfo() error {
+	topic := fmt.Sprintf("%s/data/info", c.TopicPrefix)
+	msg := fmt.Sprintf("info mac=\"%s\",ip=\"%s\",version=\"%s\"", "AA:BB:CC:DD:EE:FF", "192.168.1.42", "test-version")
+
+	logger := c.pubLogger.With("topic", topic)
+	logger.Info("publishing controller info")
+	err := c.mqttClient.Publish(context.Background(), topic, []byte(msg))
+	if err != nil {
+		return fmt.Errorf("error publishing controller info: %w", err)
+	}
+
+	return nil
+}
+
 // addNoise will take a base value and introduce some += variance based on the provided percentage range. This will
 // produce sensor data that is relatively consistent but not totally flat
 func addNoise(baseValue float64, percentRange float64) float64 {
