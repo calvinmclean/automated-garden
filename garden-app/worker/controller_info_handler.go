@@ -3,6 +3,7 @@ package worker
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
@@ -37,7 +38,35 @@ func (w *Worker) getGardenAndSaveControllerInfo(topic string, payload string) er
 	logger = logger.With("garden_id", garden.GetID())
 	logger.Info("saving controller info")
 
-	return w.storageClient.ControllerInfo.Upsert(context.Background(), info)
+	ctx := context.Background()
+	w.notifyFirmwareVersionChange(ctx, garden, info, logger)
+
+	return w.storageClient.ControllerInfo.Upsert(ctx, info)
+}
+
+func (w *Worker) notifyFirmwareVersionChange(ctx context.Context, garden *pkg.Garden, info *pkg.ControllerInfo, logger *slog.Logger) {
+	if !garden.GetNotificationSettings().FirmwareChanged {
+		return
+	}
+
+	prevVersion := ""
+	if garden.ControllerInfo != nil {
+		prevVersion = garden.ControllerInfo.FirmwareVersion
+	}
+
+	if info.FirmwareVersion == "" || prevVersion == info.FirmwareVersion {
+		return
+	}
+
+	prevDisplay := prevVersion
+	if prevDisplay == "" {
+		prevDisplay = "<none>"
+	}
+	title := fmt.Sprintf("%s: Firmware Updated", garden.Name)
+	message := fmt.Sprintf("Firmware version changed from %s to %s", prevDisplay, info.FirmwareVersion)
+	if err := w.sendNotificationForGarden(ctx, garden, title, message); err != nil {
+		logger.With("error", err).Error("unable to send firmware changed notification")
+	}
 }
 
 // parseControllerInfoMessage parses an InfluxDB line protocol message with the

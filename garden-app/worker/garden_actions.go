@@ -22,6 +22,9 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
 )
 
+// ErrFirmwareUpdateInProgress is returned when a firmware update is already running for a Garden.
+var ErrFirmwareUpdateInProgress = errors.New("firmware update already in progress")
+
 // ExecuteGardenAction will execute a GardenAction
 func (w *Worker) ExecuteGardenAction(ctx context.Context, g *pkg.Garden, input *action.GardenAction) error {
 	switch {
@@ -51,12 +54,45 @@ func (w *Worker) ExecuteGardenAction(ctx context.Context, g *pkg.Garden, input *
 			return fmt.Errorf("unable to execute ControllerSetupAction: %v", err)
 		}
 	case input.FirmwareUpdate != nil:
-		err := w.ExecuteFirmwareUpdateAction(ctx, g, input.FirmwareUpdate)
-		if err != nil {
-			return fmt.Errorf("unable to execute FirmwareUpdateAction: %v", err)
+		if !w.startFirmwareUpdate(g.GetID()) {
+			return ErrFirmwareUpdateInProgress
 		}
+		go func(ctx context.Context, g *pkg.Garden, fw *action.FirmwareUpdateAction) {
+			defer w.finishFirmwareUpdate(g.GetID())
+
+			if err := w.ExecuteFirmwareUpdateAction(ctx, g, fw); err != nil {
+				w.logger.With("garden_id", g.GetID(), "error", err).Error("unable to execute FirmwareUpdateAction")
+				if g.GetNotificationSettings().FirmwareChanged {
+					if notifyErr := w.sendFirmwareUpdateFailedNotification(ctx, g, err); notifyErr != nil {
+						w.logger.With("garden_id", g.GetID(), "error", notifyErr).Error("unable to send firmware update failure notification")
+					}
+				}
+			}
+		}(context.WithoutCancel(ctx), g, input.FirmwareUpdate)
 	}
 	return nil
+}
+
+func (w *Worker) startFirmwareUpdate(gardenID string) bool {
+	w.firmwareUpdateMutex.Lock()
+	defer w.firmwareUpdateMutex.Unlock()
+	if _, ok := w.firmwareUpdateInProgress[gardenID]; ok {
+		return false
+	}
+	w.firmwareUpdateInProgress[gardenID] = struct{}{}
+	return true
+}
+
+func (w *Worker) finishFirmwareUpdate(gardenID string) {
+	w.firmwareUpdateMutex.Lock()
+	defer w.firmwareUpdateMutex.Unlock()
+	delete(w.firmwareUpdateInProgress, gardenID)
+}
+
+func (w *Worker) sendFirmwareUpdateFailedNotification(ctx context.Context, g *pkg.Garden, err error) error {
+	title := fmt.Sprintf("%s: Firmware Update Failed", g.Name)
+	msg := fmt.Sprintf("Failed to update firmware: %v", err)
+	return w.sendNotificationForGarden(ctx, g, title, msg)
 }
 
 // ExecuteStopAction sends the message over MQTT to the embedded garden controller

@@ -93,6 +93,7 @@ func TestGardenPatch(t *testing.T) {
 				ControllerStartup: true,
 				ControllerAlerts:  true,
 				LightSchedule:     true,
+				FirmwareChanged:   true,
 			}},
 		},
 	}

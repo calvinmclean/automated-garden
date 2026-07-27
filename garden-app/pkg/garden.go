@@ -43,6 +43,7 @@ type NotificationSettings struct {
 	Downtime          *Duration `json:"downtime" yaml:"downtime"`
 	WateringStarted   bool      `json:"watering_started" yaml:"watering_started"`
 	WateringComplete  bool      `json:"watering_complete" yaml:"watering_complete"`
+	FirmwareChanged   bool      `json:"firmware_changed" yaml:"firmware_changed"`
 }
 
 func (g *Garden) GetID() string {
@@ -157,6 +158,7 @@ func (g *Garden) Patch(newGarden *Garden) *babyapi.ErrResponse {
 		g.NotificationSettings.Downtime = newGarden.NotificationSettings.Downtime
 		g.NotificationSettings.WateringStarted = newGarden.NotificationSettings.WateringStarted
 		g.NotificationSettings.WateringComplete = newGarden.NotificationSettings.WateringComplete
+		g.NotificationSettings.FirmwareChanged = newGarden.NotificationSettings.FirmwareChanged
 	}
 
 	return nil

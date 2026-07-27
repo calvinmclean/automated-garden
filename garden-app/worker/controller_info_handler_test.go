@@ -8,6 +8,8 @@ import (
 	"time"
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
 	"github.com/stretchr/testify/assert"
@@ -120,5 +122,88 @@ func TestGetGardenAndSaveControllerInfo(t *testing.T) {
 		err := w.getGardenAndSaveControllerInfo("garden/data/info", `not an info message`)
 		require.NoError(t, err)
 		assert.Contains(t, logBuffer.String(), "unexpected controller info message")
+	})
+}
+
+func TestFirmwareVersionChangeNotification(t *testing.T) {
+	fake.Reset()
+	defer fake.Reset()
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+
+	nc := &notifications.Client{
+		ID:   babyapi.NewID(),
+		Name: "test",
+		URL:  "fake://success",
+	}
+	err = storageClient.NotificationClientConfigs.Set(context.Background(), nc)
+	require.NoError(t, err)
+
+	notificationClientID := nc.GetID()
+	garden := &pkg.Garden{
+		ID:                   babyapi.NewID(),
+		TopicPrefix:          "garden",
+		Name:                 "garden",
+		NotificationClientID: &notificationClientID,
+		NotificationSettings: &pkg.NotificationSettings{
+			FirmwareChanged: true,
+		},
+	}
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	require.NoError(t, err)
+
+	w := NewWorker(storageClient, nil, nil, slog.Default())
+
+	t.Run("FirstVersion", func(t *testing.T) {
+		err := w.getGardenAndSaveControllerInfo("garden/data/info", `info mac="aa:bb:cc:dd:ee:ff",ip="192.168.1.42",version="v1.0.0"`)
+		require.NoError(t, err)
+
+		last := fake.LastMessage()
+		assert.Equal(t, "garden: Firmware Updated", last.Title)
+		assert.Equal(t, "Firmware version changed from <none> to v1.0.0", last.Message)
+	})
+
+	t.Run("VersionChanged", func(t *testing.T) {
+		fake.Reset()
+
+		err := w.getGardenAndSaveControllerInfo("garden/data/info", `info mac="aa:bb:cc:dd:ee:ff",ip="192.168.1.42",version="v2.0.0"`)
+		require.NoError(t, err)
+
+		last := fake.LastMessage()
+		assert.Equal(t, "garden: Firmware Updated", last.Title)
+		assert.Equal(t, "Firmware version changed from v1.0.0 to v2.0.0", last.Message)
+	})
+
+	t.Run("NoChange", func(t *testing.T) {
+		fake.Reset()
+
+		err := w.getGardenAndSaveControllerInfo("garden/data/info", `info mac="aa:bb:cc:dd:ee:ff",ip="192.168.1.42",version="v2.0.0"`)
+		require.NoError(t, err)
+
+		assert.Empty(t, fake.LastMessage())
+	})
+
+	t.Run("SettingDisabled", func(t *testing.T) {
+		fake.Reset()
+
+		disabledGarden := &pkg.Garden{
+			ID:                   babyapi.NewID(),
+			TopicPrefix:          "disabled-garden",
+			Name:                 "disabled-garden",
+			NotificationClientID: &notificationClientID,
+			NotificationSettings: &pkg.NotificationSettings{
+				FirmwareChanged: false,
+			},
+		}
+		err := storageClient.Gardens.Set(context.Background(), disabledGarden)
+		require.NoError(t, err)
+
+		err = w.getGardenAndSaveControllerInfo("disabled-garden/data/info", `info mac="aa:bb:cc:dd:ee:ff",ip="192.168.1.42",version="v1.0.0"`)
+		require.NoError(t, err)
+
+		assert.Empty(t, fake.LastMessage())
 	})
 }

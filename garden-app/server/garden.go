@@ -286,6 +286,15 @@ func (api *GardensAPI) gardenAction(_ http.ResponseWriter, r *http.Request, gard
 	logger.Debug("garden action", "action", gardenAction)
 
 	if err := api.worker.ExecuteGardenAction(r.Context(), garden, gardenAction); err != nil {
+		if errors.Is(err, worker.ErrFirmwareUpdateInProgress) {
+			logger.Warn("firmware update already in progress", "garden_id", garden.GetID())
+			return nil, &babyapi.ErrResponse{
+				HTTPStatusCode: http.StatusConflict,
+				StatusText:     "Conflict",
+				ErrorText:      err.Error(),
+				Err:            err,
+			}
+		}
 		logger.Error("unable to execute GardenAction", "error", err)
 		return nil, babyapi.InternalServerError(err)
 	}

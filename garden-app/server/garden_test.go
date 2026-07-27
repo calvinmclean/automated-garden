@@ -13,6 +13,7 @@ import (
 	"net/http/httptest"
 	"slices"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -842,6 +843,7 @@ func TestGardenActionForm(t *testing.T) {
 func TestGardenActionFirmwareUpdate(t *testing.T) {
 	firmwareData := []byte("fake firmware binary data")
 
+	var uploadWg sync.WaitGroup
 	uploadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		assert.Equal(t, http.MethodPost, r.Method)
 		assert.Equal(t, "/u", r.URL.Path)
@@ -861,6 +863,7 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 		assert.NoError(t, err)
 		assert.Equal(t, firmwareData, received)
 
+		uploadWg.Done()
 		w.WriteHeader(http.StatusOK)
 	}))
 	defer uploadServer.Close()
@@ -878,10 +881,11 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 	defer releaseServer.Close()
 
 	tests := []struct {
-		name         string
-		buildRequest func(string) *http.Request
-		expected     string
-		status       int
+		name          string
+		buildRequest  func(string) *http.Request
+		expected      string
+		status        int
+		waitForUpload bool
 	}{
 		{
 			"SuccessfulDirectUpload",
@@ -899,6 +903,7 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 			},
 			"{}",
 			http.StatusAccepted,
+			true,
 		},
 		{
 			"SuccessfulLatest",
@@ -914,6 +919,7 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 			},
 			"{}",
 			http.StatusAccepted,
+			true,
 		},
 		{
 			"InvalidExtension",
@@ -931,6 +937,7 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 			},
 			`{"status":"Invalid request.","error":"firmware file must have .bin extension"}`,
 			http.StatusBadRequest,
+			false,
 		},
 		{
 			"FileTooLarge",
@@ -948,6 +955,7 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 			},
 			`{"status":"Invalid request.","error":"firmware file exceeds maximum size of 3 MB"}`,
 			http.StatusBadRequest,
+			false,
 		},
 		{
 			"MissingFile",
@@ -963,6 +971,7 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 			},
 			`{"status":"Invalid request.","error":"firmware_update file is required when latest is not true"}`,
 			http.StatusBadRequest,
+			false,
 		},
 	}
 
@@ -988,13 +997,84 @@ func TestGardenActionFirmwareUpdate(t *testing.T) {
 			err = storageClient.Gardens.Set(context.Background(), garden)
 			assert.NoError(t, err)
 
+			if tt.waitForUpload {
+				uploadWg.Add(1)
+			}
+
 			r := tt.buildRequest(fmt.Sprintf("/gardens/%s/action", garden.ID))
 			resp := babytest.TestRequest[*pkg.Garden](t, gr.API, r)
 
 			assert.Equal(t, tt.status, resp.Code)
 			assert.Equal(t, tt.expected, strings.TrimSpace(resp.Body.String()))
+
+			if tt.waitForUpload {
+				uploadWg.Wait()
+			}
 		})
 	}
+}
+
+func TestGardenActionFirmwareUpdateConflict(t *testing.T) {
+	firmwareData := []byte("fake firmware binary data")
+
+	block := make(chan struct{})
+	var uploadWg sync.WaitGroup
+	uploadWg.Add(1)
+
+	uploadServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-block
+		uploadWg.Done()
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer uploadServer.Close()
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+
+	mqttClient := new(mqtt.MockClient)
+	w := worker.NewWorker(storageClient, nil, mqttClient, slog.Default(),
+		worker.WithFirmwareUpdateUploadURLFunc(func(string) string { return uploadServer.URL + "/u" }),
+	)
+
+	gr := NewGardenAPI()
+	err = gr.setup(Config{}, storageClient, nil, w)
+	assert.NoError(t, err)
+
+	garden := createExampleGarden()
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	assert.NoError(t, err)
+
+	path := fmt.Sprintf("/gardens/%s/action", garden.ID)
+
+	var body bytes.Buffer
+	writer := multipart.NewWriter(&body)
+	_ = writer.WriteField("firmware_update.latest", "false")
+	part, _ := writer.CreateFormFile("firmware_update.file", "firmware.bin")
+	_, _ = part.Write(firmwareData)
+	_ = writer.Close()
+
+	r1 := httptest.NewRequest(http.MethodPost, path, &body)
+	r1.Header.Set("Content-Type", writer.FormDataContentType())
+	resp1 := babytest.TestRequest[*pkg.Garden](t, gr.API, r1)
+	assert.Equal(t, http.StatusAccepted, resp1.Code)
+
+	var body2 bytes.Buffer
+	writer2 := multipart.NewWriter(&body2)
+	_ = writer2.WriteField("firmware_update.latest", "false")
+	part2, _ := writer2.CreateFormFile("firmware_update.file", "firmware.bin")
+	_, _ = part2.Write(firmwareData)
+	_ = writer2.Close()
+
+	r2 := httptest.NewRequest(http.MethodPost, path, &body2)
+	r2.Header.Set("Content-Type", writer2.FormDataContentType())
+	resp2 := babytest.TestRequest[*pkg.Garden](t, gr.API, r2)
+	assert.Equal(t, http.StatusConflict, resp2.Code)
+	assert.Contains(t, resp2.Body.String(), "firmware update already in progress")
+
+	close(block)
+	uploadWg.Wait()
 }
 
 func TestGardenWaterHistory(t *testing.T) {

@@ -12,6 +12,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -21,11 +22,14 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/action"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/influxdb"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/mqtt"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications"
+	"github.com/calvinmclean/automated-garden/garden-app/pkg/notifications/fake"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 )
 
 func TestGardenAction(t *testing.T) {
@@ -857,4 +861,103 @@ func TestFirmwareUpdateActionNoFallbackOnServerError(t *testing.T) {
 	})
 	assert.Error(t, err)
 	assert.Equal(t, "firmware update request returned status 500", err.Error())
+}
+
+func TestFirmwareUpdateActionConflict(t *testing.T) {
+	firmwareData := []byte("fake firmware binary data")
+
+	block := make(chan struct{})
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		<-block
+		wg.Done()
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	garden := &pkg.Garden{
+		ID:          babyapi.NewID(),
+		Name:        "garden",
+		TopicPrefix: "garden",
+	}
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	worker.firmwareUpdateUploadURLFunc = func(string) string { return server.URL + "/u" }
+
+	first := &action.GardenAction{
+		FirmwareUpdate: &action.FirmwareUpdateAction{
+			Latest:   false,
+			FileData: firmwareData,
+		},
+	}
+	err := worker.ExecuteGardenAction(context.Background(), garden, first)
+	require.NoError(t, err)
+
+	second := &action.GardenAction{
+		FirmwareUpdate: &action.FirmwareUpdateAction{
+			Latest:   false,
+			FileData: firmwareData,
+		},
+	}
+	err = worker.ExecuteGardenAction(context.Background(), garden, second)
+	assert.ErrorIs(t, err, ErrFirmwareUpdateInProgress)
+
+	close(block)
+	wg.Wait()
+}
+
+func TestFirmwareUpdateActionFailureNotification(t *testing.T) {
+	fake.Reset()
+	defer fake.Reset()
+
+	firmwareData := []byte("fake firmware binary data")
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	require.NoError(t, err)
+
+	nc := &notifications.Client{
+		ID:   babyapi.NewID(),
+		Name: "test",
+		URL:  "fake://success",
+	}
+	err = storageClient.NotificationClientConfigs.Set(context.Background(), nc)
+	require.NoError(t, err)
+
+	notificationClientID := nc.GetID()
+	garden := &pkg.Garden{
+		ID:                   babyapi.NewID(),
+		Name:                 "garden",
+		TopicPrefix:          "garden",
+		NotificationClientID: &notificationClientID,
+		NotificationSettings: &pkg.NotificationSettings{
+			FirmwareChanged: true,
+		},
+	}
+	err = storageClient.Gardens.Set(context.Background(), garden)
+	require.NoError(t, err)
+
+	uploadServer := newFirmwareUploadServer(t, firmwareData, http.StatusInternalServerError)
+
+	worker := NewWorker(storageClient, nil, nil, slog.Default())
+	worker.firmwareUpdateUploadURLFunc = func(string) string { return uploadServer }
+
+	err = worker.ExecuteGardenAction(context.Background(), garden, &action.GardenAction{
+		FirmwareUpdate: &action.FirmwareUpdateAction{
+			Latest:   false,
+			FileData: firmwareData,
+		},
+	})
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		return fake.LastMessage().Title != ""
+	}, 2*time.Second, 50*time.Millisecond)
+
+	last := fake.LastMessage()
+	assert.Equal(t, "garden: Firmware Update Failed", last.Title)
+	assert.Contains(t, last.Message, "firmware update request returned status 500")
 }

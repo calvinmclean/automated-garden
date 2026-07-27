@@ -85,6 +85,10 @@ type Worker struct {
 
 	// firmwareMutex protects firmwareFile and firmwareTimer.
 	firmwareMutex sync.Mutex
+
+	// firmwareUpdateInProgress tracks gardens that are currently executing a firmware update.
+	firmwareUpdateInProgress map[string]struct{}
+	firmwareUpdateMutex      sync.Mutex
 }
 
 // WorkerOption configures a Worker during creation
@@ -129,13 +133,14 @@ func NewWorker(
 	scheduler := gocron.NewScheduler(time.UTC)
 	scheduler.CustomTime(clock.DefaultClock)
 	w := &Worker{
-		storageClient:  storageClient,
-		influxdbClient: influxdbClient,
-		mqttClient:     mqttClient,
-		scheduler:      scheduler,
-		logger:         logger.With("source", "worker"),
-		downTimers:     map[string]clock.Timer{},
-		httpClient:     http.DefaultClient,
+		storageClient:            storageClient,
+		influxdbClient:           influxdbClient,
+		mqttClient:               mqttClient,
+		scheduler:                scheduler,
+		logger:                   logger.With("source", "worker"),
+		downTimers:               map[string]clock.Timer{},
+		firmwareUpdateInProgress: make(map[string]struct{}),
+		httpClient:               http.DefaultClient,
 		controllerSetupURLFunc: func(topicPrefix string) string {
 			return fmt.Sprintf("http://%s.local/paramsave", topicPrefix)
 		},
