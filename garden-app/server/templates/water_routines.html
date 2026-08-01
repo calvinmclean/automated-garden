@@ -50,18 +50,11 @@
 {{ end }}
 
 {{ define "waterRoutineActionButton" }}
-<div class="uk-inline">
-    <button class="uk-button uk-button-default" type="button">Actions</button>
-    <div uk-dropdown>
-        <ul class="uk-nav uk-dropdown-nav">
-            <li>
-                <a href="#run-confirm-{{ .ID }}" uk-toggle>
-                    <span uk-icon="play"></span> Run Routine
-                </a>
-            </li>
-        </ul>
-    </div>
-</div>
+<button class="uk-button uk-button-primary" type="button" uk-toggle="target: #run-confirm-{{ .ID }}">
+    <span style="display: inline-flex; align-items: center; gap: 5px; transform: translateX(-4px); vertical-align: middle;">
+        <span uk-icon="play"></span> Run
+    </span>
+</button>
 
 {{ template "runConfirmationModal" . }}
 {{ end }}
