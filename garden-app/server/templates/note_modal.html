@@ -7,7 +7,7 @@
 
         <form
             hx-put="/notes/{{ .Note.ID }}"
-            hx-headers='{"Accept": "text/html"}'
+            hx-headers='{"Accept": "text/html"{{ if .IsNew }}, "X-Note-Create": "true"{{ end }}}'
             hx-swap="none"
             data-close-on-success
         >

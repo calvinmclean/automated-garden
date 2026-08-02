@@ -5,16 +5,21 @@
 {{ end }}
 
 {{ define "Notes" }}
-<div hx-swap="outerHTML" hx-get="/notes?refresh=true" hx-headers='{"Accept": "text/html"}'
-    hx-trigger="newNote from:body" uk-grid>
+<div id="notes-list" uk-grid>
     {{ range .Items }}
     {{ template "NoteCard" . }}
     {{ end }}
 </div>
 {{ end }}
 
+{{ define "NoteCardOOBPrepend" }}
+<div hx-swap-oob="afterbegin:#notes-list">
+    {{ template "NoteCard" . }}
+</div>
+{{ end }}
+
 {{ define "NoteCard" }}
-<div class="uk-width-1-2@m" id="note-card-{{ .ID }}">
+<div class="uk-width-1-2@m" id="note-card-{{ .ID }}" {{ if .OOBSwap }}hx-swap-oob="{{ .OOBSwap }}"{{ end }}>
     <div id="edit-modal-here"></div>
     <div class="uk-card uk-card-default" style="margin: 5%;">
         <div class="uk-card-header uk-text-center">

@@ -7,7 +7,6 @@ import (
 
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/babyapi"
-	"github.com/go-chi/render"
 )
 
 // NoteResponse is used to represent a Note in the response body
@@ -16,6 +15,7 @@ type NoteResponse struct {
 	GardenName string `json:"garden_name,omitempty"` // HTML only
 	ZoneName   string `json:"zone_name,omitempty"`   // HTML only
 	Links      []Link `json:"links,omitempty"`
+	OOBSwap    string `json:"-"` // HTML only
 
 	api *NotesAPI
 }
@@ -50,15 +50,19 @@ func (nr *NoteResponse) populateNames(ctx context.Context) {
 
 // Render is used to make this struct compatible with the go-chi webserver for writing
 // the JSON response
-func (nr *NoteResponse) Render(w http.ResponseWriter, r *http.Request) error {
-	if render.GetAcceptedContentType(r) == render.ContentTypeHTML && r.Method == http.MethodPut {
-		w.Header().Add("HX-Trigger", "newNote")
-	}
+func (nr *NoteResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
 	return nil
 }
 
 func (nr *NoteResponse) HTML(_ http.ResponseWriter, r *http.Request) string {
 	nr.populateNames(r.Context())
+	if r.Method == http.MethodPut {
+		if r.Header.Get("X-Note-Create") == "true" {
+			return noteCardOOBPrependTemplate.Render(r, nr)
+		} else {
+			nr.OOBSwap = "outerHTML:#note-card-" + nr.ID.String()
+		}
+	}
 	return noteCardTemplate.Render(r, nr)
 }
 

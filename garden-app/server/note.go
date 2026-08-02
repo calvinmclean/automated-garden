@@ -120,6 +120,7 @@ func (api *NotesAPI) noteModalRenderer(ctx context.Context, note *pkg.Note) rend
 
 	return noteModalTemplate.Renderer(map[string]any{
 		"Note":           note,
+		"IsNew":          note.CreatedAt == nil,
 		"Gardens":        gardens,
 		"Zones":          zones,
 		"SelectedZoneID": selectedZoneID,

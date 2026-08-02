@@ -56,6 +56,7 @@ const (
 	notesPageTemplate                    html.Template = "NotesPage"
 	notesTemplate                        html.Template = "Notes"
 	noteCardTemplate                     html.Template = "NoteCard"
+	noteCardOOBPrependTemplate           html.Template = "NoteCardOOBPrepend"
 	noteModalTemplate                    html.Template = "NoteModal"
 	noteZoneSelectTemplate               html.Template = "NoteZoneSelect"
 

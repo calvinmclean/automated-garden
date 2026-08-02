@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
@@ -14,11 +15,15 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/babyapi"
+	babyhtml "github.com/calvinmclean/babyapi/html"
 	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestNotesAPI(t *testing.T) {
+	babyhtml.SetFS(templates, "templates/*")
+	babyhtml.SetFuncs(templateFuncs)
+
 	storageClient, err := storage.NewClient(storage.Config{
 		ConnectionString: ":memory:",
 	})
@@ -60,6 +65,46 @@ func TestNotesAPI(t *testing.T) {
 		w := babytest.TestRequest(t, api.API, r)
 
 		assert.Equal(t, http.StatusOK, w.Code)
+	})
+
+	t.Run("CreateNoteHTMXUsesOOBPrepend", func(t *testing.T) {
+		id := babyapi.NewID()
+		form := url.Values{
+			"ID":    {id.String()},
+			"Title": {"HTMX Note"},
+		}
+
+		r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", notesBasePath, id), strings.NewReader(form.Encode()))
+		r.Header.Set("Accept", "text/html")
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		r.Header.Set("X-Note-Create", "true")
+		w := babytest.TestRequest(t, api.API, r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Regexp(t, `<div hx-swap-oob="afterbegin:#notes-list">\s*<div class="uk-width-1-2@m"`, w.Body.String())
+	})
+
+	t.Run("EditNoteHTMXUsesOOBReplacement", func(t *testing.T) {
+		id := babyapi.NewID()
+		note := &pkg.Note{
+			ID:        id,
+			Title:     "Original Title",
+			CreatedAt: &now,
+		}
+		err := storageClient.Notes.Set(context.Background(), note)
+		assert.NoError(t, err)
+
+		form := url.Values{
+			"ID":    {id.String()},
+			"Title": {"Updated Title"},
+		}
+		r := httptest.NewRequest(http.MethodPut, fmt.Sprintf("%s/%s", notesBasePath, id), strings.NewReader(form.Encode()))
+		r.Header.Set("Accept", "text/html")
+		r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		w := babytest.TestRequest(t, api.API, r)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+		assert.Contains(t, w.Body.String(), `hx-swap-oob="outerHTML:#note-card-`+id.String()+`"`)
 	})
 
 	t.Run("CreateNoteWithGardenAndZone", func(t *testing.T) {
