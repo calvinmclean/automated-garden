@@ -12,6 +12,17 @@ tasks:
       - sleep 15
       - go test -timeout=2m -race -covermode=atomic -coverprofile=integration_coverage.out -coverpkg=./... ./integration_tests
 
+  controller-integration-test:
+    aliases: ["cit"]
+    desc: Run the tagged integration test against a physical ESP32 controller.
+    dir: ./garden-app
+    cmds:
+      - docker compose -f ../deploy/docker-compose.yml --profile test up -d
+      - defer: docker volume rm deploy_influxdb
+      - defer: docker compose -f ../deploy/docker-compose.yml --profile test down
+      - sleep 15
+      - go test -tags=controller_integration -timeout=3m -race -run '^TestControllerIntegration$' ./integration_tests
+
   manual-test-up:
     aliases: ["mtu"]
     desc: Start docker test stack, seed data if needed, and run the server for manual testing. Ctrl-C to stop the server; run manual-test-down to clean up docker and reset data.

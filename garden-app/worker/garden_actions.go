@@ -233,6 +233,15 @@ func (w *Worker) ExecuteControllerSetupAction(ctx context.Context, g *pkg.Garden
 		return errors.New("controller_setup action must have a positive port")
 	}
 
+	controllerSetupURL := w.controllerSetupURLFunc(g.TopicPrefix)
+	if input.ControllerAddress != "" {
+		controllerAddress, err := controllerAddressWithPort(input.ControllerAddress)
+		if err != nil {
+			return err
+		}
+		controllerSetupURL = fmt.Sprintf("http://%s/paramsave", controllerAddress)
+	}
+
 	form := url.Values{}
 	form.Set("server", input.Server)
 	form.Set("topic_prefix", input.TopicPrefix)
@@ -240,7 +249,7 @@ func (w *Worker) ExecuteControllerSetupAction(ctx context.Context, g *pkg.Garden
 
 	resp, err := w.sendControllerRequest(
 		ctx, g,
-		w.controllerSetupURLFunc(g.TopicPrefix),
+		controllerSetupURL,
 		"/paramsave", []byte(form.Encode()),
 		"application/x-www-form-urlencoded",
 	)
@@ -254,6 +263,21 @@ func (w *Worker) ExecuteControllerSetupAction(ctx context.Context, g *pkg.Garden
 	}
 
 	return nil
+}
+
+func controllerAddressWithPort(address string) (string, error) {
+	host, port, err := net.SplitHostPort(address)
+	if err == nil {
+		if net.ParseIP(host) == nil || port == "" {
+			return "", fmt.Errorf("controller_setup action has invalid controller_address %q", address)
+		}
+		return address, nil
+	}
+
+	if net.ParseIP(address) == nil {
+		return "", fmt.Errorf("controller_setup action has invalid controller_address %q", address)
+	}
+	return net.JoinHostPort(address, "80"), nil
 }
 
 // ExecuteFirmwareUpdateAction sends a firmware image to the controller's WiFiManager
