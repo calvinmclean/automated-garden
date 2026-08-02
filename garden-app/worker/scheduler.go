@@ -83,7 +83,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 					if err != nil {
 						jobLogger.Error("error executing scheduled water action", "error", err, "zone_id", zg.Zone.ID.String())
 						schedulerErrors.WithLabelValues(zoneLabels(zg.Zone)...).Inc()
-						if ws.GetNotificationClientID() != "" {
+						if ws.GetNotificationClientID() != "" && ws.GetNotificationSettings().WateringErrors {
 							go w.sendNotification(
 								ctx,
 								ws.GetNotificationClientID(),
@@ -99,7 +99,7 @@ func (w *Worker) ScheduleWaterAction(waterSchedule *pkg.WaterSchedule) error {
 			if err != nil {
 				jobLogger.Error("error executing schedule WaterAction", "error", err)
 				schedulerErrors.WithLabelValues(waterScheduleLabels(waterSchedule)...).Inc()
-				if waterSchedule.GetNotificationClientID() != "" {
+				if waterSchedule.GetNotificationClientID() != "" && waterSchedule.GetNotificationSettings().WateringErrors {
 					w.sendNotification(
 						context.Background(),
 						waterSchedule.GetNotificationClientID(),

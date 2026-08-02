@@ -323,9 +323,7 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 			mqttClient.On("Disconnect", uint(100)).Return()
 
 			influxdbClient := new(influxdb.MockClient)
-			if tt.enableNotification {
-				influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(clock.Now(), nil)
-			}
+			influxdbClient.On("GetLastContact", mock.Anything, mock.Anything).Return(clock.Now(), nil)
 			influxdbClient.On("Close").Return()
 
 			worker := NewWorker(storageClient, influxdbClient, mqttClient, slog.Default())
@@ -335,9 +333,10 @@ func TestScheduleWaterActionWithErrorNotification(t *testing.T) {
 			ws.Name = "MyWaterSchedule"
 			// Set StartTime to the near future
 			ws.StartTime = pkg.NewStartTime(clock.Now().Add(1 * time.Second))
+			ncID := notificationClient.GetID()
+			ws.NotificationClientID = &ncID
 			if tt.enableNotification {
-				ncID := notificationClient.GetID()
-				ws.NotificationClientID = &ncID
+				ws.NotificationSettings = &pkg.WaterScheduleNotificationSettings{WateringErrors: true}
 			}
 
 			err = storageClient.WaterSchedules.Set(context.Background(), ws)

@@ -68,7 +68,7 @@
         ></span>
         {{ $activePeriod }}
     </span>
-    {{ end }} {{ end }} {{ if and .SendReminder (DerefBool .SendReminder) }}
+    {{ end }} {{ end }} {{ if and .NotificationSettings .NotificationSettings.WateringReminder }}
     <span class="uk-label uk-label-primary" uk-tooltip="Reminder Enabled">
         <span
             uk-icon="bell"

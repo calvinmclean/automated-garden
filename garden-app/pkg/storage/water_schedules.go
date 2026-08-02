@@ -131,9 +131,13 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		interval = int64(waterSchedule.Interval.Duration)
 	}
 
-	sendReminder := false
-	if waterSchedule.SendReminder != nil {
-		sendReminder = *waterSchedule.SendReminder
+	var notificationSettings sql.NullString
+	if waterSchedule.NotificationSettings != nil {
+		notificationSettingsJSON, err := json.Marshal(waterSchedule.NotificationSettings)
+		if err != nil {
+			return fmt.Errorf("error marshaling water schedule notification settings: %w", err)
+		}
+		notificationSettings = sql.NullString{String: string(notificationSettingsJSON), Valid: true}
 	}
 
 	return s.q.UpsertWaterSchedule(ctx, db.UpsertWaterScheduleParams{
@@ -149,7 +153,7 @@ func (s *WaterScheduleStorage) Set(ctx context.Context, waterSchedule *pkg.Water
 		ActivePeriodEndMonth:   activePeriodEndMonth,
 		WeatherControl:         weatherControl,
 		NotificationClientID:   notificationClientID,
-		SendReminder:           sendReminder,
+		NotificationSettings:   notificationSettings,
 	})
 }
 
@@ -226,7 +230,13 @@ func dbWaterScheduleToWaterSchedule(dbWaterSchedule db.WaterSchedule) (*pkg.Wate
 		waterSchedule.NotificationClientID = &dbWaterSchedule.NotificationClientID.String
 	}
 
-	waterSchedule.SendReminder = &dbWaterSchedule.SendReminder
+	if dbWaterSchedule.NotificationSettings.Valid && dbWaterSchedule.NotificationSettings.String != "" {
+		var notificationSettings pkg.WaterScheduleNotificationSettings
+		if err := json.Unmarshal([]byte(dbWaterSchedule.NotificationSettings.String), &notificationSettings); err != nil {
+			return nil, fmt.Errorf("error unmarshaling water schedule notification settings: %w", err)
+		}
+		waterSchedule.NotificationSettings = &notificationSettings
+	}
 
 	return waterSchedule, nil
 }

@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -15,18 +16,62 @@ import (
 // WaterSchedule allows the user to have more control over how the Zone is watered using an Interval.
 // StartTime specifies when the watering interval should originate from. It can be used to increase/decrease delays in watering.
 type WaterSchedule struct {
-	ID                   babyapi.ID       `json:"id" yaml:"id"`
-	Duration             *Duration        `json:"duration" yaml:"duration"`
-	Interval             *Duration        `json:"interval" yaml:"interval"`
-	StartDate            *Date            `json:"start_date" yaml:"start_date"`
-	StartTime            *StartTime       `json:"start_time" yaml:"start_time"`
-	EndDate              *time.Time       `json:"end_date,omitempty" yaml:"end_date,omitempty"`
-	WeatherControl       *weather.Control `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
-	Name                 string           `json:"name,omitempty" yaml:"name,omitempty"`
-	Description          string           `json:"description,omitempty" yaml:"description,omitempty"`
-	ActivePeriod         *ActivePeriod    `json:"active_period,omitempty" yaml:"active_period,omitempty"`
-	NotificationClientID *string          `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
-	SendReminder         *bool            `json:"send_reminder,omitempty" yaml:"send_reminder,omitempty"`
+	ID                   babyapi.ID                         `json:"id" yaml:"id"`
+	Duration             *Duration                          `json:"duration" yaml:"duration"`
+	Interval             *Duration                          `json:"interval" yaml:"interval"`
+	StartDate            *Date                              `json:"start_date" yaml:"start_date"`
+	StartTime            *StartTime                         `json:"start_time" yaml:"start_time"`
+	EndDate              *time.Time                         `json:"end_date,omitempty" yaml:"end_date,omitempty"`
+	WeatherControl       *weather.Control                   `json:"weather_control,omitempty" yaml:"weather_control,omitempty"`
+	Name                 string                             `json:"name,omitempty" yaml:"name,omitempty"`
+	Description          string                             `json:"description,omitempty" yaml:"description,omitempty"`
+	ActivePeriod         *ActivePeriod                      `json:"active_period,omitempty" yaml:"active_period,omitempty"`
+	NotificationClientID *string                            `json:"notification_client_id,omitempty" yaml:"notification_client_id,omitempty"`
+	NotificationSettings *WaterScheduleNotificationSettings `json:"notification_settings,omitempty" yaml:"notification_settings,omitempty"`
+}
+
+// WaterScheduleNotificationSettings controls notifications emitted for a WaterSchedule.
+type WaterScheduleNotificationSettings struct {
+	WateringReminder bool `json:"watering_reminder" yaml:"watering_reminder"`
+	WateringErrors   bool `json:"watering_errors" yaml:"watering_errors"`
+}
+
+// UnmarshalJSON accepts legacy numeric SQLite booleans written by migration 14.
+func (s *WaterScheduleNotificationSettings) UnmarshalJSON(data []byte) error {
+	type settings struct {
+		WateringReminder boolOrNumber `json:"watering_reminder"`
+		WateringErrors   boolOrNumber `json:"watering_errors"`
+	}
+
+	var decoded settings
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+
+	s.WateringReminder = bool(decoded.WateringReminder)
+	s.WateringErrors = bool(decoded.WateringErrors)
+	return nil
+}
+
+type boolOrNumber bool
+
+func (b *boolOrNumber) UnmarshalJSON(data []byte) error {
+	var value bool
+	if err := json.Unmarshal(data, &value); err == nil {
+		*b = boolOrNumber(value)
+		return nil
+	}
+
+	var number int
+	if err := json.Unmarshal(data, &number); err != nil {
+		return err
+	}
+	if number != 0 && number != 1 {
+		return fmt.Errorf("expected boolean or 0/1, got %d", number)
+	}
+
+	*b = number == 1
+	return nil
 }
 
 func (ws *WaterSchedule) GetID() string {
@@ -48,6 +93,14 @@ func (ws *WaterSchedule) GetNotificationClientID() string {
 	}
 
 	return *ws.NotificationClientID
+}
+
+func (ws *WaterSchedule) GetNotificationSettings() WaterScheduleNotificationSettings {
+	if ws.NotificationSettings == nil {
+		return WaterScheduleNotificationSettings{}
+	}
+
+	return *ws.NotificationSettings
 }
 
 // EndDated returns true if the WaterSchedule is end-dated
@@ -108,8 +161,12 @@ func (ws *WaterSchedule) Patch(newWaterSchedule *WaterSchedule) *babyapi.ErrResp
 			ws.NotificationClientID = newWaterSchedule.NotificationClientID
 		}
 	}
-	if newWaterSchedule.SendReminder != nil {
-		ws.SendReminder = newWaterSchedule.SendReminder
+	if newWaterSchedule.NotificationSettings != nil {
+		if ws.NotificationSettings == nil {
+			ws.NotificationSettings = &WaterScheduleNotificationSettings{}
+		}
+		ws.NotificationSettings.WateringReminder = newWaterSchedule.NotificationSettings.WateringReminder
+		ws.NotificationSettings.WateringErrors = newWaterSchedule.NotificationSettings.WateringErrors
 	}
 
 	return nil

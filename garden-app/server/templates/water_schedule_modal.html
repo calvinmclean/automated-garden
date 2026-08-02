@@ -74,12 +74,31 @@
                 </select>
             </div>
 
-            <div class="uk-margin" style="text-align: left;">
-                <label class="uk-form-label" for="send-reminder-checkbox">
-                    <input id="send-reminder-checkbox" class="uk-checkbox" type="checkbox" name="SendReminder" value="true" {{ if and .SendReminder (DerefBool .SendReminder) }}checked{{ end }}>
-                    Send watering reminder notification
-                </label>
-                <div class="uk-text-small uk-text-muted">Sends a notification with the calculated watering duration before watering begins</div>
+            <div class="uk-margin uk-child-width-auto uk-grid" style="text-align: left;">
+                <div class="uk-width-1-2@m">
+                    <label class="uk-form-label" for="send-reminder-checkbox">
+                        <div class="uk-inline">
+                            <input id="send-reminder-checkbox" class="uk-checkbox" type="checkbox" name="NotificationSettings.WateringReminder" value="true" {{ if and .NotificationSettings .NotificationSettings.WateringReminder }}checked{{ end }}>
+                            Watering reminder
+                            <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                            <div uk-dropdown="pos: right-center">
+                                Sends a notification with the calculated watering duration before watering begins
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <div class="uk-width-1-2@m">
+                    <label class="uk-form-label" for="watering-errors-checkbox">
+                        <div class="uk-inline">
+                            <input id="watering-errors-checkbox" class="uk-checkbox" type="checkbox" name="NotificationSettings.WateringErrors" value="true" {{ if and .NotificationSettings .NotificationSettings.WateringErrors }}checked{{ end }}>
+                            Watering errors
+                            <span class="uk-margin-small-right" uk-icon="icon: info; ratio: 0.75"></span>
+                            <div uk-dropdown="pos: right-center">
+                                Sends a notification when a scheduled watering action fails
+                            </div>
+                        </div>
+                    </label>
+                </div>
             </div>
 
             <!-- Rain Scaling Section -->

@@ -42,7 +42,7 @@ Details: %s`, actionName, health.LastContact.Format(time.DateTime), health.Detai
 }
 
 func (w *Worker) sendWateringReminder(ctx context.Context, ws *pkg.WaterSchedule, duration time.Duration, zoneCount int, logger *slog.Logger) {
-	if ws.GetNotificationClientID() == "" || ws.SendReminder == nil || !*ws.SendReminder {
+	if ws.GetNotificationClientID() == "" || !ws.GetNotificationSettings().WateringReminder {
 		return
 	}
 

@@ -125,6 +125,15 @@ func TestWaterSchedulePatch(t *testing.T) {
 				},
 			},
 		},
+		{
+			"PatchNotificationSettings",
+			&WaterSchedule{
+				NotificationSettings: &WaterScheduleNotificationSettings{
+					WateringReminder: true,
+					WateringErrors:   true,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

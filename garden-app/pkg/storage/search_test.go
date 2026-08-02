@@ -142,6 +142,28 @@ func TestZoneStorageSearchWithEndDated(t *testing.T) {
 	})
 }
 
+func TestWaterScheduleStorageNotificationSettings(t *testing.T) {
+	ctx := context.Background()
+	sqlClient, err := NewClient(Config{ConnectionString: ":memory:"})
+	require.NoError(t, err)
+
+	waterSchedule := &pkg.WaterSchedule{
+		ID:        babyapi.NewID(),
+		Duration:  &pkg.Duration{Duration: time.Hour},
+		Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+		StartTime: pkg.NewStartTime(time.Now()),
+		NotificationSettings: &pkg.WaterScheduleNotificationSettings{
+			WateringReminder: true,
+			WateringErrors:   true,
+		},
+	}
+	require.NoError(t, sqlClient.WaterSchedules.Set(ctx, waterSchedule))
+
+	stored, err := sqlClient.WaterSchedules.Get(ctx, waterSchedule.GetID())
+	require.NoError(t, err)
+	assert.Equal(t, waterSchedule.NotificationSettings, stored.NotificationSettings)
+}
+
 func TestWaterScheduleStorageSearchWithEndDated(t *testing.T) {
 	ctx := context.Background()
 
