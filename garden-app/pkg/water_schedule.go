@@ -311,8 +311,8 @@ func (ws *WaterSchedule) Bind(r *http.Request) error {
 		if ws.StartTime == nil {
 			return errors.New("missing required start_time field")
 		}
-		// If StartDate is not included, default to today
-		if ws.StartDate == nil {
+		// Empty HTML date inputs decode to a non-nil zero Date.
+		if ws.StartDate == nil || ws.StartDate.Equal(Date{}) {
 			now := NewDate(clock.Now().In(ws.StartTime.Time.Location()))
 			ws.StartDate = &now
 		}

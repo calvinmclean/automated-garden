@@ -787,6 +787,24 @@ func TestWaterScheduleRequest(t *testing.T) {
 		},
 	}
 
+	t.Run("EmptyStartDateDefaultsToToday", func(t *testing.T) {
+		mockClock := clock.MockTime()
+		defer clock.Reset()
+
+		startDate := pkg.Date{}
+		ws := &pkg.WaterSchedule{
+			Duration:  &pkg.Duration{Duration: time.Second},
+			Interval:  &pkg.Duration{Duration: 24 * time.Hour},
+			StartDate: &startDate,
+			StartTime: pkg.NewStartTime(mockClock.Now()),
+		}
+
+		err := ws.Bind(httptest.NewRequest(http.MethodPost, "/", nil))
+
+		require.NoError(t, err)
+		assert.True(t, ws.StartDate.Equal(pkg.NewDate(mockClock.Now())))
+	})
+
 	t.Run("Successful", func(t *testing.T) {
 		pr := &pkg.WaterSchedule{
 			Duration:  &pkg.Duration{Duration: time.Second},
