@@ -1,0 +1,13 @@
+web_server:
+  port: 8080
+mqtt:
+  broker: "localhost"
+  port: 1883
+  client_id: "garden-controller-integration-test"
+influxdb:
+  address: "http://localhost:8086"
+  token: "my-secret-token"
+  org: "garden"
+  bucket: "garden"
+storage:
+  connection_string: "file:mem-controller-integration-test?mode=memory&cache=shared"

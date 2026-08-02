@@ -420,6 +420,42 @@ func TestControllerSetupActionExecute(t *testing.T) {
 	}
 }
 
+func TestControllerSetupActionExplicitAddress(t *testing.T) {
+	received := url.Values{}
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		assert.Equal(t, http.MethodPost, r.Method)
+		assert.Equal(t, "/paramsave", r.URL.Path)
+		r.Body = http.MaxBytesReader(w, r.Body, 1024)
+		require.NoError(t, r.ParseForm())
+		received = r.PostForm
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	err := worker.ExecuteControllerSetupAction(context.Background(), &pkg.Garden{TopicPrefix: "garden"}, &action.ControllerSetupAction{
+		Server:            "192.168.1.10",
+		TopicPrefix:       "garden",
+		Port:              1883,
+		ControllerAddress: server.Listener.Addr().String(),
+	})
+	require.NoError(t, err)
+	assert.Equal(t, "192.168.1.10", received.Get("server"))
+	assert.Equal(t, "garden", received.Get("topic_prefix"))
+	assert.Equal(t, "1883", received.Get("port"))
+}
+
+func TestControllerSetupActionInvalidExplicitAddress(t *testing.T) {
+	worker := NewWorker(nil, nil, nil, slog.Default())
+	err := worker.ExecuteControllerSetupAction(context.Background(), &pkg.Garden{TopicPrefix: "garden"}, &action.ControllerSetupAction{
+		Server:            "192.168.1.10",
+		TopicPrefix:       "garden",
+		Port:              1883,
+		ControllerAddress: "not-an-ip",
+	})
+	require.EqualError(t, err, `controller_setup action has invalid controller_address "not-an-ip"`)
+}
+
 func TestFirmwareUpdateActionExecute(t *testing.T) {
 	garden := &pkg.Garden{
 		Name:        "garden",

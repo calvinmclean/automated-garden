@@ -78,9 +78,10 @@ type FanAction struct {
 // ControllerSetupAction is used to send MQTT connection details to the controller's
 // WiFiManager setup endpoint
 type ControllerSetupAction struct {
-	Server      string `json:"server" form:"server"`
-	TopicPrefix string `json:"topic_prefix" form:"topic_prefix"`
-	Port        int    `json:"port" form:"port"`
+	Server            string `json:"server" form:"server"`
+	TopicPrefix       string `json:"topic_prefix" form:"topic_prefix"`
+	Port              int    `json:"port" form:"port"`
+	ControllerAddress string `json:"controller_address,omitempty" form:"controller_address"`
 }
 
 // FirmwareUpdateAction is used to update the controller's firmware via the WiFiManager
