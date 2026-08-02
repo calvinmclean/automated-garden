@@ -6,10 +6,10 @@
         </h3>
 
         <form
-            _="on submit take .uk-open from #modal"
             hx-put="/notes/{{ .Note.ID }}"
             hx-headers='{"Accept": "text/html"}'
             hx-swap="none"
+            data-close-on-success
         >
             <input type="hidden" value="{{ .Note.ID }}" name="ID" />
             <div class="uk-margin">

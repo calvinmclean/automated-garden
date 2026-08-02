@@ -26,7 +26,7 @@
 <body>
     <div id="create-modal-here"></div>
     <div id="settings-modal-here"></div>
-    <div id="notification-area" style="position: fixed; top: 70px; left: 50%; transform: translateX(-50%); z-index: 2000; width: 90%; max-width: 800px;"></div>
+    <div id="notification-area" style="position: fixed; top: 0; left: 50%; transform: translateX(-50%); z-index: 2000; width: 90%; max-width: 800px;"></div>
     <nav class="uk-navbar-container">
         <div class="uk-container">
             <div uk-navbar="mode: click">
@@ -554,6 +554,66 @@
 
         document.body.addEventListener('htmx:afterSwap', onHTMXSwap);
         document.body.addEventListener('htmx:oobAfterSwap', onHTMXSwap);
+
+        function showHTMXError(detail, fallback) {
+            let message = fallback;
+            const xhr = detail.xhr;
+
+            if (xhr) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    message = response.error || response.status || message;
+                } catch (_) {
+                    if (xhr.status) {
+                        message = `Request failed (${xhr.status}).`;
+                    }
+                }
+            }
+
+            const alert = document.createElement('div');
+            alert.className = 'uk-alert-danger';
+            alert.setAttribute('uk-alert', '');
+            alert.dataset.requestError = '';
+
+            const closeButton = document.createElement('a');
+            closeButton.href = '';
+            closeButton.className = 'uk-alert-close';
+            closeButton.setAttribute('uk-close', '');
+
+            const content = document.createElement('p');
+            content.textContent = `Error: ${message}`;
+
+            alert.append(closeButton, content);
+            const modal = detail.elt.closest('#modal');
+            const alertArea = modal ? modal.querySelector('.uk-modal-body') : document.getElementById('notification-area');
+            alertArea.querySelector('[data-request-error]')?.remove();
+            alertArea.prepend(alert);
+            UIkit.alert(alert);
+        }
+
+        document.body.addEventListener('htmx:afterRequest', function(event) {
+            if (!event.detail.successful || !event.detail.elt.matches('[data-close-on-success]')) {
+                return;
+            }
+
+            const modal = event.detail.elt.closest('#modal');
+            if (!modal) {
+                return;
+            }
+
+            modal.classList.remove('uk-open');
+            setTimeout(function() {
+                modal.remove();
+            }, 200);
+        });
+
+        document.body.addEventListener('htmx:responseError', function(event) {
+            showHTMXError(event.detail, 'The request could not be completed.');
+        });
+
+        document.body.addEventListener('htmx:sendError', function(event) {
+            showHTMXError(event.detail, 'Unable to reach the server. Please try again.');
+        });
 
         if (typeof lucide !== 'undefined') {
             lucide.createIcons();

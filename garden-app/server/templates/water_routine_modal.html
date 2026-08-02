@@ -7,10 +7,10 @@
         </h3>
 
         <form
-            _="on submit take .uk-open from #modal"
             hx-put="/water_routines/{{ .WaterRoutine.ID }}"
             hx-headers='{"Accept": "text/html"}'
             hx-swap="none"
+            data-close-on-success
         >
             <input type="hidden" value="{{ .WaterRoutine.ID }}" name="ID" />
             <div class="uk-margin">

@@ -6,8 +6,8 @@
         </h3>
         {{ if .Type }}<p class="uk-text-meta uk-margin-remove-top uk-margin-small-top">{{ .Type }}</p>{{ end }}
 
-        <form _="on submit take .uk-open from #modal" hx-put="/weather_clients/{{ .ID }}"
-            hx-headers='{"Accept": "text/html"}' hx-swap="none">
+        <form hx-put="/weather_clients/{{ .ID }}" hx-headers='{"Accept": "text/html"}' hx-swap="none"
+            data-close-on-success>
             <input type="hidden" value="{{ .ID }}" name="ID">
 
             {{ if .Type }}
