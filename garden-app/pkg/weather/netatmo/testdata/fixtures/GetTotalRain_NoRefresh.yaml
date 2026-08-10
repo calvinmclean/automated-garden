@@ -30,7 +30,7 @@ interactions:
       trailer: {}
       content_length: -1
       uncompressed: true
-      body: '{"body":{"1720551600":[0],"1720638000":[0],"1720724400":[0]},"status":"ok","time_exec":0.03505086898803711,"time_server":1720711560}'
+      body: '{"body":[{"beg_time":1720551600,"value":[[0]]},{"beg_time":1720638000,"value":[[0]]},{"beg_time":1720724400,"value":[[0]]}],"status":"ok","time_exec":0.03505086898803711,"time_server":1720711560}'
       headers:
         Access-Control-Allow-Origin:
           - "*"

@@ -8,23 +8,47 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestWeatherDataUnmarshalJSON(t *testing.T) {
+func TestWeatherDataUnmarshalJSON_NewFormat(t *testing.T) {
 	input := `{
-	"body": {
-		"1662058800":[
-			7.9
-		],
-		"1662145200":[
-			2.5
-		],
-		"1662231600":[
-			0
-		]
-	},
-	"status": "ok",
-	"time_exec": 0.08324098587036133,
-	"time_server": 1662249790
-}`
+	  "body": [
+	    {
+	      "beg_time": 1786302000,
+	      "value": [
+	        [
+	          42.7
+	        ]
+	      ]
+	    }
+	  ],
+	  "status": "ok",
+	  "time_exec": 0.025828838348388672,
+	  "time_server": 1786301575
+	}`
+	var weatherDataResp weatherDataResponse
+	err := json.Unmarshal([]byte(input), &weatherDataResp)
+	assert.NoError(t, err)
+	assert.Equal(t, weatherData{
+		time.Unix(1786302000, 0): 42.7,
+	}, weatherDataResp.Body)
+}
+
+func TestWeatherDataUnmarshalJSON_OldFormat(t *testing.T) {
+	input := `{
+	  "body": {
+	    "1662058800": [
+	      7.9
+	    ],
+	    "1662145200": [
+	      2.5
+	    ],
+	    "1662231600": [
+	      0
+	    ]
+	  },
+	  "status": "ok",
+	  "time_exec": 0.08324098587036133,
+	  "time_server": 1662249790
+	}`
 	var weatherDataResp weatherDataResponse
 	err := json.Unmarshal([]byte(input), &weatherDataResp)
 	assert.NoError(t, err)

@@ -19,20 +19,42 @@ type weatherDataResponse struct {
 }
 
 // UnmarshalJSON is used to custom unmarshal a response that uses epoch timestamps as keys for a list of floats. This unmarshals
-// that data into a representation of the time to the first value in the list of data
+// that data into a representation of the time to the first value in the list of data. It also supports the newer API response
+// format where the body is an array of objects containing beg_time and value fields.
 func (d *weatherData) UnmarshalJSON(s []byte) error {
+	result := weatherData{}
+
+	// Try new format first: array of objects with beg_time and nested value arrays
+	var newFormat []struct {
+		BegTime int64       `json:"beg_time"`
+		Value   [][]float32 `json:"value"`
+	}
+	if err := json.Unmarshal(s, &newFormat); err == nil {
+		for _, item := range newFormat {
+			if len(item.Value) == 0 || len(item.Value[0]) == 0 {
+				continue
+			}
+			result[time.Unix(item.BegTime, 0)] = item.Value[0][0]
+		}
+
+		*(*weatherData)(d) = result
+		return nil
+	}
+
+	// Fall back to old format: map of epoch string -> []float32
 	var inputMap map[string][]float32
 	err := json.Unmarshal(s, &inputMap)
 	if err != nil {
 		return err
 	}
 
-	result := weatherData{}
-
 	for k, v := range inputMap {
 		epochInt, err := strconv.ParseInt(k, 10, 64)
 		if err != nil {
 			return err
+		}
+		if len(v) == 0 {
+			continue
 		}
 
 		result[time.Unix(epochInt, 0)] = v[0]
