@@ -182,7 +182,9 @@ func (c *clientWrapper) GetTotalRain(ctx context.Context, since time.Duration) (
 	if err != nil {
 		return nil, err
 	}
-	responseCache.Set(cacheKey, totalRain, cache.DefaultExpiration)
+	if totalRain != nil {
+		responseCache.Set(cacheKey, totalRain, cache.DefaultExpiration)
+	}
 
 	return totalRain, nil
 }
@@ -208,7 +210,9 @@ func (c *clientWrapper) GetAverageHighTemperature(ctx context.Context, since tim
 	if err != nil {
 		return nil, err
 	}
-	responseCache.Set(cacheKey, avgTemp, cache.DefaultExpiration)
+	if avgTemp != nil {
+		responseCache.Set(cacheKey, avgTemp, cache.DefaultExpiration)
+	}
 
 	return avgTemp, nil
 }
@@ -245,7 +249,9 @@ func (c *clientWrapper) GetAverageEvapotranspiration(ctx context.Context, since 
 	if err != nil {
 		return nil, err
 	}
-	responseCache.Set(cacheKey, avgET, cache.DefaultExpiration)
+	if avgET != nil {
+		responseCache.Set(cacheKey, avgET, cache.DefaultExpiration)
+	}
 
 	return avgET, nil
 }
