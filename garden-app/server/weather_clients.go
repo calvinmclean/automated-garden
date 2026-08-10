@@ -260,28 +260,35 @@ func (api *WeatherClientsAPI) getWeatherData(ctx context.Context, weatherClient 
 		return WeatherData{}, fmt.Errorf("unable to get average high temperature in the last %v: %w", duration, err)
 	}
 
-	result := WeatherData{
-		Temperature: &TemperatureData{},
+	result := WeatherData{}
+
+	if td != nil {
+		result.Temperature = &TemperatureData{}
+		if unitspkg.UnitSystem(units).IsImperial() {
+			result.Temperature.Fahrenheit = unitspkg.CelsiusToFahrenheit(*td)
+		} else {
+			result.Temperature.Celsius = *td
+		}
 	}
 
-	if unitspkg.UnitSystem(units).IsImperial() {
-		result.Temperature.Fahrenheit = unitspkg.CelsiusToFahrenheit(td)
-		inches := unitspkg.MmToInches(rd)
-		result.Rain = &RainData{Inches: &inches}
-	} else {
-		result.Temperature.Celsius = td
-		result.Rain = &RainData{MM: &rd}
+	if rd != nil {
+		if unitspkg.UnitSystem(units).IsImperial() {
+			inches := unitspkg.MmToInches(*rd)
+			result.Rain = &RainData{Inches: &inches}
+		} else {
+			result.Rain = &RainData{MM: rd}
+		}
 	}
 
 	// Fetch evapotranspiration data if the client supports it
 	if etClient, ok := wc.(weather.ETProvider); ok {
 		et, err := etClient.GetAverageEvapotranspiration(ctx, duration)
-		if err == nil {
+		if err == nil && et != nil {
 			if unitspkg.UnitSystem(units).IsImperial() {
-				inches := unitspkg.MmToInches(et)
+				inches := unitspkg.MmToInches(*et)
 				result.Evapotranspiration = &EvapotranspirationData{Inches: &inches}
 			} else {
-				result.Evapotranspiration = &EvapotranspirationData{MM: &et}
+				result.Evapotranspiration = &EvapotranspirationData{MM: et}
 			}
 		}
 	}

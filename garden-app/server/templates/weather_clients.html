@@ -53,40 +53,17 @@
 
 {{ define "WeatherClientDataSection" }}
 {{ if IncludeWeatherData }}
-{{ if .WeatherData }}
 <div id="weather-data-{{ .Config.ID }}" class="uk-flex uk-flex-center uk-flex-middle uk-grid-small" uk-grid>
-    {{ if .WeatherData.Temperature }}
-    <div class="uk-flex uk-flex-middle">
-        <span uk-icon="thermometer" class="uk-margin-small-right" style="color: #faa05a;"></span>
-        {{ if IsMetric }}
-        <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°C" .WeatherData.Temperature.Celsius }}</span>
-        {{ else }}
-        <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°F" .WeatherData.Temperature.Fahrenheit }}</span>
-        {{ end }}
+    {{ if .Error }}
+    <div class="uk-width-1-1">
+        <div class="uk-alert-danger uk-alert" uk-alert>
+            <p class="uk-text-danger">{{ .Error }}</p>
+        </div>
     </div>
-    {{ end }}
-    {{ if .WeatherData.Rain }}
-    <div class="uk-flex uk-flex-middle">
-        <span uk-icon="cloud-rain" class="uk-margin-small-right uk-text-primary"></span>
-        {{ if IsMetric }}
-        <span class="uk-text-bold uk-text-primary">{{ printf "%.1f mm" (DerefFloat32 .WeatherData.Rain.MM) }}</span>
-        {{ else }}
-        <span class="uk-text-bold uk-text-primary">{{ printf "%.2f in" (DerefFloat32 .WeatherData.Rain.Inches) }}</span>
-        {{ end }}
-    </div>
-    {{ end }}
-    {{ if .WeatherData.Evapotranspiration }}
-    <div class="uk-flex uk-flex-middle">
-        <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
-        {{ if IsMetric }}
-        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.1f mm ET" (DerefFloat32 .WeatherData.Evapotranspiration.MM) }}</span>
-        {{ else }}
-        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.2f in ET" (DerefFloat32 .WeatherData.Evapotranspiration.Inches) }}</span>
-        {{ end }}
-    </div>
+    {{ else }}
+    {{ template "WeatherClientDataDisplay" . }}
     {{ end }}
 </div>
-{{ end }}
 {{ else }}
 <div id="weather-data-{{ .Config.ID }}" class="uk-text-center">
     <div uk-spinner="ratio: 0.75"></div>
@@ -99,41 +76,67 @@
 {{ define "WeatherClientLazyLoadTrigger" }}
 <div hx-get="/weather_clients/{{ .Config.ID }}?swap_data=true"
      hx-headers='{"Accept": "text/html"}'
-     hx-trigger="load" hx-swap="innerHTML" hx-target="#weather-data-{{ .Config.ID }}">
+     hx-trigger="load" hx-swap="innerHTML" hx-target="#weather-data-{{ .Config.ID }}"
+     hx-on::response-error="this.innerHTML = '<div class=\'uk-alert-danger uk-alert\' uk-alert><p class=\'uk-text-danger\'>Failed to load weather data</p></div>'">
 </div>
 {{ end }}
 
 {{ define "WeatherClientDataOnly" }}
+{{ if .Error }}
+<div class="uk-alert-danger uk-alert" uk-alert>
+    <p class="uk-text-danger">{{ .Error }}</p>
+</div>
+{{ else }}
 <div class="uk-flex uk-flex-center uk-flex-middle uk-grid-small" uk-grid>
-    {{ if and .WeatherData .WeatherData.Temperature }}
-    <div class="uk-flex uk-flex-middle">
-        <span uk-icon="thermometer" class="uk-margin-small-right" style="color: #faa05a;"></span>
-        {{ if IsMetric }}
-        <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°C" .WeatherData.Temperature.Celsius }}</span>
-        {{ else }}
-        <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°F" .WeatherData.Temperature.Fahrenheit }}</span>
-        {{ end }}
-    </div>
-    {{ end }}
-    {{ if and .WeatherData .WeatherData.Rain }}
-    <div class="uk-flex uk-flex-middle">
-        <span uk-icon="cloud-rain" class="uk-margin-small-right uk-text-primary"></span>
-        {{ if IsMetric }}
-        <span class="uk-text-bold uk-text-primary">{{ printf "%.1f mm" (DerefFloat32 .WeatherData.Rain.MM) }}</span>
-        {{ else }}
-        <span class="uk-text-bold uk-text-primary">{{ printf "%.2f in" (DerefFloat32 .WeatherData.Rain.Inches) }}</span>
-        {{ end }}
-    </div>
-    {{ end }}
-    {{ if and .WeatherData .WeatherData.Evapotranspiration }}
-    <div class="uk-flex uk-flex-middle">
-        <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
-        {{ if IsMetric }}
-        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.1f mm ET" (DerefFloat32 .WeatherData.Evapotranspiration.MM) }}</span>
-        {{ else }}
-        <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.2f in ET" (DerefFloat32 .WeatherData.Evapotranspiration.Inches) }}</span>
-        {{ end }}
-    </div>
+    {{ template "WeatherClientDataDisplay" . }}
+</div>
+{{ end }}
+{{ end }}
+
+{{ define "WeatherClientDataDisplay" }}
+{{ if and .WeatherData .WeatherData.Temperature }}
+<div class="uk-flex uk-flex-middle">
+    <span uk-icon="thermometer" class="uk-margin-small-right" style="color: #faa05a;"></span>
+    {{ if IsMetric }}
+    <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°C" .WeatherData.Temperature.Celsius }}</span>
+    {{ else }}
+    <span class="uk-text-bold" style="color: #faa05a;">{{ printf "%.1f°F" .WeatherData.Temperature.Fahrenheit }}</span>
     {{ end }}
 </div>
+{{ else }}
+<div class="uk-flex uk-flex-middle">
+    <span uk-icon="thermometer" class="uk-margin-small-right" style="color: #faa05a;"></span>
+    <span class="uk-text-bold" style="color: #faa05a;">N/A</span>
+</div>
+{{ end }}
+{{ if and .WeatherData .WeatherData.Rain }}
+<div class="uk-flex uk-flex-middle">
+    <span uk-icon="cloud-rain" class="uk-margin-small-right uk-text-primary"></span>
+    {{ if IsMetric }}
+    <span class="uk-text-bold uk-text-primary">{{ printf "%.1f mm" (DerefFloat32 .WeatherData.Rain.MM) }}</span>
+    {{ else }}
+    <span class="uk-text-bold uk-text-primary">{{ printf "%.2f in" (DerefFloat32 .WeatherData.Rain.Inches) }}</span>
+    {{ end }}
+</div>
+{{ else }}
+<div class="uk-flex uk-flex-middle">
+    <span uk-icon="cloud-rain" class="uk-margin-small-right uk-text-primary"></span>
+    <span class="uk-text-bold uk-text-primary">N/A</span>
+</div>
+{{ end }}
+{{ if and .WeatherData .WeatherData.Evapotranspiration }}
+<div class="uk-flex uk-flex-middle">
+    <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
+    {{ if IsMetric }}
+    <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.1f mm ET" (DerefFloat32 .WeatherData.Evapotranspiration.MM) }}</span>
+    {{ else }}
+    <span class="uk-text-bold" style="color: #f0506e;">{{ printf "%.2f in ET" (DerefFloat32 .WeatherData.Evapotranspiration.Inches) }}</span>
+    {{ end }}
+</div>
+{{ else }}
+<div class="uk-flex uk-flex-middle">
+    <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
+    <span class="uk-text-bold" style="color: #f0506e;">N/A</span>
+</div>
+{{ end }}
 {{ end }}

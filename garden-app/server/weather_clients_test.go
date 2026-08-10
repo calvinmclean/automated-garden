@@ -10,10 +10,18 @@ import (
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/storage"
 	"github.com/calvinmclean/automated-garden/garden-app/pkg/weather"
 	"github.com/calvinmclean/babyapi"
+	babyhtml "github.com/calvinmclean/babyapi/html"
 	babytest "github.com/calvinmclean/babyapi/test"
 	"github.com/rs/xid"
 	"github.com/stretchr/testify/assert"
 )
+
+func resetWeatherClientTestState(t *testing.T) {
+	t.Helper()
+	babyhtml.SetFS(templates, "templates/*")
+	babyhtml.SetFuncs(templateFuncs)
+	weather.ResetCache()
+}
 
 func createExampleWeatherClientConfig() *weather.Config {
 	return &weather.Config{
@@ -551,4 +559,112 @@ func TestUpdateWeatherClientRequest(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestWeatherClientSwapDataError(t *testing.T) {
+	resetWeatherClientTestState(t)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+
+	wc := &weather.Config{
+		ID:   babyapi.ID{ID: id},
+		Name: "Error Weather Client",
+		Type: "fake",
+		Options: map[string]any{
+			"rain_mm":              25.4,
+			"rain_interval":        "24h",
+			"avg_high_temperature": 80.0,
+			"error":                "weather API failure",
+		},
+	}
+
+	wcr := NewWeatherClientsAPI()
+	wcr.setup(storageClient)
+
+	err = wcr.storageClient.WeatherClientConfigs.Set(context.Background(), wc)
+	assert.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodGet, "/weather_clients/"+id.String()+"?swap_data=true", http.NoBody)
+	r.Header.Add("Accept", "text/html")
+
+	w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	assert.Contains(t, body, "uk-alert-danger")
+	assert.Contains(t, body, "weather API failure")
+}
+
+func TestWeatherClientSwapDataZeroValues(t *testing.T) {
+	resetWeatherClientTestState(t)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+
+	wc := &weather.Config{
+		ID:   babyapi.ID{ID: id},
+		Name: "Zero Weather Client",
+		Type: "fake",
+		Options: map[string]any{
+			"rain_mm":              float32(0),
+			"rain_interval":        "24h",
+			"avg_high_temperature": float32(0),
+		},
+	}
+
+	wcr := NewWeatherClientsAPI()
+	wcr.setup(storageClient)
+
+	err = wcr.storageClient.WeatherClientConfigs.Set(context.Background(), wc)
+	assert.NoError(t, err)
+
+	r := httptest.NewRequest(http.MethodGet, "/weather_clients/"+id.String()+"?swap_data=true", http.NoBody)
+	r.Header.Add("Accept", "text/html")
+
+	w := babytest.TestRequest[*weather.Config](t, wcr.API, r)
+
+	assert.Equal(t, http.StatusOK, w.Code)
+	body := w.Body.String()
+	// Rain and temperature are configured to zero, so they should show 0.0, not N/A.
+	// The fake client does not support ET, so ET is expected to show N/A.
+	assert.Contains(t, body, "0.0°C")
+	assert.Contains(t, body, "0.0 mm")
+	assert.Contains(t, body, "N/A")
+}
+
+func TestWeatherClientSwapDataEmptyValues(t *testing.T) {
+	resetWeatherClientTestState(t)
+
+	storageClient, err := storage.NewClient(storage.Config{
+		ConnectionString: ":memory:",
+	})
+	assert.NoError(t, err)
+
+	// Render the response with nil WeatherData fields to verify the N/A display.
+	wcr := NewWeatherClientsAPI()
+	wcr.setup(storageClient)
+
+	resp := &WeatherClientResponse{
+		Config: &weather.Config{
+			ID:   babyapi.ID{ID: id},
+			Name: "Empty Weather Client",
+			Type: "fake",
+		},
+		WeatherData: &WeatherData{},
+		api:         wcr,
+	}
+
+	r := httptest.NewRequest(http.MethodGet, "/weather_clients/"+id.String()+"?swap_data=true", http.NoBody)
+	r.Header.Add("Accept", "text/html")
+
+	body := resp.HTML(nil, r)
+
+	// All three fields should show N/A
+	assert.Equal(t, 3, strings.Count(body, "N/A"))
+	assert.NotContains(t, body, "0.0")
 }

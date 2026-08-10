@@ -15,22 +15,24 @@ type MockClient struct {
 }
 
 // GetAverageHighTemperature provides a mock function with given fields: ctx, since
-func (_m *MockClient) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
+func (_m *MockClient) GetAverageHighTemperature(ctx context.Context, since time.Duration) (*float32, error) {
 	ret := _m.Called(ctx, since)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetAverageHighTemperature")
 	}
 
-	var r0 float32
+	var r0 *float32
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) (float32, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) (*float32, error)); ok {
 		return rf(ctx, since)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) float32); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) *float32); ok {
 		r0 = rf(ctx, since)
 	} else {
-		r0 = ret.Get(0).(float32)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*float32)
+		}
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, time.Duration) error); ok {
@@ -43,22 +45,24 @@ func (_m *MockClient) GetAverageHighTemperature(ctx context.Context, since time.
 }
 
 // GetTotalRain provides a mock function with given fields: ctx, since
-func (_m *MockClient) GetTotalRain(ctx context.Context, since time.Duration) (float32, error) {
+func (_m *MockClient) GetTotalRain(ctx context.Context, since time.Duration) (*float32, error) {
 	ret := _m.Called(ctx, since)
 
 	if len(ret) == 0 {
 		panic("no return value specified for GetTotalRain")
 	}
 
-	var r0 float32
+	var r0 *float32
 	var r1 error
-	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) (float32, error)); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) (*float32, error)); ok {
 		return rf(ctx, since)
 	}
-	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) float32); ok {
+	if rf, ok := ret.Get(0).(func(context.Context, time.Duration) *float32); ok {
 		r0 = rf(ctx, since)
 	} else {
-		r0 = ret.Get(0).(float32)
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*float32)
+		}
 	}
 
 	if rf, ok := ret.Get(1).(func(context.Context, time.Duration) error); ok {

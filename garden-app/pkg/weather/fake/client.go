@@ -47,23 +47,26 @@ func NewClient(options map[string]any) (*Client, error) {
 	return client, nil
 }
 
-// GetTotalRain calculates and returns the configured amount of rain for the given period
-func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (float32, error) {
+// GetTotalRain calculates and returns the configured amount of rain for the given period.
+// Returns a non-nil pointer when data is configured, even if the value is zero.
+func (c *Client) GetTotalRain(_ context.Context, since time.Duration) (*float32, error) {
 	if c.shouldError() {
-		return 0, errors.New(c.Error)
+		return nil, errors.New(c.Error)
 	}
 
 	numIntervals := float32(since.Hours() / c.rainInterval.Hours())
-	return numIntervals * c.RainMM, nil
+	result := numIntervals * c.RainMM
+	return &result, nil
 }
 
-// GetAverageHighTemperature returns the configured value
-func (c *Client) GetAverageHighTemperature(_ context.Context, _ time.Duration) (float32, error) {
+// GetAverageHighTemperature returns the configured value.
+// Returns a non-nil pointer when data is configured, even if the value is zero.
+func (c *Client) GetAverageHighTemperature(_ context.Context, _ time.Duration) (*float32, error) {
 	if c.shouldError() {
-		return 0, errors.New(c.Error)
+		return nil, errors.New(c.Error)
 	}
 
-	return c.AverageHighTemperature, nil
+	return &c.AverageHighTemperature, nil
 }
 
 // shouldError returns true if the fake client should return an error for this call.

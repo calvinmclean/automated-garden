@@ -141,7 +141,8 @@ func TestGetTotalRain(t *testing.T) {
 
 			rain, err := client.GetTotalRain(context.Background(), tt.duration)
 			require.NoError(t, err)
-			assert.InDelta(t, tt.expected, rain, 0.01)
+			require.NotNil(t, rain)
+			assert.InDelta(t, tt.expected, *rain, 0.01)
 		})
 	}
 }
@@ -216,7 +217,8 @@ func TestGetAverageHighTemperature(t *testing.T) {
 
 			temp, err := client.GetAverageHighTemperature(context.Background(), tt.duration)
 			require.NoError(t, err)
-			assert.InDelta(t, tt.expected, temp, 0.01)
+			require.NotNil(t, temp)
+			assert.InDelta(t, tt.expected, *temp, 0.01)
 		})
 	}
 }
@@ -249,6 +251,7 @@ func TestMinimumIntervals(t *testing.T) {
 		// Pass less than 24 hours - should be enforced to 24h minimum
 		rain, err := client.GetTotalRain(context.Background(), 1*time.Hour)
 		require.NoError(t, err)
+		require.NotNil(t, rain)
 		// Should not error due to minimum interval enforcement
 		_ = rain
 	})
@@ -276,6 +279,7 @@ func TestMinimumIntervals(t *testing.T) {
 		// Pass less than 72 hours - should be enforced to 72h minimum
 		temp, err := client.GetAverageHighTemperature(context.Background(), 24*time.Hour)
 		require.NoError(t, err)
+		require.NotNil(t, temp)
 		// Should not error due to minimum interval enforcement
 		_ = temp
 	})
@@ -382,7 +386,8 @@ func TestGetAverageEvapotranspiration(t *testing.T) {
 
 			et, err := client.GetAverageEvapotranspiration(context.Background(), tt.duration)
 			require.NoError(t, err)
-			assert.InDelta(t, tt.expected, et, 0.01)
+			require.NotNil(t, et)
+			assert.InDelta(t, tt.expected, *et, 0.01)
 		})
 	}
 }
@@ -414,6 +419,7 @@ func TestGetAverageEvapotranspiration_MinimumInterval(t *testing.T) {
 	// Pass less than 24 hours - should be enforced to 24h minimum
 	et, err := client.GetAverageEvapotranspiration(context.Background(), 1*time.Hour)
 	require.NoError(t, err)
+	require.NotNil(t, et)
 	// Should not error due to minimum interval enforcement
 	_ = et
 }

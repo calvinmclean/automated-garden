@@ -33,16 +33,18 @@ func init() {
 	prometheus.MustRegister(weatherClientSummary)
 }
 
-// Client is an interface defining the possible methods used to interact with the weather client APIs
+// Client is an interface defining the possible methods used to interact with the weather client APIs.
+// Methods return a *float32 so callers can distinguish "no data" (nil) from a real zero value.
 type Client interface {
-	GetTotalRain(ctx context.Context, since time.Duration) (float32, error)
-	GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error)
+	GetTotalRain(ctx context.Context, since time.Duration) (*float32, error)
+	GetAverageHighTemperature(ctx context.Context, since time.Duration) (*float32, error)
 }
 
 // ETProvider is an optional capability interface for weather clients that support
-// evapotranspiration data retrieval
+// evapotranspiration data retrieval. Methods return a *float32 so callers can
+// distinguish "no data" (nil) from a real zero value.
 type ETProvider interface {
-	GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (float32, error)
+	GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (*float32, error)
 }
 
 // Config is used to identify and configure a client type
@@ -160,7 +162,7 @@ func newMetricsWrapperClient(client Client, config *Config) Client {
 }
 
 // GetTotalRain ...
-func (c *clientWrapper) GetTotalRain(ctx context.Context, since time.Duration) (float32, error) {
+func (c *clientWrapper) GetTotalRain(ctx context.Context, since time.Duration) (*float32, error) {
 	now := clock.Now()
 	cached := false
 	defer func() {
@@ -171,14 +173,14 @@ func (c *clientWrapper) GetTotalRain(ctx context.Context, since time.Duration) (
 	cachedData, found := responseCache.Get(cacheKey)
 	if found {
 		cached = true
-		return cachedData.(float32), nil
+		return cachedData.(*float32), nil
 	}
 
-	totalRain, err := WithRetries(ctx, func(ctx context.Context) (float32, error) {
+	totalRain, err := WithRetries(ctx, func(ctx context.Context) (*float32, error) {
 		return c.Client.GetTotalRain(ctx, since)
 	})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	responseCache.Set(cacheKey, totalRain, cache.DefaultExpiration)
 
@@ -186,7 +188,7 @@ func (c *clientWrapper) GetTotalRain(ctx context.Context, since time.Duration) (
 }
 
 // GetAverageHighTemperature ...
-func (c *clientWrapper) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
+func (c *clientWrapper) GetAverageHighTemperature(ctx context.Context, since time.Duration) (*float32, error) {
 	now := clock.Now()
 	cached := false
 	defer func() {
@@ -197,14 +199,14 @@ func (c *clientWrapper) GetAverageHighTemperature(ctx context.Context, since tim
 	cachedData, found := responseCache.Get(cacheKey)
 	if found {
 		cached = true
-		return cachedData.(float32), nil
+		return cachedData.(*float32), nil
 	}
 
-	avgTemp, err := WithRetries(ctx, func(ctx context.Context) (float32, error) {
+	avgTemp, err := WithRetries(ctx, func(ctx context.Context) (*float32, error) {
 		return c.Client.GetAverageHighTemperature(ctx, since)
 	})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	responseCache.Set(cacheKey, avgTemp, cache.DefaultExpiration)
 
@@ -217,7 +219,7 @@ func ResetCache() {
 
 // GetAverageEvapotranspiration implements the ETProvider interface for the wrapper.
 // It forwards to the underlying client if it supports ETProvider.
-func (c *clientWrapper) GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (float32, error) {
+func (c *clientWrapper) GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (*float32, error) {
 	now := clock.Now()
 	cached := false
 	defer func() {
@@ -228,20 +230,20 @@ func (c *clientWrapper) GetAverageEvapotranspiration(ctx context.Context, since 
 	cachedData, found := responseCache.Get(cacheKey)
 	if found {
 		cached = true
-		return cachedData.(float32), nil
+		return cachedData.(*float32), nil
 	}
 
 	// Check if underlying client supports ETProvider
 	etClient, ok := c.Client.(ETProvider)
 	if !ok {
-		return 0, fmt.Errorf("weather client does not support evapotranspiration data")
+		return nil, fmt.Errorf("weather client does not support evapotranspiration data")
 	}
 
-	avgET, err := WithRetries(ctx, func(ctx context.Context) (float32, error) {
+	avgET, err := WithRetries(ctx, func(ctx context.Context) (*float32, error) {
 		return etClient.GetAverageEvapotranspiration(ctx, since)
 	})
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
 	responseCache.Set(cacheKey, avgET, cache.DefaultExpiration)
 

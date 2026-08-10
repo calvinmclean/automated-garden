@@ -85,21 +85,25 @@ func TestCachedWeatherClient(t *testing.T) {
 	t.Run("GetTotalRain", func(t *testing.T) {
 		rain, err := client.GetTotalRain(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
+		require.NotNil(t, rain)
 
 		rainFromCache, err := client.GetTotalRain(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
+		require.NotNil(t, rainFromCache)
 
-		assert.Equal(t, rain, rainFromCache)
+		assert.Equal(t, *rain, *rainFromCache)
 	})
 
 	t.Run("GetAverageHighTemperature", func(t *testing.T) {
 		temp, err := client.GetAverageHighTemperature(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
+		require.NotNil(t, temp)
 
 		tempFromCache, err := client.GetAverageHighTemperature(context.Background(), 24*time.Hour)
 		assert.NoError(t, err)
+		require.NotNil(t, tempFromCache)
 
-		assert.Equal(t, temp, tempFromCache)
+		assert.Equal(t, *temp, *tempFromCache)
 	})
 }
 
@@ -124,13 +128,15 @@ func TestWeatherClientRetriesAndCaches(t *testing.T) {
 
 	rain, err := client.GetTotalRain(context.Background(), 24*time.Hour)
 	assert.NoError(t, err)
-	assert.InDelta(t, float32(25.4), rain, 0.01)
+	require.NotNil(t, rain)
+	assert.InDelta(t, float32(25.4), *rain, 0.01)
 
 	// Second call should be served from cache, so even with a permanent error
 	// configured the client should succeed.
 	rain, err = client.GetTotalRain(context.Background(), 24*time.Hour)
 	assert.NoError(t, err)
-	assert.InDelta(t, float32(25.4), rain, 0.01)
+	require.NotNil(t, rain)
+	assert.InDelta(t, float32(25.4), *rain, 0.01)
 }
 
 func TestWeatherClientRetriesPermanentError(t *testing.T) {

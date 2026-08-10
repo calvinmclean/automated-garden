@@ -53,7 +53,14 @@ func (d *weatherData) Total() float32 {
 }
 
 func (d *weatherData) Average() float32 {
+	if len(*d) == 0 {
+		return 0
+	}
 	return d.Total() / float32(len(*d))
+}
+
+func (d *weatherData) IsEmpty() bool {
+	return len(*d) == 0
 }
 
 func (c *Client) getMeasure(ctx context.Context, dataType, scale string, beginDate time.Time, endDate *time.Time) (*weatherData, error) {

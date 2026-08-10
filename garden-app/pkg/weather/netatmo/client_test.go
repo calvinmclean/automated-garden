@@ -78,7 +78,8 @@ func TestWeatherRequestMethods(t *testing.T) {
 			func(t *testing.T, client *Client) {
 				rain, err := client.GetTotalRain(context.Background(), 72*time.Hour)
 				require.NoError(t, err)
-				require.Equal(t, float32(0), rain)
+				require.NotNil(t, rain)
+				require.Equal(t, float32(0), *rain)
 			},
 		},
 		{
@@ -88,7 +89,8 @@ func TestWeatherRequestMethods(t *testing.T) {
 			func(t *testing.T, client *Client) {
 				rain, err := client.GetTotalRain(context.Background(), 72*time.Hour)
 				require.NoError(t, err)
-				require.Equal(t, float32(0), rain)
+				require.NotNil(t, rain)
+				require.Equal(t, float32(0), *rain)
 				require.Equal(t, "NEW_REFRESH_TOKEN", client.Config.Authentication.RefreshToken)
 			},
 		},
@@ -99,7 +101,28 @@ func TestWeatherRequestMethods(t *testing.T) {
 			func(t *testing.T, client *Client) {
 				temp, err := client.GetAverageHighTemperature(context.Background(), 72*time.Hour)
 				require.NoError(t, err)
-				require.Equal(t, float32(48.066666), temp)
+				require.NotNil(t, temp)
+				require.InDelta(t, float32(48.066666), *temp, 0.0001)
+			},
+		},
+		{
+			"GetTotalRain_Empty",
+			"testdata/fixtures/GetTotalRain_Empty",
+			clock.Now().Add(1 * time.Minute),
+			func(t *testing.T, client *Client) {
+				rain, err := client.GetTotalRain(context.Background(), 72*time.Hour)
+				require.NoError(t, err)
+				require.Nil(t, rain)
+			},
+		},
+		{
+			"GetAverageHighTemperature_Empty",
+			"testdata/fixtures/GetAverageHighTemperature_Empty",
+			clock.Now().Add(1 * time.Minute),
+			func(t *testing.T, client *Client) {
+				temp, err := client.GetAverageHighTemperature(context.Background(), 72*time.Hour)
+				require.NoError(t, err)
+				require.Nil(t, temp)
 			},
 		},
 	}

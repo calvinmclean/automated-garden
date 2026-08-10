@@ -122,8 +122,9 @@ func (c *Client) fetchData(ctx context.Context, pastDays int, dailyVars ...strin
 	return &data, nil
 }
 
-// GetTotalRain returns the sum of all precipitation in millimeters in the given period
-func (c *Client) GetTotalRain(ctx context.Context, since time.Duration) (float32, error) {
+// GetTotalRain returns the sum of all precipitation in millimeters in the given period.
+// If no data is returned, it returns (nil, nil) so callers can show N/A.
+func (c *Client) GetTotalRain(ctx context.Context, since time.Duration) (*float32, error) {
 	// Time to check from must always be at least 24 hours to get valid data
 	if since < minRainInterval {
 		since = minRainInterval
@@ -134,11 +135,11 @@ func (c *Client) GetTotalRain(ctx context.Context, since time.Duration) (float32
 
 	data, err := c.fetchData(ctx, pastDays, "precipitation_sum")
 	if err != nil {
-		return 0, fmt.Errorf("error fetching precipitation data: %w", err)
+		return nil, fmt.Errorf("error fetching precipitation data: %w", err)
 	}
 
 	if len(data.Daily.PrecipitationSum) == 0 {
-		return 0, errors.New("no precipitation data returned")
+		return nil, nil
 	}
 
 	// Sum all precipitation values
@@ -147,12 +148,13 @@ func (c *Client) GetTotalRain(ctx context.Context, since time.Duration) (float32
 		total += precip
 	}
 
-	return total, nil
+	return &total, nil
 }
 
 // GetAverageHighTemperature returns the average daily high temperature between the given time and the end of
-// yesterday (since daily high can be misleading if queried mid-day)
-func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
+// yesterday (since daily high can be misleading if queried mid-day).
+// If no data is returned, it returns (nil, nil) so callers can show N/A.
+func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Duration) (*float32, error) {
 	// Time to check since must always be at least 3 days
 	if since < minTemperatureInterval {
 		since = minTemperatureInterval
@@ -163,11 +165,11 @@ func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Durat
 
 	data, err := c.fetchData(ctx, pastDays, "temperature_2m_max")
 	if err != nil {
-		return 0, fmt.Errorf("error fetching temperature data: %w", err)
+		return nil, fmt.Errorf("error fetching temperature data: %w", err)
 	}
 
 	if len(data.Daily.Temperature2mMax) == 0 {
-		return 0, errors.New("no temperature data returned")
+		return nil, nil
 	}
 
 	// Calculate average of daily max temperatures
@@ -189,15 +191,17 @@ func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Durat
 	}
 
 	if count == 0 {
-		return 0, errors.New("no valid temperature data for the specified period")
+		return nil, nil
 	}
 
-	return sum / float32(count), nil
+	avg := sum / float32(count)
+	return &avg, nil
 }
 
 // GetAverageEvapotranspiration returns the average daily reference evapotranspiration (ET₀) over the given period
-// using OpenMeteo's et0_fao_evapotranspiration parameter
-func (c *Client) GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (float32, error) {
+// using OpenMeteo's et0_fao_evapotranspiration parameter.
+// If no data is returned, it returns (nil, nil) so callers can show N/A.
+func (c *Client) GetAverageEvapotranspiration(ctx context.Context, since time.Duration) (*float32, error) {
 	// Time to check from must always be at least 24 hours to get valid data
 	if since < minEvapotranspirationInterval {
 		since = minEvapotranspirationInterval
@@ -208,11 +212,11 @@ func (c *Client) GetAverageEvapotranspiration(ctx context.Context, since time.Du
 
 	data, err := c.fetchData(ctx, pastDays, "et0_fao_evapotranspiration")
 	if err != nil {
-		return 0, fmt.Errorf("error fetching evapotranspiration data: %w", err)
+		return nil, fmt.Errorf("error fetching evapotranspiration data: %w", err)
 	}
 
 	if len(data.Daily.ET0FaoEvapotranspiration) == 0 {
-		return 0, errors.New("no evapotranspiration data returned")
+		return nil, nil
 	}
 
 	// Calculate average of daily ET₀ values
@@ -221,5 +225,6 @@ func (c *Client) GetAverageEvapotranspiration(ctx context.Context, since time.Du
 		sum += et
 	}
 
-	return sum / float32(len(data.Daily.ET0FaoEvapotranspiration)), nil
+	avg := sum / float32(len(data.Daily.ET0FaoEvapotranspiration))
+	return &avg, nil
 }

@@ -43,3 +43,27 @@ func TestWeatherDataTotal(t *testing.T) {
 	}
 	assert.Equal(t, float32(10.4), data.Total())
 }
+
+func TestWeatherDataAverage(t *testing.T) {
+	t.Run("WithData", func(t *testing.T) {
+		data := weatherData{
+			time.Unix(1662058800, 0): 7.9,
+			time.Unix(1662145200, 0): 2.5,
+			time.Unix(1662231600, 0): 0,
+		}
+		assert.InDelta(t, float32(3.4666), data.Average(), 0.001)
+	})
+
+	t.Run("Empty", func(t *testing.T) {
+		data := weatherData{}
+		assert.Equal(t, float32(0), data.Average())
+	})
+}
+
+func TestWeatherDataIsEmpty(t *testing.T) {
+	empty := weatherData{}
+	assert.True(t, empty.IsEmpty())
+
+	data := weatherData{time.Unix(1662058800, 0): 7.9}
+	assert.False(t, data.IsEmpty())
+}

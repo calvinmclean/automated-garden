@@ -10,8 +10,9 @@ import (
 const minTemperatureInterval = 72 * time.Hour
 
 // GetAverageHighTemperature returns the average daily high temperature between the given time and the end of
-// yesterday (since daily high can be misleading if queried mid-day)
-func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Duration) (float32, error) {
+// yesterday (since daily high can be misleading if queried mid-day).
+// If the API returns no data points, it returns (nil, nil) so callers can show N/A.
+func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Duration) (*float32, error) {
 	// Time to check since must always be at least 3 days
 	if since < minTemperatureInterval {
 		since = minTemperatureInterval
@@ -25,8 +26,12 @@ func (c *Client) GetAverageHighTemperature(ctx context.Context, since time.Durat
 
 	temperatureData, err := c.getMeasure(ctx, "max_temp", "1day", beginDate, &endDate)
 	if err != nil {
-		return 0, err
+		return nil, err
+	}
+	if temperatureData.IsEmpty() {
+		return nil, nil
 	}
 
-	return temperatureData.Average(), nil
+	avg := temperatureData.Average()
+	return &avg, nil
 }

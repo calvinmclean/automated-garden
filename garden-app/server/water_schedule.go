@@ -391,18 +391,18 @@ func (api *WaterSchedulesAPI) calculateETDuration(ctx context.Context, etClientI
 
 	// Fetch average ET over the configured interval
 	avgET, err := etProvider.GetAverageEvapotranspiration(ctx, interval)
-	if err != nil {
+	if err != nil || avgET == nil {
 		return 0, 0
 	}
 
 	// For imperial units, convert the display value to inches
-	etValue := avgET
+	etValue := *avgET
 	if isImperial {
-		etValue = units.MmToInches(avgET)
+		etValue = units.MmToInches(*avgET)
 	}
 
 	// Calculate duration using the configured interval
-	etDuration, err := etConfig.CalculateETDuration(avgET, interval, time.Now())
+	etDuration, err := etConfig.CalculateETDuration(*avgET, interval, time.Now())
 	if err != nil {
 		return 0, etValue
 	}

@@ -80,9 +80,13 @@ func (w *Worker) CalculateETDuration(ctx context.Context, ws *pkg.WaterSchedule)
 		w.logger.Warn("error getting evapotranspiration data", "error", err)
 		return 0, false
 	}
+	if avgET == nil {
+		w.logger.Warn("no evapotranspiration data available", "water_schedule", ws.GetID())
+		return 0, false
+	}
 
 	// Calculate duration using citrus formula
-	duration, err := etConfig.CalculateETDuration(avgET, ws.Interval.Duration, time.Now())
+	duration, err := etConfig.CalculateETDuration(*avgET, ws.Interval.Duration, time.Now())
 	if err != nil {
 		w.logger.Warn("error calculating ET-based duration", "error", err)
 		return 0, false
@@ -90,7 +94,7 @@ func (w *Worker) CalculateETDuration(ctx context.Context, ws *pkg.WaterSchedule)
 
 	w.logger.Debug("calculated ET-based watering duration",
 		"duration", duration,
-		"avg_et", avgET,
+		"avg_et", *avgET,
 		"species", etConfig.Species,
 		"canopy_diameter_feet", etConfig.CanopyDiameterFeet)
 
@@ -128,11 +132,13 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, er
 			if err != nil {
 				lastErr = err
 				w.logger.Warn("error getting average high temperatures", "error", err)
+			} else if avgHighTemp == nil {
+				w.logger.Warn("no average high temperature data available", "water_schedule", ws.GetID())
 			} else {
-				tempScaleFactor := ws.WeatherControl.Temperature.Scale(float64(avgHighTemp))
+				tempScaleFactor := ws.WeatherControl.Temperature.Scale(float64(*avgHighTemp))
 				scaleFactor *= tempScaleFactor
 				w.logger.With(
-					"avg_high_temp", avgHighTemp,
+					"avg_high_temp", *avgHighTemp,
 					"time_period", ws.Interval.String(),
 					"scale_factor", tempScaleFactor,
 				).Debug("weather client calculated the average daily high temperature and resulting scale factor")
@@ -150,10 +156,12 @@ func (w *Worker) ScaleWateringDuration(ws *pkg.WaterSchedule) (time.Duration, er
 			if err != nil {
 				lastErr = err
 				w.logger.Warn("error getting rain data", "error", err)
+			} else if totalRain == nil {
+				w.logger.Warn("no rain data available", "water_schedule", ws.GetID())
 			} else {
-				rainScaleFactor := ws.WeatherControl.Rain.Scale(float64(totalRain))
+				rainScaleFactor := ws.WeatherControl.Rain.Scale(float64(*totalRain))
 				w.logger.With(
-					"total_rain", totalRain,
+					"total_rain", *totalRain,
 					"time_period", ws.Interval.String(),
 					"scale_factor", rainScaleFactor,
 				).Debug("weather client detected rain and resulting scale factor")

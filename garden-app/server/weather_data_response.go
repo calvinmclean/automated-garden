@@ -129,7 +129,7 @@ func getRainData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *stor
 	if err != nil {
 		return nil, fmt.Errorf("unable to get rain data from weather client %q: %w", ws.WeatherControl.Rain.ClientID, err)
 	}
-	return &totalRain, nil
+	return totalRain, nil
 }
 
 func getTemperatureData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
@@ -142,7 +142,7 @@ func getTemperatureData(ctx context.Context, ws *pkg.WaterSchedule, storageClien
 	if err != nil {
 		return nil, fmt.Errorf("unable to get average high temperature from weather client %q: %w", ws.WeatherControl.Temperature.ClientID, err)
 	}
-	return &avgTemperature, nil
+	return avgTemperature, nil
 }
 
 func getEvapotranspirationData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *storage.Client) (*float32, error) {
@@ -161,7 +161,7 @@ func getEvapotranspirationData(ctx context.Context, ws *pkg.WaterSchedule, stora
 	if err != nil {
 		return nil, fmt.Errorf("unable to get evapotranspiration data from weather client %q: %w", ws.WeatherControl.Temperature.ClientID, err)
 	}
-	return &avgET, nil
+	return avgET, nil
 }
 
 func getDurationFromRequest(r *http.Request) time.Duration {

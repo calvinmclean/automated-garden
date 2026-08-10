@@ -23,6 +23,7 @@ func (resp *WeatherClientTestResponse) Render(_ http.ResponseWriter, _ *http.Req
 type WeatherClientResponse struct {
 	*weather.Config
 	WeatherData *WeatherData `json:"weather_data,omitempty"`
+	Error       string       `json:"error,omitempty"`
 
 	Links []Link `json:"links,omitempty"`
 
@@ -53,6 +54,8 @@ func (resp *WeatherClientResponse) Render(w http.ResponseWriter, r *http.Request
 		weatherData, err := resp.api.getWeatherData(r.Context(), resp.Config, units, duration)
 		if err == nil {
 			resp.WeatherData = &weatherData
+		} else {
+			resp.Error = err.Error()
 		}
 	}
 
@@ -70,6 +73,7 @@ func (resp *WeatherClientResponse) HTML(_ http.ResponseWriter, r *http.Request) 
 	data := map[string]any{
 		"Config":      resp.Config,
 		"WeatherData": resp.WeatherData,
+		"Error":       resp.Error,
 		"Units":       userUnits,
 		"Duration":    duration,
 		"IsMetric":    units.UnitSystem(userUnits).IsMetric(),
