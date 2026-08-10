@@ -124,6 +124,7 @@
     <span class="uk-text-bold uk-text-primary">N/A</span>
 </div>
 {{ end }}
+{{ if .Config.HasEvapotranspiration }}
 {{ if and .WeatherData .WeatherData.Evapotranspiration }}
 <div class="uk-flex uk-flex-middle">
     <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
@@ -138,5 +139,6 @@
     <span uk-icon="sun" class="uk-margin-small-right" style="color: #f0506e;"></span>
     <span class="uk-text-bold" style="color: #f0506e;">N/A</span>
 </div>
+{{ end }}
 {{ end }}
 {{ end }}

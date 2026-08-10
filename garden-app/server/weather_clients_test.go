@@ -631,10 +631,10 @@ func TestWeatherClientSwapDataZeroValues(t *testing.T) {
 	assert.Equal(t, http.StatusOK, w.Code)
 	body := w.Body.String()
 	// Rain and temperature are configured to zero, so they should show 0.0, not N/A.
-	// The fake client does not support ET, so ET is expected to show N/A.
+	// The fake client does not support ET, so ET should not be displayed at all.
 	assert.Contains(t, body, "0.0°C")
 	assert.Contains(t, body, "0.0 mm")
-	assert.Contains(t, body, "N/A")
+	assert.NotContains(t, body, "N/A")
 }
 
 func TestWeatherClientSwapDataEmptyValues(t *testing.T) {
@@ -664,7 +664,8 @@ func TestWeatherClientSwapDataEmptyValues(t *testing.T) {
 
 	body := resp.HTML(nil, r)
 
-	// All three fields should show N/A
-	assert.Equal(t, 3, strings.Count(body, "N/A"))
+	// Temperature and rain should show N/A. The fake client does not support ET,
+	// so ET should not be displayed at all.
+	assert.Equal(t, 2, strings.Count(body, "N/A"))
 	assert.NotContains(t, body, "0.0")
 }
