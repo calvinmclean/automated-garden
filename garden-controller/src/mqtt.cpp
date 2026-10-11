@@ -298,6 +298,13 @@ const char* resetReasonString(esp_reset_reason_t reason) {
 void mqttConnectTask(void* parameters) {
     static bool firstConnect = true;
     while (true) {
+        // Wait for full IP connectivity before attempting a broker connection.
+        // The WiFi watchdog owns recovery while the network is unavailable.
+        if (WiFi.status() != WL_CONNECTED) {
+            vTaskDelay(5000 / portTICK_PERIOD_MS);
+            continue;
+        }
+
         // Connect to MQTT server if not connected already
         mqttLock();
         if (!client.connected()) {

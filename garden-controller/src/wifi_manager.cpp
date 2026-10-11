@@ -17,6 +17,8 @@ WiFiManager wifiManager;
 
 TaskHandle_t wifiManagerLoopTaskHandle;
 
+const unsigned long WIFI_RESTART_TIMEOUT_MS = 5UL * 60UL * 1000UL;
+
 void saveParamsToConfig() {
   // read updated parameters
   strlcpy(mqtt_server, custom_mqtt_server.getValue(), sizeof(mqtt_server));
@@ -73,22 +75,48 @@ void setupFS() {
 }
 
 /*
-  wifiManagerLoopTask will run the WifiManager process loop
+  wifiManagerLoopTask runs the WifiManager process loop and restarts the
+  controller if it remains disconnected long enough for the WiFi stack to be
+  considered wedged. Normal reconnect attempts are handled by the ESP32 WiFi
+  stack's auto-reconnect behavior.
 */
 void wifiManagerLoopTask(void* parameters) {
+    bool disconnected = WiFi.status() != WL_CONNECTED;
+    unsigned long disconnectedAt = millis();
+
+    if (disconnected) {
+        printf("WiFi watchdog started, restart in %lu ms if connection is not restored\n",
+               WIFI_RESTART_TIMEOUT_MS);
+    }
+
     while (true) {
         wifiManager.process();
+
+        bool connected = WiFi.status() == WL_CONNECTED;
+        if (connected) {
+            if (disconnected) {
+                printf("WiFi watchdog cleared after IP connectivity was restored\n");
+                disconnected = false;
+            }
+        } else if (!disconnected) {
+            disconnected = true;
+            disconnectedAt = millis();
+            printf("WiFi watchdog started, restart in %lu ms if connection is not restored\n",
+                   WIFI_RESTART_TIMEOUT_MS);
+        } else if (millis() - disconnectedAt >= WIFI_RESTART_TIMEOUT_MS) {
+            printf("WiFi unavailable for %lu ms, restarting controller...\n",
+                   WIFI_RESTART_TIMEOUT_MS);
+            ESP.restart();
+            vTaskDelay(portMAX_DELAY);
+        }
+
         vTaskDelay(5 / portTICK_PERIOD_MS);
     }
     vTaskDelete(NULL);
 }
 
-static unsigned long lastDisconnectTime = 0;
-const unsigned long WIFI_RECONNECT_TIMEOUT_MS = 30000;
-
-void wifiConnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
-    lastDisconnectTime = 0;
-    printf("WiFi connected, ip=%s\n", WiFi.localIP().toString().c_str());
+void wifiGotIPHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
+    printf("WiFi IP connectivity restored, ip=%s\n", WiFi.localIP().toString().c_str());
 
     MDNS.end();
     if (!MDNS.begin(mqtt_topic_prefix)) {
@@ -99,21 +127,8 @@ void wifiConnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
 }
 
 void wifiDisconnectHandler(WiFiEvent_t event, WiFiEventInfo_t info) {
-    if (lastDisconnectTime == 0) {
-        lastDisconnectTime = millis();
-        printf("WiFi disconnected, starting %lu ms reconnect timeout\n", WIFI_RECONNECT_TIMEOUT_MS);
-    }
-
-    unsigned long disconnectedFor = millis() - lastDisconnectTime;
-    printf("WiFi disconnected for %lu ms\n", disconnectedFor);
-
-    if (disconnectedFor > WIFI_RECONNECT_TIMEOUT_MS) {
-        printf("WiFi reconnect timeout reached, rebooting...\n");
-        ESP.restart();
-    }
-
-    printf("WiFi reconnecting...\n");
-    WiFi.reconnect();
+    printf("WiFi disconnected, reason=%u; ESP32 auto-reconnect remains active\n",
+           info.wifi_sta_disconnected.reason);
 }
 
 #if defined SSID && defined PASSWORD
@@ -176,6 +191,7 @@ void setupWifiManager() {
   // wifiManager.resetSettings();
 
   wifiManager.setHostname(mqtt_topic_prefix);
+  WiFi.setAutoReconnect(true);
 
   // If SSID/PASSWORD are configured, connect regularly and use WifiManager for setup portal only
   #if defined SSID && defined PASSWORD
@@ -193,11 +209,10 @@ void setupWifiManager() {
 
   if (!MDNS.begin(mqtt_topic_prefix)) {
     printf("error starting mDNS\n");
-    return;
+  } else {
+    MDNS.addService("http", "tcp", 80);
   }
 
-  MDNS.addService("http", "tcp", 80);
-
-  WiFi.onEvent(wifiConnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_CONNECTED);
+  WiFi.onEvent(wifiGotIPHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_GOT_IP);
   WiFi.onEvent(wifiDisconnectHandler, WiFiEvent_t::ARDUINO_EVENT_WIFI_STA_DISCONNECTED);
 }
