@@ -89,7 +89,7 @@ func getWeatherData(ctx context.Context, ws *pkg.WaterSchedule, storageClient *s
 		{
 			Name: "evapotranspiration-data",
 			Fn: func(taskCtx context.Context) error {
-				// Only fetch ET if temperature control is enabled (to get the weather client)
+				// Only fetch ET if evapotranspiration control is enabled.
 				if !ws.HasEvapotranspirationControl() {
 					return nil
 				}
@@ -159,7 +159,7 @@ func getEvapotranspirationData(ctx context.Context, ws *pkg.WaterSchedule, stora
 
 	avgET, err := etClient.GetAverageEvapotranspiration(ctx, ws.Interval.Duration)
 	if err != nil {
-		return nil, fmt.Errorf("unable to get evapotranspiration data from weather client %q: %w", ws.WeatherControl.Temperature.ClientID, err)
+		return nil, fmt.Errorf("unable to get evapotranspiration data from weather client %q: %w", ws.WeatherControl.Evapotranspiration.ClientID, err)
 	}
 	return avgET, nil
 }
