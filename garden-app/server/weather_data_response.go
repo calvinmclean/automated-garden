@@ -16,7 +16,7 @@ import (
 
 const (
 	// weatherAPITimeout is the timeout for external weather API calls.
-	weatherAPITimeout = 5 * time.Second
+	weatherAPITimeout = 15 * time.Second
 )
 
 // WeatherData is used to represent the data used for WeatherControl to a user
