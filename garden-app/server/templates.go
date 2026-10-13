@@ -331,6 +331,9 @@ func templateFuncs(r *http.Request) map[string]any {
 func formatDuration(d *pkg.Duration) string {
 	// Round to nearest second to avoid sub-second precision in UI
 	roundedDuration := d.Duration.Round(time.Second)
+	if roundedDuration == 0 {
+		return "0s"
+	}
 
 	days := roundedDuration / (24 * time.Hour)
 	remaining := roundedDuration % (24 * time.Hour)

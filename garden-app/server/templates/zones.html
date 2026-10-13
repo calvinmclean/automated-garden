@@ -102,8 +102,12 @@
 {{ else }}
 {{ if and .Duration .Time }}
 <div>
+    {{ if eq .Duration.Duration 0 }}
+    Watering will be skipped
+    {{ else }}
     Watering for
     <span class="uk-text-primary">{{ FormatDuration .Duration }}</span>
+    {{ end }}
     <time datetime="{{ FormatRFC3339NonZero .Time }}" data-format="upcoming"></time>
 </div>
 {{ end }}

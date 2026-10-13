@@ -1,6 +1,9 @@
 package server
 
 import (
+	"bytes"
+	"html/template"
+	"net/http/httptest"
 	"testing"
 	"time"
 
@@ -14,6 +17,8 @@ func TestFormatDuration(t *testing.T) {
 		in       time.Duration
 		expected string
 	}{
+		{0, "0s"},
+		{100 * time.Millisecond, "0s"},
 		{
 			10 * time.Second,
 			"10s",
@@ -74,4 +79,20 @@ func TestFormatDuration(t *testing.T) {
 			require.Equal(t, tt.expected, out)
 		})
 	}
+}
+
+func TestNextWaterDetailZeroDuration(t *testing.T) {
+	r := httptest.NewRequest("GET", "/water_schedules?refresh=true", nil)
+	tmpl, err := template.New("zones.html").Funcs(templateFuncs(r)).ParseFS(templates, "templates/zones.html")
+	require.NoError(t, err)
+	nextTime := time.Date(2026, time.October, 16, 5, 0, 0, 0, time.UTC)
+	var output bytes.Buffer
+	err = tmpl.ExecuteTemplate(&output, "nextWaterDetail", NextWaterDetails{
+		Time:     &nextTime,
+		Duration: &pkg.Duration{},
+	})
+	require.NoError(t, err)
+	require.Contains(t, output.String(), "Watering will be skipped")
+	require.NotContains(t, output.String(), "Watering for")
+	require.Contains(t, output.String(), `datetime="2026-10-16T05:00:00Z"`)
 }
